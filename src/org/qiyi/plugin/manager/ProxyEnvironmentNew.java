@@ -2,7 +2,6 @@ package org.qiyi.plugin.manager;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -133,7 +132,7 @@ public class ProxyEnvironmentNew {
         activityStack = new LinkedList<Activity>();
         parentPackagename = context.getPackageName();
         this.pluginPakName = pluginPakName;
-        assertApkFile();
+        assertApkFile(pluginPakName);
         createTargetMapping();
         //准备数据路径
         createDataRoot();
@@ -347,6 +346,7 @@ public class ProxyEnvironmentNew {
                     @Override
                     public void onPackageInstallFail(String packageName, int failReason) {
                         clearLoadingIntent(packageName);
+                        ProxyEnvironmentNew.deliverPlug(false, packageName, failReason);
                     }
 
                     @Override
@@ -375,14 +375,18 @@ public class ProxyEnvironmentNew {
      * 用于插件qos 投递
      */
     public static void deliverPlug(boolean success,String pakName,int errorCode){
-    	try {
-			JavaCalls.callStaticMethod("org.qiyi.android.plugin.utils.PluginDeliverUtils",
-					"deliverStartUp", success, pakName, errorCode);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			System.out.println("类未加载");
-			e.printStackTrace();
-		}
+//    	try {
+//			JavaCalls.callStaticMethod("org.qiyi.android.plugin.utils.PluginDeliverUtils",
+//					"deliverStartUp", success, pakName, errorCode);
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			System.out.println("类未加载");
+//			e.printStackTrace();
+//		}
+        
+        if(iDeliverPlug != null){
+            iDeliverPlug.deliverPlug(success, pakName, errorCode);
+        }
     }
 
     /**
@@ -424,9 +428,9 @@ public class ProxyEnvironmentNew {
                 }
             }
 
-            env.setApplicationBase(env, env.application);
+            env.setApplicationBase(env, env.application, packageName);
             env.application.onCreate();
-            env.changeInstrumentation(context);
+            env.changeInstrumentation(context, packageName);
             env.bIsApplicationInit = true;
 
             synchronized (gLoadingMap) {
@@ -493,7 +497,7 @@ public class ProxyEnvironmentNew {
         return haveLaunchActivity;
     }
 
-    private void setApplicationBase(ProxyEnvironmentNew env, Application application) {
+    private void setApplicationBase(ProxyEnvironmentNew env, Application application, String packageName) {
 		PluginContextWrapper ctxWrapper = new PluginContextWrapper(context, env);
 		this.appWrapper = ctxWrapper;
 		// attach
@@ -503,19 +507,10 @@ public class ProxyEnvironmentNew {
 					"attach", Context.class);
 			attachMethod.setAccessible(true);
 			attachMethod.invoke(application, ctxWrapper);
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {
+		    ProxyEnvironmentNew.deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_SET_APPLICATION_BASE_FAIL);
 			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} 
     }
 
 	private static void performStartActivity(Context context, Intent intent) {
@@ -806,11 +801,13 @@ public class ProxyEnvironmentNew {
     
     /**
      * 判断是否是apk文件
+     * @param pluginPakName 
      */
-    private void assertApkFile() {
+    private void assertApkFile(String pluginPakName) {
         boolean isApk = apkFile.isFile() && apkFile.getName().endsWith(PluginInstaller.APK_SUFFIX);
         if (!isApk) {
 //        	deliverPlug(false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_APK);//添加投递
+            ProxyEnvironmentNew.deliverPlug(false, pluginPakName, ErrorType.ERROR_CLIENT_LOAD_NO_APK);
             throw new PluginStartupException(ErrorType.ERROR_CLIENT_LOAD_NO_APK,"Target file is not an apk.");
         }
     }
@@ -1056,7 +1053,7 @@ public class ProxyEnvironmentNew {
 		return context;
 	}
 
-	private void changeInstrumentation(Context context) {
+	private void changeInstrumentation(Context context, String pkgName) {
 		try {
 			Context contextImpl = ((ContextWrapper) context).getBaseContext();
 			Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
@@ -1066,6 +1063,7 @@ public class ProxyEnvironmentNew {
 			instrumentationF.set(activityThread, instrumentation);
 			instrumentationF.setAccessible(false);
 		} catch (Exception e) {
+		    ProxyEnvironmentNew.deliverPlug(false, pkgName, ErrorType.ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL);
 			e.printStackTrace();
 		}
 	}
@@ -1155,5 +1153,15 @@ public class ProxyEnvironmentNew {
 			}
 			return super.newActivity(cl, className, intent);
 		}
+	}
+	
+	private static IDeliverPlug iDeliverPlug;
+	
+	public static void setiDeliverPlug(IDeliverPlug iDeliverPlug) {
+        ProxyEnvironmentNew.iDeliverPlug = iDeliverPlug;
+    }
+
+    public interface IDeliverPlug{
+	    void deliverPlug(boolean success,String pakName,int errorCode);
 	}
 }

@@ -4,6 +4,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
@@ -201,6 +202,7 @@ public class ActivityOverider {
 			ActivityClassGenerator.createActivityDex(activityClsName, targetClassName,
 					saveDir, pkgName, pkgName);
 		} catch (Throwable e) {
+		    ProxyEnvironmentNew.deliverPlug(false, pkgName, ErrorType.ERROR_CLIENT_CREATE_ACTIVITY_DEX_FAIL);
 			Log.e(tag, Log.getStackTraceString(e));
 		}
 	}

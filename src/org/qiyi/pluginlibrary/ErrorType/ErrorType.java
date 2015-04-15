@@ -110,6 +110,13 @@ public class ErrorType {
 	public static final int ERROR_CLIENT_LOAD_CREATE_FILE_NULL = 0x101F;
 	/**文件目录创建失败*/
 	public static final int ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL = 0x1020;
+	
+	/**新插件方案，为Activity创建dex文件失败*/
+	public static final int ERROR_CLIENT_CREATE_ACTIVITY_DEX_FAIL = ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL + 1;
+	/**新插件方案，attach base to application失败*/
+	public static final int ERROR_CLIENT_SET_APPLICATION_BASE_FAIL = ERROR_CLIENT_CREATE_ACTIVITY_DEX_FAIL + 1;
+	/**新插件方案，重写instrumentation失败*/
+	public static final int ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL = ERROR_CLIENT_SET_APPLICATION_BASE_FAIL + 1;
     
     /**
      * 网络异常
