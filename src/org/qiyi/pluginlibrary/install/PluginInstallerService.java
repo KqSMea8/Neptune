@@ -379,9 +379,15 @@ public class PluginInstallerService extends IntentService {
 			Log.d("TAG", "pkgInfo.activities is null pkgName: " + pkgInfo.packageName);
 			return;
 		}
+		File tempFile = null;
 		for (ActivityInfo info : pkgInfo.activities) {
-			ActivityOverider.createProxyDex(info.packageName, info.name, ProxyEnvironmentNew
-					.getProxyComponentDexPath(parentData, info.packageName, info.name));
+			tempFile = ProxyEnvironmentNew.getProxyComponentDexPath(parentData, info.packageName,
+					info.name);
+			ActivityOverider.createProxyDex(info.packageName, info.name, tempFile);
+			if (tempFile.exists()) {
+				installDex(tempFile.getAbsolutePath(), pkgInfo.packageName);
+			}
+			tempFile = null;
 		}
 		parentData = null;
 	}

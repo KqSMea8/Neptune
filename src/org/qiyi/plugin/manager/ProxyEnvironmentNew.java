@@ -885,9 +885,9 @@ public class ProxyEnvironmentNew {
      */
     private void createClassLoader() {
 
-    	PluginDebugLog.log("plugin", "createClassLoader");
-		dexClassLoader = new PluginClassLoader(apkFile.getAbsolutePath(),
-				targetDataRoot.getAbsolutePath(), context.getClassLoader(), this);
+		PluginDebugLog.log("plugin", "createClassLoader");
+		dexClassLoader = new PluginClassLoader(apkFile.getAbsolutePath(), getDataDir(context,
+				pluginPakName).getAbsolutePath(), context.getClassLoader(), this);
 
         // 把 插件 classloader 注入到 host程序中，方便host app 能够找到 插件 中的class。
 		if (targetMapping.getMetaData() != null
