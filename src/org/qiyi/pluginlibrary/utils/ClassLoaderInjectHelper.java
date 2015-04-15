@@ -1,0 +1,675 @@
+package org.qiyi.pluginlibrary.utils;
+
+import java.io.File;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+
+import android.annotation.SuppressLint;
+import android.app.Application;
+import dalvik.system.DexClassLoader;
+import dalvik.system.PathClassLoader;
+
+/**
+ * 把插件classloader注入到parent classloader中，这样可以使parent classloader能够找到插件中的类。
+ * 
+ * 这种方案也有不好的地方，安全性等。
+ * 
+ * 但是 插件中通过Intent .put serialize extra 无法找到对应的类。只能通过此方法。
+ * 
+ * TODO :
+ * 
+ */
+public class ClassLoaderInjectHelper {
+    /**
+     * 注入jar
+     *
+     * @param aApp
+     *            application object
+     * @param aLibPath
+     *            lib path
+     * @return inject result
+     */
+    public static InjectResult inject(Application aApp, String aLibPath, String someClass) {
+        try {
+            Class.forName("dalvik.system.LexClassLoader");
+            return injectInAliyunOs(aApp, aLibPath);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        boolean hasBaseDexClassLoader = true;
+        try {
+            Class.forName("dalvik.system.BaseDexClassLoader");
+        } catch (ClassNotFoundException e) {
+            hasBaseDexClassLoader = false;
+        }
+        if (!hasBaseDexClassLoader) {
+            return injectBelowApiLevel14(aApp, aLibPath, someClass);
+        } else {
+            return injectAboveEqualApiLevel14(aApp, aLibPath);
+        }
+    }
+    
+    public static InjectResult inject(ClassLoader parentClassLoader, ClassLoader childClassLoader, String someClass) {
+        // ali云 暂不实现，后边再看。
+//        try {
+//            Class.forName("dalvik.system.LexClassLoader");
+//            return injectInAliyunOs(aApp, aLibPath);
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
+        boolean hasBaseDexClassLoader = true;
+        try {
+            Class.forName("dalvik.system.BaseDexClassLoader");
+        } catch (ClassNotFoundException e) {
+            hasBaseDexClassLoader = false;
+        }
+        if (!hasBaseDexClassLoader) {
+            return injectBelowApiLevel14(parentClassLoader, childClassLoader, someClass);
+        } else {
+            return injectAboveEqualApiLevel14(parentClassLoader, childClassLoader);
+        }        
+    }
+
+    /**
+     * 阿里云系统注入jar
+     *
+     * @param aApp
+     *            application object
+     * @param aLibPath
+     *            lib path
+     * @return inject result
+     */
+    private static InjectResult injectInAliyunOs(Application aApp, String aLibPath) {
+        InjectResult result = null;
+        PathClassLoader localClassLoader = (PathClassLoader) aApp.getClassLoader();
+        new DexClassLoader(aLibPath, aApp.getDir("dex", 0).getAbsolutePath(), aLibPath, localClassLoader);
+        String lexFileName = new File(aLibPath).getName();
+        lexFileName = lexFileName.replaceAll("\\.[a-zA-Z0-9]+", ".lex");
+        try {
+            Class<?> classLexClassLoader = Class.forName("dalvik.system.LexClassLoader");
+            Constructor<?> constructorLexClassLoader = classLexClassLoader.getConstructor(String.class,
+                    String.class, String.class, ClassLoader.class);
+            Object localLexClassLoader = constructorLexClassLoader.newInstance(aApp.getDir("dex", 0)
+                    .getAbsolutePath() + File.separator + lexFileName, aApp.getDir("dex", 0)
+                    .getAbsolutePath(), aLibPath, localClassLoader);
+            Method methodLoadClass = classLexClassLoader.getMethod("loadClass", String.class);
+            methodLoadClass.invoke(localLexClassLoader, "com.baidu.browser.favorite.BdInjectInvoker");
+            setField(
+                    localClassLoader,
+                    PathClassLoader.class,
+                    "mPaths",
+                    appendArray(getField(localClassLoader, PathClassLoader.class, "mPaths"),
+                            getField(localLexClassLoader, classLexClassLoader, "mRawDexPath")));
+            setField(
+                    localClassLoader,
+                    PathClassLoader.class,
+                    "mFiles",
+                    combineArray(getField(localClassLoader, PathClassLoader.class, "mFiles"),
+                            getField(localLexClassLoader, classLexClassLoader, "mFiles")));
+            setField(
+                    localClassLoader,
+                    PathClassLoader.class,
+                    "mZips",
+                    combineArray(getField(localClassLoader, PathClassLoader.class, "mZips"),
+                            getField(localLexClassLoader, classLexClassLoader, "mZips")));
+            setField(
+                    localClassLoader,
+                    PathClassLoader.class,
+                    "mLexs",
+                    combineArray(getField(localClassLoader, PathClassLoader.class, "mLexs"),
+                            getField(localLexClassLoader, classLexClassLoader, "mDexs")));
+        } catch (NoSuchFieldException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        }
+
+        if (result == null) {
+            result = makeInjectResult(true, null);
+        }
+        return result;
+    }
+
+   
+    /**
+     * api < 14时，注入jar
+     *
+     * @param aApp
+     *            application
+     * @param aLibPath
+     *            lib path
+     * @return inject result
+     */
+    private static InjectResult injectBelowApiLevel14(Application aApp, String aLibPath, String someClass) {
+        InjectResult result = null;
+        PathClassLoader pathClassLoader = (PathClassLoader) aApp.getClassLoader();
+        DexClassLoader dexClassLoader = new DexClassLoader(aLibPath, aApp.getDir("dex", 0).getAbsolutePath(),
+                aLibPath, aApp.getClassLoader());
+        
+        result = injectBelowApiLevel14(pathClassLoader, dexClassLoader, someClass);
+ 
+        return result;
+    }
+    
+    
+    @SuppressLint("NewApi")
+	private static InjectResult injectBelowApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader,
+            String someClass) {
+        InjectResult result = null;
+        PathClassLoader pathClassLoader = (PathClassLoader) parentClassLoader;
+        DexClassLoader dexClassLoader = (DexClassLoader)childClassLoader;
+        try {
+            dexClassLoader.loadClass(someClass);
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mPaths",
+                    appendArray(getField(pathClassLoader, PathClassLoader.class, "mPaths"),
+                            getField(dexClassLoader, DexClassLoader.class, "mRawDexPath")));
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mFiles",
+                    combineArray(getField(pathClassLoader, PathClassLoader.class, "mFiles"),
+                            getField(dexClassLoader, DexClassLoader.class, "mFiles")));
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mZips",
+                    combineArray(getField(pathClassLoader, PathClassLoader.class, "mZips"),
+                            getField(dexClassLoader, DexClassLoader.class, "mZips")));
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mDexs",
+                    combineArray(getField(pathClassLoader, PathClassLoader.class, "mDexs"),
+                            getField(dexClassLoader, DexClassLoader.class, "mDexs")));
+
+            try {
+                @SuppressWarnings("unchecked")
+                ArrayList<String> libPaths = (ArrayList<String>) getField(pathClassLoader, PathClassLoader.class,
+                        "libraryPathElements");
+                String[] libArray = (String[]) getField(dexClassLoader, DexClassLoader.class, "mLibPaths");
+                for (String path : libArray) {
+                    libPaths.add(path);
+                }
+            } catch (Exception e) {
+                setField(
+                        pathClassLoader,
+                        PathClassLoader.class,
+                        "mLibPaths",
+                        combineArray(getField(pathClassLoader, PathClassLoader.class, "mLibPaths"),
+                                getField(dexClassLoader, DexClassLoader.class, "mLibPaths")));
+            }
+        } catch (NoSuchFieldException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        }
+
+        if (result == null) {
+            result = makeInjectResult(true, null);
+        }
+        return result;
+    }
+
+    /**
+     * api >= 14时，注入jar
+     *
+     * @param aApp
+     *            application object
+     * @param aLibPath
+     *            lib path
+     * @return inject object
+     */
+    private static InjectResult injectAboveEqualApiLevel14(Application aApp, String aLibPath) {
+        PathClassLoader pathClassLoader = (PathClassLoader) aApp.getClassLoader();
+        DexClassLoader dexClassLoader = new DexClassLoader(aLibPath, aApp.getDir("dex", 0).getAbsolutePath(),
+                aLibPath, aApp.getClassLoader());
+        InjectResult result = null;
+
+        result = injectAboveEqualApiLevel14(pathClassLoader, dexClassLoader);
+        
+        return result;
+    }
+    
+    
+    private static InjectResult injectAboveEqualApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
+        PathClassLoader pathClassLoader = (PathClassLoader) parentClassLoader;
+        DexClassLoader dexClassLoader = (DexClassLoader) childClassLoader;
+        InjectResult result = null;
+        try {
+            // 注入 dex
+            Object dexElements = combineArray(getDexElements(getPathList(pathClassLoader)),
+                    getDexElements(getPathList(dexClassLoader)));
+
+            Object pathList = getPathList(pathClassLoader);
+
+            setField(pathList, pathList.getClass(), "dexElements", dexElements);
+            
+            // 注入 native lib so 目录，需要parent class loader 遍历此目录能够找到。因为注入了以后，不处理这个目录找不到。
+            Object dexNativeLibraryDirs = combineArray(getNativeLibraryDirectories(getPathList(pathClassLoader)),
+                    getNativeLibraryDirectories(getPathList(dexClassLoader)));
+
+            setField(pathList, pathList.getClass(), "nativeLibraryDirectories", dexNativeLibraryDirs);
+        } catch (IllegalArgumentException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        }
+        if (result == null) {
+            result = makeInjectResult(true, null);
+        }
+        return result;
+    }
+
+    /**
+     * set field
+     *
+     * @param oObj
+     *            object
+     * @param aCl
+     *            class
+     * @param aField
+     *            field
+     * @param value
+     *            value
+     * @throws NoSuchFieldException
+     *             NoSuchFieldException
+     * @throws IllegalArgumentException
+     *             IllegalArgumentException
+     * @throws IllegalAccessException
+     *             IllegalAccessException
+     */
+    private static void setField(Object oObj, Class<?> aCl, String aField, Object value)
+            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        Field localField = aCl.getDeclaredField(aField);
+        localField.setAccessible(true);
+        localField.set(oObj, value);
+    }
+
+    /**
+     * @param oObj
+     *            object
+     * @param aCl
+     *            class
+     * @param aField
+     *            field
+     * @return field
+     * @throws NoSuchFieldException
+     *             NoSuchFieldException
+     * @throws IllegalArgumentException
+     *             IllegalArgumentException
+     * @throws IllegalAccessException
+     *             IllegalAccessException
+     */
+    private static Object getField(Object oObj, Class<?> aCl, String aField) throws NoSuchFieldException,
+            IllegalArgumentException, IllegalAccessException {
+        Field localField = aCl.getDeclaredField(aField);
+        localField.setAccessible(true);
+        return localField.get(oObj);
+    }
+
+    /**
+     * combine array
+     *
+     * @param aArrayLhs
+     *            array
+     * @param aArrayRhs
+     *            array
+     * @return array
+     */
+    private static Object combineArray(Object aArrayLhs, Object aArrayRhs) {
+        Class<?> localClass = aArrayLhs.getClass().getComponentType();
+        int i = Array.getLength(aArrayLhs);
+        int j = i + Array.getLength(aArrayRhs);
+        Object result = Array.newInstance(localClass, j);
+        for (int k = 0; k < j; ++k) {
+            if (k < i) {
+                Array.set(result, k, Array.get(aArrayLhs, k));
+            } else {
+                Array.set(result, k, Array.get(aArrayRhs, k - i));
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * delete elements from specific array object. 只删除一次，因为 add的时候会添加重复的，比如 /system/lib 
+     * 这个删除的时候不能全部删除
+     *
+     * @param srcArray
+     *            src array
+     * @param targetArray
+     *            array
+     * @return array
+     */
+    private static Object removeArrayElements(Object srcArray, Object targetArray) {
+        Class<?> localClass = srcArray.getClass().getComponentType();
+        int srcLen = Array.getLength(srcArray);
+        int targetLen = Array.getLength(targetArray);
+
+        // 备份一下target，用于删除处理
+        ArrayList<Object> targetCopy = new ArrayList<Object>();
+        for (int j = 0; j < targetLen; j++) {
+            Object target = Array.get(targetArray, j);
+            targetCopy.add(target);
+        }
+        
+        ArrayList<Object> resultArray = new ArrayList<Object>();
+        
+        for (int i = 0; i < srcLen; i++) {
+            Object src = Array.get(srcArray, i);
+            boolean finded = false;
+            for (int j = 0; j < targetLen; j++) {
+                Object target = targetCopy.get(j);
+                if (target != null && src.equals(target)) {
+                    finded = true;
+                    targetCopy.set(j, null); // 找到后设置为空，表示已经从src删除过一次了，
+                    break;
+                } 
+            }
+            
+            if (!finded) {
+                resultArray.add(src);
+            }
+            
+        }
+        
+        int length = resultArray.size();
+        Object result = Array.newInstance(localClass, length);
+        
+        for (int i = 0; i < length; i++) {
+            Array.set(result, i, resultArray.get(i));
+        }
+         
+        return result;
+    }
+    
+    /**
+     * delete elements from specific array object.
+     *
+     * @param srcArray
+     *            src array
+     * @param targetArray
+     *            array
+     * @return array
+     */
+    private static Object removeArrayElement(Object srcArray, Object element) {
+        Class<?> localClass = srcArray.getClass().getComponentType();
+        int srcLen = Array.getLength(srcArray);
+
+        ArrayList<Object> resultArray = new ArrayList<Object>();
+        
+        for (int i = 0; i < srcLen; i++) {
+            Object src = Array.get(srcArray, i);
+            boolean finded = false;
+            Object target = element;
+            if (src.equals(target)) {
+                finded = true;
+            } 
+            
+            if (!finded) {
+                resultArray.add(src);
+            }
+            
+        }
+        
+        int length = resultArray.size();
+        Object result = Array.newInstance(localClass, length);
+        
+        for (int i = 0; i < length; i++) {
+            Array.set(result, i, resultArray.get(i));
+        }
+         
+        return result;
+    }    
+
+    /**
+     * append for array
+     *
+     * @param aArray
+     *            array
+     * @param aValue
+     *            value
+     * @return new array
+     */
+    private static Object appendArray(Object aArray, Object aValue) {
+        Class<?> localClass = aArray.getClass().getComponentType();
+        int i = Array.getLength(aArray);
+        int j = i + 1;
+        Object localObject = Array.newInstance(localClass, j);
+        for (int k = 0; k < j; ++k) {
+            if (k < i) {
+                Array.set(localObject, k, Array.get(aArray, k));
+            } else {
+                Array.set(localObject, k, aValue);
+            }
+        }
+        return localObject;
+    }
+
+    /**
+     * make a inject result
+     *
+     * @param aResult
+     *            result
+     * @param aT
+     *            throwable
+     * @return inject result
+     */
+    public static InjectResult makeInjectResult(boolean aResult, Throwable aT) {
+        InjectResult ir = new InjectResult();
+        ir.mIsSuccessful = aResult;
+        ir.mErrMsg = (aT != null ? aT.getLocalizedMessage() : null);
+        return ir;
+    }
+
+    /**
+     * @param aBaseDexClassLoader
+     *            BaseDexClassLoader
+     * @return path list
+     * @throws IllegalArgumentException
+     *             IllegalArgumentException
+     * @throws NoSuchFieldException
+     *             NoSuchFieldException
+     * @throws IllegalAccessException
+     *             IllegalAccessException
+     * @throws ClassNotFoundException
+     *             ClassNotFoundException
+     */
+    private static Object getPathList(Object aBaseDexClassLoader) throws IllegalArgumentException,
+            NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
+        return getField(aBaseDexClassLoader, Class.forName("dalvik.system.BaseDexClassLoader"), "pathList");
+    }
+    
+    
+    
+
+    /**
+     * @param aParamObject
+     *            param
+     * @return dexElements
+     * @throws IllegalArgumentException
+     *             IllegalArgumentException
+     * @throws NoSuchFieldException
+     *             NoSuchFieldException
+     * @throws IllegalAccessException
+     *             IllegalAccessException
+     */
+    private static Object getDexElements(Object aParamObject) throws IllegalArgumentException,
+            NoSuchFieldException, IllegalAccessException {
+        return getField(aParamObject, aParamObject.getClass(), "dexElements");
+    }
+    
+    
+    private static Object getNativeLibraryDirectories(Object aParamObject) throws IllegalArgumentException, NoSuchFieldException,
+            IllegalAccessException {
+        return getField(aParamObject, aParamObject.getClass(), "nativeLibraryDirectories");
+    }
+    
+    public static InjectResult eject(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
+        // ali云 暂不实现，后边再看。
+//        try {
+//            Class.forName("dalvik.system.LexClassLoader");
+//            return injectInAliyunOs(aApp, aLibPath);
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
+        boolean hasBaseDexClassLoader = true;
+        try {
+            Class.forName("dalvik.system.BaseDexClassLoader");
+        } catch (ClassNotFoundException e) {
+            hasBaseDexClassLoader = false;
+        }
+        if (!hasBaseDexClassLoader) {
+            return ejectBelowApiLevel14(parentClassLoader, childClassLoader);
+        } else {
+            return ejectAboveEqualApiLevel14(parentClassLoader, childClassLoader);
+        }        
+    }
+    
+    private static InjectResult ejectBelowApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
+        InjectResult result = null;
+        PathClassLoader pathClassLoader = (PathClassLoader) parentClassLoader;
+        DexClassLoader dexClassLoader = (DexClassLoader)childClassLoader;
+        try {
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mPaths",
+                    removeArrayElement(getField(pathClassLoader, PathClassLoader.class, "mPaths"),
+                            getField(dexClassLoader, DexClassLoader.class, "mRawDexPath")));
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mFiles",
+                    removeArrayElements(getField(pathClassLoader, PathClassLoader.class, "mFiles"),
+                            getField(dexClassLoader, DexClassLoader.class, "mFiles")));
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mZips",
+                    removeArrayElements(getField(pathClassLoader, PathClassLoader.class, "mZips"),
+                            getField(dexClassLoader, DexClassLoader.class, "mZips")));
+            setField(
+                    pathClassLoader,
+                    PathClassLoader.class,
+                    "mDexs",
+                    removeArrayElements(getField(pathClassLoader, PathClassLoader.class, "mDexs"),
+                            getField(dexClassLoader, DexClassLoader.class, "mDexs")));
+
+            try {
+                @SuppressWarnings("unchecked")
+                ArrayList<String> libPaths = (ArrayList<String>) getField(pathClassLoader, PathClassLoader.class,
+                        "libraryPathElements");
+                String[] libArray = (String[]) getField(dexClassLoader, DexClassLoader.class, "mLibPaths");
+                for (String path : libArray) {
+                    libPaths.remove(path);
+                }
+            } catch (Exception e) {
+                setField(
+                        pathClassLoader,
+                        PathClassLoader.class,
+                        "mLibPaths",
+                        removeArrayElements(getField(pathClassLoader, PathClassLoader.class, "mLibPaths"),
+                                getField(dexClassLoader, DexClassLoader.class, "mLibPaths")));
+            }
+        } catch (NoSuchFieldException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        }
+
+        if (result == null) {
+            result = makeInjectResult(true, null);
+        }
+        return result;
+    }
+    
+    private static InjectResult ejectAboveEqualApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
+        PathClassLoader pathClassLoader = (PathClassLoader) parentClassLoader;
+        DexClassLoader dexClassLoader = (DexClassLoader) childClassLoader;
+        InjectResult result = null;
+        try {
+            // 注入 dex
+            Object dexElements = removeArrayElements(getDexElements(getPathList(pathClassLoader)),
+                    getDexElements(getPathList(dexClassLoader)));
+
+            Object pathList = getPathList(pathClassLoader);
+
+            setField(pathList, pathList.getClass(), "dexElements", dexElements);
+            
+            // 注入 native lib so 目录，需要parent class loader 遍历此目录能够找到。因为注入了以后，不处理这个目录找不到。
+            Object dexNativeLibraryDirs = removeArrayElements(getNativeLibraryDirectories(getPathList(pathClassLoader)),
+                    getNativeLibraryDirectories(getPathList(dexClassLoader)));
+
+            setField(pathList, pathList.getClass(), "nativeLibraryDirectories", dexNativeLibraryDirs);
+        } catch (IllegalArgumentException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
+        }
+        if (result == null) {
+            result = makeInjectResult(true, null);
+        }
+        return result;
+    }
+
+    /**
+     * inject result
+     */
+    public static class InjectResult {
+        /** is successful */
+        public boolean mIsSuccessful;
+        /** error msg */
+        public String mErrMsg;
+    }
+}
