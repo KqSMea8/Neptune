@@ -12,6 +12,7 @@ import org.qiyi.pluginnew.ApkTargetMappingNew.ServiceIntentInfo;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ServiceInfo;
+import android.os.Build;
 import android.util.DisplayMetrics;
 
 /**
@@ -31,17 +32,33 @@ public class ResolveInfoUtil {
 
 		try { // 先得到解析类PackageParser并实例化
 			Class<?> packageParserClass = Class.forName("android.content.pm.PackageParser");
-			Object packageParser = packageParserClass.getConstructor(String.class).newInstance(
-					dexPath);
+			Object packageParser = null;
+			if (Build.VERSION.SDK_INT >= 21) {
+			    packageParser = packageParserClass.getConstructor().newInstance();
+			}else{
+			    packageParser = packageParserClass.getConstructor(String.class).newInstance(
+                    dexPath);
+			}
 			// 构建参数
 			DisplayMetrics metrics = new DisplayMetrics();
 			metrics.setToDefaults();
 			File sourceFile = new File(dexPath);
-			// 调用PackageParser的parsePackage解析数据
-			Method method = packageParserClass.getDeclaredMethod("parsePackage", File.class,
-					String.class, DisplayMetrics.class, int.class);
-			method.setAccessible(true);
-			Object pkg = method.invoke(packageParser, sourceFile, dexPath, metrics, 0);
+			Object pkg = null;
+            // 调用PackageParser的parsePackage解析数据
+            if (Build.VERSION.SDK_INT >= 21) {
+                Method method =
+                        packageParserClass.getDeclaredMethod("parsePackage", File.class, int.class);
+                method.setAccessible(true);
+                pkg  = method.invoke(packageParser, sourceFile, 0);
+            } else {
+                Method method =
+                        packageParserClass.getDeclaredMethod("parsePackage", File.class, String.class,
+                                DisplayMetrics.class, int.class);
+                method.setAccessible(true);
+                pkg = method.invoke(packageParser, sourceFile, dexPath, metrics, 0);
+            }
+			    
+
 			if (null != pkg) {
 				// 获取Activity
 				Field activities = pkg.getClass().getDeclaredField("activities");
