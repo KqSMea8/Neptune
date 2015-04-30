@@ -5,7 +5,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import android.annotation.SuppressLint;
@@ -96,8 +95,6 @@ public class ClassLoaderInjectHelper {
             Object localLexClassLoader = constructorLexClassLoader.newInstance(aApp.getDir("dex", 0)
                     .getAbsolutePath() + File.separator + lexFileName, aApp.getDir("dex", 0)
                     .getAbsolutePath(), aLibPath, localClassLoader);
-            Method methodLoadClass = classLexClassLoader.getMethod("loadClass", String.class);
-            methodLoadClass.invoke(localLexClassLoader, "com.baidu.browser.favorite.BdInjectInvoker");
             setField(
                     localClassLoader,
                     PathClassLoader.class,
@@ -143,6 +140,9 @@ public class ClassLoaderInjectHelper {
         } catch (InvocationTargetException e) {
             result = makeInjectResult(false, e);
             e.printStackTrace();
+        }catch(Exception e){
+        	result = makeInjectResult(false, e);
+        	e.printStackTrace();
         }
 
         if (result == null) {
@@ -177,7 +177,12 @@ public class ClassLoaderInjectHelper {
 	private static InjectResult injectBelowApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader,
             String someClass) {
         InjectResult result = null;
-        PathClassLoader pathClassLoader = (PathClassLoader) parentClassLoader;
+        PathClassLoader pathClassLoader = null;
+        if(parentClassLoader instanceof PathClassLoader){
+        	pathClassLoader = (PathClassLoader) parentClassLoader;
+        }else{
+        	return result;
+        }
         DexClassLoader dexClassLoader = (DexClassLoader)childClassLoader;
         try {
             dexClassLoader.loadClass(someClass);
@@ -261,9 +266,16 @@ public class ClassLoaderInjectHelper {
     
     
     private static InjectResult injectAboveEqualApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
-        PathClassLoader pathClassLoader = (PathClassLoader) parentClassLoader;
+    	InjectResult result = null;
+    	
+        PathClassLoader pathClassLoader = null;
+        if(parentClassLoader instanceof PathClassLoader){
+        	pathClassLoader = (PathClassLoader) parentClassLoader;
+        }else{
+        	return result;
+        }
+        
         DexClassLoader dexClassLoader = (DexClassLoader) childClassLoader;
-        InjectResult result = null;
         try {
             // 注入 dex
             Object dexElements = combineArray(getDexElements(getPathList(pathClassLoader)),
@@ -290,6 +302,9 @@ public class ClassLoaderInjectHelper {
         } catch (ClassNotFoundException e) {
             result = makeInjectResult(false, e);
             e.printStackTrace();
+        }catch(Exception e){
+        	result = makeInjectResult(false, e);
+        	e.printStackTrace();
         }
         if (result == null) {
             result = makeInjectResult(true, null);

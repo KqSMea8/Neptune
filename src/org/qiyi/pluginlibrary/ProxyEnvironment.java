@@ -314,7 +314,8 @@ public class ProxyEnvironment {
             if (cacheIntents != null) {//说明插件正在loading
                 // 正在loading，直接返回吧，等着loading完调起
                 // 把intent都缓存起来
-                cacheIntents.add(intent);
+//                cacheIntents.add(intent);
+            	PluginDebugLog.log("plugin", "cacheIntents:"+cacheIntents.size());
                 return;
             }
 
@@ -328,7 +329,12 @@ public class ProxyEnvironment {
         
         if (isEnterProxy) {
             // 已经初始化，直接起Intent
-            launchIntent(context,conn, intent);
+        	try{
+        		launchIntent(context,conn, intent);
+        	}catch(Exception e){
+        		PluginDebugLog.log("plugin", "launchIntent:异常");
+        		clearLoadingIntent(packageName);
+        	}
             return;
         }
 
@@ -342,7 +348,7 @@ public class ProxyEnvironment {
 
                     @Override
                     public void onPacakgeInstalled(String packageName) {
-                    	PluginDebugLog.log(TAG, "安装完成：开始初始化initTarget");
+                    	PluginDebugLog.log(TAG, "onPacakgeInstalled 安装完成_开始初始化initTarget");
 
                         initTarget(context.getApplicationContext(), packageName, new ITargetLoadListenner() {
 
@@ -351,7 +357,7 @@ public class ProxyEnvironment {
                             	try{
                             		launchIntent(context,conn, intent);
                             	}catch(Exception e){
-                            		
+                            		PluginDebugLog.log("plugin", "initTarget_launchIntent:异常");
                             	}
                             }
                         });
@@ -370,7 +376,7 @@ public class ProxyEnvironment {
     		JavaCalls.callStaticMethod("org.qiyi.android.plugin.utils.PluginDeliverUtils","deliverStartUp",success,pakName,errorCode);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			System.out.println("类未加载");
+			PluginDebugLog.log("plugin", "deliverPlug:类未加载");
 			e.printStackTrace();
 		}
     }
@@ -391,8 +397,8 @@ public class ProxyEnvironment {
         ProxyEnvironment env = sPluginsMap.get(packageName);
         if (env == null) {
         	deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);//增加投递
-        	return false;
-//            throw new IllegalArgumentException(packageName +" not loaded, Make sure you have call the init method!");
+            throw new IllegalArgumentException(packageName +" not loaded, Make sure you have call the init method!");
+//            return false;
         }
 
         List<Intent> cacheIntents = null;
@@ -408,8 +414,8 @@ public class ProxyEnvironment {
                     env.application = ((CMApplication) env.dexClassLoader.loadClass(className).asSubclass(CMApplication.class).newInstance());
                 } catch (Exception e) {
                 	deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);//添加投递
-                	return false;
-//                    throw new RuntimeException(e.getMessage(), e);
+//                	return false;
+                    throw new RuntimeException(e.getMessage(), e);
                 }
             }
 
@@ -812,7 +818,7 @@ public class ProxyEnvironment {
      */
     private void createClassLoader() {
 
-    	PluginDebugLog.log("plugin", "createClassLoader");
+    	PluginDebugLog.log("plugin", "createClassLoader:"+context.getClassLoader());
         dexClassLoader = new DexClassLoader(apkFile.getAbsolutePath(), targetDataRoot.getAbsolutePath(),getTargetLibPath(),
         		super.getClass().getClassLoader());
 
@@ -926,35 +932,12 @@ public class ProxyEnvironment {
      *            插件加载后的回调
      */
     public static void initTarget(final Context context, String packageName, final ITargetLoadListenner listenner) {
-    	System.out.println("initTarget");
-//        new AsyncTask<String, Integer, String>() {
-//
-//        	protected void onPreExecute() {
-//        		 PluginDebugLog.log("plugin", "onPreExecute");
-//        		 System.out.println("onPreExecute");
-//        	};
-//        	
-//            @Override
-//            protected String doInBackground(String... params) {
-//            	System.out.println("doInBackground");
-//                String pPackageName = params[0];
-//                PluginDebugLog.log("plugin", "doInBackground:"+pPackageName);
-//                ProxyEnvironment.initProxyEnvironment(context, pPackageName);
-//                return pPackageName;
-//            };
-//
-//            @Override
-//            protected void onPostExecute(String result) {
-//            	System.out.println("onPostExecute");
-//            	PluginDebugLog.log("plugin", "onPostExecute:");
-//                listenner.onLoadFinished(result);
-//                super.onPostExecute(result);
-//            }
-//            
-//        }.execute(packageName);
+    	PluginDebugLog.log("plugin", "initTarget");
     	try{
     		new InitProxyEnvireonment(context,packageName,listenner).start();
     	}catch(Exception e){
+    		PluginDebugLog.log("plugin", "initTarget异常");
+    		clearLoadingIntent(packageName);
     		deliverPlug(false,packageName , ErrorType.ERROR_CLIENT_LOAD_INIT_TARGET);
     		e.printStackTrace();
     	}
@@ -978,6 +961,7 @@ public class ProxyEnvironment {
     	        ProxyEnvironment.initProxyEnvironment(pContext, pakName);
     	        new InitHandler(listenner, pakName,Looper.getMainLooper()).sendEmptyMessage(1);
     		}catch(Exception e){
+    			clearLoadingIntent(pakName);
     			if(e instanceof PluginStartupException){
     				PluginStartupException ex = (PluginStartupException)e;
     				deliverPlug(false, pakName, ex.getCode());//添加投递
