@@ -16,7 +16,7 @@ import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
-import org.qiyi.pluginnew.ActivityOverider;
+import org.qiyi.pluginnew.ActivityClassGenerator;
 
 import android.annotation.SuppressLint;
 import android.app.IntentService;
@@ -383,7 +383,7 @@ public class PluginInstallerService extends IntentService {
 		for (ActivityInfo info : pkgInfo.activities) {
 			tempFile = ProxyEnvironmentNew.getProxyComponentDexPath(parentData, info.packageName,
 					info.name);
-			ActivityOverider.createProxyDex(info.packageName, info.name, tempFile);
+			ActivityClassGenerator.createProxyDex(info.packageName, info.name, tempFile);
 			if (tempFile.exists()) {
 				installDex(tempFile.getAbsolutePath(), pkgInfo.packageName);
 			}

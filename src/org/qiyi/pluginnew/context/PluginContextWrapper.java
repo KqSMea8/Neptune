@@ -3,19 +3,16 @@ package org.qiyi.pluginnew.context;
 import java.io.File;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
-import android.content.res.Resources;
-import android.util.Log;
 
 /**
  * Plugin Context 包装类
  * 
  */
-public class PluginContextWrapper extends ContextWrapper {
+public class PluginContextWrapper extends CustomContextWrapper {
 	private ProxyEnvironmentNew plugin;
 	private static final String tag = "PluginContextWrapper";
 	private ApplicationInfo applicationInfo;
@@ -41,29 +38,25 @@ public class PluginContextWrapper extends ContextWrapper {
 
 	@Override
 	public String getPackageResourcePath() {
-		// TODO Auto-generated method stub
-		Log.d(tag, "getPackageResourcePath()");
+		PluginDebugLog.log(tag, "getPackageResourcePath()");
 		return super.getPackageResourcePath();
 	}
 
 	@Override
 	public String getPackageCodePath() {
-		// TODO Auto-generated method stub
-		Log.d(tag, "getPackageCodePath()");
+		PluginDebugLog.log(tag, "getPackageCodePath()");
 		return super.getPackageCodePath();
 	}
 
 	@Override
 	public File getCacheDir() {
-		// TODO Auto-generated method stub
-		Log.d(tag, "getCacheDir()");
+		PluginDebugLog.log(tag, "getCacheDir()");
 		return super.getCacheDir();
 	}
 
 	@Override
 	public PackageManager getPackageManager() {
-		// TODO Auto-generated method stub
-		Log.d(tag, "PackageManager()");
+		PluginDebugLog.log(tag, "PackageManager()");
 //		return pkgManager;
 		return super.getPackageManager();
 	}
@@ -72,36 +65,19 @@ public class PluginContextWrapper extends ContextWrapper {
 	public ApplicationInfo getApplicationInfo() {
 		return applicationInfo;
 	}
-	@Override
-	public Context getApplicationContext() {
-		Log.v(tag, "getApplicationContext()");
-		return plugin.getApplication();
-	}
 
 	@Override
-	public String getPackageName() {
-		Log.d(tag, "getPackageName()");
+	protected String getTargetPackageName() {
 		return plugin.getTargetPackageName();
 	}
 
 	@Override
-	public Resources getResources() {
-		Log.d(tag, "getResources()");
-		return plugin.getTargetResources();
+	protected ProxyEnvironmentNew getEnvironment() {
+		return plugin;
 	}
 
 	@Override
-	public AssetManager getAssets() {
-		Log.d(tag, "getAssets()");
-		return plugin.getTargetAssetManager();
+	protected String getLogTag() {
+		return PluginContextWrapper.class.getSimpleName();
 	}
-	// @Override
-	// public Object getSystemService(String name) {
-	// if (name.equals(Context.ACTIVITY_SERVICE)) {
-	// if (plugin.getApplicationInfo().process != null) {
-	// return plugin.activityManager;
-	// }
-	// }
-	// return super.getSystemService(name);
-	// }
 }

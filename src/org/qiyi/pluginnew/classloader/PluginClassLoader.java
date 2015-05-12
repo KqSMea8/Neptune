@@ -5,7 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.pluginnew.ActivityOverider;
+import org.qiyi.pluginnew.ActivityClassGenerator;
+import org.qiyi.pluginnew.ActivityJumpUtil;
 
 import android.util.Log;
 import dalvik.system.DexClassLoader;
@@ -40,7 +41,7 @@ public class PluginClassLoader extends DexClassLoader {
 		// 在类加载之前检查创建代理的Activity dex文件，以免调用者忘记生成此文件
 		File dexSavePath = thisPlugin.getProxyComponentDexPath(thisPlugin.getTargetPackageName(),
 				actClassName);
-		ActivityOverider.createProxyDex(thisPlugin.getTargetPackageName(), actClassName,
+		ActivityClassGenerator.createProxyDex(thisPlugin.getTargetPackageName(), actClassName,
 				dexSavePath);
 		ClassLoader actLoader = proxyActivityLoaderMap.get(actClassName);
 		if (actLoader == null) {
@@ -48,7 +49,7 @@ public class PluginClassLoader extends DexClassLoader {
 					libraryPath, this);
 			proxyActivityLoaderMap.put(actClassName, actLoader);
 		}
-		return actLoader.loadClass(ActivityOverider.targetClassName);
+		return actLoader.loadClass(ActivityJumpUtil.TARGET_CLASS_NAME);
 	}
 
 }

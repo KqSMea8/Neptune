@@ -1,53 +1,17 @@
 package org.qiyi.pluginnew.context;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 
-public class CMContextWrapperNew extends ContextWrapper {
+public class CMContextWrapperNew extends CustomContextWrapper {
 	/** 插件包名 */
 	private String mPackagename = null;
 
-	public CMContextWrapperNew(Context paramContext) {
+	public CMContextWrapperNew(Context paramContext, String pkgName) {
 		super(paramContext);
-	}
-
-	/**
-	 * @param packagename
-	 *            the mPackagename to set
-	 * 
-	 * @hide
-	 */
-	public void setTargetPackagename(String packagename) {
-		mPackagename = packagename;
-	}
-
-	public String getTargetPackageName() {
-		return mPackagename;
-	}
-
-	@Override
-	public ClassLoader getClassLoader() {
-		return ProxyEnvironmentNew.getInstance(mPackagename).getDexClassLoader();
-	}
-
-	@Override
-	public Context getApplicationContext() {
-		return ProxyEnvironmentNew.getInstance(mPackagename).getApplication();
-	}
-
-	@Override
-	public Resources getResources() {
-		return ProxyEnvironmentNew.getInstance(mPackagename).getTargetResources();
-	}
-
-	@Override
-	public AssetManager getAssets() {
-		return getResources().getAssets();
+		mPackagename = pkgName;
 	}
 
 	// 插件自己保存一个theme，不用父类创建的，为了兼容OPPO手机上的bug
@@ -66,5 +30,20 @@ public class CMContextWrapperNew extends ContextWrapper {
 	@Override
 	public void setTheme(int resid) {
 		getTheme().applyStyle(resid, true);
+	}
+	
+	@Override
+	protected String getTargetPackageName() {
+		return mPackagename;
+	}
+
+	@Override
+	protected ProxyEnvironmentNew getEnvironment() {
+		return ProxyEnvironmentNew.getInstance(mPackagename);
+	}
+
+	@Override
+	protected String getLogTag() {
+		return CMContextWrapperNew.class.getSimpleName();
 	}
 }

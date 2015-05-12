@@ -5,15 +5,17 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.ResourcesProxy;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.api.ITargetLoadListenner;
-import org.qiyi.pluginlibrary.component.CMActivity;
 import org.qiyi.pluginlibrary.exception.PluginStartupException;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
@@ -25,16 +27,20 @@ import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginnew.ActivityClassGenerator;
+import org.qiyi.pluginnew.ActivityJumpUtil;
 import org.qiyi.pluginnew.ActivityOverider;
 import org.qiyi.pluginnew.ApkTargetMappingNew;
 import org.qiyi.pluginnew.ReflectionUtils;
 import org.qiyi.pluginnew.classloader.PluginClassLoader;
 import org.qiyi.pluginnew.context.PluginContextWrapper;
+import org.qiyi.pluginnew.service.PluginServiceWrapper;
+import org.qiyi.pluginnew.service.ServiceProxyNew;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Instrumentation;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -105,15 +111,14 @@ public class ProxyEnvironmentNew {
     
     /** Loading Map，正在loading中的插件 */
     private static Map<String, List<Intent>> gLoadingMap = new HashMap<String, List<Intent>>();
-    /** 插件loading样式的创建器 */
-//    private static Map<String, ILoadingViewCreator> gLoadingViewCreators = new HashMap<String, ILoadingViewCreator>();
     
     private String pluginPakName;
     
-    /**
-     * 记录正在运行的service
-     */
-//    public static Map<String,CMService> aliveServiceMap = new HashMap<String, CMService>();
+	/**
+	 * 记录正在运行的service
+	 */
+	public static ConcurrentMap<String, PluginServiceWrapper> sAliveServices = new ConcurrentHashMap<String, PluginServiceWrapper>(
+			1);
 
     public  static Activity mParent;//保存宿主activity
 
@@ -467,28 +472,29 @@ public class ProxyEnvironmentNew {
                 targetClass = env.dexClassLoader.loadClass(targetClassName);
             } catch (Exception e) {
             	deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_START);//添加投递
-                targetClass = CMActivity.class;
+//                targetClass = CMActivity.class;
+            	return false;
             }
             PluginDebugLog.log(TAG, "launchIntent_targetClass:"+targetClass);
 //            deliverPlug(true, packageName, ErrorType.ERROR_CLIENT_LOAD_START);//添加投递
-//            if (CMService.class.isAssignableFrom(targetClass)) {
-//                env.remapStartServiceIntent(curIntent, targetClassName);
-//				if (conn == null) {
-//					context.startService(curIntent);
-//				} else {
-//					context.bindService(curIntent, conn, curIntent.getIntExtra(
-//							ProxyEnvironment.BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
-//				}
-//
-//            } else 
-        	if (BroadcastReceiver.class.isAssignableFrom(targetClass)) { // 发一个内部用的动态广播
+            if (Service.class.isAssignableFrom(targetClass)) {
+                env.remapStartServiceIntent(curIntent, targetClassName);
+				if (conn == null) {
+					context.startService(curIntent);
+				} else {
+					context.bindService(curIntent, conn, curIntent.getIntExtra(
+							ProxyEnvironment.BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
+				}
+
+            } else if (BroadcastReceiver.class.isAssignableFrom(targetClass)) { // 发一个内部用的动态广播
                 Intent newIntent = new Intent(curIntent);
                 newIntent.setComponent(null);
                 newIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, packageName);
                 newIntent.setPackage(context.getPackageName());
                 context.sendBroadcast(newIntent);
             } else {
-            	performStartActivity(context, curIntent);
+            	mappingActivity(context, curIntent);
+            	env.dealLaunchMode(intent);
             	context.startActivity(curIntent);
                 haveLaunchActivity = true;
             }
@@ -513,7 +519,7 @@ public class ProxyEnvironmentNew {
 		} 
     }
 
-	private static void performStartActivity(Context context, Intent intent) {
+	private static void mappingActivity(Context context, Intent intent) {
 		String plugIdOrPkg;
 		String actName;
 		ComponentName origComp = intent.getComponent();
@@ -524,11 +530,9 @@ public class ProxyEnvironmentNew {
 			throw new IllegalArgumentException(
 					"plug intent must set the ComponentName!");
 		}
-//		PlugInfo plug = preparePlugForStartActivity(context, plugIdOrPkg);
-//		Log.i(tag, "performStartActivity: " + actName);
 		intent.putExtra(ActivityOverider.PLUGIN_ID, plugIdOrPkg);
 		intent.putExtra(ActivityOverider.PLUGIN_ACTIVITY, actName);
-		ComponentName comp = new ComponentName(context, ActivityOverider.targetClassName);
+		ComponentName comp = new ComponentName(context, ActivityJumpUtil.TARGET_CLASS_NAME);
 		intent.setAction(null);
 		intent.setComponent(comp);
 	}
@@ -614,96 +618,94 @@ public class ProxyEnvironmentNew {
         return targetMapping.getPackageName();
     }
 
-//    public void remapStartServiceIntent(Intent originIntent) {
-//
-//        // 隐式启动Service不支持
-//        if (originIntent.getComponent() == null) {
-//            return;
-//        }
-//
-//        String targetActivity = originIntent.getComponent().getClassName();
-//        remapStartServiceIntent(originIntent, targetActivity);
-//    }
+    public void remapStartServiceIntent(Intent originIntent) {
 
-//    public void remapStartActivityIntent(Intent originIntent) {
-//        // 启动系统的Activity，例如卸载、安装，getComponent 为null。这样的Intent，不需要remap
-//        if (originIntent.getComponent() != null) {
-//            String targetActivity = originIntent.getComponent().getClassName();
-//            remapStartActivityIntent(originIntent, targetActivity);
-//        }
-//    }
+        // 隐式启动Service不支持
+        if (originIntent.getComponent() == null) {
+            return;
+        }
 
-//    public void pushActivityToStack(Activity activity) {
-//        activityStack.addFirst(activity);
-//    }
-//
-//    public boolean popActivityFromStack(Activity activity) {
-//        if (!activityStack.isEmpty()) {
-//            return activityStack.remove(activity);
-//        } else {
-//            return false;
-//        }
-//    }
+        String targetActivity = originIntent.getComponent().getClassName();
+        remapStartServiceIntent(originIntent, targetActivity);
+    }
 
-//    public void dealLaunchMode(Intent intent) {
-//        String targetActivity = intent.getStringExtra(EXTRA_TARGET_ACTIVITY);
-//        if (targetActivity == null) {
-//            return;
-//        }
-//
-//        // 其他模式不支持，只支持single top和 single task
-//        ActivityInfo info = targetMapping.getActivityInfo(targetActivity);
-//        if (info.launchMode != ActivityInfo.LAUNCH_SINGLE_TOP && info.launchMode != ActivityInfo.LAUNCH_SINGLE_TASK) {
-//            return;
-//        }
-//        if (info.launchMode == ActivityInfo.LAUNCH_SINGLE_TOP) {
-//
-//            // 判断栈顶是否为需要启动的Activity
-//            Activity activity = null;
-//            if (!activityStack.isEmpty()) {
-//                activity = activityStack.getFirst();
-//            }
-//            if (activity instanceof ActivityProxyAdapter) {
-//                ActivityProxyAdapter adp = (ActivityProxyAdapter) activity;
-//                Object ma = adp.getTarget();
-//                if (ma != null && TextUtils.equals(targetActivity, ma.getClass().getName())) {
-//                    intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//                }
-//            }
-//        } else if (info.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
-//
-//            Activity found = null;
-//            Iterator<Activity> it = activityStack.iterator();
-//            while (it.hasNext()) {
-//                Activity activity = it.next();
-//                if (activity instanceof ActivityProxyAdapter) {
-//                    ActivityProxyAdapter adp = (ActivityProxyAdapter) activity;
-//                    Object ma = adp.getTarget();
-//                    if (ma != null && TextUtils.equals(targetActivity, ma.getClass().getName())) {
-//                        found = activity;
-//                        break;
-//                    }
-//                }
-//            }
-//
-//            // 栈中已经有当前activity
-//            if (found != null) {
-//                Iterator<Activity> iterator = activityStack.iterator();
-//                while (iterator.hasNext()) {
-//                    Activity activity = iterator.next();
-//                    if (activity == found) {
-//                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-//                        break;
-//                    }
-//
-//                    activity.finish();
-//                }
-//            }
-//        }
-//
-//    }
+    public void pushActivityToStack(Activity activity) {
+        activityStack.addFirst(activity);
+    }
+
+    public boolean popActivityFromStack(Activity activity) {
+        if (!activityStack.isEmpty()) {
+            return activityStack.remove(activity);
+        } else {
+            return false;
+        }
+    }
+
+	public void dealLaunchMode(Intent intent) {
+		String targetActivity = intent.getStringExtra(ActivityOverider.PLUGIN_ACTIVITY);
+		if (TextUtils.isEmpty(targetActivity) || intent == null) {
+			return;
+		}
+
+		// 不支持LAUNCH_SINGLE_INSTANCE
+		ActivityInfo info = targetMapping.getActivityInfo(targetActivity);
+		if (info.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
+			return;
+		}
+		boolean isSingleTop = info.launchMode == ActivityInfo.LAUNCH_SINGLE_TOP
+				|| (intent.getFlags() & Intent.FLAG_ACTIVITY_SINGLE_TOP) != 0;
+		boolean isSingleTask = info.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK;
+		boolean isClearTop = (intent.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TOP) != 0;
+		if (isSingleTop && !isClearTop) {
+
+			// 判断栈顶是否为需要启动的Activity
+			Activity activity = null;
+			if (!activityStack.isEmpty()) {
+				activity = activityStack.getFirst();
+			}
+			if (activity != null
+					&& TextUtils.equals(ActivityJumpUtil.TARGET_CLASS_NAME, activity.getClass()
+							.getName())) {
+				String key = activity.getClass().getSuperclass().getName();
+				if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
+					intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+				}
+			}
+		} else if (isSingleTask || isClearTop) {
+
+			Activity found = null;
+			Iterator<Activity> it = activityStack.iterator();
+			while (it.hasNext()) {
+				Activity activity = it.next();
+				if (activity != null
+						&& TextUtils.equals(ActivityJumpUtil.TARGET_CLASS_NAME, activity.getClass()
+								.getName())) {
+					String key = activity.getClass().getSuperclass().getName();
+					if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
+						found = activity;
+						break;
+					}
+				}
+			}
+
+			// 栈中已经有当前activity
+			if (found != null) {
+				Iterator<Activity> iterator = activityStack.iterator();
+				while (iterator.hasNext()) {
+					Activity activity = iterator.next();
+					if (activity == found) {
+						if (isSingleTask || isSingleTop) {
+							intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+						}
+//						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+						intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+						break;
+					}
+					activity.finish();
+				}
+			}
+		}
+	}
 
 //    public void remapStartActivityIntent(Intent intent, String targetActivity) {
 //
@@ -727,65 +729,16 @@ public class ProxyEnvironmentNew {
 //        dealLaunchMode(intent);
 //    }
 
-    /**
-     * 获取重映射之后的Activity类
-     * 
-     * @param targetActivity
-     *            插件Activity类
-     * @return 返回代理Activity类
-     */
-//    public Class<?> getRemapedActivityClass(String targetActivity) {
-//        Class<?> targetClass;
-//        try {
-//            targetClass = dexClassLoader.loadClass(targetActivity);
-//        } catch (Exception e) {
-//            targetClass = CMActivity.class;
-//        }
-//
-//        int theme = targetMapping.getActivityInfo(targetActivity).theme;
-//        Class<?> clazz = ProxyActivityCounter.getInstance().getNextAvailableActivityClass(targetClass, theme);
-//
-//        return clazz;
-//    }
+	public void remapStartServiceIntent(Intent intent, String targetService) {
+		if (targetMapping.getServiceInfo(targetService) == null) {
+			return;
+		}
+		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_SERVICE, targetService);
+		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, targetMapping.getPackageName());
 
-//    public void remapStartServiceIntent(Intent intent, String targetService) {
-//        if (targetMapping.getServiceInfo(targetService) == null) {
-//            return;
-//        }
-//        intent.putExtra(EXTRA_TARGET_SERVICE, targetService);
-//        intent.putExtra(EXTRA_TARGET_PACKAGNAME, targetMapping.getPackageName());
-//        
-//        Class<?> clazz = getRemapedServiceClass(targetService);
-//        
-//        if (clazz != null) {
-//            intent.setClass(context, clazz);
-//        }
-//    }
+		intent.setClass(context, ServiceProxyNew.class);
+	}
     
-    /**
-     * @param targetService
-     * @return
-     */
-//    public Class<?> getRemapedServiceClass(String targetService) {
-//        Class<?> targetClass;
-//        try {
-//            targetClass = dexClassLoader.loadClass(targetService);
-//        } catch (Exception e) {
-//            targetClass = CMService.class;
-//        }
-//
-//        Class<?> clazz;
-//		try {
-//			clazz = ProxyServiceCounter.getInstance().getAvailableService(targetClass);
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//			clazz = ServiceProxy.class;
-//		}
-//        return clazz;
-//    }
-
-
     /**
      * @param originIntent
      */
@@ -1133,7 +1086,7 @@ public class ProxyEnvironmentNew {
 		public Activity newActivity(ClassLoader cl, String className, Intent intent)
 				throws InstantiationException, IllegalAccessException, ClassNotFoundException {
 
-			if (className.equals(ActivityOverider.targetClassName)) {
+			if (className.equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
 				String pluginId = intent.getStringExtra(ActivityOverider.PLUGIN_ID);
 				String actClassName = intent.getStringExtra(ActivityOverider.PLUGIN_ACTIVITY);
 
