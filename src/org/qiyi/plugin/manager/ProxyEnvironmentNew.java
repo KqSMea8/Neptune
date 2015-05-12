@@ -495,7 +495,12 @@ public class ProxyEnvironmentNew {
             } else {
             	mappingActivity(context, curIntent);
             	env.dealLaunchMode(intent);
-            	context.startActivity(curIntent);
+                if(context instanceof Activity){
+                    context.startActivity(curIntent);
+                }else{
+                    curIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);  
+                    context.startActivity(curIntent);
+                }
                 haveLaunchActivity = true;
             }
         }
