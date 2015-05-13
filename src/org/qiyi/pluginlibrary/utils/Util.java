@@ -9,10 +9,15 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.os.Build;
 
 /**
  * 
@@ -20,6 +25,12 @@ import android.content.pm.Signature;
  */
 public final class Util {
 	public static final String TAG = PluginDebugLog.TAG;
+	 /** apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so */
+    public static String APK_LIB_DIR_PREFIX = "lib/";
+    /** lib中so后缀*/
+    public static final String APK_LIB_SUFFIX = ".so";
+    /** lib目录的 cpu abi 其实位置。比如 x86 的起始位置 */
+    public static int APK_LIB_CPUABI_OFFSITE = APK_LIB_DIR_PREFIX.length();
     /** utility class private constructor*/
     private Util() { }
     /**
@@ -126,6 +137,61 @@ public final class Util {
             PluginDebugLog.log(TAG, "拷贝失败");
             return false;
         }
+    }
+    
+    /**
+     * 安装 apk 中的 so 库。
+     * 
+     * @param apkFilePath
+     * @param libDir
+     *            lib目录。
+     */
+    @SuppressWarnings("resource")
+	@SuppressLint("NewApi")
+	public static boolean installNativeLibrary(String apkFilePath, String libDir) {
+    	boolean flag = false;
+    	PluginDebugLog.log("plugin", "apkFilePath:"+apkFilePath+"libDir:"+libDir);
+        final String cpuAbi = Build.CPU_ABI;
+
+        ZipFile zipFile = null;
+
+        try {
+            zipFile = new ZipFile(apkFilePath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (zipFile == null) {
+            return flag;
+        }
+
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        ZipEntry entry;
+        while (entries.hasMoreElements()) {
+            entry = entries.nextElement();
+            String name = entry.getName();
+            // 不是 lib 目录 继续
+            if (!name.startsWith(APK_LIB_DIR_PREFIX) || !name.endsWith(APK_LIB_SUFFIX)) {
+                continue;
+            }
+
+            int lastSlash = name.lastIndexOf("/");
+            String targetCupAbi = name.substring(APK_LIB_CPUABI_OFFSITE, lastSlash);
+            
+            PluginDebugLog.log("plugin", "targetCupAbi:"+targetCupAbi+";name:"+name+";cpuAbi:"+cpuAbi);
+            
+            try {
+                InputStream entryIS = zipFile.getInputStream(entry);
+                String soFileName = name.substring(lastSlash);
+                PluginDebugLog.log("plugin", "libDir:"+libDir+";soFileName:"+soFileName);
+                flag = copyToFile(entryIS, new File(libDir, soFileName));
+                entryIS.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                flag = false;
+            }
+        }
+        return flag;
     }
 
     /**

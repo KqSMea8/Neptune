@@ -46,6 +46,7 @@ public class PluginInstaller {
     public static final String APK_SUFFIX = ".apk";
 
     public static final String NATIVE_LIB_PATH = "lib";
+    public static final String SO_SUFFIX = ".so";
 
     
     /** shared preference file name. */
@@ -246,7 +247,11 @@ public class PluginInstaller {
      */
 	public static void installApkFile(Context context, String filePath, String pluginMethodVersion) {
         registerInstallderReceiver(context);
-		startInstall(context, CMPackageManager.SCHEME_FILE + filePath, pluginMethodVersion);
+        if(filePath.endsWith(SO_SUFFIX)){
+        	startInstall(context, CMPackageManager.SCHEME_SO + filePath, pluginMethodVersion);
+        }else{
+        	startInstall(context, CMPackageManager.SCHEME_FILE + filePath, pluginMethodVersion);
+        }
     }
     
     /**

@@ -5,9 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Enumeration;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ProxyEnvironment;
@@ -117,6 +114,21 @@ public class PluginInstallerService extends IntentService {
             installBuildinApk(srcFile, pluginMethodVersion);
         } else if (srcFile.startsWith(CMPackageManager.SCHEME_FILE)) {
             installAPKFile(srcFile, pluginMethodVersion);
+        }else if(srcFile.startsWith(CMPackageManager.SCHEME_SO)){
+        	String soFilePath = srcFile.substring(CMPackageManager.SCHEME_SO.length());
+        	boolean flag = Util.installNativeLibrary(soFilePath, PluginInstaller.getPluginappRootPath(this).getAbsolutePath());
+        	if(flag){
+        		int start = srcFile.lastIndexOf("/");
+        		int end = srcFile.lastIndexOf(PluginInstaller.SO_SUFFIX);
+        		String fileName = srcFile.substring(start + 1, end);
+        		Intent intent  = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLED);
+        		intent.setPackage(getPackageName());
+        		intent.putExtra(CMPackageManager.EXTRA_PKG_NAME, fileName);
+        		intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcFile);// 同时返回安装前的安装文件目录。
+        		sendBroadcast(intent);
+        	}else{
+        		setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR);
+        	}
         }
         
     }
@@ -257,7 +269,7 @@ public class PluginInstallerService extends IntentService {
         pkgDir.mkdir();
         File libDir = new File(pkgDir, PluginInstaller.NATIVE_LIB_PATH);
         libDir.mkdirs();
-        installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());
+        Util.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());
     
         //dexopt
         installDex(destFile.getAbsolutePath(), packageName);
@@ -295,56 +307,7 @@ public class PluginInstallerService extends IntentService {
         sendBroadcast(intent);
     }
 
-    /**
-     * 安装 apk 中的 so 库。
-     * 
-     * @param apkFilePath
-     * @param libDir
-     *            lib目录。
-     */
-    @SuppressLint("NewApi")
-	private static void installNativeLibrary(String apkFilePath, String libDir) {
-    	PluginDebugLog.log("plugin", "apkFilePath:"+apkFilePath+"libDir:"+libDir);
-        final String cpuAbi = Build.CPU_ABI;
-
-        ZipFile zipFile = null;
-
-        try {
-            zipFile = new ZipFile(apkFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (zipFile == null) {
-            return;
-        }
-
-        Enumeration<? extends ZipEntry> entries = zipFile.entries();
-        ZipEntry entry;
-        while (entries.hasMoreElements()) {
-            entry = entries.nextElement();
-            String name = entry.getName();
-            // 不是 lib 目录 继续
-            if (!name.startsWith(APK_LIB_DIR_PREFIX) || !name.endsWith(APK_LIB_SUFFIX)) {
-                continue;
-            }
-
-            int lastSlash = name.lastIndexOf("/");
-            String targetCupAbi = name.substring(APK_LIB_CPUABI_OFFSITE, lastSlash);
-            
-            PluginDebugLog.log("plugin", "targetCupAbi:"+targetCupAbi+";name:"+name+";cpuAbi:"+cpuAbi);
-            
-            try {
-                InputStream entryIS = zipFile.getInputStream(entry);
-                String soFileName = name.substring(lastSlash);
-                PluginDebugLog.log("plugin", "libDir:"+libDir+";soFileName:"+soFileName);
-                Util.copyToFile(entryIS, new File(libDir, soFileName));
-                entryIS.close();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    
     
     /**
      * 初始化 dex，因为第一次loaddex，如果放hostapp 进程，有可能会导致hang住(参考类的说明)。所以在安装阶段独立进程中执行。

@@ -72,6 +72,7 @@ public class CMPackageManager {
     
     public static final String SCHEME_ASSETS = "assets://";
     public static final String SCHEME_FILE = "file://";
+    public static final String SCHEME_SO = "so://";
     
     /** application context */
     private Context mContext; 
@@ -446,8 +447,13 @@ public class CMPackageManager {
 	public void installApkFile(final String filePath, IInstallCallBack listener,
 			String pluginMethodVersion) {
 //    	if(listener != null && !listenerMap.containsKey(pakName) ){
+		int end= 0;
+		if(filePath.endsWith(PluginInstaller.SO_SUFFIX)){
+			end = filePath.lastIndexOf(PluginInstaller.SO_SUFFIX);
+		}else{
+			end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
+		}
     	int start = filePath.lastIndexOf("/");
-        int end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         String mapPackagename = filePath.substring(start + 1, end);
     	listenerMap.put(mapPackagename, listener);
     	PluginDebugLog.log(TAG, "installApkFile:"+mapPackagename);
