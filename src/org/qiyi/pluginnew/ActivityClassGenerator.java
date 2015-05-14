@@ -138,9 +138,9 @@ public class ActivityClassGenerator {
 
 		declareMethod_attachBaseContext(dexMaker, generatedType, superType);
 
-		declareMethod_getComponentName(dexMaker, generatedType, superType, superClassName);
-		declareMethod_getPackageName(dexMaker, generatedType, pkgName);
-		declareMethod_getIntent(dexMaker, generatedType, superType);
+//		declareMethod_getComponentName(dexMaker, generatedType, superType, superClassName);
+//		declareMethod_getPackageName(dexMaker, generatedType, pkgName);
+//		declareMethod_getIntent(dexMaker, generatedType, superType);
 		declareMethod_setTheme(dexMaker, generatedType, superType);
 		// Create the dex Content
 		byte[] dex = dexMaker.generate();

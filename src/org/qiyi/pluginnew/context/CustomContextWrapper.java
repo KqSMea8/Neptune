@@ -25,10 +25,10 @@ public abstract class CustomContextWrapper extends ContextWrapper {
 		return getEnvironment().getDexClassLoader();
 	}
 
-	@Override
-	public String getPackageName() {
-		return getTargetPackageName();
-	}
+//	@Override
+//	public String getPackageName() {
+//		return getTargetPackageName();
+//	}
 
 	@Override
 	public Context getApplicationContext() {

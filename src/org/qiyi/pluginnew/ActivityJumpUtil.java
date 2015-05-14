@@ -43,7 +43,8 @@ public class ActivityJumpUtil {
 			mgr = ProxyEnvironmentNew.getInstance(pluginId);
 			// First find in the current apk
 			if (mgr != null) {
-				if (TextUtils.equals(pkg, pluginId)) {
+				if (TextUtils.equals(pkg, pluginId)
+						|| TextUtils.equals(pkg, mgr.getParentPackagename())) {
 					TargetMapping thisPlugin = mgr.getTargetMapping();
 					targetActivity = thisPlugin.getActivityInfo(toActName);
 				}

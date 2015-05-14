@@ -97,7 +97,7 @@ public class ActivityOverider {
 		return new Object[] { actWrapper, env.getTargetAssetManager() };
 	}
 	
-	private static void changeActivityInfo(Activity activity) {
+	private static void changeActivityInfo(Activity activity, String pkgName) {
 		final String actName = activity.getClass().getSuperclass().getName();
 		Log.d(tag, "changeActivityInfo: activity = " + activity + ", class = " + actName);
 		if (!activity.getClass().getName().equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
@@ -113,7 +113,7 @@ public class ActivityOverider {
 			Log.e(tag, Log.getStackTraceString(e));
 			return;
 		}
-		ProxyEnvironmentNew con = ProxyEnvironmentNew.getInstance(activity.getPackageName());
+		ProxyEnvironmentNew con = ProxyEnvironmentNew.getInstance(pkgName);
 
 		ActivityInfo actInfo = con.findActivityByClassName(actName);
 		if (null != actInfo) {
@@ -172,7 +172,7 @@ public class ActivityOverider {
 //			rs = android.R.style.Theme;
 //		}
 			Log.d(tag, "getPlugActivityTheme: theme=" + rs + ", actName=" + actName);
-			changeActivityInfo(fromAct);
+			changeActivityInfo(fromAct, pluginId);
 			return rs;
 		} else {
 			return 0;
@@ -222,7 +222,7 @@ public class ActivityOverider {
 					e.printStackTrace();
 				}
 				if (hasNotSetTheme) {
-					changeActivityInfo(fromAct);
+					changeActivityInfo(fromAct, pluginId);
 					fromAct.setTheme(resTheme);
 				}
 			}
