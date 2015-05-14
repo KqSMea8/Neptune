@@ -181,8 +181,10 @@ public class CMPackageManager {
                             // 这两个值是从2.0版本才有的，为了兼容，做下处理。
                             PackageManager pm = mContext.getPackageManager();
                             PackageInfo pi = pm.getPackageArchiveInfo(pkgInfo.srcApkPath, 0);
-                            pkgInfo.versionCode = pi.versionCode;
-                            pkgInfo.versionName = pi.versionName;
+                            if(pi != null){
+                            	pkgInfo.versionCode = pi.versionCode;
+                            	pkgInfo.versionName = pi.versionName;
+                            }
                             
                             needReSave = true;
                         }
