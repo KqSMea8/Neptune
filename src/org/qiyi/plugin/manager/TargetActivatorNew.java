@@ -1,23 +1,15 @@
 package org.qiyi.plugin.manager;
 
-import org.qiyi.pluginlibrary.ProxyEnvironment;
-import org.qiyi.pluginlibrary.api.IGetClassLoaderCallback;
-import org.qiyi.pluginlibrary.api.ITargetLoadedCallBack;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-
-import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.text.TextUtils;
 
 /**
  * 插件控制器
  * 
  */
 public class TargetActivatorNew {
+
+    private static ITargetActivatorNew iTargetActivatorNew;
 
     /**
      * 加载并启动插件
@@ -29,10 +21,19 @@ public class TargetActivatorNew {
      *            
      */
     public static void loadTargetAndRun(final Context context, final Intent intent) {
-    	 ProxyEnvironmentNew.enterProxy(context, null,intent);
+
+        if(iTargetActivatorNew != null){
+            iTargetActivatorNew.loadTargetAndRun(context, intent);
+        }
+
+//    	 ProxyEnvironmentNew.enterProxy(context, null,intent);
     }
-    
-    /**
+
+    public static void setiTargetActivatorNew(ITargetActivatorNew iTargetActivatorNew) {
+        TargetActivatorNew.iTargetActivatorNew = iTargetActivatorNew;
+    }
+
+/**
      * 加载并启动插件
      * 
      * @param context
@@ -69,29 +70,35 @@ public class TargetActivatorNew {
     
     /**
      * 启动activity 并将activity 处理的结果返回
+     *
+     * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
+     *
      * @param intent
      * @param requestCode
      */
-    public static void startActivityForResult(final Activity mParent,Intent intent , int requestCode){
-    	PluginDebugLog.log("plugin","startActivityForResult:"+requestCode);
+/*    public static void startActivityForResult(final Activity mParent,Intent intent , int requestCode){
+    	PluginDebugLog.log("plugin", "startActivityForResult:" + requestCode);
     	intent.putExtra("requestCode", requestCode);
-    	ProxyEnvironmentNew.enterProxy(mParent, null,intent);
-    }
+        loadTargetAndRun(mParent, intent);
+//    	ProxyEnvironmentNew.enterProxy(mParent, null,intent);
+    }*/
     
 
     /**
      * 加载并启动插件
-     * 
+     *
+     * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
+     *
      * @param context
      *            host的Activity
      * @param componentName
      *            目标Component
      */
-    public static void loadTargetAndRun(final Context context, final ComponentName componentName) {
+/*    private static void loadTargetAndRun(final Context context, final ComponentName componentName) {
         Intent intent = new Intent();
         intent.setComponent(componentName);
         loadTargetAndRun(context, intent);
-    }
+    }*/
 
     /**
      * 加载并启动插件
@@ -112,15 +119,17 @@ public class TargetActivatorNew {
 
     /**
      * 加载并启动插件
-     * 
+     *
+     * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
+     *
      * @param context
      *            host的application context
      * @param packageName
      *            插件包名
      */
-    public static void loadTargetAndRun(final Context context, String packageName) {
+/*    public static void loadTargetAndRun(final Context context, String packageName) {
         loadTargetAndRun(context, new ComponentName(packageName, ""));
-    }
+    }*/
 
     /**
      * 加载并启动插件
@@ -139,19 +148,23 @@ public class TargetActivatorNew {
 
     /**
      * 静默加载插件，异步加载
-     * 
+     *
+     * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
+     *
      * @param context
      *            application Context
      * @param packageName
      *            插件包名
      */
-    public static void loadTarget(final Context context, String packageName) {
+/*    public static void loadTarget(final Context context, String packageName) {
         loadTargetAndRun(context, new ComponentName(packageName, ProxyEnvironment.EXTRA_VALUE_LOADTARGET_STUB));
-    }
+    }*/
     
     /**
      * 静默加载插件，异步加载，可以设置callback
-     * 
+     *
+     * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
+     *
      * @param context
      *            application Context
      * @param packageName
@@ -159,7 +172,7 @@ public class TargetActivatorNew {
      * @param callback
      *            加载成功的回调
      */
-    public static void loadTarget(final Context context, final String packageName, 
+/*    public static void loadTarget(final Context context, final String packageName,
             final ITargetLoadedCallBack callback) {
 
         // 插件已经加载
@@ -182,7 +195,7 @@ public class TargetActivatorNew {
                     callback.onTargetLoaded(packageName);
                     context.getApplicationContext().unregisterReceiver(this);
                 }
-            };
+            }
         };
         PluginDebugLog.log("plugin", "注册自定义广播org.qiyi.pluginapp.action.TARGET_LOADED");
         IntentFilter filter = new IntentFilter();
@@ -193,12 +206,14 @@ public class TargetActivatorNew {
         intent.setAction(ProxyEnvironment.ACTION_TARGET_LOADED);
         intent.setComponent(new ComponentName(packageName, recv.getClass().getName()));
         ProxyEnvironmentNew.enterProxy(context,null,intent);
-    }
+    }*/
 
     /**
      * 获取 package 对应的 classLoader。一般情况下不需要获得插件的classloader。 只有那种纯 jar
      * sdk形式的插件，需要获取classloader。 获取过程为异步回调的方式。此函数，存在消耗ui线程100ms-200ms级别。
-     * 
+     *
+     * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
+     *
      * @param context
      *            application Context
      * @param packageName
@@ -206,7 +221,7 @@ public class TargetActivatorNew {
      * @param callback
      *            回调，classloader 通过此异步回调返回给hostapp
      */
-    public static void loadAndGetClassLoader(final Context context, final String packageName, 
+/*    public static void loadAndGetClassLoader(final Context context, final String packageName,
             final IGetClassLoaderCallback callback) {
         
         loadTarget(context, packageName, new ITargetLoadedCallBack() {
@@ -226,7 +241,7 @@ public class TargetActivatorNew {
             }
         });
 
-    }
+    }*/
 
     /**
      * 加载插件并创建插件内的View，View的Context是插件的Application Context
@@ -264,13 +279,15 @@ public class TargetActivatorNew {
 
     /**
      * 注销插件App
-     * 
+     * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
      * @param packageName
      *            插件包名
      */
-    public static void unLoadTarget(String packageName) {
+/*    public static void unLoadTarget(String packageName) {
     	ProxyEnvironmentNew.exitProxy(packageName);
+    }*/
+
+    public interface ITargetActivatorNew {
+        void loadTargetAndRun(final Context context, final Intent intent);
     }
-    
-  
 }
