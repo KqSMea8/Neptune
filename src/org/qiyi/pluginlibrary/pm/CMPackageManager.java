@@ -195,7 +195,7 @@ public class CMPackageManager {
                     if (needReSave) { // 把兼容数据重新写回文件
                         saveInstalledPackageList();
                     }
-                } catch (JSONException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -264,18 +264,24 @@ public class CMPackageManager {
                 executePackageAction(pkgName, true, 0);
             } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
 
-                // 针对内置应用，包名为文件名
                 String assetsPath = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
-                int start = assetsPath.lastIndexOf("/");
-                int end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
-                String mapPackagename = assetsPath.substring(start + 1, end);
-                //失败原因
-                int failReason = intent.getIntExtra(ErrorType.ERROR_RESON,ErrorType.SUCCESS);
-                if(listenerMap.get(mapPackagename) !=null){
-                	listenerMap.get(mapPackagename).onPackageInstallFail(mapPackagename, failReason);
-                	listenerMap.remove(mapPackagename);
+                if(assetsPath != null){
+                	int start = assetsPath.lastIndexOf("/");
+                	int end  = start + 1;
+                	if(assetsPath.endsWith(PluginInstaller.APK_SUFFIX)){
+                		end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
+                	}else if(assetsPath.endsWith(PluginInstaller.SO_SUFFIX)){
+                		end = assetsPath.lastIndexOf(PluginInstaller.SO_SUFFIX);
+                	}
+                	String mapPackagename = assetsPath.substring(start + 1, end);
+                	//失败原因
+                	int failReason = intent.getIntExtra(ErrorType.ERROR_RESON,ErrorType.SUCCESS);
+                	if(listenerMap.get(mapPackagename) !=null){
+                		listenerMap.get(mapPackagename).onPackageInstallFail(mapPackagename, failReason);
+                		listenerMap.remove(mapPackagename);
+                	}
+                	executePackageAction(mapPackagename, false, failReason);
                 }
-                executePackageAction(mapPackagename, false, failReason);
             }
         }
         
@@ -448,19 +454,16 @@ public class CMPackageManager {
      */
 	public void installApkFile(final String filePath, IInstallCallBack listener,
 			String pluginMethodVersion) {
-//    	if(listener != null && !listenerMap.containsKey(pakName) ){
-		int end= 0;
+		int start = filePath.lastIndexOf("/");
+		int end= start + 1;
 		if(filePath.endsWith(PluginInstaller.SO_SUFFIX)){
 			end = filePath.lastIndexOf(PluginInstaller.SO_SUFFIX);
 		}else{
 			end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
 		}
-    	int start = filePath.lastIndexOf("/");
         String mapPackagename = filePath.substring(start + 1, end);
     	listenerMap.put(mapPackagename, listener);
     	PluginDebugLog.log(TAG, "installApkFile:"+mapPackagename);
-//    	}
-//       this.listener = listener;
 		PluginInstaller.installApkFile(mContext, filePath, pluginMethodVersion);
 	}
 
