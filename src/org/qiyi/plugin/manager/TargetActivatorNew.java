@@ -9,29 +9,25 @@ import android.content.Intent;
  */
 public class TargetActivatorNew {
 
-    private static ITargetActivatorNew iTargetActivatorNew;
+//    private static ITargetActivatorNew iTargetActivatorNew;
 
     /**
      * 加载并启动插件
-     * 
      * @param context
-     *            host的Activity
-     * @param componentName
-     *            目标Component
-     *            
+     * @param intent 包含目标Component
      */
     public static void loadTargetAndRun(final Context context, final Intent intent) {
 
-        if(iTargetActivatorNew != null){
+/*        if(iTargetActivatorNew != null){
             iTargetActivatorNew.loadTargetAndRun(context, intent);
-        }
+        }*/
 
-//    	 ProxyEnvironmentNew.enterProxy(context, null,intent);
+    	 ProxyEnvironmentNew.enterProxy(context, null,intent);
     }
 
-    public static void setiTargetActivatorNew(ITargetActivatorNew iTargetActivatorNew) {
+/*    public static void setiTargetActivatorNew(ITargetActivatorNew iTargetActivatorNew) {
         TargetActivatorNew.iTargetActivatorNew = iTargetActivatorNew;
-    }
+    }*/
 
 /**
      * 加载并启动插件
