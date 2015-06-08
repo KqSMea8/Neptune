@@ -5,8 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import android.content.ComponentName;
 import android.content.Context;
@@ -25,9 +27,6 @@ import android.text.TextUtils;
  */
 public class ApkTargetMappingNew implements TargetMapping {
 
-	private final Context context;
-	private final File apkFile;
-
 	private String versionName;
 	private int versionCode;
 	private String packageName;
@@ -38,6 +37,10 @@ public class ApkTargetMappingNew implements TargetMapping {
 	private PackageInfo packageInfo;
 	private Bundle metaData;
 
+	private String dataDir;
+	private String nativeLibraryDir;
+
+	private boolean isDataNeedPrefix = false;
 	/** Save all activity's resolve info */
 	private Map<String, ActivityIntentInfo> mActivitiyIntentInfos;
 
@@ -48,12 +51,10 @@ public class ApkTargetMappingNew implements TargetMapping {
 	private Map<String, ReceiverIntentInfo> mReceiverIntentInfos;
 
 	public ApkTargetMappingNew(Context context, File apkFile) {
-		this.context = context;
-		this.apkFile = apkFile;
-		init();
+		init(context, apkFile);
 	}
 
-	private void init() {
+	private void init(Context context, File apkFile) {
 		try {
 			packageInfo = context.getPackageManager().getPackageArchiveInfo(
 					apkFile.getAbsolutePath(),
@@ -79,6 +80,13 @@ public class ApkTargetMappingNew implements TargetMapping {
 				metaData = packageInfo.applicationInfo.metaData;
 			}
 			packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
+			dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName)
+					.getAbsolutePath();
+			nativeLibraryDir = new File(PluginInstaller.getPluginappRootPath(context),
+					PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
+			if (metaData != null) {
+				isDataNeedPrefix = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
+			}
 			ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
 		} catch (RuntimeException e) {
 			ProxyEnvironment.deliverPlug(false, packageName,
@@ -90,6 +98,18 @@ public class ApkTargetMappingNew implements TargetMapping {
 					ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
 			e.printStackTrace();
 		}
+	}
+
+	public String getDataDir() {
+		return dataDir;
+	}
+
+	public String getnativeLibraryDir() {
+		return nativeLibraryDir;
+	}
+
+	public boolean isDataNeedPrefix() {
+		return isDataNeedPrefix;
 	}
 
 	public ActivityInfo findActivityByClassName(String activityClsName) {

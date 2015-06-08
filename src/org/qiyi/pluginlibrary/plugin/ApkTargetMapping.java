@@ -170,6 +170,18 @@ public class ApkTargetMapping implements TargetMapping {
 		return null;
 	}
 
- 
+	@Override
+	public String getDataDir() {
+		return null;
+	}
 
+	@Override
+	public String getnativeLibraryDir() {
+		return null;
+	}
+
+	@Override
+	public boolean isDataNeedPrefix() {
+		return false;
+	}
 }

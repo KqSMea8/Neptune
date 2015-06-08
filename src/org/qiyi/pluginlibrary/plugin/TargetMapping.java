@@ -38,4 +38,10 @@ public interface TargetMapping {
     ActivityInfo resolveActivity(Intent intent);
 
     ServiceInfo resolveService(Intent intent);
+    
+    String getDataDir();
+
+    String getnativeLibraryDir();
+    
+    boolean isDataNeedPrefix();
 }

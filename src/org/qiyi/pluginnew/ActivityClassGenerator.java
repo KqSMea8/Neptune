@@ -55,7 +55,7 @@ public class ActivityClassGenerator {
 
 	public static void createProxyDex(String pkgName, String activityClsName, File saveDir) {
 		if (saveDir.exists()) {
-			return;
+			saveDir.delete();
 		}
 		try {
 			ActivityClassGenerator.createActivityDex(activityClsName,

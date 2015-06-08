@@ -6,10 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
@@ -24,6 +23,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.text.TextUtils;
 import android.util.Log;
 import dalvik.system.DexClassLoader;
@@ -97,47 +97,51 @@ public class PluginInstallerService extends IntentService {
         
         if (action.equals(ACTION_INSTALL)) {//插件安装
             String srcFile = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
-			String pluginMethodVersion = intent
-					.getStringExtra(CMPackageManager.EXTRA_PLUGIN_METHOD_VERSION);
+            PluginPackageInfoExt pluginInfo = intent
+					.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
             //String destFile = intent.getStringExtra(EXTRA_DEST_FILE);
             //String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
             PluginDebugLog.log(TAG, "pluginInstallerService:srcFile"+srcFile);
-            handleInstall(srcFile, pluginMethodVersion);
+            handleInstall(srcFile, pluginInfo);
         }
     }
     
     
-    private void handleInstall(String srcFile, String pluginMethodVersion) {
-        
-    	PluginDebugLog.log(TAG, "srcFile:"+srcFile);
-        if (srcFile.startsWith(CMPackageManager.SCHEME_ASSETS)) {
-            installBuildinApk(srcFile, pluginMethodVersion);
-        } else if (srcFile.startsWith(CMPackageManager.SCHEME_FILE)) {
-            installAPKFile(srcFile, pluginMethodVersion);
-        }else if(srcFile.startsWith(CMPackageManager.SCHEME_SO)){
-        	String soFilePath = srcFile.substring(CMPackageManager.SCHEME_SO.length());
-        	boolean flag = Util.installNativeLibrary(soFilePath, PluginInstaller.getPluginappRootPath(this).getAbsolutePath());
-        	if(flag){
-        		int start = srcFile.lastIndexOf("/");
-        		int end = srcFile.lastIndexOf(PluginInstaller.SO_SUFFIX);
-        		String fileName = srcFile.substring(start + 1, end);
-        		Intent intent  = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLED);
-        		intent.setPackage(getPackageName());
-        		intent.putExtra(CMPackageManager.EXTRA_PKG_NAME, fileName);
-        		intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcFile);// 同时返回安装前的安装文件目录。
-        		sendBroadcast(intent);
-        	}else{
-        		setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR);
-        	}
-        }
-        
-    }
+	private void handleInstall(String srcFile, PluginPackageInfoExt info) {
+		if (null == info) {
+			PluginDebugLog.log(TAG, "Install srcFile:" + srcFile + " return due to info is null!");			
+			return;
+		}
+
+		PluginDebugLog.log(TAG, "srcFile:" + srcFile);
+		if (srcFile.startsWith(CMPackageManager.SCHEME_ASSETS)) {
+			info.mSuffixType = CMPackageManager.PLUGIN_FILE_APK;
+			installBuildinApk(srcFile, info);
+		} else if (srcFile.startsWith(CMPackageManager.SCHEME_FILE)) {
+			info.mSuffixType = CMPackageManager.PLUGIN_FILE_APK;
+			installAPKFile(srcFile, info);
+		} else if (srcFile.startsWith(CMPackageManager.SCHEME_SO)) {
+			info.mSuffixType = CMPackageManager.PLUGIN_FILE_SO;
+			String soFilePath = srcFile.substring(CMPackageManager.SCHEME_SO.length());
+			boolean flag = Util.installNativeLibrary(soFilePath, PluginInstaller
+					.getPluginappRootPath(this).getAbsolutePath());
+			if (flag) {
+				int start = srcFile.lastIndexOf("/");
+				int end = srcFile.lastIndexOf(PluginInstaller.SO_SUFFIX);
+				String fileName = srcFile.substring(start + 1, end);
+				setInstallSuccess(fileName, srcFile, null, info);
+			} else {
+				setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+			}
+		}
+
+	}
     
     /**
      * 安装内置的apk
      * @param assetsPath assets 目录
      */
-    private void installBuildinApk(String assetsPathWithScheme, String pluginMethodVersion) {
+    private void installBuildinApk(String assetsPathWithScheme, PluginPackageInfoExt info) {
         String assetsPath = assetsPathWithScheme.substring(CMPackageManager.SCHEME_ASSETS.length());
         PluginDebugLog.log(TAG, "pluginInstallerService:assetsPath"+assetsPath);
         // 先把 asset 拷贝到临时文件。
@@ -149,7 +153,7 @@ public class PluginInstallerService extends IntentService {
             return;
         }
         
-        doInstall(is, assetsPathWithScheme, pluginMethodVersion);
+        doInstall(is, assetsPathWithScheme, info);
         try {
             is.close();
         } catch (IOException e) {
@@ -161,7 +165,7 @@ public class PluginInstallerService extends IntentService {
      * 安装一个普通的文件 apk，用于外部或者下载后的apk安装。
      * @param apkFilePath 文件绝对目录
      */
-    private void installAPKFile(String apkFilePathWithScheme, String pluginMethodVersion) {
+    private void installAPKFile(String apkFilePathWithScheme, PluginPackageInfoExt info) {
         
     	PluginDebugLog.log(TAG, "installAPKFile:----------------------");
         String apkFilePath = apkFilePathWithScheme.substring(CMPackageManager.SCHEME_FILE.length());
@@ -171,24 +175,24 @@ public class PluginInstallerService extends IntentService {
         try {
             is = new FileInputStream(source);
         } catch (FileNotFoundException e) {
-        	setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_FILE_NOTFOUND);
+        	setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_FILE_NOTFOUND, info);
             e.printStackTrace();
         }
         PluginDebugLog.log(TAG, is == null?"判断流是否为空:true":"判断流是否为空:false-------------------");
-        doInstall(is, apkFilePathWithScheme, pluginMethodVersion);
+        doInstall(is, apkFilePathWithScheme, info);
         
         try {
             if (is != null) {
                 is.close();
             }
         } catch (IOException e) {
-        	setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_CLOSE_IOEXCEPTION);
+        	setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_CLOSE_IOEXCEPTION, info);
             e.printStackTrace();
         }
     }
     
     
-	private String doInstall(InputStream is, String srcPathWithScheme, String pluginMethodVersion) {
+	private String doInstall(InputStream is, String srcPathWithScheme, PluginPackageInfoExt info) {
         PluginDebugLog.log(TAG, "--- doInstall : " + srcPathWithScheme);
         PluginDebugLog.log(TAG, "pluginInstallerService:srcPathWithScheme"+srcPathWithScheme+"-------------");
         if (is == null || srcPathWithScheme == null) {
@@ -199,7 +203,7 @@ public class PluginInstallerService extends IntentService {
         PluginDebugLog.log(TAG, "pluginInstallerService:result"+result+"+++++++++++++");
         if (!result) {
             tempFile.delete();
-            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR);
+            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
             return null;
         }
     	
@@ -207,7 +211,7 @@ public class PluginInstallerService extends IntentService {
         PackageInfo pkgInfo = pm.getPackageArchiveInfo(tempFile.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
         if (pkgInfo == null) {
             tempFile.delete();
-            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PARSE_ERROR);
+            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PARSE_ERROR, info);
             return null;
         }
         
@@ -254,13 +258,13 @@ public class PluginInstallerService extends IntentService {
                 tempIs.close();
                 tempFile.delete(); // 删除临时文件
                 if (!tempResult) {
-                    setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR);
+                    setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
                     return null;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 tempFile.delete();
-                setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR);
+                setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
                 return null;
             } 
         }
@@ -274,20 +278,10 @@ public class PluginInstallerService extends IntentService {
         //dexopt
         installDex(destFile.getAbsolutePath(), packageName);
         // Special case for dexmaker
-		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, pluginMethodVersion)) {
-//				|| TextUtils.equals(packageName, "org.qiyi.android.tickets")) {
+		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, info.mPluginInstallMethod)) {
 			createPluginActivityProxyDexes(pkgInfo);
 		}
-
-        Intent intent  = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLED);
-        intent.setPackage(getPackageName());
-        intent.putExtra(CMPackageManager.EXTRA_PKG_NAME, packageName);
-        intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
-        intent.putExtra(CMPackageManager.EXTRA_DEST_FILE, destFile.getAbsolutePath());// 同时返回安装前的安装文件目录。
-        intent.putExtra(CMPackageManager.EXTRA_VERSION_CODE, pkgInfo.versionCode);
-        intent.putExtra(CMPackageManager.EXTRA_VERSION_NAME, pkgInfo.versionName);
-        sendBroadcast(intent);
-       
+		setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
         return packageName;
     }
     
@@ -299,14 +293,25 @@ public class PluginInstallerService extends IntentService {
      * @param failReason
      *            失败原因
      */
-    private void setInstallFail(String srcPathWithScheme, int failReason) {
-        Intent intent = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLFAIL);
-        intent.setPackage(getPackageName());
-        intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
-        intent.putExtra(ErrorType.ERROR_RESON, failReason);
-        sendBroadcast(intent);
-    }
+	private void setInstallFail(String srcPathWithScheme, int failReason, PluginPackageInfoExt info) {
+		Intent intent = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLFAIL);
+		intent.setPackage(getPackageName());
+		intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
+		intent.putExtra(ErrorType.ERROR_RESON, failReason);
+		intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable)info);// 同时返回APK的插件信息
+		sendBroadcast(intent);
+	}
 
+	private void setInstallSuccess(String pkgName, String srcPathWithScheme, String destPath,
+			PluginPackageInfoExt info) {
+		Intent intent = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLED);
+		intent.setPackage(getPackageName());
+		intent.putExtra(CMPackageManager.EXTRA_PKG_NAME, pkgName);
+		intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
+		intent.putExtra(CMPackageManager.EXTRA_DEST_FILE, destPath);// 同时返回安装前的安装文件目录。
+		intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable)info);// 同时返回APK的插件信息
+		sendBroadcast(intent);
+	}
     
     
     /**
@@ -316,9 +321,10 @@ public class PluginInstallerService extends IntentService {
      * @param packageName
      */
     private void installDex(String apkFile, String packageName) {
-        File dexDir = ProxyEnvironment.getDataDir(this, packageName);
+    	
+    	File pkgDir = new File(PluginInstaller.getPluginappRootPath(this), packageName);
         
-        ClassLoader classloader = new DexClassLoader(apkFile, dexDir.getAbsolutePath(), null, getClassLoader()); // 构造函数会执行loaddex底层函数。
+        ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null, getClassLoader()); // 构造函数会执行loaddex底层函数。
         
         //android 2.3以及以上会执行dexopt，2.2以及下不会执行。需要额外主动load一次类才可以
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.FROYO) {
@@ -337,15 +343,14 @@ public class PluginInstallerService extends IntentService {
      * @param pkgInfo
      */
 	private void createPluginActivityProxyDexes(PackageInfo pkgInfo) {
-		File parentData = ProxyEnvironmentNew.getDataDir(this, pkgInfo.packageName);
+		File parentData = new File(PluginInstaller.getPluginappRootPath(this), pkgInfo.packageName);
 		if (pkgInfo.activities == null) {
 			Log.d("TAG", "pkgInfo.activities is null pkgName: " + pkgInfo.packageName);
 			return;
 		}
 		File tempFile = null;
 		for (ActivityInfo info : pkgInfo.activities) {
-			tempFile = ProxyEnvironmentNew.getProxyComponentDexPath(parentData, info.packageName,
-					info.name);
+			tempFile = PluginInstaller.getProxyComponentDexPath(parentData, info.name);
 			ActivityClassGenerator.createProxyDex(info.packageName, info.name, tempFile);
 			if (tempFile.exists()) {
 				installDex(tempFile.getAbsolutePath(), pkgInfo.packageName);
@@ -370,7 +375,7 @@ public class PluginInstallerService extends IntentService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
             int installLocation = (Integer) (JavaCalls.getField(pkgInfo, "installLocation"));
             
-            System.out.println("installLocation:"+installLocation);
+            PluginDebugLog.log("plugin", "installLocation:"+installLocation);
             
             final int INSTALL_LOCATION_PREFER_EXTERNAL = 2; // see PackageInfo.INSTALL_LOCATION_PREFER_EXTERNAL
             
@@ -394,11 +399,11 @@ public class PluginInstallerService extends IntentService {
         if (!preferExternal) { 
             // 默认安装到 internal data dir
             destFile = new File(PluginInstaller.getPluginappRootPath(this), pkgInfo.packageName + PluginInstaller.APK_SUFFIX);
-            System.out.println("默认安装到internal data dir:"+destFile.getPath());
+            PluginDebugLog.log("plugin", "默认安装到internal data dir:"+destFile.getPath());
         } else {
             // 安装到外部存储器
             destFile = new File(getExternalFilesDir(PluginInstaller.PLUGIN_PATH), pkgInfo.packageName + PluginInstaller.APK_SUFFIX);
-            System.out.println("安装到外部存储器："+destFile.getPath());
+            PluginDebugLog.log("plugin", "安装到外部存储器："+destFile.getPath());
         }
         return destFile;
     }

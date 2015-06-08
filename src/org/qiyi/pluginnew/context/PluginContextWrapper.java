@@ -5,7 +5,6 @@ import java.io.File;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
 /**
@@ -13,18 +12,14 @@ import android.content.pm.PackageManager;
  * 
  */
 public class PluginContextWrapper extends CustomContextWrapper {
-	private ProxyEnvironmentNew plugin;
 	private static final String tag = "PluginContextWrapper";
-	private ApplicationInfo applicationInfo;
+	private ProxyEnvironmentNew plugin;
 	private File fileDir;
 //	private PluginPackageManager pkgManager;
 	public PluginContextWrapper(Context base, ProxyEnvironmentNew plugin) {
 		super(base);
 		this.plugin = plugin;
-		applicationInfo = new ApplicationInfo(super.getApplicationInfo());
-		applicationInfo.sourceDir = plugin.getTargetPath();
-		applicationInfo.dataDir = plugin.getTargetDataRoot().getAbsolutePath();
-		fileDir = new File(plugin.getTargetDataRoot().getAbsolutePath() + "/files/");
+		fileDir = new File(plugin.getTargetMapping().getDataDir() + "/files/");
 //		pkgManager = new PluginPackageManager(base.getPackageManager());
 	}
 
@@ -59,11 +54,6 @@ public class PluginContextWrapper extends CustomContextWrapper {
 		PluginDebugLog.log(tag, "PackageManager()");
 //		return pkgManager;
 		return super.getPackageManager();
-	}
-
-	@Override
-	public ApplicationInfo getApplicationInfo() {
-		return applicationInfo;
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.pm;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import org.qiyi.pluginlibrary.api.TargetActivator;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginnew.ApkTargetMappingNew;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,8 +25,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
+import android.os.Build;
 import android.text.TextUtils;
 
 /**
@@ -54,21 +55,35 @@ public class CMPackageManager {
     public static final String PLUGIN_METHOD_DEFAULT = "plugin_method_default";
     public static final String PLUGIN_METHOD_DEXMAKER = "plugin_method_dexmaker";
 
+    /** 插件文件后缀类型 **/
+    public static final String PLUGIN_FILE_APK = "apk";
+    public static final String PLUGIN_FILE_SO = "so";
+    public static final String PLUGIN_FILE_JAR = "jar";
+
+    /** 插件文件来源类型 **/
+    public static final String PLUGIN_SOURCE_ASSETS = "assets";
+    public static final String PLUGIN_SOURCE_SDCARD = "sdcard";
+    public static final String PLUGIN_SOURCE_NETWORK = "network";
+
+    /** 插件安装状态 **/
+    static final String PLUGIN_INSTALLED = "installed";
+    static final String PLUGIN_UNINSTALLED = "uninstall";
+
     /** 安装完的pkg的包名 */
     public static final String EXTRA_PKG_NAME = "package_name"; 
     /** 
      * 支持 assets:// 和 file:// 两种，对应内置和外部apk安装。
      * 比如  assets://megapp/xxxx.apk , 或者 file:///data/data/com.qiyi.xxx/files/xxx.apk  */
     public static final String EXTRA_SRC_FILE = "install_src_file";
-    /** 插件方案版本号 **/
-    public static final String EXTRA_PLUGIN_METHOD_VERSION = "plugin_method_version";
     /** 安装完的apk path，没有scheme 比如 /data/data/com.qiyi.video/xxx.apk */
     public static final String EXTRA_DEST_FILE = "install_dest_file";
     
-    /** 安装完的pkg的 version code */
-    public static final String EXTRA_VERSION_CODE = "version_code";
-    /** 安装完的pkg的 version name */
-    public static final String EXTRA_VERSION_NAME = "version_name"; 
+//    /** 安装完的pkg的 version code */
+//    public static final String EXTRA_VERSION_CODE = "version_code";
+//    /** 安装完的pkg的 version name */
+//    public static final String EXTRA_VERSION_NAME = "version_name";
+    /** 安装完的pkg的 plugin info */
+    public static final String EXTRA_PLUGIN_INFO = "plugin_info"; 
     
     public static final String SCHEME_ASSETS = "assets://";
     public static final String SCHEME_FILE = "file://";
@@ -146,61 +161,100 @@ public class CMPackageManager {
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
         while (packages.hasMoreElements()) {
             CMPackageInfo pkg = packages.nextElement();
-            list.add(pkg);
+            if (pkg != null && TextUtils.equals(pkg.installStatus, PLUGIN_INSTALLED)) {
+            	list.add(pkg);
+            }
         }
         
         return list;
     }
-    
-    /**
-     * 初始化安装列表
-     */
-    private void initInstalledPackageListIfNeeded() {
-        // 第一次初始化安装列表。
-        if (mInstalledPkgs == null) {
-            mInstalledPkgs = new Hashtable<String, CMPackageInfo>();
-            
-            SharedPreferences sp = mContext.getSharedPreferences(PluginInstaller.SHARED_PREFERENCE_NAME, Context.MODE_PRIVATE);
-            String jsonPkgs = sp.getString(SP_APP_LIST, "");
-            
-            if (jsonPkgs != null && jsonPkgs.length() > 0) {
-                try {
-                    
-                    boolean needReSave = false;
-                    
-                    JSONArray pkgs = new JSONArray(jsonPkgs);
-                    int count = pkgs.length();
-                    for (int i = 0; i < count; i++) {
-                        JSONObject pkg = (JSONObject) pkgs.get(i);
-                        CMPackageInfo pkgInfo = new CMPackageInfo();
-                        pkgInfo.packageName = pkg.optString(CMPackageInfo.TAG_PKG_NAME);
-                        pkgInfo.srcApkPath = pkg.optString(CMPackageInfo.TAG_APK_PATH);
-                        pkgInfo.versionCode = pkg.optInt(CMPackageInfo.TAG_PKG_VC, 0);
-                        pkgInfo.versionName = pkg.optString(CMPackageInfo.TAG_PKG_VN);
-                        if (pkgInfo.versionCode == 0 || TextUtils.isEmpty(pkgInfo.versionName)) {
-                            // 这两个值是从2.0版本才有的，为了兼容，做下处理。
-                            PackageManager pm = mContext.getPackageManager();
-                            PackageInfo pi = pm.getPackageArchiveInfo(pkgInfo.srcApkPath, 0);
-                            if(pi != null){
-                            	pkgInfo.versionCode = pi.versionCode;
-                            	pkgInfo.versionName = pi.versionName;
-                            }
-                            
-                            needReSave = true;
-                        }
-                        
-                        mInstalledPkgs.put(pkgInfo.packageName, pkgInfo);
-                    }
-                    
-                    if (needReSave) { // 把兼容数据重新写回文件
-                        saveInstalledPackageList();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
+
+	/**
+	 * 获取卸载列表 在运行中时卸载第一步只做删除apk，并没有去删除运行中的占用的文件，所以需要记录并在下次启动时尝试删除。
+	 */
+	Map<String, CMPackageInfo> getUninstallPkgs() {
+		Enumeration<CMPackageInfo> packages = getInstalledPkgsInstance().elements();
+		Map<String, CMPackageInfo> uninstalls = new HashMap<String, CMPackageInfo>();
+		while (packages.hasMoreElements()) {
+			CMPackageInfo pkg = packages.nextElement();
+			if (pkg != null && TextUtils.equals(pkg.installStatus, PLUGIN_UNINSTALLED)) {
+				uninstalls.put(pkg.packageName, pkg);
+			}
+		}
+		return uninstalls;
+	}
+
+	/**
+	 * 初始化安装列表
+	 */
+	private void initInstalledPackageListIfNeeded() {
+		// 第一次初始化安装列表。
+		if (mInstalledPkgs == null) {
+			mInstalledPkgs = new Hashtable<String, CMPackageInfo>();
+
+			SharedPreferences sp = mContext.getSharedPreferences(
+					PluginInstaller.SHARED_PREFERENCE_NAME, Context.MODE_PRIVATE);
+			String jsonPkgs = sp.getString(SP_APP_LIST, "");
+
+			if (jsonPkgs != null && jsonPkgs.length() > 0) {
+				try {
+					boolean needReSave = false;
+					JSONArray pkgs = new JSONArray(jsonPkgs);
+					int count = pkgs.length();
+					for (int i = 0; i < count; i++) {
+						JSONObject pkg = (JSONObject) pkgs.get(i);
+						CMPackageInfo pkgInfo = new CMPackageInfo();
+						pkgInfo.packageName = pkg.optString(CMPackageInfo.TAG_PKG_NAME);
+						pkgInfo.srcApkPath = pkg.optString(CMPackageInfo.TAG_APK_PATH);
+						pkgInfo.installStatus = pkg.optString(CMPackageInfo.TAG_INSTALL_STATUS);
+						JSONObject ext = pkg.optJSONObject(PluginPackageInfoExt.INFO_EXT);
+						if (ext != null) {
+							pkgInfo.pluginInfo = new PluginPackageInfoExt(ext);
+						} else {
+							// try to do migrate for old version
+							SharedPreferences spf = getPreferences(mContext, pkgInfo.packageName);
+							if (null != spf && spf.getInt("plugin_state", 0) == 7) {
+								PluginPackageInfoExt extInfo = new PluginPackageInfoExt();
+								extInfo.id = spf.getString("ID", "");
+								extInfo.name = spf.getString("NAME", "");
+								extInfo.ver = spf.getInt("VER", -1);
+								extInfo.crc = spf.getString("CRC", "");
+								extInfo.type = spf.getInt("TYPE", 0);
+								extInfo.desc = spf.getString("DESC", "");
+								// Old version don't have this item
+								extInfo.icon_url = "";
+								extInfo.isAllowUninstall = spf.getInt("uninstall_flag", 0);
+								extInfo.pluginTotalSize = spf.getLong("plugin_total_size", 0);
+								extInfo.local = spf.getInt("plugin_local", 0);
+								extInfo.invisible = spf.getInt("plugin_visible", 0);
+								extInfo.scrc = spf.getString("SCRC", "");
+								extInfo.url = spf.getString("URL", "");
+								extInfo.mPluginInstallMethod = spf.getString("INSTALL_METHOD",
+										CMPackageManager.PLUGIN_METHOD_DEFAULT);
+								pkgInfo.pluginInfo = extInfo;
+							} else {
+								// 如果存在packageinfo package name信息但是没有详细的插件信息，认为不是合法的配置
+								// TODO 需要考虑本地APK加载或者SO jar加载情况。
+								continue;
+							}
+							needReSave = true;
+						}
+						ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext,
+								new File(pkgInfo.srcApkPath));
+						pkgInfo.targetInfo = targetInfo;
+
+						mInstalledPkgs.put(pkgInfo.packageName, pkgInfo);
+					}
+
+					if (needReSave) { // 把兼容数据重新写回文件
+						saveInstalledPackageList();
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
     
     /**
      * 将安装列表写入文件存储。
@@ -218,8 +272,11 @@ public class CMPackageManager {
             try {
                 object.put(CMPackageInfo.TAG_PKG_NAME, pkg.packageName);
                 object.put(CMPackageInfo.TAG_APK_PATH, pkg.srcApkPath);
-                object.put(CMPackageInfo.TAG_PKG_VC, pkg.versionCode);
-                object.put(CMPackageInfo.TAG_PKG_VN, pkg.versionName);
+                object.put(CMPackageInfo.TAG_INSTALL_STATUS, pkg.installStatus);
+                if (pkg.pluginInfo != null) {
+                	JSONObject pluginExt = pkg.pluginInfo.object2Json();
+                	object.put(PluginPackageInfoExt.INFO_EXT, pluginExt);
+                }
                 
                 pkgs.put(object);
             } catch (JSONException e) {
@@ -240,32 +297,35 @@ public class CMPackageManager {
     private BroadcastReceiver pluginInstallerReceiver = new BroadcastReceiver() {
 
         @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (ACTION_PACKAGE_INSTALLED.equals(action)) {
-                String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
-                String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
-                String versionName = intent.getStringExtra(CMPackageManager.EXTRA_VERSION_NAME);
-                int versionCode = intent.getIntExtra(CMPackageManager.EXTRA_VERSION_CODE, 0);
-                
-                CMPackageInfo pkgInfo = new CMPackageInfo();
-                pkgInfo.packageName = pkgName;
-                pkgInfo.srcApkPath = destApkPath;
-                pkgInfo.versionCode = versionCode;
-                pkgInfo.versionName = versionName;
-                
-                getInstalledPkgsInstance().put(pkgName, pkgInfo);//将安装的插件名称保存到集合中。
-                saveInstalledPackageList(); // 存储变化后的安装列表
-                if(listenerMap.get(pkgName) != null){
-                	listenerMap.get(pkgName).onPacakgeInstalled(pkgName);
-                	listenerMap.remove(pkgName);
-                }
-                // 执行等待执行的action
-                executePackageAction(pkgName, true, 0);
-            } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (ACTION_PACKAGE_INSTALLED.equals(action)) {
+				String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
+				String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
+				PluginPackageInfoExt infoExt = intent
+						.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
+
+				CMPackageInfo pkgInfo = new CMPackageInfo();
+				pkgInfo.packageName = pkgName;
+				pkgInfo.srcApkPath = destApkPath;
+				pkgInfo.installStatus = PLUGIN_INSTALLED;
+				pkgInfo.pluginInfo = infoExt;
+				ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
+						pkgInfo.srcApkPath));
+				pkgInfo.targetInfo = targetInfo;
+
+				getInstalledPkgsInstance().put(pkgName, pkgInfo);// 将安装的插件名称保存到集合中。
+				saveInstalledPackageList(); // 存储变化后的安装列表
+				if (listenerMap.get(pkgName) != null) {
+					listenerMap.get(pkgName).onPacakgeInstalled(pkgName);
+					listenerMap.remove(pkgName);
+				}
+				// 执行等待执行的action
+				executePackageAction(pkgName, true, 0);
+			} else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
 
                 String assetsPath = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
-                if(assetsPath != null){
+                if(!TextUtils.isEmpty(assetsPath)){
                 	int start = assetsPath.lastIndexOf("/");
                 	int end  = start + 1;
                 	if(assetsPath.endsWith(PluginInstaller.APK_SUFFIX)){
@@ -284,7 +344,6 @@ public class CMPackageManager {
                 }
             }
         }
-        
     };
     
     /**
@@ -414,36 +473,18 @@ public class CMPackageManager {
      * @param packageName
      * @return 没有安装反馈null
      */
-    public CMPackageInfo getPackageInfo(String packageName) {
-        if (packageName == null || packageName.length() == 0) {
-            return null;
-        }
-        
-        CMPackageInfo info = getInstalledPkgsInstance().get(packageName);
-        
-        return info;
-    }
+	public CMPackageInfo getPackageInfo(String packageName) {
+		if (packageName == null || packageName.length() == 0) {
+			return null;
+		}
+
+		CMPackageInfo info = getInstalledPkgsInstance().get(packageName);
+		if (null != info && TextUtils.equals(info.installStatus, PLUGIN_INSTALLED)) {
+			return info;
+		}
+		return null;
+	}
     
-    /**
-     * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
-     * 启动service进行安装操作。
-     * 安装完会有 {@link #ACTION_PACKAGE_INSTALLED} broadcast。
-
-     * @param filePath apk 文件目录 比如  /sdcard/xxxx.apk
-     */
-    public void installApkFile(final String filePath,IInstallCallBack listener) {
-////    	if(listener != null && !listenerMap.containsKey(pakName) ){
-//    	int start = filePath.lastIndexOf("/");
-//        int end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
-//        String mapPackagename = filePath.substring(start + 1, end);
-//    	listenerMap.put(mapPackagename, listener);
-//    	PluginDebugLog.log(TAG, "installApkFile:"+mapPackagename);
-////    	}
-////       this.listener = listener;
-//       PluginInstaller.installApkFile(mContext, filePath);
-    	installApkFile(filePath, listener, PLUGIN_METHOD_DEFAULT);
-    }
-
     /**
      * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
      * 启动service进行安装操作。
@@ -453,7 +494,7 @@ public class CMPackageManager {
      * @param pluginMethodVersion 插件方案的版本号
      */
 	public void installApkFile(final String filePath, IInstallCallBack listener,
-			String pluginMethodVersion) {
+			PluginPackageInfoExt pluginInfo) {
 		int start = filePath.lastIndexOf("/");
 		int end= start + 1;
 		if(filePath.endsWith(PluginInstaller.SO_SUFFIX)){
@@ -462,21 +503,18 @@ public class CMPackageManager {
 			end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
 		}
         String mapPackagename = filePath.substring(start + 1, end);
+		if (null != pluginInfo && TextUtils.equals(pluginInfo.packageName, mapPackagename)) {
+			tryToClearPackage(pluginInfo.packageName);
+		}
     	listenerMap.put(mapPackagename, listener);
-    	PluginDebugLog.log(TAG, "installApkFile:"+mapPackagename);
-		PluginInstaller.installApkFile(mContext, filePath, pluginMethodVersion);
+		PluginDebugLog.log(TAG, "installApkFile:" + mapPackagename);
+		if (pluginInfo != null
+				&& !TextUtils.equals(pluginInfo.mFileSourceType,
+						CMPackageManager.PLUGIN_SOURCE_SDCARD)) {
+			pluginInfo.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_NETWORK;
+		}
+    	PluginInstaller.installApkFile(mContext, filePath, pluginInfo);
 	}
-
-    /**
-     * 安装内置在 assets/puginapp 目录下的 apk。
-     * 内置app必须以 packageName 命名，比如 com.qiyi.xx.apk 
-     */
-    public void installBuildinApps(String packageName,IInstallCallBack listener) {
-//    	this.listener = listener;
-//    	listenerMap.put(packageName, listener);
-//    	PluginInstaller.installBuildinApps(packageName,mContext);
-    	installBuildinApps(packageName, listener, PLUGIN_METHOD_DEFAULT);
-    }
 
     /**
      * 安装内置在 assets/puginapp 目录下的 apk。
@@ -487,9 +525,26 @@ public class CMPackageManager {
      * @param pluginMethodVersion 插件方案的版本号
      */
 	public void installBuildinApps(String packageName, IInstallCallBack listener,
-			String pluginMethodVersion) {
+			PluginPackageInfoExt info) {
+		tryToClearPackage(packageName);
 		listenerMap.put(packageName, listener);
-		PluginInstaller.installBuildinApps(packageName, mContext, pluginMethodVersion);
+		if (info != null) {
+			info.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_ASSETS;
+		}
+		PluginInstaller.installBuildinApps(packageName, mContext, info);
+	}
+
+	/**
+	 * Try to clear package. Currently app unistall will only delete apk file
+	 * and set install status to uninstall, and before reinstall try to clear
+	 * the previous installation's data.
+	 * 
+	 * @param packageName
+	 */
+	private void tryToClearPackage(String packageName) {
+		if (getUninstallPkgs().containsKey(packageName)) {
+			deletePackage(packageName, null, false, false);
+		}
 	}
 
     /**
@@ -499,7 +554,19 @@ public class CMPackageManager {
      * @param observer 卸载结果回调
      */
     public void deletePackage(final String packageName, IPackageDeleteObserver observer) {
+    	deletePackage(packageName, observer, true, true);
+    }
 
+    /**
+     * 删除安装包。
+     * 卸载插件应用程序
+     * @param packageName 需要删除的package 的 packageName
+     * @param observer 卸载结果回调
+     * @param deleteData 是否删除生成的data
+     * @param sendNotify 是否发送卸载相关的broadcast
+     */
+	private void deletePackage(final String packageName, IPackageDeleteObserver observer,
+			boolean deleteData, boolean sendNotify) {
     	try{
     		// 先停止运行插件
     		TargetActivator.unLoadTarget(packageName);
@@ -508,9 +575,11 @@ public class CMPackageManager {
     	}
     	
     	try {
-    		// 删除生成的data数据文件
-    		// 清除environment中相关的数据:按前缀匹配
-    		PluginInstaller.deleteData(mContext, packageName);
+    		if (deleteData) {
+    			// 删除生成的data数据文件
+    			// 清除environment中相关的数据:按前缀匹配
+    			PluginInstaller.deleteData(mContext, packageName);
+    		}
     		
     		//删除安装文件，apk，dex，so
     		PluginInstaller.deletePackage(mContext, packageName);
@@ -524,14 +593,63 @@ public class CMPackageManager {
     			observer.packageDeleted(packageName, DELETE_SUCCEEDED);
     		}
     		
-    		//发送广播
-    		Intent intent = new Intent(ACTION_PACKAGE_UNINSTALL);
-    		intent.putExtra(EXTRA_PKG_NAME, EXTRA_PKG_NAME);
-    		mContext.sendBroadcast(intent);
+    		if (sendNotify) {
+    			//发送广播
+    			Intent intent = new Intent(ACTION_PACKAGE_UNINSTALL);
+    			intent.putExtra(EXTRA_PKG_NAME, packageName);
+    			mContext.sendBroadcast(intent);
+    		}
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
-    	
     }
+
+	/**
+	 * 卸载，删除文件
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public boolean uninstall(String pkgName) {
+		boolean uninstallFlag = false;
+		try {
+			if (TextUtils.isEmpty(pkgName)) {
+				return false;
+			}
+
+			File apk = PluginInstaller.getInstalledApkFile(mContext, pkgName);
+	        if (apk != null && apk.exists()) {
+	        	uninstallFlag = apk.delete();
+	        }
+
+			// 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
+			// 1，卸载语音插件之后会出现，找不到库文件
+			// 2.卸载了啪啪奇插件之后，会出现 .so库 已经被打开，无法被另一个打开
+			// CMPackageManager.getInstance(pluginContext).deletePackage(pluginData.mPlugin.packageName,
+			// observer);
+		} catch (Exception e) {
+			e.printStackTrace();
+			uninstallFlag = false;
+		}
+		if (uninstallFlag) {
+			getPackageInfo(pkgName).installStatus = PLUGIN_UNINSTALLED;
+			saveInstalledPackageList();
+		}
+		return uninstallFlag;
+	}
+
+	public static SharedPreferences getPreferences(Context context, String shareName) {
+		SharedPreferences spf = null;
+		if (hasHoneycomb()) {
+			spf = context.getSharedPreferences(shareName, Context.MODE_MULTI_PROCESS);
+		} else {
+			spf = context.getSharedPreferences(shareName, Context.MODE_PRIVATE);
+		}
+		return spf;
+	}
+
+	private static boolean hasHoneycomb() {
+		return Build.VERSION.SDK_INT >= 11;
+	}
 }

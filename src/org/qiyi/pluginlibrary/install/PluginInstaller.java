@@ -12,9 +12,11 @@ import java.util.List;
 import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.SimpleDateTime;
 import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginnew.ActivityClassGenerator;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,6 +25,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.os.Parcelable;
 import android.text.TextUtils;
 
 /**
@@ -81,6 +84,24 @@ public class PluginInstaller {
         return repoDir;
     }
 
+    /**
+     * Help to generate folder for single dex file for dexmaker
+     * 
+     * @param parentFolder parent folder name
+     * @param componentName component name like activity etc...
+     * @return file represent xxx.dex
+     */
+	public static File getProxyComponentDexPath(File parentFolder, String componentName) {
+		File folder = new File(parentFolder.getAbsolutePath() + "/component/");
+		folder.mkdirs();
+		String suffix = ".dex";
+		if (android.os.Build.VERSION.SDK_INT < 11) {
+			suffix = ".jar";
+		}
+		File savePath = new File(folder, String.format("%s-%d%s", componentName,
+				ActivityClassGenerator.VERSION_CODE, suffix));
+		return savePath;
+	}
 
     /**
      * 安装内置在 assets/pluginapp 目录下的 apk
@@ -89,7 +110,7 @@ public class PluginInstaller {
      * @param pluginMethodVersion 插件方案版本号
      */
 	public synchronized static void installBuildinApps(String packageName, Context context,
-			String pluginMethodVersion) {
+			PluginPackageInfoExt info) {
 //        if (sInstallBuildinAppsCalled) {
 //            return;
 //        }
@@ -126,7 +147,7 @@ public class PluginInstaller {
                 }
                 PluginDebugLog.log("plugin", "file:"+file);
 //                needInstall |= 
-                installBuildinApp(context, ASSETS_PATH + "/" + file, pluginMethodVersion);
+                installBuildinApp(context, ASSETS_PATH + "/" + file, info);
             }
             
 //            if(!needInstall) { // 没有需要安装/升级的文件
@@ -147,7 +168,7 @@ public class PluginInstaller {
      * @return 需要安装 返回 true，不需要安装 返回 false.
      */
 	private static boolean installBuildinApp(Context context, String assetsPath,
-			String pluginMethodVersion) {
+			PluginPackageInfoExt info) {
         
         // 先判断是否有安装文件存在，然后判断一下更新时间是否一致。
         // 内置app必须以包名命名
@@ -157,8 +178,7 @@ public class PluginInstaller {
         
         CMPackageInfo pkgInfo = CMPackageManager.getInstance(context).getPackageInfo(mapPackagename);
         
-        if (mapPackagename != null && mapPackagename.length() > 0 
-                && pkgInfo != null) {
+        if (!TextUtils.isEmpty(mapPackagename) && pkgInfo != null) {
             
             File installedFile =  new File(pkgInfo.srcApkPath);
             if (installedFile.exists() && installedFile.isFile() && installedFile.length() > 0 ) {
@@ -185,7 +205,7 @@ public class PluginInstaller {
         }
         
 
-		startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, pluginMethodVersion);
+		startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, info);
         return true;
     }
     
@@ -197,7 +217,7 @@ public class PluginInstaller {
      * @param filePath 支持两种scheme {@link PluginInstallerService#SCHEME_ASSETS} 和 {@link PluginInstallerService#SCHEME_FILE}
      * @param pluginMethodVersion 插件方案版本号 
      */
-    private static void startInstall(Context context, String filePath, String pluginMethodVersion) {
+    private static void startInstall(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
         /*
          * 获取packagename
          * 1、内置app，要求必须以 packagename.apk 命名，处于效率考虑。
@@ -233,7 +253,7 @@ public class PluginInstaller {
         Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
         intent.setClass(context, PluginInstallerService.class);
         intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, filePath);
-        intent.putExtra(CMPackageManager.EXTRA_PLUGIN_METHOD_VERSION, pluginMethodVersion);
+        intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable)pluginInfo);
         
         context.startService(intent);
     }
@@ -245,12 +265,12 @@ public class PluginInstaller {
      * @param filePath apk 文件目录 比如  /sdcard/xxxx.apk
      * @param pluginMethodVersion 插件方案版本号 
      */
-	public static void installApkFile(Context context, String filePath, String pluginMethodVersion) {
+	public static void installApkFile(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
         registerInstallderReceiver(context);
         if(filePath.endsWith(SO_SUFFIX)){
-        	startInstall(context, CMPackageManager.SCHEME_SO + filePath, pluginMethodVersion);
+        	startInstall(context, CMPackageManager.SCHEME_SO + filePath, pluginInfo);
         }else{
-        	startInstall(context, CMPackageManager.SCHEME_FILE + filePath, pluginMethodVersion);
+        	startInstall(context, CMPackageManager.SCHEME_FILE + filePath, pluginInfo);
         }
     }
     
@@ -293,7 +313,7 @@ public class PluginInstaller {
             return null;
         }
     }
-    
+
     private static BroadcastReceiver sApkInstallerReceiver = new BroadcastReceiver() {
 
         @Override

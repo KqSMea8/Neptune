@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginnew.ActivityClassGenerator;
 import org.qiyi.pluginnew.ActivityJumpUtil;
 
@@ -26,11 +27,11 @@ public class PluginClassLoader extends DexClassLoader {
 
 	public PluginClassLoader(String dexPath, String optimizedDir, ClassLoader parent,
 			ProxyEnvironmentNew plugin) {
-		super(dexPath, optimizedDir, plugin.getTargetLibPath(), parent);
+		super(dexPath, optimizedDir, plugin.getTargetMapping().getnativeLibraryDir(), parent);
 		thisPlugin = plugin;
 		proxyActivityLoaderMap = new HashMap<String, ClassLoader>(plugin.getTargetMapping()
 				.getPackageInfo().activities.length);
-		this.libraryPath = plugin.getTargetLibPath();
+		this.libraryPath = plugin.getTargetMapping().getnativeLibraryDir();
 		this.optimizedDirectory = optimizedDir;
 		tag = "PluginClassLoader( " + plugin.getTargetPackageName() + " )";
 	}
@@ -39,8 +40,8 @@ public class PluginClassLoader extends DexClassLoader {
 		Log.d(tag, "loadActivityClass: " + actClassName);
 
 		// 在类加载之前检查创建代理的Activity dex文件，以免调用者忘记生成此文件
-		File dexSavePath = thisPlugin.getProxyComponentDexPath(thisPlugin.getTargetPackageName(),
-				actClassName);
+		File dexSavePath = PluginInstaller.getProxyComponentDexPath(new File(thisPlugin
+				.getTargetMapping().getDataDir()), actClassName);
 		ActivityClassGenerator.createProxyDex(thisPlugin.getTargetPackageName(), actClassName,
 				dexSavePath);
 		ClassLoader actLoader = proxyActivityLoaderMap.get(actClassName);

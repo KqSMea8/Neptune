@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.os.Bundle;
@@ -98,6 +99,15 @@ public abstract class CustomContextWrapper extends ContextWrapper {
 	public void startActivity(Intent intent, Bundle options) {
 		super.startActivity(ActivityJumpUtil.handleStartActivityIntent(getTargetPackageName(),
 				intent, -1, options), options);
+	}
+
+	
+	@Override
+	public SharedPreferences getSharedPreferences(String name, int mode) {
+		if (getEnvironment().getTargetMapping().isDataNeedPrefix()) {
+			name = getTargetPackageName() + "_" + name;
+		}
+		return super.getSharedPreferences(name, mode);
 	}
 
 	/**
