@@ -419,6 +419,19 @@ public class ProxyEnvironmentNew {
 		PluginDebugLog.log(TAG, "haveLaunchActivity :" + haveLaunchActivity);
 		return haveLaunchActivity;
 	}
+	
+	public static void stopService(Intent intent){
+		
+		final String packageName = intent.getComponent().getPackageName();
+		ProxyEnvironmentNew env = sPluginsMap.get(packageName);
+		if (env == null) {
+			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);// 增加投递
+			return;
+		}
+		
+		if(env.appWrapper != null)	
+			env.appWrapper.stopService(intent);
+	}
 
 	private void setApplicationBase(ProxyEnvironmentNew env, Application application,
 			String packageName) {

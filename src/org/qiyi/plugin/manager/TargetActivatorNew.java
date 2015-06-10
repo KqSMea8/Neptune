@@ -1,7 +1,15 @@
 package org.qiyi.plugin.manager;
 
+import org.qiyi.pluginlibrary.ProxyEnvironment;
+import org.qiyi.pluginlibrary.api.ITargetLoadedCallBack;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.text.TextUtils;
 
 /**
  * 插件控制器
@@ -23,6 +31,51 @@ public class TargetActivatorNew {
         }*/
 
     	 ProxyEnvironmentNew.enterProxy(context, null,intent);
+    }
+    
+    /**
+     * 静默加载插件，异步加载，可以设置callback
+     * 
+     * @param context
+     *            application Context
+     * @param packageName
+     *            插件包名
+     * @param callback
+     *            加载成功的回调
+     */
+    public static void loadTarget(final Context context, final String packageName, 
+            final ITargetLoadedCallBack callback) {
+
+        // 插件已经加载
+        if (ProxyEnvironmentNew.isEnterProxy(packageName)) {
+            callback.onTargetLoaded(packageName);
+            return;
+        }
+
+        if (callback == null) {
+            return;
+        }
+
+        BroadcastReceiver recv = new BroadcastReceiver() {
+            public void onReceive(Context ctx, Intent intent) {
+                String curPkg = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+                if (ProxyEnvironment.ACTION_TARGET_LOADED.equals(intent.getAction())
+                        && TextUtils.equals(packageName, curPkg)) {
+                	PluginDebugLog.log("plugin", "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
+                    callback.onTargetLoaded(packageName);
+                    context.getApplicationContext().unregisterReceiver(this);
+                }
+            };
+        };
+        PluginDebugLog.log("plugin", "注册自定义广播org.qiyi.pluginapp.action.TARGET_LOADED");
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ProxyEnvironment.ACTION_TARGET_LOADED);
+        context.getApplicationContext().registerReceiver(recv, filter);
+
+        Intent intent = new Intent();
+        intent.setAction(ProxyEnvironment.ACTION_TARGET_LOADED);
+        intent.setComponent(new ComponentName(packageName, recv.getClass().getName()));
+        ProxyEnvironmentNew.enterProxy(context,null,intent);
     }
 
 /*    public static void setiTargetActivatorNew(ITargetActivatorNew iTargetActivatorNew) {

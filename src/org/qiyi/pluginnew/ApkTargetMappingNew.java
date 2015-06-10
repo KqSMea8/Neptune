@@ -82,7 +82,7 @@ public class ApkTargetMappingNew implements TargetMapping {
 			packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
 			dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName)
 					.getAbsolutePath();
-			nativeLibraryDir = new File(PluginInstaller.getPluginappRootPath(context),
+			nativeLibraryDir = new File(dataDir,
 					PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
 			if (metaData != null) {
 				isDataNeedPrefix = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
