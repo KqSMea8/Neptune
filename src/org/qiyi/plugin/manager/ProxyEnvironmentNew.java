@@ -12,10 +12,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.qiyi.pluginlibrary.LPluginInstrument;
+import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.ResourcesProxy;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.api.ITargetLoadListenner;
+import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.exception.PluginStartupException;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
@@ -26,9 +29,8 @@ import org.qiyi.pluginlibrary.proxy.BroadcastReceiverProxy;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginnew.ActivityJumpUtil;
-import org.qiyi.pluginnew.ActivityOverider;
-import org.qiyi.pluginnew.ReflectionUtils;
 import org.qiyi.pluginnew.classloader.PluginClassLoader;
 import org.qiyi.pluginnew.context.PluginContextWrapper;
 import org.qiyi.pluginnew.service.PluginServiceWrapper;
@@ -67,8 +69,10 @@ public class ProxyEnvironmentNew {
 	/** 插件包名对应Environment的Hash */
 	private static HashMap<String, ProxyEnvironmentNew> sPluginsMap = new HashMap<String, ProxyEnvironmentNew>();
 
-	private final Context context;
-	private final File apkFile;
+	/** 插件安装方式 **/
+	private final Context mContext;
+	private final File mApkFile;
+	private final String mInstallType;
 
 	private PluginClassLoader dexClassLoader;
 	private Resources targetResources;
@@ -90,7 +94,7 @@ public class ProxyEnvironmentNew {
 	/** Loading Map，正在loading中的插件 */
 	private static Map<String, List<Intent>> gLoadingMap = new HashMap<String, List<Intent>>();
 
-	private String pluginPakName;
+	private String mPluginPakName;
 
 	/**
 	 * 记录正在运行的service
@@ -100,8 +104,10 @@ public class ProxyEnvironmentNew {
 
 	public static Activity mParent;// 保存宿主activity
 
-	public PluginContextWrapper appWrapper;
-
+    public PluginContextWrapper appWrapper;
+    
+    public LPluginInstrument mPluginInstrument;
+    
 	/**
 	 * 构造方法，解析apk文件，创建插件运行环境
 	 * 
@@ -110,12 +116,13 @@ public class ProxyEnvironmentNew {
 	 * @param apkFile
 	 *            插件apk文件
 	 */
-	private ProxyEnvironmentNew(Context context, File apkFile, String pluginPakName) {
-		this.context = context.getApplicationContext();
-		this.apkFile = apkFile;
+	private ProxyEnvironmentNew(Context context, File apkFile, String pluginPakName, String installType) {
+		mContext = context.getApplicationContext();
+		mApkFile = apkFile;
 		activityStack = new LinkedList<Activity>();
 		parentPackagename = context.getPackageName();
-		this.pluginPakName = pluginPakName;
+		mPluginPakName = pluginPakName;
+		mInstallType = installType;
 		createTargetMapping(pluginPakName);
 		// 加载classloader
 		createClassLoader();
@@ -124,12 +131,21 @@ public class ProxyEnvironmentNew {
 	}
 
 	/**
+	 * Get install type {@link CMPackageManager#PLUGIN_METHOD_DEFAULT}
+	 * {@link CMPackageManager#PLUGIN_METHOD_DEXMAKER}
+	 * {@link CMPackageManager#PLUGIN_METHOD_INSTR}
+	 */
+	public String getInstallType() {
+		return mInstallType;
+	}
+
+	/**
 	 * 获取插件apk路径
 	 * 
 	 * @return 绝对路径
 	 */
 	public String getTargetPath() {
-		return this.apkFile.getAbsolutePath();
+		return this.mApkFile.getAbsolutePath();
 	}
 
 	/**
@@ -287,7 +303,7 @@ public class ProxyEnvironmentNew {
 										try {
 											launchIntent(context, conn, intent);
 										} catch (Exception e) {
-
+											e.printStackTrace();
 										}
 									}
 								});
@@ -435,7 +451,7 @@ public class ProxyEnvironmentNew {
 
 	private void setApplicationBase(ProxyEnvironmentNew env, Application application,
 			String packageName) {
-		PluginContextWrapper ctxWrapper = new PluginContextWrapper(context, env);
+		PluginContextWrapper ctxWrapper = new PluginContextWrapper(mContext, env);
 		this.appWrapper = ctxWrapper;
 		// attach
 		Method attachMethod;
@@ -451,18 +467,24 @@ public class ProxyEnvironmentNew {
 	}
 
 	private static void mappingActivity(Context context, Intent intent) {
-		String plugIdOrPkg;
-		String actName;
+		String plugIdOrPkg = "";
+		String actName = "";
 		ComponentName origComp = intent.getComponent();
 		if (origComp != null) {
 			plugIdOrPkg = origComp.getPackageName();
 			actName = origComp.getClassName();
-		} else {
+		}
+		if (TextUtils.isEmpty(actName) || TextUtils.isEmpty(plugIdOrPkg)) {
 			throw new IllegalArgumentException("plug intent must set the ComponentName!");
 		}
-		intent.putExtra(ActivityOverider.PLUGIN_ID, plugIdOrPkg);
-		intent.putExtra(ActivityOverider.PLUGIN_ACTIVITY, actName);
-		ComponentName comp = new ComponentName(context, ActivityJumpUtil.TARGET_CLASS_NAME);
+		ProxyEnvironmentNew env = sPluginsMap.get(plugIdOrPkg);
+		if (null == env) {
+			return;
+		}
+		String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(env.getInstallType());
+		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, plugIdOrPkg);
+		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY, actName);
+		ComponentName comp = new ComponentName(context, proxyClsName);
 		intent.setAction(null);
 		intent.setComponent(comp);
 	}
@@ -474,15 +496,18 @@ public class ProxyEnvironmentNew {
 	 *            application context
 	 * @param packageName
 	 *            插件包名
+	 * @param pluginInstallMethod 插件安装方式
 	 */
-	public static void initProxyEnvironment(Context context, String packageName) {
+	public static void initProxyEnvironment(Context context, String packageName,
+			String pluginInstallMethod) {
 		PluginDebugLog.log(TAG,
 				"sPluginsMap.containsKey(packageName):" + sPluginsMap.containsKey(packageName));
 		if (sPluginsMap.containsKey(packageName)) {
 			return;
 		}
 		ProxyEnvironmentNew newEnv = new ProxyEnvironmentNew(context,
-				PluginInstaller.getInstalledApkFile(context, packageName), packageName);
+				PluginInstaller.getInstalledApkFile(context, packageName), packageName,
+				pluginInstallMethod);
 		sPluginsMap.put(packageName, newEnv);
 	}
 
@@ -563,7 +588,7 @@ public class ProxyEnvironmentNew {
 	}
 
 	public void dealLaunchMode(Intent intent) {
-		String targetActivity = intent.getStringExtra(ActivityOverider.PLUGIN_ACTIVITY);
+		String targetActivity = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY);
 		if (TextUtils.isEmpty(targetActivity) || intent == null) {
 			return;
 		}
@@ -584,10 +609,10 @@ public class ProxyEnvironmentNew {
 			if (!activityStack.isEmpty()) {
 				activity = activityStack.getFirst();
 			}
-			if (activity != null
-					&& TextUtils.equals(ActivityJumpUtil.TARGET_CLASS_NAME, activity.getClass()
-							.getName())) {
-				String key = activity.getClass().getSuperclass().getName();
+			String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType());
+			if (activity != null && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
+				String key = getActivityStackKey(activity, getInstallType());
+				
 				if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
 					intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 				}
@@ -598,10 +623,10 @@ public class ProxyEnvironmentNew {
 			Iterator<Activity> it = activityStack.iterator();
 			while (it.hasNext()) {
 				Activity activity = it.next();
+				String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType());
 				if (activity != null
-						&& TextUtils.equals(ActivityJumpUtil.TARGET_CLASS_NAME, activity.getClass()
-								.getName())) {
-					String key = activity.getClass().getSuperclass().getName();
+						&& TextUtils.equals(proxyClsName, activity.getClass().getName())) {
+					String key = getActivityStackKey(activity, getInstallType());
 					if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
 						found = activity;
 						break;
@@ -628,6 +653,27 @@ public class ProxyEnvironmentNew {
 		}
 	}
 
+	private static String getActivityStackKey(Activity activity, String pluginInstallType) {
+		String key = "";
+		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, pluginInstallType)
+				|| TextUtils.isEmpty(pluginInstallType)) {
+			InstrActivityProxy lActivityProxy = null;
+			try {
+				lActivityProxy = (InstrActivityProxy) activity;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return key;
+			}
+			PluginActivityControl ctl = lActivityProxy.getController();
+			if (ctl != null && ctl.getPlugin() != null) {
+				key = ctl.getPlugin().getClass().getName();
+			}
+		} else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, pluginInstallType)) {
+			key = activity.getClass().getSuperclass().getName();
+		}
+		return key;
+	}
+
 	public void remapStartServiceIntent(Intent intent, String targetService) {
 		if (targetMapping.getServiceInfo(targetService) == null) {
 			return;
@@ -635,7 +681,7 @@ public class ProxyEnvironmentNew {
 		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_SERVICE, targetService);
 		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, targetMapping.getPackageName());
 
-		intent.setClass(context, ServiceProxyNew.class);
+		intent.setClass(mContext, ServiceProxyNew.class);
 	}
 
 	/**
@@ -647,7 +693,7 @@ public class ProxyEnvironmentNew {
 			originIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_RECEIVER, targetReceiver);
 			originIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME,
 					targetMapping.getPackageName());
-			originIntent.setClass(context, BroadcastReceiverProxy.class);
+			originIntent.setClass(mContext, BroadcastReceiverProxy.class);
 		}
 	}
 
@@ -680,13 +726,13 @@ public class ProxyEnvironmentNew {
 	private void createClassLoader() {
 
 		PluginDebugLog.log("plugin", "createClassLoader");
-		dexClassLoader = new PluginClassLoader(apkFile.getAbsolutePath(), getDataDir(context,
-				pluginPakName).getAbsolutePath(), context.getClassLoader(), this);
+		dexClassLoader = new PluginClassLoader(mApkFile.getAbsolutePath(), getDataDir(mContext,
+				mPluginPakName).getAbsolutePath(), mContext.getClassLoader(), this);
 
 		// 把 插件 classloader 注入到 host程序中，方便host app 能够找到 插件 中的class。
 		if (targetMapping.getMetaData() != null
 				&& targetMapping.getMetaData().getBoolean(ProxyEnvironment.META_KEY_CLASSINJECT)) {
-			ClassLoaderInjectHelper.inject(context.getClassLoader(), dexClassLoader,
+			ClassLoaderInjectHelper.inject(mContext.getClassLoader(), dexClassLoader,
 					targetMapping.getPackageName() + ".R");
 			PluginDebugLog.log(TAG, "--- Class injecting @ " + targetMapping.getPackageName());
 		}
@@ -698,7 +744,7 @@ public class ProxyEnvironmentNew {
 	public void ejectClassLoader() {
 		if (dexClassLoader != null && targetMapping.getMetaData() != null
 				&& targetMapping.getMetaData().getBoolean(ProxyEnvironment.META_KEY_CLASSINJECT)) {
-			ClassLoaderInjectHelper.eject(context.getClassLoader(), dexClassLoader);
+			ClassLoaderInjectHelper.eject(mContext.getClassLoader(), dexClassLoader);
 		}
 	}
 
@@ -706,29 +752,29 @@ public class ProxyEnvironmentNew {
 	private void createTargetResource() {
 		try {
 			AssetManager am = (AssetManager) AssetManager.class.newInstance();
-			JavaCalls.callMethod(am, "addAssetPath", new Object[] { apkFile.getAbsolutePath() });
+			JavaCalls.callMethod(am, "addAssetPath", new Object[] { mApkFile.getAbsolutePath() });
 			targetAssetManager = am;
 		} catch (Exception e) {
-			deliverPlug(false, pluginPakName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
+			deliverPlug(false, mPluginPakName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
 			e.printStackTrace();
 		}
 
 		// 解决一个HTC ONE X上横竖屏会黑屏的问题
-		Resources hostRes = context.getResources();
+		Resources hostRes = mContext.getResources();
 		Configuration config = new Configuration();
 		config.setTo(hostRes.getConfiguration());
 		config.orientation = Configuration.ORIENTATION_UNDEFINED;
 		targetResources = new ResourcesProxy(targetAssetManager, hostRes.getDisplayMetrics(),
 				config, hostRes);
 		targetTheme = targetResources.newTheme();
-		targetTheme.setTo(context.getTheme());
+		targetTheme.setTo(mContext.getTheme());
 	}
 
 	/**
 	 * 初始化插件资源
 	 */
 	private void createTargetMapping(String pkgName) {
-		CMPackageInfo pkgInfo = CMPackageManager.getInstance(context).getPackageInfo(pkgName);
+		CMPackageInfo pkgInfo = CMPackageManager.getInstance(mContext).getPackageInfo(pkgName);
 		if (pkgInfo != null) {
 			targetMapping = pkgInfo.targetInfo;
 		} else {
@@ -818,7 +864,7 @@ public class ProxyEnvironmentNew {
 		if (mParent != null) {
 			return mParent;
 		}
-		return context;
+		return mContext;
 	}
 
 	private void changeInstrumentation(Context context, String pkgName) {
@@ -827,8 +873,17 @@ public class ProxyEnvironmentNew {
 			Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
 			Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
 			instrumentationF.setAccessible(true);
-			FrameworkInstrumentation instrumentation = new FrameworkInstrumentation(context);
-			instrumentationF.set(activityThread, instrumentation);
+			if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, getInstallType())) {
+				FrameworkInstrumentation instrumentation = new FrameworkInstrumentation(context);
+				instrumentationF.set(activityThread, instrumentation);
+			} else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, getInstallType())) {
+				mPluginInstrument = new LPluginInstrument(
+						(Instrumentation) instrumentationF.get(activityThread), pkgName);
+			} else {
+				// Default option
+				FrameworkInstrumentation instrumentation = new FrameworkInstrumentation(context);
+				instrumentationF.set(activityThread, instrumentation);
+			}
 			instrumentationF.setAccessible(false);
 		} catch (Exception e) {
 			ProxyEnvironmentNew.deliverPlug(false, pkgName,
@@ -852,8 +907,11 @@ public class ProxyEnvironmentNew {
 		public void run() {
 			super.run();
 			try {
-				PluginDebugLog.log("plugin", "doInBackground:" + pakName);
-				ProxyEnvironmentNew.initProxyEnvironment(pContext, pakName);
+				String installMethod = CMPackageManager.getInstance(pContext).getPackageInfo(
+						pakName).pluginInfo.mPluginInstallMethod;
+				PluginDebugLog.log("plugin", "doInBackground:" + pakName + ", installMethod: "
+						+ installMethod);
+				ProxyEnvironmentNew.initProxyEnvironment(pContext, pakName, installMethod);
 				new InitHandler(listenner, pakName, Looper.getMainLooper()).sendEmptyMessage(1);
 			} catch (Exception e) {
 				if (e instanceof PluginStartupException) {
@@ -903,8 +961,8 @@ public class ProxyEnvironmentNew {
 				throws InstantiationException, IllegalAccessException, ClassNotFoundException {
 
 			if (className.equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
-				String pluginId = intent.getStringExtra(ActivityOverider.PLUGIN_ID);
-				String actClassName = intent.getStringExtra(ActivityOverider.PLUGIN_ACTIVITY);
+				String pluginId = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+				String actClassName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY);
 
 				ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
 				if (env == null && mContext != null) {
@@ -912,8 +970,8 @@ public class ProxyEnvironmentNew {
 					// installed apk
 					CMPackageInfo info = CMPackageManager.getInstance(mContext).getPackageInfo(
 							pluginId);
-					if (null != info) {
-						initProxyEnvironment(mContext, pluginId);
+					if (null != info && null != info.pluginInfo) {
+						initProxyEnvironment(mContext, pluginId, info.pluginInfo.mPluginInstallMethod);
 						env = ProxyEnvironmentNew.getInstance(pluginId);
 					}
 				}

@@ -19,6 +19,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ServiceInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 
@@ -252,7 +253,12 @@ public class ApkTargetMappingNew implements TargetMapping {
 	public int getThemeResource(String activity) {
 		ActivityInfo info = getActivityInfo(activity);
 		if (info == null) {
-			return android.R.style.Theme;
+			// 支持不同系统的默认Theme
+			if (Build.VERSION.SDK_INT >= 14) {
+				return android.R.style.Theme_DeviceDefault;
+			} else {
+				return android.R.style.Theme;
+			}
 		}
 
 		/**
@@ -261,7 +267,12 @@ public class ApkTargetMappingNew implements TargetMapping {
 		 * ，带ActionBar，导致插件黑屏，目前插件SDK不支持ActionBar
 		 */
 		if (info == null || info.getThemeResource() == 0) {
-			return android.R.style.Theme;
+			// 支持不同系统的默认Theme
+			if (Build.VERSION.SDK_INT >= 14) {
+				return android.R.style.Theme_DeviceDefault;
+			} else {
+				return android.R.style.Theme;
+			}
 		}
 		return info.getThemeResource();
 	}

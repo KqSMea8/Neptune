@@ -142,7 +142,9 @@ public class PluginInstaller {
             	temp_file = packageName + APK_SUFFIX;
             }
             for (String file : files) {
-                if (!file.endsWith(APK_SUFFIX) || (packageName != null && !file.equals(temp_file))) {//如果外面传递的packagename 为空则全部安装
+				if (!file.endsWith(APK_SUFFIX)
+						|| (!TextUtils.isEmpty(packageName) && !TextUtils.equals(file, temp_file))) {
+                	//如果外面传递的packagename 为空则全部安装
                     continue;
                 }
                 PluginDebugLog.log("plugin", "file:"+file);
@@ -203,9 +205,16 @@ public class PluginInstaller {
                 }
             }
         }
-        
-
-		startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, info);
+        PluginPackageInfoExt infoExt = null;
+		if (info == null && !TextUtils.isEmpty(mapPackagename)) {
+			infoExt = new PluginPackageInfoExt();
+			infoExt.packageName = mapPackagename;
+			infoExt.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_ASSETS;
+			infoExt.mPluginInstallMethod = CMPackageManager.PLUGIN_METHOD_INSTR;
+		} else {
+			infoExt = info;
+		}
+		startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, infoExt);
         return true;
     }
     

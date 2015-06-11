@@ -1,6 +1,8 @@
 package org.qiyi.pluginnew;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.ProxyEnvironment;
+import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
@@ -20,11 +22,40 @@ public class ActivityJumpUtil {
 
 	public static final String TARGET_CLASS_NAME = "org.qiyi.PluginActivity";
 
+	/**
+	 * Get proxy activity class name for all plugin activitys The proxy activity
+	 * should be register in the manifest.xml
+	 * 
+	 * @param plunginInstallType
+	 *            plugin install type
+	 *            {@link CMPackageManager#PLUGIN_METHOD_DEFAULT}
+	 *            {@link CMPackageManager#PLUGIN_METHOD_DEXMAKER}
+	 *            {@link CMPackageManager#PLUGIN_METHOD_INSTR}
+	 * 
+	 * @return proxy activity's fully class name
+	 */
+	public static String getProxyActivityClsName(String plunginInstallType) {
+		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, plunginInstallType)) {
+			return TARGET_CLASS_NAME;
+		} else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, plunginInstallType)) {
+			return InstrActivityProxy.class.getName();
+		} else {
+			// Default option
+			return InstrActivityProxy.class.getName();
+		}
+	}
+	
 	private static void setPluginIntent(Intent intent, String pluginId, String actName) {
 		ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
-		ComponentName compname = new ComponentName(env.getParentPackagename(), TARGET_CLASS_NAME);
-		intent.setComponent(compname).putExtra(ActivityOverider.PLUGIN_ID, pluginId)
-				.putExtra(ActivityOverider.PLUGIN_ACTIVITY, actName);
+		if (null == env) {
+			Log.e(TAG, "ActivityJumpUtil setPluginIntent failed, " + pluginId
+					+ " ProxyEnvironmentNew is null");
+			return;
+		}
+		ComponentName compname = new ComponentName(env.getParentPackagename(),
+				getProxyActivityClsName(env.getInstallType()));
+		intent.setComponent(compname).putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, pluginId)
+				.putExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY, actName);
 	}
 
 	public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode,

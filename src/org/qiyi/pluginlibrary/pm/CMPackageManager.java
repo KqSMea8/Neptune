@@ -54,6 +54,7 @@ public class CMPackageManager {
     /** 安装插件方案的版本 **/
     public static final String PLUGIN_METHOD_DEFAULT = "plugin_method_default";
     public static final String PLUGIN_METHOD_DEXMAKER = "plugin_method_dexmaker";
+    public static final String PLUGIN_METHOD_INSTR = "plugin_method_instr";
 
     /** 插件文件后缀类型 **/
     public static final String PLUGIN_FILE_APK = "apk";
@@ -528,9 +529,6 @@ public class CMPackageManager {
 			PluginPackageInfoExt info) {
 		tryToClearPackage(packageName);
 		listenerMap.put(packageName, listener);
-		if (info != null) {
-			info.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_ASSETS;
-		}
 		PluginInstaller.installBuildinApps(packageName, mContext, info);
 	}
 
@@ -542,7 +540,7 @@ public class CMPackageManager {
 	 * @param packageName
 	 */
 	private void tryToClearPackage(String packageName) {
-		if (getUninstallPkgs().containsKey(packageName)) {
+		if (!TextUtils.isEmpty(packageName) && getUninstallPkgs().containsKey(packageName)) {
 			deletePackage(packageName, null, false, false);
 		}
 	}

@@ -6,14 +6,11 @@ import java.util.List;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginnew.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
 
-import android.app.Application;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.IBinder;
@@ -71,16 +68,10 @@ public class ServiceProxyNew extends Service {
 						.loadClass(targetClassName).newInstance());
 				CMContextWrapperNew actWrapper = new CMContextWrapperNew(env.getApplication(),
 						targetPackageName);
-				JavaCalls.invokeMethod(
-						pluginService,
-						"attach",
-						new Class<?>[] { Context.class,
-								ReflectionUtils.getFieldValue(this, "mThread").getClass(),
-								String.class, IBinder.class, Application.class, Object.class },
-						new Object[] { actWrapper, ReflectionUtils.getFieldValue(this, "mThread"),
-								targetClassName, ReflectionUtils.getFieldValue(this, "mToken"),
-								env.getApplication(),
-								ReflectionUtils.getFieldValue(this, "mActivityManager") });
+				ReflectionUtils.on(pluginService).call("attach", actWrapper,
+						ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,
+						ReflectionUtils.getFieldValue(this, "mToken"), env.getApplication(),
+						ReflectionUtils.getFieldValue(this, "mActivityManager"));
 				currentPlugin = new PluginServiceWrapper(targetClassName, targetPackageName, this,
 						pluginService);
 				pluginService.onCreate();

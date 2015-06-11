@@ -19,11 +19,6 @@ import android.view.ContextThemeWrapper;
  */
 public class ActivityOverider {
 	private static final String tag = "ActivityOverider";
-	/**
-	 * 自动生成的 Activity 的全类名
-	 */
-	public static final String PLUGIN_ID = "_pluginId";
-	public static final String PLUGIN_ACTIVITY = "_targetAct";
 	
 	public static Context overrideGetOriginalContext(Activity fromActivitym, String pluginId) {
 		if (TextUtils.isEmpty(pluginId)) {
@@ -97,13 +92,8 @@ public class ActivityOverider {
 		return new Object[] { actWrapper, env.getTargetAssetManager() };
 	}
 	
-	private static void changeActivityInfo(Activity activity, String pkgName) {
-		final String actName = activity.getClass().getSuperclass().getName();
+	public static void changeActivityInfo(Activity activity, String pkgName, String actName) {
 		Log.d(tag, "changeActivityInfo: activity = " + activity + ", class = " + actName);
-		if (!activity.getClass().getName().equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
-			Log.w(tag, "not a Proxy Activity ,then return.");
-			return;
-		}
 		ActivityInfo origActInfo = null;
 		try {
 			Field field_mActivityInfo = Activity.class.getDeclaredField("mActivityInfo");
@@ -172,7 +162,7 @@ public class ActivityOverider {
 //			rs = android.R.style.Theme;
 //		}
 			Log.d(tag, "getPlugActivityTheme: theme=" + rs + ", actName=" + actName);
-			changeActivityInfo(fromAct, pluginId);
+			changeActivityInfo(fromAct, pluginId, actName);
 			return rs;
 		} else {
 			return 0;
@@ -222,7 +212,7 @@ public class ActivityOverider {
 					e.printStackTrace();
 				}
 				if (hasNotSetTheme) {
-					changeActivityInfo(fromAct, pluginId);
+					changeActivityInfo(fromAct, pluginId, actName);
 					fromAct.setTheme(resTheme);
 				}
 			}
