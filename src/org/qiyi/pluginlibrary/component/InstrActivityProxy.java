@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.res.Resources.Theme;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.Bundle;
@@ -91,7 +92,7 @@ public class InstrActivityProxy extends Activity {
 		}
 	}
 
-	private boolean mNeedUpdateConfiguration = true;
+//	private boolean mNeedUpdateConfiguration = true;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -126,16 +127,27 @@ public class InstrActivityProxy extends Activity {
 			e1.printStackTrace();
 			this.finish();
 		}
-		CMContextWrapperNew wrapper = new CMContextWrapperNew(InstrActivityProxy.this, pluginPkgName);
-		mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, wrapper);
-		try {
-			mPluginContrl.callOnCreate(savedInstanceState);
-			if (getParent() == null) {
-				mPluginEnv.pushActivityToStack(this);
+		if (null != mPluginContrl) {
+			CMContextWrapperNew wrapper = new CMContextWrapperNew(InstrActivityProxy.this,
+					pluginPkgName);
+			ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
+			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, wrapper);
+//			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, wrapper, actInfo);
+			if (actInfo != null) {
+				ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
+
+				int resTheme = actInfo.getThemeResource();
+				setTheme(resTheme);
 			}
-		} catch (Exception e) {
-			processError(e);
-			this.finish();
+			try {
+				mPluginContrl.callOnCreate(savedInstanceState);
+				if (getParent() == null) {
+					mPluginEnv.pushActivityToStack(this);
+				}
+			} catch (Exception e) {
+				processError(e);
+				this.finish();
+			}
 		}
 	}
 
@@ -158,23 +170,33 @@ public class InstrActivityProxy extends Activity {
 
 	@Override
 	public void setTheme(int resid) {
-		String[] temp = getPkgAndCls();
-		if (mNeedUpdateConfiguration && (temp != null || mPluginEnv != null)) {
+//		String[] temp = getPkgAndCls();
+//		if (mNeedUpdateConfiguration && (temp != null || mPluginEnv != null)) {
+//			tryToInitEnvironment(temp[0]);
+//			if (mPluginEnv != null) {
+//				ActivityInfo actInfo = mPluginEnv.findActivityByClassName(temp[1]);
+//				if (actInfo != null) {
+//					int resTheme = actInfo.getThemeResource();
+//					if (mNeedUpdateConfiguration) {
+//						ActivityOverider.changeActivityInfo(InstrActivityProxy.this, temp[0], temp[1]);
+//						super.setTheme(resTheme);
+//						mNeedUpdateConfiguration = false;
+//						return;
+//					}
+//				}
+//			}
+//		}
+//		super.setTheme(resid);
+		getTheme().applyStyle(resid, true);
+	}
+
+	@Override
+	public Theme getTheme() {
+		if (mPluginEnv == null) {
+			String[] temp = getPkgAndCls();
 			tryToInitEnvironment(temp[0]);
-			if (mPluginEnv != null) {
-				ActivityInfo actInfo = mPluginEnv.findActivityByClassName(temp[1]);
-				if (actInfo != null) {
-					int resTheme = actInfo.getThemeResource();
-					if (mNeedUpdateConfiguration) {
-						ActivityOverider.changeActivityInfo(InstrActivityProxy.this, temp[0], temp[1]);
-						super.setTheme(resTheme);
-						mNeedUpdateConfiguration = false;
-						return;
-					}
-				}
-			}
 		}
-		super.setTheme(resid);
+		return super.getTheme();
 	}
 
 	@Override
@@ -320,7 +342,7 @@ public class InstrActivityProxy extends Activity {
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		mNeedUpdateConfiguration = true;
+//		mNeedUpdateConfiguration = true;
 		if (getController() != null) {
 			getController().callOnConfigurationChanged(newConfig);
 		}

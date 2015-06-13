@@ -182,16 +182,18 @@ public class ServiceProxyNew extends Service {
 		String targetPackageName = paramIntent
 				.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
 		PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
-
+		PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand() currentPlugin: " + currentPlugin);
 		if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
 			currentPlugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STARTED);
 			int result = currentPlugin.getCurrentService().onStartCommand(paramIntent, paramInt1,
 					paramInt2);
+			PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand() result: " + result);	
 			if (result == START_REDELIVER_INTENT || result == START_STICKY) {
 				currentPlugin.mNeedSelfLaunch = true;
 			}
 			return result;
 		} else {
+			PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand() currentPlugin is null!");
 			return super.onStartCommand(paramIntent, paramInt1, paramInt2);
 		}
 	}

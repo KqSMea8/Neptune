@@ -481,12 +481,8 @@ public class ProxyEnvironmentNew {
 		if (null == env) {
 			return;
 		}
-		String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(env.getInstallType());
-		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, plugIdOrPkg);
-		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY, actName);
-		ComponentName comp = new ComponentName(context, proxyClsName);
 		intent.setAction(null);
-		intent.setComponent(comp);
+		ActivityJumpUtil.setPluginIntent(intent, plugIdOrPkg, actName);
 	}
 
 	/**
@@ -595,7 +591,7 @@ public class ProxyEnvironmentNew {
 
 		// 不支持LAUNCH_SINGLE_INSTANCE
 		ActivityInfo info = targetMapping.getActivityInfo(targetActivity);
-		if (info.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
+		if (info == null || info.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
 			return;
 		}
 		boolean isSingleTop = info.launchMode == ActivityInfo.LAUNCH_SINGLE_TOP
@@ -609,7 +605,7 @@ public class ProxyEnvironmentNew {
 			if (!activityStack.isEmpty()) {
 				activity = activityStack.getFirst();
 			}
-			String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType());
+			String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType(), info);
 			if (activity != null && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
 				String key = getActivityStackKey(activity, getInstallType());
 				
@@ -623,7 +619,7 @@ public class ProxyEnvironmentNew {
 			Iterator<Activity> it = activityStack.iterator();
 			while (it.hasNext()) {
 				Activity activity = it.next();
-				String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType());
+				String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType(), info);
 				if (activity != null
 						&& TextUtils.equals(proxyClsName, activity.getClass().getName())) {
 					String key = getActivityStackKey(activity, getInstallType());

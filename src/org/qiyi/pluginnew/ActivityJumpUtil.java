@@ -3,6 +3,7 @@ package org.qiyi.pluginnew;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
+import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
@@ -22,6 +23,10 @@ public class ActivityJumpUtil {
 
 	public static final String TARGET_CLASS_NAME = "org.qiyi.PluginActivity";
 
+	/** pluginapp开关:表示activity的特殊处理，例如Translucent Theme 等*/
+	public static final String META_KEY_ACTIVITY_SPECIAL = "pluginapp_activity_special";
+
+	public static final String PLUGIN_ACTIVITY_TRANSLUCENT = "Translucent";
 	/**
 	 * Get proxy activity class name for all plugin activitys The proxy activity
 	 * should be register in the manifest.xml
@@ -34,26 +39,62 @@ public class ActivityJumpUtil {
 	 * 
 	 * @return proxy activity's fully class name
 	 */
+	@Deprecated
 	public static String getProxyActivityClsName(String plunginInstallType) {
+		return getProxyActivityClsName(plunginInstallType, false);
+	}
+
+	/**
+	 * Get proxy activity class name for all plugin activitys The proxy activity
+	 * should be register in the manifest.xml
+	 * 
+	 * @param plunginInstallType
+	 *            plugin install type
+	 *            {@link CMPackageManager#PLUGIN_METHOD_DEFAULT}
+	 *            {@link CMPackageManager#PLUGIN_METHOD_DEXMAKER}
+	 *            {@link CMPackageManager#PLUGIN_METHOD_INSTR}
+	 * @param actInfo plugin Activity's ActivityInfo
+	 * @return proxy activity's fully class name
+	 */
+	public static String getProxyActivityClsName(String plunginInstallType, ActivityInfo actInfo) {
+		String translucentCfg = "";
+		if (actInfo != null && actInfo.metaData != null) {
+			translucentCfg = actInfo.metaData.getString(META_KEY_ACTIVITY_SPECIAL);
+		}
+		return getProxyActivityClsName(plunginInstallType,
+				TextUtils.equals(PLUGIN_ACTIVITY_TRANSLUCENT, translucentCfg));
+	}
+
+	static String getProxyActivityClsName(String plunginInstallType, boolean isTranslucent) {
 		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, plunginInstallType)) {
 			return TARGET_CLASS_NAME;
 		} else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, plunginInstallType)) {
-			return InstrActivityProxy.class.getName();
+			if (isTranslucent) {
+				return InstrActivityProxyTranslucent.class.getName();
+			} else {
+				return InstrActivityProxy.class.getName();
+			}
 		} else {
 			// Default option
 			return InstrActivityProxy.class.getName();
 		}
 	}
-	
-	private static void setPluginIntent(Intent intent, String pluginId, String actName) {
+
+	public static void setPluginIntent(Intent intent, String pluginId, String actName) {
 		ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
 		if (null == env) {
 			Log.e(TAG, "ActivityJumpUtil setPluginIntent failed, " + pluginId
 					+ " ProxyEnvironmentNew is null");
 			return;
 		}
+		ActivityInfo info = env.getTargetMapping().getActivityInfo(actName);
+		if (null == info) {
+			Log.e(TAG, "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: "
+					+ actName);
+			return;
+		}
 		ComponentName compname = new ComponentName(env.getParentPackagename(),
-				getProxyActivityClsName(env.getInstallType()));
+				getProxyActivityClsName(env.getInstallType(), info));
 		intent.setComponent(compname).putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, pluginId)
 				.putExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY, actName);
 	}

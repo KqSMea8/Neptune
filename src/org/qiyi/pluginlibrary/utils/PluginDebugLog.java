@@ -10,11 +10,12 @@ public class PluginDebugLog {
 	//插件统一调试TAG
 	public static  final String TAG = "plugin";
 
-	private static boolean isDebug = false;
+	private static boolean isDebug = true;
 
-	private static boolean isLogDebug = false;
+	private static boolean isLogDebug = true;
 	public static void setIsDebug(boolean b) {
 		isDebug = b;
+		isDebug = true;
 	}
 	
 	public static void checkIsOpenDebug() {
