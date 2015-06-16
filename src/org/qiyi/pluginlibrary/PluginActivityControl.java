@@ -176,7 +176,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 	@Override
 	public void callOnStart() {
 		if (null != mHostInstr) {
-			mHostInstr.callActivityOnStop(mPlugin);
+			mHostInstr.callActivityOnStart(mPlugin);
 		}
 	}
 

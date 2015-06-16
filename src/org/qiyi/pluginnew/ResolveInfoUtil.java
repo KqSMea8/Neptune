@@ -69,7 +69,6 @@ public class ResolveInfoUtil {
 					Field intentsClassName = activity.getClass().getField("className");
 					intentsClassName.setAccessible(true);
 					String className = (String) intentsClassName.get(activity);
-					System.out.println("className: " + className);
 					ActivityInfo info = target.findActivityByClassName(className);
 					if (null != info) {
 						ActivityIntentInfo actInfo = new ActivityIntentInfo(info);
@@ -93,7 +92,6 @@ public class ResolveInfoUtil {
 					Field intentsClassName = receiver.getClass().getField("className");
 					intentsClassName.setAccessible(true);
 					String className = (String) intentsClassName.get(receiver);
-					System.out.println("className: " + className);
 					ActivityInfo info = target.findReceiverByClassName(className);
 					if (null != info) {
 						ReceiverIntentInfo receiverInfo = new ReceiverIntentInfo(info);
@@ -117,7 +115,6 @@ public class ResolveInfoUtil {
 					Field intentsClassName = service.getClass().getField("className");
 					intentsClassName.setAccessible(true);
 					String className = (String) intentsClassName.get(service);
-					System.out.println("className: " + className);
 					ServiceInfo info = target.findServiceByClassName(className);
 					if (null != info) {
 						ServiceIntentInfo serviceInfo = new ServiceIntentInfo(info);
