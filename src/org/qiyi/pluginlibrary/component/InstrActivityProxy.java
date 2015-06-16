@@ -1,10 +1,13 @@
 package org.qiyi.pluginlibrary.component;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
@@ -29,6 +32,7 @@ import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginnew.ActivityJumpUtil;
 import org.qiyi.pluginnew.ActivityOverider;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
 
@@ -38,6 +42,7 @@ public class InstrActivityProxy extends Activity {
 
 	private ProxyEnvironmentNew mPluginEnv;
 	private PluginActivityControl mPluginContrl;
+	private CMContextWrapperNew mPluginContextWrapper;
 
 	/**
 	 * 装载插件的Activity
@@ -128,11 +133,10 @@ public class InstrActivityProxy extends Activity {
 			this.finish();
 		}
 		if (null != mPluginContrl) {
-			CMContextWrapperNew wrapper = new CMContextWrapperNew(InstrActivityProxy.this,
+			mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
 					pluginPkgName);
 			ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
-			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, wrapper);
-//			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, wrapper, actInfo);
+			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper);
 			if (actInfo != null) {
 				ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
 
@@ -232,8 +236,7 @@ public class InstrActivityProxy extends Activity {
 		if (getController() != null) {
 
 			try {
-				getController().callOnStop();
-				// LCallbackManager.callAllOnStop();
+				getController().callOnStart();
 			} catch (Exception e) {
 
 				processError(e);
@@ -323,13 +326,87 @@ public class InstrActivityProxy extends Activity {
 		return super.onKeyDown(keyCode, event);
 	}
 
-	// @Override
-	// public ComponentName startService(Intent service) {
-	// // TODO:转移Service跳转目标
-	// LProxyService.SERVICE_CLASS_NAME = service.getComponent().getClassName();
-	// service.setClass(this, LProxyService.class);
-	// return super.startService(service);
-	// }
+	@Override
+	public ComponentName startService(Intent service) {
+		if (mPluginContextWrapper != null) {
+			return mPluginContextWrapper.startService(service);
+		}
+		return super.startService(service);
+	}
+
+	@Override
+	public boolean stopService(Intent name) {
+		if (mPluginContextWrapper != null) {
+			return mPluginContextWrapper.stopService(name);
+		}
+		return super.stopService(name);
+	}
+
+	@Override
+	public boolean bindService(Intent service, ServiceConnection conn, int flags) {
+		if (mPluginContextWrapper != null) {
+			return mPluginContextWrapper.bindService(service, conn, flags);
+		}
+		return super.bindService(service, conn, flags);
+	}
+
+//	@Override
+//	public void startActivity(Intent intent) {
+//		if (mPluginContextWrapper != null) {
+//			mPluginContextWrapper.startActivity(intent);
+//		} else {
+//			super.startActivity(intent);
+//		}
+//	}
+//
+//
+//	public void startActivity(Intent intent, Bundle options) {
+//		if (mPluginContextWrapper != null) {
+//			mPluginContextWrapper.startActivity(intent, options);
+//		} else {
+//			super.startActivity(intent, options);
+//		}
+//	}
+
+	public void startActivityForResult(Intent intent, int requestCode) {
+		if (mPluginEnv != null) {
+			super.startActivityForResult(ActivityJumpUtil.handleStartActivityIntent(
+					mPluginEnv.getTargetPackageName(), intent, requestCode, null), requestCode);
+		} else {
+			super.startActivityForResult(intent, requestCode);
+		}
+	}
+
+	@SuppressLint("NewApi")
+	public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+		if (mPluginEnv != null) {
+			super.startActivityForResult(ActivityJumpUtil.handleStartActivityIntent(
+					mPluginEnv.getTargetPackageName(), intent, requestCode, options), requestCode,
+					options);
+		} else {
+			super.startActivityForResult(intent, requestCode, options);
+		}
+	}
+
+//	public void startActivityFromFragment(Fragment fragment, Intent intent, int requestCode) {
+//		// TODO Auto-generated method stub
+//		super.startActivityFromFragment(fragment, intent, requestCode);
+//	}
+//
+//	@Override
+//	public void startActivityFromFragment(Fragment fragment, Intent intent, int requestCode,
+//			Bundle options) {
+//		// TODO Auto-generated method stub
+//		super.startActivityFromFragment(fragment, intent, requestCode, options);
+//	}
+
+	@Override
+	public SharedPreferences getSharedPreferences(String name, int mode) {
+		if (mPluginContextWrapper != null) {
+			return mPluginContextWrapper.getSharedPreferences(name, mode);
+		}
+		return super.getSharedPreferences(name, mode);
+	}
 
 	@Override
 	public void dump(String prefix, FileDescriptor fd, PrintWriter writer, String[] args) {

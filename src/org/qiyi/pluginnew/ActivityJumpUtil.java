@@ -101,6 +101,13 @@ public class ActivityJumpUtil {
 
 	public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode,
 			Bundle options) {
+		if (intent != null
+				&& !TextUtils
+						.isEmpty(intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY))
+				&& !TextUtils.isEmpty(intent
+						.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME))) {
+			return intent;
+		}
 		ActivityInfo targetActivity = null;
 		ProxyEnvironmentNew mgr = null;
 		// 主要做以下工作：
