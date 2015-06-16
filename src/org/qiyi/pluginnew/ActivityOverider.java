@@ -46,11 +46,12 @@ public class ActivityOverider {
 	 * @param options
 	 * @return 修改后的 Intent
 	 */
-	public static Intent overrideStartActivityForResult(Activity fromAct,
-			String pluginId, Intent intent, int requestCode, Bundle options) {
-		Log.d("TAG", "Enter overrideStartActivityForResult: pluginId: "
-				+ pluginId + " intent: " + intent + " bundle: " + options);
-		return ActivityJumpUtil.handleStartActivityIntent(pluginId, intent, requestCode, options);
+	public static Intent overrideStartActivityForResult(Activity fromAct, String pluginId,
+			Intent intent, int requestCode, Bundle options) {
+		Log.d("TAG", "Enter overrideStartActivityForResult: pluginId: " + pluginId + " intent: "
+				+ intent + " bundle: " + options);
+		return ActivityJumpUtil.handleStartActivityIntent(pluginId, intent, requestCode, options,
+				fromAct);
 	}
 
 	/**
@@ -72,7 +73,8 @@ public class ActivityOverider {
 			Intent intent, int requestCode, Bundle options) {
 		Log.d("TAG", "Enter overrideStartActivityFromFragmen: pluginId: " + pluginId + " intent: "
 				+ intent + " bundle: " + options);
-		return ActivityJumpUtil.handleStartActivityIntent(pluginId, intent, requestCode, options);
+		return ActivityJumpUtil.handleStartActivityIntent(pluginId, intent, requestCode, options,
+				fromAct);
 	}
 
 	public static Object[] overrideAttachBaseContext(final String pluginId,final Activity fromAct,Context base){

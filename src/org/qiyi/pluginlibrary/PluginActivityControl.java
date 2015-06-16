@@ -63,35 +63,108 @@ public class PluginActivityControl implements PluginActivityCallback {
 			return;
 		}
 		try {
-			mPluginRef.call(
-					// 方法名
-					"attach",
-					// Context context
-					contextWrapper,
-					// ActivityThread aThread
-					mProxyRef.get("mMainThread"),
-					// Instrumentation instr
-					pluginInstr,
-					// IBinder token
-					mProxyRef.get("mToken"),
-					// int ident
-					mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
-					// Application application
-					mApplication == null ? mProxy.getApplication() : mApplication,
-					// Intent intent
-					mProxy.getIntent(),
-					// ActivityInfo info
-					mProxyRef.get("mActivityInfo"),
-					// CharSequence title
-					mProxy.getTitle(),
-					// Activity parent
-					mProxy.getParent(),
-					// String id
-					mProxyRef.get("mEmbeddedID"),
-					// NonConfigurationInstances lastNonConfigurationInstances
-					mProxy.getLastNonConfigurationInstance(),
-					// Configuration config
-					mProxyRef.get("mCurrentConfig"));
+			if (android.os.Build.VERSION.SDK_INT > 21) {
+				// android.os.Build.VERSION_CODES.LOLLIPOP
+				mPluginRef.call(
+						// 方法名
+						"attach",
+						// Context context
+//						contextWrapper,
+						mProxy,
+						// ActivityThread aThread
+						mProxyRef.get("mMainThread"),
+						// Instrumentation instr
+						pluginInstr,
+						// IBinder token
+						mProxyRef.get("mToken"),
+						// int ident
+						mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
+						// Application application
+						mApplication == null ? mProxy.getApplication() : mApplication,
+						// Intent intent
+						mProxy.getIntent(),
+						// ActivityInfo info
+						mProxyRef.get("mActivityInfo"),
+						// CharSequence title
+						mProxy.getTitle(),
+						// Activity parent
+						mProxy.getParent(),
+						// String id
+						mProxyRef.get("mEmbeddedID"),
+						// NonConfigurationInstances lastNonConfigurationInstances
+						mProxy.getLastNonConfigurationInstance(),
+						// Configuration config
+						mProxyRef.get("mCurrentConfig"),
+						// String mReferrer 
+						mProxyRef.get("mReferrer"),
+						// IVoiceInteractor mVoiceInteractor
+						mProxyRef.get("mVoiceInteractor"));
+			} else if (android.os.Build.VERSION.SDK_INT > 20) {
+				// android.os.Build.VERSION_CODES.KITKAT_WATCH;
+				mPluginRef.call(
+						// 方法名
+						"attach",
+						// Context context
+//						contextWrapper,
+						mProxy,
+						// ActivityThread aThread
+						mProxyRef.get("mMainThread"),
+						// Instrumentation instr
+						pluginInstr,
+						// IBinder token
+						mProxyRef.get("mToken"),
+						// int ident
+						mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
+						// Application application
+						mApplication == null ? mProxy.getApplication() : mApplication,
+						// Intent intent
+						mProxy.getIntent(),
+						// ActivityInfo info
+						mProxyRef.get("mActivityInfo"),
+						// CharSequence title
+						mProxy.getTitle(),
+						// Activity parent
+						mProxy.getParent(),
+						// String id
+						mProxyRef.get("mEmbeddedID"),
+						// NonConfigurationInstances lastNonConfigurationInstances
+						mProxy.getLastNonConfigurationInstance(),
+						// Configuration config
+						mProxyRef.get("mCurrentConfig"),
+						// IVoiceInteractor mVoiceInteractor
+						mProxyRef.get("mVoiceInteractor"));
+			} else {
+				mPluginRef.call(
+						// 方法名
+						"attach",
+						// Context context
+//						contextWrapper,
+						mProxy,
+						// ActivityThread aThread
+						mProxyRef.get("mMainThread"),
+						// Instrumentation instr
+						pluginInstr,
+						// IBinder token
+						mProxyRef.get("mToken"),
+						// int ident
+						mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
+						// Application application
+						mApplication == null ? mProxy.getApplication() : mApplication,
+						// Intent intent
+						mProxy.getIntent(),
+						// ActivityInfo info
+						mProxyRef.get("mActivityInfo"),
+						// CharSequence title
+						mProxy.getTitle(),
+						// Activity parent
+						mProxy.getParent(),
+						// String id
+						mProxyRef.get("mEmbeddedID"),
+						// NonConfigurationInstances lastNonConfigurationInstances
+						mProxy.getLastNonConfigurationInstance(),
+						// Configuration config
+						mProxyRef.get("mCurrentConfig"));
+			}
 
 			mPluginRef.set("mWindow", mProxy.getWindow());
 			mPluginRef.set("mWindowManager", mProxy.getWindow().getWindowManager());

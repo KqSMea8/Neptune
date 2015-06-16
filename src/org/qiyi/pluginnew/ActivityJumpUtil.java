@@ -9,6 +9,7 @@ import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
@@ -100,7 +101,11 @@ public class ActivityJumpUtil {
 	}
 
 	public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode,
-			Bundle options) {
+			Bundle options, Context context) {
+		if (intent == null) {
+			Log.e(TAG, "handleStartActivityIntent intent is null!");
+			return intent;
+		}
 		if (intent != null
 				&& !TextUtils
 						.isEmpty(intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY))
@@ -161,8 +166,15 @@ public class ActivityJumpUtil {
 					targetActivity = mapping.resolveActivity(intent);
 				}
 			} else {
-				// TODO CMPackageManager keep all intent filter, then loop from
-				// CMPackageManager
+				if (null != context) {
+					for (CMPackageInfo pkgInfo : CMPackageManager.getInstance(context)
+							.getInstalledApps()) {
+						if (pkgInfo != null && pkgInfo.targetInfo != null) {
+							targetActivity = pkgInfo.targetInfo.resolveActivity(intent);
+							break;
+						}
+					}
+				}
 			}
 		}
 		Log.d(TAG,

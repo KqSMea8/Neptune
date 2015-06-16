@@ -35,6 +35,7 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginnew.ActivityJumpUtil;
 import org.qiyi.pluginnew.ActivityOverider;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
+import org.qiyi.pluginnew.service.PluginServiceWrapper;
 
 public class InstrActivityProxy extends Activity {
 
@@ -42,7 +43,6 @@ public class InstrActivityProxy extends Activity {
 
 	private ProxyEnvironmentNew mPluginEnv;
 	private PluginActivityControl mPluginContrl;
-	private CMContextWrapperNew mPluginContextWrapper;
 
 	/**
 	 * 装载插件的Activity
@@ -133,10 +133,10 @@ public class InstrActivityProxy extends Activity {
 			this.finish();
 		}
 		if (null != mPluginContrl) {
-			mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
+			CMContextWrapperNew pluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
 					pluginPkgName);
 			ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
-			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper);
+			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, pluginContextWrapper);
 			if (actInfo != null) {
 				ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
 
@@ -328,50 +328,40 @@ public class InstrActivityProxy extends Activity {
 
 	@Override
 	public ComponentName startService(Intent service) {
-		if (mPluginContextWrapper != null) {
-			return mPluginContextWrapper.startService(service);
+		if (mPluginEnv != null) {
+			mPluginEnv.remapStartServiceIntent(service);
 		}
 		return super.startService(service);
 	}
 
 	@Override
 	public boolean stopService(Intent name) {
-		if (mPluginContextWrapper != null) {
-			return mPluginContextWrapper.stopService(name);
+		if (mPluginEnv != null) {
+			String actServiceClsName = name.getComponent().getClassName();
+			PluginServiceWrapper plugin = ProxyEnvironmentNew.sAliveServices
+					.get(PluginServiceWrapper.getIndeitfy(mPluginEnv.getTargetPackageName(),
+							actServiceClsName));
+			if (plugin != null) {
+				plugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
+				plugin.tryToDestroyService(name);
+				return true;
+			}
 		}
 		return super.stopService(name);
 	}
 
 	@Override
 	public boolean bindService(Intent service, ServiceConnection conn, int flags) {
-		if (mPluginContextWrapper != null) {
-			return mPluginContextWrapper.bindService(service, conn, flags);
+		if (mPluginEnv != null) {
+			mPluginEnv.remapStartServiceIntent(service);
 		}
 		return super.bindService(service, conn, flags);
 	}
 
-//	@Override
-//	public void startActivity(Intent intent) {
-//		if (mPluginContextWrapper != null) {
-//			mPluginContextWrapper.startActivity(intent);
-//		} else {
-//			super.startActivity(intent);
-//		}
-//	}
-//
-//
-//	public void startActivity(Intent intent, Bundle options) {
-//		if (mPluginContextWrapper != null) {
-//			mPluginContextWrapper.startActivity(intent, options);
-//		} else {
-//			super.startActivity(intent, options);
-//		}
-//	}
-
 	public void startActivityForResult(Intent intent, int requestCode) {
 		if (mPluginEnv != null) {
 			super.startActivityForResult(ActivityJumpUtil.handleStartActivityIntent(
-					mPluginEnv.getTargetPackageName(), intent, requestCode, null), requestCode);
+					mPluginEnv.getTargetPackageName(), intent, requestCode, null, this), requestCode);
 		} else {
 			super.startActivityForResult(intent, requestCode);
 		}
@@ -381,7 +371,7 @@ public class InstrActivityProxy extends Activity {
 	public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
 		if (mPluginEnv != null) {
 			super.startActivityForResult(ActivityJumpUtil.handleStartActivityIntent(
-					mPluginEnv.getTargetPackageName(), intent, requestCode, options), requestCode,
+					mPluginEnv.getTargetPackageName(), intent, requestCode, options, this), requestCode,
 					options);
 		} else {
 			super.startActivityForResult(intent, requestCode, options);
@@ -402,8 +392,9 @@ public class InstrActivityProxy extends Activity {
 
 	@Override
 	public SharedPreferences getSharedPreferences(String name, int mode) {
-		if (mPluginContextWrapper != null) {
-			return mPluginContextWrapper.getSharedPreferences(name, mode);
+		if (mPluginEnv != null && mPluginEnv.getTargetMapping() != null
+				&& mPluginEnv.getTargetMapping().isDataNeedPrefix()) {
+			name = mPluginEnv.getTargetPackageName() + "_" + name;
 		}
 		return super.getSharedPreferences(name, mode);
 	}

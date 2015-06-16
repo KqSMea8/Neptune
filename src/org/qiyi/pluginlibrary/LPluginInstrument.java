@@ -32,7 +32,7 @@ public class LPluginInstrument extends Instrumentation {
 	public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token,
 			Activity target, Intent intent, int requestCode, Bundle options) {
 
-		ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, options);
+		ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, options, who);
 		return instrumentRef.call("execStartActivity", who, contextThread, token, target, intent,
 				requestCode, options).get();
 
@@ -41,7 +41,7 @@ public class LPluginInstrument extends Instrumentation {
 	/** @Override */
 	public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token,
 			Activity target, Intent intent, int requestCode) {
-		ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null);
+		ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
 		return instrumentRef.call("execStartActivity", who, contextThread, token, target, intent,
 				requestCode).get();
 
@@ -51,7 +51,7 @@ public class LPluginInstrument extends Instrumentation {
 	public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread,
 			IBinder token, Activity target, Intent intent, int requestCode, Bundle options,
 			int userId) {
-		ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null);
+		ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
 		return instrumentRef.call("execStartActivityAsCaller", who, contextThread, token, target,
 				intent, requestCode, options, userId).get();
 	}
@@ -60,7 +60,7 @@ public class LPluginInstrument extends Instrumentation {
 	public void execStartActivitiesAsUser(Context who, IBinder contextThread, IBinder token,
 			Activity target, Intent[] intents, Bundle options, int userId) {
 		for (Intent intent : intents) {
-			ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, 0, options);
+			ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, 0, options, who);
 		}
 		instrumentRef.call("execStartActivitiesAsUser", who, contextThread, token, target, intents,
 				options, userId);

@@ -250,7 +250,7 @@ public class ProxyEnvironmentNew {
 		if (context instanceof Activity) {
 			mParent = (Activity) context;
 		}
-		final String packageName = intent.getComponent().getPackageName();
+		final String packageName = tryParsePkgName(context, intent);;
 		if (TextUtils.isEmpty(packageName)) {
 			deliverPlug(false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);// 添加投递
 			// throw new
@@ -324,6 +324,34 @@ public class ProxyEnvironmentNew {
 	}
 
 	/**
+	 * Helper method to get package name from intent
+	 * 
+	 * @return
+	 */
+	private static String tryParsePkgName(Context context, Intent intent) {
+		if (intent == null) {
+			return "";
+		}
+		ComponentName cpn = intent.getComponent();
+		if (cpn == null || TextUtils.isEmpty(cpn.getPackageName())) {
+			if (context == null) {
+				return "";
+			}
+			// Here, loop all installed packages to get pkgName.
+			for (CMPackageInfo info : CMPackageManager.getInstance(context).getInstalledApps()) {
+				if (info != null && info.targetInfo != null) {
+					if (info.targetInfo.resolveActivity(intent) != null) {
+						return info.packageName;
+					}
+				}
+			}
+		} else {
+			return cpn.getPackageName();
+		}
+		return "";
+	}
+
+	/**
 	 * 进入代理模式
 	 * 
 	 * @param context
@@ -334,8 +362,8 @@ public class ProxyEnvironmentNew {
 	 * @return true表示启动了activity，false表示启动失败，或者启动非activity
 	 */
 	public static boolean launchIntent(Context context, ServiceConnection conn, Intent intent) {
-		PluginDebugLog.log("plugin", "launchIntent");
-		String packageName = intent.getComponent().getPackageName();
+		PluginDebugLog.log("plugin", "launchIntent: " + intent);
+		String packageName = tryParsePkgName(context, intent);
 		ProxyEnvironmentNew env = sPluginsMap.get(packageName);
 		if (env == null) {
 			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);// 增加投递
@@ -385,32 +413,38 @@ public class ProxyEnvironmentNew {
 				+ ";cacheIntents:" + cacheIntents);
 		boolean haveLaunchActivity = false;
 		for (Intent curIntent : cacheIntents) {
-
-			// 获取目标class
-			String targetClassName = curIntent.getComponent().getClassName();
-			PluginDebugLog.log(TAG, "launchIntent_targetClassName:" + targetClassName);
-			if (TextUtils.equals(targetClassName, ProxyEnvironment.EXTRA_VALUE_LOADTARGET_STUB)) {
-
-				// 表示后台加载，不需要处理该Intent
+			if (curIntent == null) {
 				continue;
 			}
-			if (TextUtils.isEmpty(targetClassName)) {
-				targetClassName = env.getTargetMapping().getDefaultActivityName();
-			}
+			String targetClassName = "";
+			if (curIntent.getComponent() != null) {
+				// 获取目标class
+				targetClassName = curIntent.getComponent().getClassName();
+				PluginDebugLog.log(TAG, "launchIntent_targetClassName:" + targetClassName);
+				if (TextUtils.equals(targetClassName, ProxyEnvironment.EXTRA_VALUE_LOADTARGET_STUB)) {
+					
+					// 表示后台加载，不需要处理该Intent
+					continue;
+				}
+				if (TextUtils.isEmpty(targetClassName)) {
+					targetClassName = env.getTargetMapping().getDefaultActivityName();
+				}
+			}// else is for action invoke
 
 			// 处理启动的是service
-			Class<?> targetClass;
-			try {
-				targetClass = env.dexClassLoader.loadClass(targetClassName);
-			} catch (Exception e) {
-				deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_START);// 添加投递
-				// targetClass = CMActivity.class;
-				return false;
+			Class<?> targetClass = null;
+			if (!TextUtils.isEmpty(targetClassName)) {
+				try {
+					targetClass = env.dexClassLoader.loadClass(targetClassName);
+				} catch (Exception e) {
+					deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_START);// 添加投递
+					// targetClass = CMActivity.class;
+					return false;
+				}
 			}
 			PluginDebugLog.log(TAG, "launchIntent_targetClass:" + targetClass);
-			// deliverPlug(true, packageName,
-			// ErrorType.ERROR_CLIENT_LOAD_START);//添加投递
-			if (Service.class.isAssignableFrom(targetClass)) {
+//			deliverPlug(true, packageName, ErrorType.ERROR_CLIENT_LOAD_START);// 添加投递
+			if (targetClass != null && Service.class.isAssignableFrom(targetClass)) {
 				env.remapStartServiceIntent(curIntent, targetClassName);
 				if (conn == null) {
 					context.startService(curIntent);
@@ -419,14 +453,15 @@ public class ProxyEnvironmentNew {
 							ProxyEnvironment.BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
 				}
 
-			} else if (BroadcastReceiver.class.isAssignableFrom(targetClass)) { // 发一个内部用的动态广播
+			} else if (targetClass != null && BroadcastReceiver.class.isAssignableFrom(targetClass)) { // 发一个内部用的动态广播
 				Intent newIntent = new Intent(curIntent);
 				newIntent.setComponent(null);
 				newIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, packageName);
 				newIntent.setPackage(context.getPackageName());
 				context.sendBroadcast(newIntent);
 			} else {
-				mappingActivity(context, curIntent);
+//				mappingActivity(context, curIntent);
+				ActivityJumpUtil.handleStartActivityIntent(env.mPluginPakName, intent, -1, null, context);
 				env.dealLaunchMode(intent);
 				context.startActivity(curIntent);
 				haveLaunchActivity = true;

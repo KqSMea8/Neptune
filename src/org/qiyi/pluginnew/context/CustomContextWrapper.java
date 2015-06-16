@@ -92,13 +92,13 @@ public abstract class CustomContextWrapper extends ContextWrapper {
 	@Override
 	public void startActivity(Intent intent) {
 		super.startActivity(ActivityJumpUtil.handleStartActivityIntent(getTargetPackageName(),
-				intent, -1, null));
+				intent, -1, null, this));
 	}
 
 	@Override
 	public void startActivity(Intent intent, Bundle options) {
 		super.startActivity(ActivityJumpUtil.handleStartActivityIntent(getTargetPackageName(),
-				intent, -1, options), options);
+				intent, -1, options, this), options);
 	}
 
 	
