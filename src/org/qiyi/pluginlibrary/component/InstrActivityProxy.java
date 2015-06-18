@@ -142,6 +142,8 @@ public class InstrActivityProxy extends Activity {
 
 				int resTheme = actInfo.getThemeResource();
 				setTheme(resTheme);
+				// Set plugin's default theme.
+				plugin.setTheme(resTheme);
 			}
 			try {
 				mPluginContrl.callOnCreate(savedInstanceState);
