@@ -123,12 +123,14 @@ public class PluginInstallerService extends IntentService {
 		} else if (srcFile.startsWith(CMPackageManager.SCHEME_SO)) {
 			info.mSuffixType = CMPackageManager.PLUGIN_FILE_SO;
 			String soFilePath = srcFile.substring(CMPackageManager.SCHEME_SO.length());
+			
+			int start = srcFile.lastIndexOf("/");
+			int end = srcFile.lastIndexOf(PluginInstaller.SO_SUFFIX);
+			String fileName = srcFile.substring(start + 1, end);
+			
 			boolean flag = Util.installNativeLibrary(soFilePath, PluginInstaller
-					.getPluginappRootPath(this).getAbsolutePath());
+					.getPluginappRootPath(this).getAbsolutePath() + File.separator + fileName);
 			if (flag) {
-				int start = srcFile.lastIndexOf("/");
-				int end = srcFile.lastIndexOf(PluginInstaller.SO_SUFFIX);
-				String fileName = srcFile.substring(start + 1, end);
 				setInstallSuccess(fileName, srcFile, null, info);
 			} else {
 				setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR, info);

@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.qiyi.pluginlibrary.LPluginInstrument;
 import org.qiyi.pluginlibrary.PluginActivityControl;
-import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.ResourcesProxy;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.api.ITargetLoadListenner;
@@ -63,6 +62,21 @@ import android.text.TextUtils;
 public class ProxyEnvironmentNew {
 
 	public static final String TAG = ProxyEnvironmentNew.class.getSimpleName();
+
+    public static final String EXTRA_TARGET_ACTIVITY = "pluginapp_extra_target_activity";
+    public static final String EXTRA_TARGET_SERVICE = "pluginapp_extra_target_service";
+    public static final String EXTRA_TARGET_RECEIVER= "pluginapp_extra_target_receiver";
+    public static final String EXTRA_TARGET_PACKAGNAME = "pluginapp_extra_target_pacakgename";
+    public static final String EXTRA_TARGET_ISBASE = "pluginapp_extra_target_isbase";
+    public static final String EXTRA_TARGET_REDIRECT_ACTIVITY = "pluginapp_extra_target_redirect_activity";
+    public static final String EXTRA_VALUE_LOADTARGET_STUB = "pluginapp_loadtarget_stub";
+    
+    public static final String BIND_SERVICE_FLAGS = "bind_service_flags";
+    
+    public static final String META_KEY_CLASSINJECT = "pluginapp_class_inject";
+    
+    /** 插件加载成功的广播 */
+    public static final String ACTION_TARGET_LOADED = "org.qiyi.pluginapp.action.TARGET_LOADED";
 
 	/** pluginapp开关:data是否【去掉】包名前缀，默认加载包名前缀 */
 	public static final String META_KEY_DATA_WITH_PREFIX = "pluginapp_cfg_data_with_prefix";
@@ -435,7 +449,7 @@ public class ProxyEnvironmentNew {
 				// 获取目标class
 				targetClassName = curIntent.getComponent().getClassName();
 				PluginDebugLog.log(TAG, "launchIntent_targetClassName:" + targetClassName);
-				if (TextUtils.equals(targetClassName, ProxyEnvironment.EXTRA_VALUE_LOADTARGET_STUB)) {
+				if (TextUtils.equals(targetClassName, ProxyEnvironmentNew.EXTRA_VALUE_LOADTARGET_STUB)) {
 					
 					// 表示后台加载，不需要处理该Intent
 					continue;
@@ -464,13 +478,13 @@ public class ProxyEnvironmentNew {
 					context.startService(curIntent);
 				} else {
 					context.bindService(curIntent, conn, curIntent.getIntExtra(
-							ProxyEnvironment.BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
+							ProxyEnvironmentNew.BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
 				}
 
 			} else if (targetClass != null && BroadcastReceiver.class.isAssignableFrom(targetClass)) { // 发一个内部用的动态广播
 				Intent newIntent = new Intent(curIntent);
 				newIntent.setComponent(null);
-				newIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, packageName);
+				newIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, packageName);
 				newIntent.setPackage(context.getPackageName());
 				context.sendBroadcast(newIntent);
 			} else {
@@ -644,7 +658,7 @@ public class ProxyEnvironmentNew {
 	}
 
 	public void dealLaunchMode(Intent intent) {
-		String targetActivity = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY);
+		String targetActivity = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY);
 		if (TextUtils.isEmpty(targetActivity) || intent == null) {
 			return;
 		}
@@ -734,8 +748,8 @@ public class ProxyEnvironmentNew {
 		if (targetMapping.getServiceInfo(targetService) == null) {
 			return;
 		}
-		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_SERVICE, targetService);
-		intent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, targetMapping.getPackageName());
+		intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE, targetService);
+		intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, targetMapping.getPackageName());
 
 		intent.setClass(mContext, ServiceProxyNew.class);
 	}
@@ -746,8 +760,8 @@ public class ProxyEnvironmentNew {
 	public void remapReceiverIntent(Intent originIntent) {
 		if (originIntent.getComponent() != null) {
 			String targetReceiver = originIntent.getComponent().getClassName();
-			originIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_RECEIVER, targetReceiver);
-			originIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME,
+			originIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_RECEIVER, targetReceiver);
+			originIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME,
 					targetMapping.getPackageName());
 			originIntent.setClass(mContext, BroadcastReceiverProxy.class);
 		}
@@ -786,7 +800,7 @@ public class ProxyEnvironmentNew {
 
 		// 把 插件 classloader 注入到 host程序中，方便host app 能够找到 插件 中的class。
 		if (targetMapping.getMetaData() != null
-				&& targetMapping.getMetaData().getBoolean(ProxyEnvironment.META_KEY_CLASSINJECT)) {
+				&& targetMapping.getMetaData().getBoolean(ProxyEnvironmentNew.META_KEY_CLASSINJECT)) {
 			ClassLoaderInjectHelper.inject(mContext.getClassLoader(), dexClassLoader,
 					targetMapping.getPackageName() + ".R");
 			PluginDebugLog.log(TAG, "--- Class injecting @ " + targetMapping.getPackageName());
@@ -798,7 +812,7 @@ public class ProxyEnvironmentNew {
 	 */
 	public void ejectClassLoader() {
 		if (dexClassLoader != null && targetMapping.getMetaData() != null
-				&& targetMapping.getMetaData().getBoolean(ProxyEnvironment.META_KEY_CLASSINJECT)) {
+				&& targetMapping.getMetaData().getBoolean(ProxyEnvironmentNew.META_KEY_CLASSINJECT)) {
 			ClassLoaderInjectHelper.eject(mContext.getClassLoader(), dexClassLoader);
 		}
 	}
@@ -1016,8 +1030,8 @@ public class ProxyEnvironmentNew {
 				throws InstantiationException, IllegalAccessException, ClassNotFoundException {
 
 			if (className.equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
-				String pluginId = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
-				String actClassName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY);
+				String pluginId = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
+				String actClassName = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY);
 
 				ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
 				if (env == null && mContext != null) {

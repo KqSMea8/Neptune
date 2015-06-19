@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.qiyi.pluginlibrary.ProxyEnvironment;
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
@@ -430,9 +430,11 @@ public class PluginInstaller {
         if (apkPath != null) {
             apkPath.delete();
         }
-        
+        File dataDir = null;
         // 删除 dex,so 安装目录
-        File dataDir = ProxyEnvironment.getDataDir(context, packageName);
+        if(ProxyEnvironmentNew.getInstance(packageName)!= null){
+        	dataDir = ProxyEnvironmentNew.getInstance(packageName).getDataDir(context, packageName);
+        }
         if (dataDir != null) {
             try {
                 Util.deleteDirectory(dataDir);

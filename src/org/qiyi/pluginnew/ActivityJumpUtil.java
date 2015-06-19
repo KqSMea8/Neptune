@@ -1,7 +1,6 @@
 package org.qiyi.pluginnew;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
@@ -96,8 +95,8 @@ public class ActivityJumpUtil {
 		}
 		ComponentName compname = new ComponentName(env.getParentPackagename(),
 				getProxyActivityClsName(env.getInstallType(), info));
-		intent.setComponent(compname).putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, pluginId)
-				.putExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY, actName);
+		intent.setComponent(compname).putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, pluginId)
+				.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY, actName);
 	}
 
 	public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode,
@@ -108,9 +107,9 @@ public class ActivityJumpUtil {
 		}
 		if (intent != null
 				&& !TextUtils
-						.isEmpty(intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_ACTIVITY))
+						.isEmpty(intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY))
 				&& !TextUtils.isEmpty(intent
-						.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME))) {
+						.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME))) {
 			return intent;
 		}
 		ActivityInfo targetActivity = null;

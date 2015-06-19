@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
@@ -90,12 +89,12 @@ public class ApkTargetMappingNew implements TargetMapping {
 			}
 			ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
 		} catch (RuntimeException e) {
-			ProxyEnvironment.deliverPlug(false, packageName,
+			ProxyEnvironmentNew.deliverPlug(false, packageName,
 					ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
 			e.printStackTrace();
 			return;
 		} catch (Exception e) {
-			ProxyEnvironment.deliverPlug(false, packageName,
+			ProxyEnvironmentNew.deliverPlug(false, packageName,
 					ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
 			e.printStackTrace();
 		}

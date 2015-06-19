@@ -1,6 +1,5 @@
 package org.qiyi.plugin.manager;
 
-import org.qiyi.pluginlibrary.ProxyEnvironment;
 import org.qiyi.pluginlibrary.api.IGetClassLoaderCallback;
 import org.qiyi.pluginlibrary.api.ITargetLoadedCallBack;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
@@ -60,8 +59,8 @@ public class TargetActivatorNew {
 
         BroadcastReceiver recv = new BroadcastReceiver() {
             public void onReceive(Context ctx, Intent intent) {
-                String curPkg = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
-                if (ProxyEnvironment.ACTION_TARGET_LOADED.equals(intent.getAction())
+                String curPkg = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
+                if (ProxyEnvironmentNew.ACTION_TARGET_LOADED.equals(intent.getAction())
                         && TextUtils.equals(packageName, curPkg)) {
                 	PluginDebugLog.log("plugin", "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
                     callback.onTargetLoaded(packageName);
@@ -71,11 +70,11 @@ public class TargetActivatorNew {
         };
         PluginDebugLog.log("plugin", "注册自定义广播org.qiyi.pluginapp.action.TARGET_LOADED");
         IntentFilter filter = new IntentFilter();
-        filter.addAction(ProxyEnvironment.ACTION_TARGET_LOADED);
+        filter.addAction(ProxyEnvironmentNew.ACTION_TARGET_LOADED);
         context.getApplicationContext().registerReceiver(recv, filter);
 
         Intent intent = new Intent();
-        intent.setAction(ProxyEnvironment.ACTION_TARGET_LOADED);
+        intent.setAction(ProxyEnvironmentNew.ACTION_TARGET_LOADED);
         intent.setComponent(new ComponentName(packageName, recv.getClass().getName()));
         ProxyEnvironmentNew.enterProxy(context,null,intent);
     }
@@ -345,5 +344,15 @@ public class TargetActivatorNew {
 
     public interface ITargetActivatorNew {
         void loadTargetAndRun(final Context context, final Intent intent);
+    }
+    
+    /**
+     * 注销插件App
+     * 
+     * @param packageName
+     *            插件包名
+     */
+    public static void unLoadTarget(String packageName) {
+        ProxyEnvironmentNew.exitProxy(packageName);
     }
 }

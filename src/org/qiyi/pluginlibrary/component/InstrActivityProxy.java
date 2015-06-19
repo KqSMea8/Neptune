@@ -1,5 +1,18 @@
 package org.qiyi.pluginlibrary.component;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
+
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.PluginActivityControl;
+import org.qiyi.pluginlibrary.pm.CMPackageInfo;
+import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginnew.ActivityJumpUtil;
+import org.qiyi.pluginnew.ActivityOverider;
+import org.qiyi.pluginnew.context.CMContextWrapperNew;
+import org.qiyi.pluginnew.service.PluginServiceWrapper;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
@@ -23,19 +36,6 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
-
-import java.io.FileDescriptor;
-import java.io.PrintWriter;
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.pluginlibrary.PluginActivityControl;
-import org.qiyi.pluginlibrary.ProxyEnvironment;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginnew.ActivityJumpUtil;
-import org.qiyi.pluginnew.ActivityOverider;
-import org.qiyi.pluginnew.context.CMContextWrapperNew;
-import org.qiyi.pluginnew.service.PluginServiceWrapper;
 
 public class InstrActivityProxy extends Activity {
 
@@ -64,8 +64,8 @@ public class InstrActivityProxy extends Activity {
 		final Bundle pluginMessage = getIntent().getExtras();
 		String[] result = new String[2];
 		if (null != pluginMessage) {
-			result[1] = pluginMessage.getString(ProxyEnvironment.EXTRA_TARGET_ACTIVITY, "");
-			result[0] = pluginMessage.getString(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, "");
+			result[1] = pluginMessage.getString(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY, "");
+			result[0] = pluginMessage.getString(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, "");
 			if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
 				return result;
 			}
@@ -119,7 +119,7 @@ public class InstrActivityProxy extends Activity {
 		if (!ProxyEnvironmentNew.isEnterProxy(pluginActivityName)) {
 			Intent i = new Intent();
 			i.setComponent(new ComponentName(pluginPkgName,
-					ProxyEnvironment.EXTRA_VALUE_LOADTARGET_STUB));
+					ProxyEnvironmentNew.EXTRA_VALUE_LOADTARGET_STUB));
 			ProxyEnvironmentNew.launchIntent(InstrActivityProxy.this, null, i);
 		}
 		Activity plugin = fillPluginActivity(mPluginEnv, pluginActivityName);

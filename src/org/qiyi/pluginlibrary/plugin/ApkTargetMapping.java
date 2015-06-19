@@ -3,7 +3,7 @@ package org.qiyi.pluginlibrary.plugin;
 import java.io.File;
 import java.util.HashMap;
 
-import org.qiyi.pluginlibrary.ProxyEnvironment;
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 
 import android.content.Context;
@@ -78,7 +78,7 @@ public class ApkTargetMapping implements TargetMapping {
             }
             packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
         } catch (RuntimeException e) {
-        	ProxyEnvironment.deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
+        	ProxyEnvironmentNew.deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
             return;
         }

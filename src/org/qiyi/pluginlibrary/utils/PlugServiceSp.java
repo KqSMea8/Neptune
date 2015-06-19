@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.qiyi.pluginlibrary.ProxyEnvironment;
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -50,8 +50,8 @@ public class PlugServiceSp {
 		for(Map.Entry<String, ?> entry :map.entrySet()){
 			String targetClassName = entry.getKey();
 			String targetPackageName = (String)entry.getValue();
-			paramIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_SERVICE, targetClassName);
-			paramIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME,targetPackageName);
+			paramIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE, targetClassName);
+			paramIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME,targetPackageName);
 			return paramIntent;
 		}
 		return paramIntent;
@@ -62,8 +62,8 @@ public class PlugServiceSp {
 	 * 保存启动的service
 	 */
 	public void saveAliveService(Intent paramIntent){
-    	String  targetClassName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_SERVICE);
-        String  targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+    	String  targetClassName = paramIntent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE);
+        String  targetPackageName = paramIntent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
     	Editor editor = sp.edit();
 		editor.putString(targetClassName, targetPackageName).commit();
 		
@@ -93,8 +93,8 @@ public class PlugServiceSp {
     	for(Map.Entry<String, ?> entry :map.entrySet()){
 			String targetClassName = entry.getKey();
 			String targetPackageName = (String)entry.getValue();
-			paramIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_SERVICE, targetClassName);
-			paramIntent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME,targetPackageName);
+			paramIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE, targetClassName);
+			paramIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME,targetPackageName);
 			intentLists.add(paramIntent);
 		}
     	return intentLists;

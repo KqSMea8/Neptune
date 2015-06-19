@@ -12,8 +12,8 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.qiyi.plugin.manager.TargetActivatorNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.api.TargetActivator;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -567,7 +567,7 @@ public class CMPackageManager {
 			boolean deleteData, boolean sendNotify) {
     	try{
     		// 先停止运行插件
-    		TargetActivator.unLoadTarget(packageName);
+    		TargetActivatorNew.unLoadTarget(packageName);
     	}catch(Exception e){
     		e.printStackTrace();
     	}
