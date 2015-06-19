@@ -115,8 +115,17 @@ public class ProxyEnvironmentNew {
 	 *            host application context
 	 * @param apkFile
 	 *            插件apk文件
+	 * @throws Exception 
 	 */
-	private ProxyEnvironmentNew(Context context, File apkFile, String pluginPakName, String installType) {
+	private ProxyEnvironmentNew(Context context, File apkFile, String pluginPakName,
+			String installType) throws Exception {
+		if (context == null || apkFile == null || TextUtils.isEmpty(pluginPakName)
+				|| TextUtils.isEmpty(installType)) {
+			throw new Exception(
+					"ProxyEnvironmentNew init failed for parameters has null: context: " + context
+							+ " apkFile: " + apkFile + " pluginPakName: " + pluginPakName
+							+ " installType: " + installType);
+		}
 		mContext = context.getApplicationContext();
 		mApkFile = apkFile;
 		activityStack = new LinkedList<Activity>();
@@ -157,14 +166,13 @@ public class ProxyEnvironmentNew {
 	 */
 	public static ProxyEnvironmentNew getInstance(String packageName) {
 		ProxyEnvironmentNew env = null;
-		if (packageName != null) {
+		if (!TextUtils.isEmpty(packageName)) {
 			env = sPluginsMap.get(packageName);
+		} else {
+			PluginDebugLog.log(TAG, "getInstance packageName is empty!");
 		}
 		if (env == null) {
-			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
-			// throw new IllegalArgumentException(packageName
-			// +" not loaded, Make sure you have call the init method!");
-
+			PluginDebugLog.log(TAG, "getInstance env is null!");
 		}
 		return env;
 	}
@@ -177,7 +185,7 @@ public class ProxyEnvironmentNew {
 	 * @return true表示已经建立
 	 */
 	public static boolean hasInstance(String packageName) {
-		if (packageName == null) {
+		if (TextUtils.isEmpty(packageName)) {
 			return false;
 		}
 		return sPluginsMap.containsKey(packageName);
@@ -191,7 +199,7 @@ public class ProxyEnvironmentNew {
 	 * @return true or false
 	 */
 	public static boolean isEnterProxy(String packageName) {
-		if (packageName == null) {
+		if (TextUtils.isEmpty(packageName)) {
 			return false;
 		}
 		ProxyEnvironmentNew env = sPluginsMap.get(packageName);
@@ -209,7 +217,7 @@ public class ProxyEnvironmentNew {
 	 *            包名
 	 */
 	public static void clearLoadingIntent(String packageName) {
-		if (packageName == null) {
+		if (TextUtils.isEmpty(packageName)) {
 			return;
 		}
 
@@ -226,7 +234,7 @@ public class ProxyEnvironmentNew {
 	 * @return true or false
 	 */
 	public static boolean isLoading(String packageName) {
-		if (packageName == null) {
+		if (TextUtils.isEmpty(packageName)) {
 			return false;
 		}
 
@@ -253,8 +261,8 @@ public class ProxyEnvironmentNew {
 		final String packageName = tryParsePkgName(context, intent);;
 		if (TextUtils.isEmpty(packageName)) {
 			deliverPlug(false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);// 添加投递
-			// throw new
-			// RuntimeException("*** loadTarget with null packagename!");
+			PluginDebugLog.log(TAG, "enterProxy packageName is null return! packageName: "
+					+ packageName);
 			return;
 		}
 
@@ -265,6 +273,8 @@ public class ProxyEnvironmentNew {
 				// 正在loading，直接返回吧，等着loading完调起
 				// 把intent都缓存起来
 				cacheIntents.add(intent);
+				PluginDebugLog.log(TAG, "LoadingMap is not empty, Cache current intent, intent: "
+						+ intent);
 				return;
 			}
 
@@ -272,6 +282,8 @@ public class ProxyEnvironmentNew {
 			if (!isEnterProxy) {
 				List<Intent> intents = new ArrayList<Intent>();
 				intents.add(intent);
+				PluginDebugLog.log(TAG, "Environment is loading cache current intent, intent: "
+						+ intent);
 				gLoadingMap.put(packageName, intents);// 正在加载的插件队列
 			}
 		}
@@ -367,6 +379,7 @@ public class ProxyEnvironmentNew {
 		ProxyEnvironmentNew env = sPluginsMap.get(packageName);
 		if (env == null) {
 			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);// 增加投递
+			PluginDebugLog.log(TAG, "launchIntent env is null! Just return!");
 			return false;
 			// throw new IllegalArgumentException(packageName
 			// +" not loaded, Make sure you have call the init method!");
@@ -387,6 +400,7 @@ public class ProxyEnvironmentNew {
 							.asSubclass(Application.class).newInstance());
 				} catch (Exception e) {
 					deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);// 添加投递
+					e.printStackTrace();
 					return false;
 					// throw new RuntimeException(e.getMessage(), e);
 				}
@@ -409,8 +423,8 @@ public class ProxyEnvironmentNew {
 			cacheIntents.add(intent);
 		}
 
-		PluginDebugLog.log(TAG, "launchIntent_cacheIntents:" + cacheIntents.size()
-				+ ";cacheIntents:" + cacheIntents);
+		PluginDebugLog.log(TAG, "launchIntent_cacheIntents: " + cacheIntents.size()
+				+ "; cacheIntents: " + cacheIntents);
 		boolean haveLaunchActivity = false;
 		for (Intent curIntent : cacheIntents) {
 			if (curIntent == null) {
@@ -438,12 +452,12 @@ public class ProxyEnvironmentNew {
 					targetClass = env.dexClassLoader.loadClass(targetClassName);
 				} catch (Exception e) {
 					deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_START);// 添加投递
-					// targetClass = CMActivity.class;
+					PluginDebugLog.log(TAG, "launchIntent loadClass failed for targetClassName: "
+							+ targetClassName);					
 					return false;
 				}
 			}
 			PluginDebugLog.log(TAG, "launchIntent_targetClass:" + targetClass);
-//			deliverPlug(true, packageName, ErrorType.ERROR_CLIENT_LOAD_START);// 添加投递
 			if (targetClass != null && Service.class.isAssignableFrom(targetClass)) {
 				env.remapStartServiceIntent(curIntent, targetClassName);
 				if (conn == null) {
@@ -471,17 +485,20 @@ public class ProxyEnvironmentNew {
 		return haveLaunchActivity;
 	}
 	
-	public static void stopService(Intent intent){
-		
+	public static void stopService(Intent intent) {
+		if (intent == null || intent.getComponent() == null
+				|| TextUtils.isEmpty(intent.getComponent().getPackageName())) {
+			return;
+		}
 		final String packageName = intent.getComponent().getPackageName();
 		ProxyEnvironmentNew env = sPluginsMap.get(packageName);
 		if (env == null) {
-			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);// 增加投递
 			return;
 		}
-		
-		if(env.appWrapper != null)	
+
+		if (env.appWrapper != null) {
 			env.appWrapper.stopService(intent);
+		}
 	}
 
 	private void setApplicationBase(ProxyEnvironmentNew env, Application application,
@@ -536,10 +553,18 @@ public class ProxyEnvironmentNew {
 		if (sPluginsMap.containsKey(packageName)) {
 			return;
 		}
-		ProxyEnvironmentNew newEnv = new ProxyEnvironmentNew(context,
-				PluginInstaller.getInstalledApkFile(context, packageName), packageName,
-				pluginInstallMethod);
-		sPluginsMap.put(packageName, newEnv);
+		ProxyEnvironmentNew newEnv = null;
+		try {
+			newEnv = new ProxyEnvironmentNew(context,
+					PluginInstaller.getInstalledApkFile(context, packageName), packageName,
+					pluginInstallMethod);
+		} catch (Exception e) {
+			e.printStackTrace();
+			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
+		}
+		if (newEnv != null) {
+			sPluginsMap.put(packageName, newEnv);
+		}
 	}
 
 	/**
@@ -735,7 +760,7 @@ public class ProxyEnvironmentNew {
 	 * @return
 	 */
 	public File getDataDir(Context context, String packageName) {
-		PluginDebugLog.log("plugin", "packageName:" + packageName + " context:" + context);
+		PluginDebugLog.log(TAG, "packageName:" + packageName + " context:" + context);
 		File file = null;
 		try {
 			if (TextUtils.isEmpty(packageName)) {
@@ -745,8 +770,7 @@ public class ProxyEnvironmentNew {
 			}
 			file = new File(getTargetMapping().getDataDir());
 		} catch (Exception e) {
-			// deliverPlug(false, context.getPackageName(),
-			// ErrorType.ERROR_CLIENT_LOAD_CREATE_FILE_NULL);//添加投递
+			e.printStackTrace();
 		}
 		return file;
 	}
@@ -756,7 +780,7 @@ public class ProxyEnvironmentNew {
 	 */
 	private void createClassLoader() {
 
-		PluginDebugLog.log("plugin", "createClassLoader");
+		PluginDebugLog.log(TAG, "createClassLoader");
 		dexClassLoader = new PluginClassLoader(mApkFile.getAbsolutePath(), getDataDir(mContext,
 				mPluginPakName).getAbsolutePath(), mContext.getClassLoader(), this);
 

@@ -1,7 +1,9 @@
 package org.qiyi.plugin.manager;
 
 import org.qiyi.pluginlibrary.ProxyEnvironment;
+import org.qiyi.pluginlibrary.api.IGetClassLoaderCallback;
 import org.qiyi.pluginlibrary.api.ITargetLoadedCallBack;
+import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.BroadcastReceiver;
@@ -270,7 +272,7 @@ public class TargetActivatorNew {
      * @param callback
      *            回调，classloader 通过此异步回调返回给hostapp
      */
-/*    public static void loadAndGetClassLoader(final Context context, final String packageName,
+    public static void loadAndGetClassLoader(final Context context, final String packageName,
             final IGetClassLoaderCallback callback) {
         
         loadTarget(context, packageName, new ITargetLoadedCallBack() {
@@ -278,7 +280,12 @@ public class TargetActivatorNew {
             @Override
             public void onTargetLoaded(String packageName) {
             	try {
-            		ProxyEnvironmentNew.initProxyEnvironment(context, packageName);
+					ProxyEnvironmentNew
+							.initProxyEnvironment(
+									context,
+									packageName,
+									CMPackageManager.getInstance(context).getPackageInfo(
+											packageName).pluginInfo.mPluginInstallMethod);
             		ProxyEnvironmentNew targetEnv = ProxyEnvironmentNew.getInstance(packageName);
             		ClassLoader classLoader = targetEnv.getDexClassLoader();
             		
@@ -290,7 +297,7 @@ public class TargetActivatorNew {
             }
         });
 
-    }*/
+    }
 
     /**
      * 加载插件并创建插件内的View，View的Context是插件的Application Context

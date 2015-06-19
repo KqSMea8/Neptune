@@ -116,10 +116,12 @@ public class InstrActivityProxy extends Activity {
 		}
 
 		tryToInitEnvironment(pluginPkgName);
-		Intent i = new Intent();
-		i.setComponent(new ComponentName(pluginPkgName,
-				ProxyEnvironment.EXTRA_VALUE_LOADTARGET_STUB));
-		ProxyEnvironmentNew.launchIntent(InstrActivityProxy.this, null, i);
+		if (!ProxyEnvironmentNew.isEnterProxy(pluginActivityName)) {
+			Intent i = new Intent();
+			i.setComponent(new ComponentName(pluginPkgName,
+					ProxyEnvironment.EXTRA_VALUE_LOADTARGET_STUB));
+			ProxyEnvironmentNew.launchIntent(InstrActivityProxy.this, null, i);
+		}
 		Activity plugin = fillPluginActivity(mPluginEnv, pluginActivityName);
 		if (null == plugin) {
 			Log.e(TAG, "Cann't get pluginActivityName class finish!");

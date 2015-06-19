@@ -316,7 +316,7 @@ public class PluginInstaller {
     public static File getInstalledApkFile(Context context, String packageName) {
         CMPackageInfo info = CMPackageManager.getInstance(context).getPackageInfo(packageName);
     
-        if (info != null && info.srcApkPath !=null && info.srcApkPath.length() > 0) {
+        if (info != null && !TextUtils.isEmpty(info.srcApkPath)) {
             return new File(info.srcApkPath);
         } else {
             return null;
