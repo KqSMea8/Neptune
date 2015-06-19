@@ -43,6 +43,7 @@ public class InstrActivityProxy extends Activity {
 
 	private ProxyEnvironmentNew mPluginEnv;
 	private PluginActivityControl mPluginContrl;
+	CMContextWrapperNew mPluginContextWrapper;
 
 	/**
 	 * 装载插件的Activity
@@ -116,7 +117,7 @@ public class InstrActivityProxy extends Activity {
 		}
 
 		tryToInitEnvironment(pluginPkgName);
-		if (!ProxyEnvironmentNew.isEnterProxy(pluginActivityName)) {
+		if (!ProxyEnvironmentNew.isEnterProxy(pluginPkgName)) {
 			Intent i = new Intent();
 			i.setComponent(new ComponentName(pluginPkgName,
 					ProxyEnvironmentNew.EXTRA_VALUE_LOADTARGET_STUB));
@@ -135,10 +136,10 @@ public class InstrActivityProxy extends Activity {
 			this.finish();
 		}
 		if (null != mPluginContrl) {
-			CMContextWrapperNew pluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
+			mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
 					pluginPkgName);
 			ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
-			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, pluginContextWrapper);
+			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper);
 			if (actInfo != null) {
 				ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
 
@@ -222,6 +223,14 @@ public class InstrActivityProxy extends Activity {
 			return super.getClassLoader();
 		}
 		return mPluginEnv.getDexClassLoader();
+	}
+
+	@Override
+	public Context getApplicationContext() {
+		if (null != mPluginContextWrapper) {
+			return mPluginContextWrapper;
+		}
+		return super.getApplicationContext();
 	}
 
 	@Override
