@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.PluginActivityControl;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -87,6 +88,7 @@ public class InstrActivityProxy extends Activity {
 				if (null != pkgInfo && pkgInfo.pluginInfo != null) {
 					installMethod = pkgInfo.pluginInfo.mPluginInstallMethod;
 				} else {
+				    ProxyEnvironmentNew.deliverPlug(false, pkgName, ErrorType.ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL);
 					Log.e(TAG, "Cann't get pkginfo for: " + pkgName);
 					return;
 				}
@@ -110,6 +112,7 @@ public class InstrActivityProxy extends Activity {
 			pluginPkgName = pkgAndCls[0];
 			pluginActivityName = pkgAndCls[1];
 		} else {
+		    ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
 			Log.e(TAG, "Pkg or activity is null in LActivityProxy, just return!");
 			this.finish();
 			// throw new
@@ -125,6 +128,7 @@ public class InstrActivityProxy extends Activity {
 		}
 		Activity plugin = fillPluginActivity(mPluginEnv, pluginActivityName);
 		if (null == plugin) {
+		    ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL);
 			Log.e(TAG, "Cann't get pluginActivityName class finish!");
 			this.finish();
 		}
@@ -132,6 +136,7 @@ public class InstrActivityProxy extends Activity {
 			mPluginContrl = new PluginActivityControl(InstrActivityProxy.this, plugin,
 					mPluginEnv.getApplication(), mPluginEnv.mPluginInstrument);
 		} catch (Exception e1) {
+		    ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL);
 			e1.printStackTrace();
 			this.finish();
 		}
@@ -139,7 +144,7 @@ public class InstrActivityProxy extends Activity {
 			mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
 					pluginPkgName);
 			ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
-			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper);
+			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper, pluginPkgName);
 			if (actInfo != null) {
 				ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
 
@@ -154,6 +159,7 @@ public class InstrActivityProxy extends Activity {
 					mPluginEnv.pushActivityToStack(this);
 				}
 			} catch (Exception e) {
+			    ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
 				processError(e);
 				this.finish();
 			}

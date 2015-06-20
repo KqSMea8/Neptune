@@ -14,6 +14,8 @@ import android.view.View;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ReflectException;
 
@@ -58,7 +60,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 		mPluginRef = ReflectionUtils.on(plugin);
 	}
 
-	public void dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper) {
+	public void dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper, String packageName) {
 		if (mPlugin == null || mPlugin.getBaseContext() != null || pluginInstr == null) {
 			return;
 		}
@@ -172,6 +174,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 			ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", mPlugin);
 
 		} catch (ReflectException e) {
+		    ProxyEnvironmentNew.deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
 			e.printStackTrace();
 		}
 

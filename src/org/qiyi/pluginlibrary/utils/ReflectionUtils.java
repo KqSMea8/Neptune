@@ -12,6 +12,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+
 public class ReflectionUtils {
 
 	public static <T> T getFieldValue(Object obj, String fieldName)
@@ -382,6 +385,7 @@ public class ReflectionUtils {
                 return on(method, object, args);
             } catch (NoSuchMethodException e1) {
 
+                ProxyEnvironmentNew.deliverPlug(false, null, ErrorType.ERROR_CLIENT_REFLECTIONUTILS_CALL);
                 throw new ReflectException(e1);
             }
         }

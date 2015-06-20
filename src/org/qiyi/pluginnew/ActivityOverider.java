@@ -3,6 +3,7 @@ package org.qiyi.pluginnew;
 import java.lang.reflect.Field;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
 
 import android.app.Activity;
@@ -102,6 +103,7 @@ public class ActivityOverider {
 			field_mActivityInfo.setAccessible(true);
 			origActInfo = (ActivityInfo) field_mActivityInfo.get(activity);
 		} catch (Exception e) {
+		    ProxyEnvironmentNew.deliverPlug(false, pkgName, ErrorType.ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL);
 			Log.e(tag, Log.getStackTraceString(e));
 			return;
 		}

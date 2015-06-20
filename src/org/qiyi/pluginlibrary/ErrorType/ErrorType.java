@@ -117,6 +117,23 @@ public class ErrorType {
 	public static final int ERROR_CLIENT_SET_APPLICATION_BASE_FAIL = ERROR_CLIENT_CREATE_ACTIVITY_DEX_FAIL + 1;
 	/**新插件方案，重写instrumentation失败*/
 	public static final int ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL = ERROR_CLIENT_SET_APPLICATION_BASE_FAIL + 1;
+	
+	/**3.0 Instrumentation插件方案，InstrActivityProxy onCreate 时 intent中无pluginMessage*/
+	public static final int ERROR_CLIENT_GET_PKG_AND_CLS_FAIL = ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL + 1;
+	/**3.0 Instrumentation插件方案，InstrActivityProxy尝试初始化ProxyEnvironmentNew时失败（只有ProxyEnvironmentNew为null的时候会）*/
+	public static final int ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL= ERROR_CLIENT_GET_PKG_AND_CLS_FAIL + 1;
+	/**3.0 Instrumentation插件方案，InstrActivityProxy fillPluginActivity 发生异常*/
+	public static final int ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL= ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL + 1;
+	/**3.0 Instrumentation插件方案，InstrActivityProxy new PluginActivityControl 发生异常*/
+	public static final int ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL= ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL + 1;
+	/**3.0 Instrumentation插件方案，PluginActivityControl dispatchProxyToPlugin 发生异常*/
+	public static final int ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL= ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL + 1;
+	/**3.0 Instrumentation or 2.0插件方案，ActivityOverider changeActivityInfo 发生异常*/
+	public static final int ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL= ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL + 1;
+	/**3.0 Instrumentation，PluginActivityControl callOnCreate 发生异常*/
+	public static final int ERROR_CLIENT_CALL_ON_CREATE_FAIL= ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL + 1;
+	/**反射工具类异常，ReflectionUtils call方法发生异常*/
+	public static final int ERROR_CLIENT_REFLECTIONUTILS_CALL= ERROR_CLIENT_CALL_ON_CREATE_FAIL + 1;
     
     /**
      * 网络异常
