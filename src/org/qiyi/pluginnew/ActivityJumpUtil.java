@@ -6,6 +6,7 @@ import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -13,7 +14,6 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 
 /**
  * Help class for plugin activity jumping.
@@ -80,16 +80,33 @@ public class ActivityJumpUtil {
 		}
 	}
 
+	static boolean isChangedIntent(Intent originalIntent) {
+		if (originalIntent != null
+				&& originalIntent.getComponent() != null
+				&& !TextUtils.isEmpty(originalIntent
+						.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY))
+				&& !TextUtils.isEmpty(originalIntent
+						.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME))) {
+			if (TextUtils.equals(originalIntent.getComponent().getClassName(),
+					InstrActivityProxy.class.getName())
+					|| TextUtils.equals(originalIntent.getComponent().getClassName(),
+							InstrActivityProxyTranslucent.class.getName())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static void setPluginIntent(Intent intent, String pluginId, String actName) {
 		ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
 		if (null == env) {
-			Log.e(TAG, "ActivityJumpUtil setPluginIntent failed, " + pluginId
+			PluginDebugLog.log(TAG, "ActivityJumpUtil setPluginIntent failed, " + pluginId
 					+ " ProxyEnvironmentNew is null");
 			return;
 		}
 		ActivityInfo info = env.getTargetMapping().getActivityInfo(actName);
 		if (null == info) {
-			Log.e(TAG, "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: "
+			PluginDebugLog.log(TAG, "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: "
 					+ actName);
 			return;
 		}
@@ -102,14 +119,15 @@ public class ActivityJumpUtil {
 	public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode,
 			Bundle options, Context context) {
 		if (intent == null) {
-			Log.e(TAG, "handleStartActivityIntent intent is null!");
+			PluginDebugLog.log(TAG, "handleStartActivityIntent intent is null!");
 			return intent;
 		}
-		if (intent != null
-				&& !TextUtils
-						.isEmpty(intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY))
-				&& !TextUtils.isEmpty(intent
-						.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME))) {
+		PluginDebugLog.log(TAG, "handleStartActivityIntent: pluginId: " + pluginId + ", intent: "
+				+ intent + ", requestCode: " + requestCode);
+		if (isChangedIntent(intent)) {
+			PluginDebugLog.log(TAG,
+					"handleStartActivityIntent has change the intent just return the original intent! "
+							+ intent);
 			return intent;
 		}
 		ActivityInfo targetActivity = null;
@@ -118,7 +136,7 @@ public class ActivityJumpUtil {
 		// 1 、修改Intent的跳转目标
 		// 2 、帮助插件类加载器决定使用哪个activity类加载器
 		// 优先判断类名，若类名为空再判断 Action
-		if (intent.getComponent() != null && intent.getComponent().getClassName() != null) {
+		if (intent.getComponent() != null && !TextUtils.isEmpty(intent.getComponent().getClassName())) {
 			// action 为空，但是指定了包名和 activity类名
 			ComponentName compname = intent.getComponent();
 			String pkg = compname.getPackageName();
@@ -176,9 +194,8 @@ public class ActivityJumpUtil {
 				}
 			}
 		}
-		Log.d(TAG,
-				"handleStartActivityIntent pluginId: " + pluginId + " intent: " + intent.toString()
-						+ " targetActivity: " + targetActivity);
+		PluginDebugLog.log(TAG, "handleStartActivityIntent pluginId: " + pluginId + " intent: "
+				+ intent.toString() + " targetActivity: " + targetActivity);
 		if (targetActivity != null) {
 			setPluginIntent(intent, targetActivity.packageName, targetActivity.name);
 		}
