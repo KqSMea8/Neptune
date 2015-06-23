@@ -16,7 +16,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.SimpleDateTime;
 import org.qiyi.pluginlibrary.utils.Util;
-import org.qiyi.pluginnew.ActivityClassGenerator;
+//import org.qiyi.pluginnew.ActivityClassGenerator;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -84,24 +84,24 @@ public class PluginInstaller {
         return repoDir;
     }
 
-    /**
-     * Help to generate folder for single dex file for dexmaker
-     * 
-     * @param parentFolder parent folder name
-     * @param componentName component name like activity etc...
-     * @return file represent xxx.dex
-     */
-	public static File getProxyComponentDexPath(File parentFolder, String componentName) {
-		File folder = new File(parentFolder.getAbsolutePath() + "/component/");
-		folder.mkdirs();
-		String suffix = ".dex";
-		if (android.os.Build.VERSION.SDK_INT < 11) {
-			suffix = ".jar";
-		}
-		File savePath = new File(folder, String.format("%s-%d%s", componentName,
-				ActivityClassGenerator.VERSION_CODE, suffix));
-		return savePath;
-	}
+//    /**
+//     * Help to generate folder for single dex file for dexmaker
+//     * 
+//     * @param parentFolder parent folder name
+//     * @param componentName component name like activity etc...
+//     * @return file represent xxx.dex
+//     */
+//	public static File getProxyComponentDexPath(File parentFolder, String componentName) {
+//		File folder = new File(parentFolder.getAbsolutePath() + "/component/");
+//		folder.mkdirs();
+//		String suffix = ".dex";
+//		if (android.os.Build.VERSION.SDK_INT < 11) {
+//			suffix = ".jar";
+//		}
+//		File savePath = new File(folder, String.format("%s-%d%s", componentName,
+//				ActivityClassGenerator.VERSION_CODE, suffix));
+//		return savePath;
+//	}
 
     /**
      * 安装内置在 assets/pluginapp 目录下的 apk

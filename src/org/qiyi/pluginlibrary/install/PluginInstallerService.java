@@ -12,7 +12,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
-import org.qiyi.pluginnew.ActivityClassGenerator;
+//import org.qiyi.pluginnew.ActivityClassGenerator;
 
 import android.annotation.SuppressLint;
 import android.app.IntentService;
@@ -279,10 +279,10 @@ public class PluginInstallerService extends IntentService {
     
         //dexopt
         installDex(destFile.getAbsolutePath(), packageName);
-        // Special case for dexmaker
-		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, info.mPluginInstallMethod)) {
-			createPluginActivityProxyDexes(pkgInfo);
-		}
+//        // Special case for dexmaker
+//		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, info.mPluginInstallMethod)) {
+//			createPluginActivityProxyDexes(pkgInfo);
+//		}
 		setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
         return packageName;
     }
@@ -339,28 +339,28 @@ public class PluginInstallerService extends IntentService {
         }
     }
 
-    /**
-     * Help to create all activity's wrapper class.dex
-     * 
-     * @param pkgInfo
-     */
-	private void createPluginActivityProxyDexes(PackageInfo pkgInfo) {
-		File parentData = new File(PluginInstaller.getPluginappRootPath(this), pkgInfo.packageName);
-		if (pkgInfo.activities == null) {
-			Log.d("TAG", "pkgInfo.activities is null pkgName: " + pkgInfo.packageName);
-			return;
-		}
-		File tempFile = null;
-		for (ActivityInfo info : pkgInfo.activities) {
-			tempFile = PluginInstaller.getProxyComponentDexPath(parentData, info.name);
-			ActivityClassGenerator.createProxyDex(info.packageName, info.name, tempFile);
-			if (tempFile.exists()) {
-				installDex(tempFile.getAbsolutePath(), pkgInfo.packageName);
-			}
-			tempFile = null;
-		}
-		parentData = null;
-	}
+//    /**
+//     * Help to create all activity's wrapper class.dex
+//     * 
+//     * @param pkgInfo
+//     */
+//	private void createPluginActivityProxyDexes(PackageInfo pkgInfo) {
+//		File parentData = new File(PluginInstaller.getPluginappRootPath(this), pkgInfo.packageName);
+//		if (pkgInfo.activities == null) {
+//			Log.d("TAG", "pkgInfo.activities is null pkgName: " + pkgInfo.packageName);
+//			return;
+//		}
+//		File tempFile = null;
+//		for (ActivityInfo info : pkgInfo.activities) {
+//			tempFile = PluginInstaller.getProxyComponentDexPath(parentData, info.name);
+//			ActivityClassGenerator.createProxyDex(info.packageName, info.name, tempFile);
+//			if (tempFile.exists()) {
+//				installDex(tempFile.getAbsolutePath(), pkgInfo.packageName);
+//			}
+//			tempFile = null;
+//		}
+//		parentData = null;
+//	}
 
     /**
      * 获取安装路径，可能是外部 sdcard或者internal data dir

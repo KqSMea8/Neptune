@@ -532,25 +532,6 @@ public class ProxyEnvironmentNew {
 		}
 	}
 
-	private static void mappingActivity(Context context, Intent intent) {
-		String plugIdOrPkg = "";
-		String actName = "";
-		ComponentName origComp = intent.getComponent();
-		if (origComp != null) {
-			plugIdOrPkg = origComp.getPackageName();
-			actName = origComp.getClassName();
-		}
-		if (TextUtils.isEmpty(actName) || TextUtils.isEmpty(plugIdOrPkg)) {
-			throw new IllegalArgumentException("plug intent must set the ComponentName!");
-		}
-		ProxyEnvironmentNew env = sPluginsMap.get(plugIdOrPkg);
-		if (null == env) {
-			return;
-		}
-		intent.setAction(null);
-		ActivityJumpUtil.setPluginIntent(intent, plugIdOrPkg, actName);
-	}
-
 	/**
 	 * 初始化插件的运行环境，如果已经初始化，则什么也不做
 	 * 
@@ -841,19 +822,15 @@ public class ProxyEnvironmentNew {
 
 	/**
 	 * 初始化插件资源
+	 * @throws Exception 
 	 */
-	private void createTargetMapping(String pkgName) {
+	private void createTargetMapping(String pkgName) throws Exception {
 		CMPackageInfo pkgInfo = CMPackageManager.getInstance(mContext).getPackageInfo(pkgName);
 		if (pkgInfo != null) {
 			targetMapping = pkgInfo.targetInfo;
 		} else {
-			// throw new Exception("Havn't install pkgName");
+			throw new Exception("Havn't install pkgName");
 		}
-		// targetMapping = new ApkTargetMappingNew(context, apkFile);
-		//
-		// bIsDataNeedPrefix = targetMapping.getMetaData() == null
-		// || !targetMapping.getMetaData().getBoolean(
-		// ProxyEnvironment.META_KEY_DATA_WITHOUT_PREFIX);
 	}
 
 	/**
@@ -943,15 +920,16 @@ public class ProxyEnvironmentNew {
 			Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
 			instrumentationF.setAccessible(true);
 			if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, getInstallType())) {
-				FrameworkInstrumentation instrumentation = new FrameworkInstrumentation(context);
-				instrumentationF.set(activityThread, instrumentation);
+//				FrameworkInstrumentation instrumentation = new FrameworkInstrumentation(context);
+//				instrumentationF.set(activityThread, instrumentation);
+				throw new Exception("Unsupported install method");
 			} else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, getInstallType())) {
 				mPluginInstrument = new LPluginInstrument(
 						(Instrumentation) instrumentationF.get(activityThread), pkgName);
 			} else {
 				// Default option
-				FrameworkInstrumentation instrumentation = new FrameworkInstrumentation(context);
-				instrumentationF.set(activityThread, instrumentation);
+				mPluginInstrument = new LPluginInstrument(
+						(Instrumentation) instrumentationF.get(activityThread), pkgName);
 			}
 			instrumentationF.setAccessible(false);
 		} catch (Exception e) {
@@ -1017,41 +995,41 @@ public class ProxyEnvironmentNew {
 		}
 	}
 
-	private static class FrameworkInstrumentation extends Instrumentation {
-		private Context mContext;
-
-		public FrameworkInstrumentation(Context context) {
-			super();
-			mContext = context;
-		}
-
-		@Override
-		public Activity newActivity(ClassLoader cl, String className, Intent intent)
-				throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-
-			if (className.equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
-				String pluginId = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
-				String actClassName = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY);
-
-				ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
-				if (env == null && mContext != null) {
-					// Check whether pluginId has installed, then init the
-					// installed apk
-					CMPackageInfo info = CMPackageManager.getInstance(mContext).getPackageInfo(
-							pluginId);
-					if (null != info && null != info.pluginInfo) {
-						initProxyEnvironment(mContext, pluginId, info.pluginInfo.mPluginInstallMethod);
-						env = ProxyEnvironmentNew.getInstance(pluginId);
-					}
-				}
-				if (env != null && env.dexClassLoader != null) {
-					return (Activity) ProxyEnvironmentNew.getInstance(pluginId).dexClassLoader
-							.loadActivityClass(actClassName).newInstance();
-				}
-			}
-			return super.newActivity(cl, className, intent);
-		}
-	}
+//	private static class FrameworkInstrumentation extends Instrumentation {
+//		private Context mContext;
+//
+//		public FrameworkInstrumentation(Context context) {
+//			super();
+//			mContext = context;
+//		}
+//
+//		@Override
+//		public Activity newActivity(ClassLoader cl, String className, Intent intent)
+//				throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+//
+//			if (className.equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
+//				String pluginId = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
+//				String actClassName = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY);
+//
+//				ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
+//				if (env == null && mContext != null) {
+//					// Check whether pluginId has installed, then init the
+//					// installed apk
+//					CMPackageInfo info = CMPackageManager.getInstance(mContext).getPackageInfo(
+//							pluginId);
+//					if (null != info && null != info.pluginInfo) {
+//						initProxyEnvironment(mContext, pluginId, info.pluginInfo.mPluginInstallMethod);
+//						env = ProxyEnvironmentNew.getInstance(pluginId);
+//					}
+//				}
+//				if (env != null && env.dexClassLoader != null) {
+//					return (Activity) ProxyEnvironmentNew.getInstance(pluginId).dexClassLoader
+//							.loadActivityClass(actClassName).newInstance();
+//				}
+//			}
+//			return super.newActivity(cl, className, intent);
+//		}
+//	}
 
 	private static IDeliverPlug iDeliverPlug;
 
