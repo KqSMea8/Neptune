@@ -284,8 +284,9 @@ public class CMPackageManager {
                 e.printStackTrace();
             }
         }
-        
-        SharedPreferences sp = mContext.getSharedPreferences(PluginInstaller.SHARED_PREFERENCE_NAME, Context.MODE_PRIVATE);
+        //Context.MODE_MULTI_PROCESS
+		SharedPreferences sp = mContext.getSharedPreferences(
+				PluginInstaller.SHARED_PREFERENCE_NAME, 4);
         String value = pkgs.toString();
         Editor editor = sp.edit();
         editor.putString(SP_APP_LIST, value);
@@ -461,13 +462,14 @@ public class CMPackageManager {
     /**
      * 判断一个package是否安装
      */
-    public boolean isPackageInstalled(String packageName) {
-        if (getInstalledPkgsInstance().containsKey(packageName)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+	public boolean isPackageInstalled(String packageName) {
+		CMPackageInfo info = getInstalledPkgsInstance().get(packageName);
+		if (null != info && TextUtils.equals(info.installStatus, PLUGIN_INSTALLED)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
     
     /**
      * 获取安装apk的信息
