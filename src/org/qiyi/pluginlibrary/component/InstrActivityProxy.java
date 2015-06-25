@@ -233,8 +233,8 @@ public class InstrActivityProxy extends Activity {
 
 	@Override
 	public Context getApplicationContext() {
-		if (null != mPluginContextWrapper) {
-			return mPluginContextWrapper;
+		if (null != mPluginEnv && null != mPluginEnv.getApplication()) {
+			return mPluginEnv.getApplication();
 		}
 		return super.getApplicationContext();
 	}
