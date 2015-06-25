@@ -569,4 +569,28 @@ public class InstrActivityProxy extends Activity {
 			return super.onCreateThumbnail(outBitmap, canvas);
 		}
 	}
+
+	/**
+	 * Get the context which start this plugin
+	 * 
+	 * @return
+	 */
+	public Context getOriginalContext() {
+		if (null != mPluginEnv) {
+			return mPluginEnv.getHostContext();
+		}
+		return this;
+	}
+
+	/**
+	 * Get the real package name for this plugin
+	 * 
+	 * @return
+	 */
+	public String getPluginPackageName() {
+		if (null != mPluginEnv) {
+			return mPluginEnv.getTargetPackageName();
+		}
+		return this.getPackageName();
+	}
 }
