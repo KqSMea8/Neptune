@@ -63,6 +63,9 @@ public class InstrActivityProxy extends Activity {
 	}
 
 	private String[] getPkgAndCls() {
+		if (null == getIntent()) {
+			return null;
+		}
 		final Bundle pluginMessage = getIntent().getExtras();
 		String[] result = new String[2];
 		if (null != pluginMessage) {
@@ -209,9 +212,22 @@ public class InstrActivityProxy extends Activity {
 	public Theme getTheme() {
 		if (mPluginEnv == null) {
 			String[] temp = getPkgAndCls();
-			tryToInitEnvironment(temp[0]);
+			if (null != temp) {
+				tryToInitEnvironment(temp[0]);
+			}
 		}
 		return super.getTheme();
+	}
+
+	/**
+	 * Override Oppo method in Context
+	 * Resolve cann't start plugin on oppo devices,
+	 * true or false both OK, false as the temporary result
+	 * 
+	 * @return 
+	 */
+	public boolean isOppoStyle() {
+		return false;
 	}
 
 	@Override

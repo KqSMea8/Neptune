@@ -111,6 +111,17 @@ public abstract class CustomContextWrapper extends ContextWrapper {
 	}
 
 	/**
+	 * Override Oppo method in Context
+	 * Resolve cann't start plugin on oppo devices,
+	 * true or false both OK, false as the temporary result
+	 * 
+	 * @return
+	 */
+	public boolean isOppoStyle() {
+		return false;
+	}
+
+	/**
 	 * Return the real packageName(plugin)
 	 * 
 	 * @return real package name
