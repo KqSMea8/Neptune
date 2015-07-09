@@ -272,6 +272,12 @@ public class PluginInstallerService extends IntentService {
         }
         PluginDebugLog.log(TAG, "pluginInstallerService");
         File pkgDir = new File(PluginInstaller.getPluginappRootPath(this), packageName);
+    	// 重新生成之前清空
+    	try {
+    		Util.cleanDirectory(pkgDir);
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
         pkgDir.mkdir();
         File libDir = new File(pkgDir, PluginInstaller.NATIVE_LIB_PATH);
         libDir.mkdirs();
@@ -279,10 +285,6 @@ public class PluginInstallerService extends IntentService {
     
         //dexopt
         installDex(destFile.getAbsolutePath(), packageName);
-//        // Special case for dexmaker
-//		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, info.mPluginInstallMethod)) {
-//			createPluginActivityProxyDexes(pkgInfo);
-//		}
 		setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
         return packageName;
     }
