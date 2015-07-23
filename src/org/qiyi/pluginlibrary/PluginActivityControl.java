@@ -244,6 +244,13 @@ public class PluginActivityControl implements PluginActivityCallback {
 		}
 	}
 
+	@Override
+	public void callOnPostCreate(Bundle savedInstanceState) {
+		if (null != mHostInstr) {
+			mHostInstr.callActivityOnPostCreate(mPlugin, savedInstanceState);
+		}
+	}
+
 	/**
 	 * 执行插件的onStart方法
 	 * 
@@ -251,8 +258,8 @@ public class PluginActivityControl implements PluginActivityCallback {
 	 */
 	@Override
 	public void callOnStart() {
-		if (null != mHostInstr) {
-			mHostInstr.callActivityOnStart(mPlugin);
+		if (null != getPluginRef()) {
+			getPluginRef().call("performStart");
 		}
 	}
 
@@ -263,8 +270,8 @@ public class PluginActivityControl implements PluginActivityCallback {
 	 */
 	@Override
 	public void callOnResume() {
-		if (null != mHostInstr) {
-			mHostInstr.callActivityOnResume(mPlugin);
+		if (null != getPluginRef()) {
+			getPluginRef().call("performResume");
 		}
 	}
 
@@ -287,8 +294,8 @@ public class PluginActivityControl implements PluginActivityCallback {
 	 */
 	@Override
 	public void callOnStop() {
-		if (null != mHostInstr) {
-			mHostInstr.callActivityOnStop(mPlugin);
+		if (null != getPluginRef()) {
+			getPluginRef().call("performStop");
 		}
 	}
 
@@ -299,8 +306,8 @@ public class PluginActivityControl implements PluginActivityCallback {
 	 */
 	@Override
 	public void callOnRestart() {
-		if (null != mHostInstr) {
-			mHostInstr.callActivityOnRestart(mPlugin);
+		if (null != getPluginRef()) {
+			getPluginRef().call("performRestart");
 		}
 	}
 
@@ -312,7 +319,9 @@ public class PluginActivityControl implements PluginActivityCallback {
 	 */
 	@Override
 	public void callOnSaveInstanceState(Bundle outState) {
-		getPluginRef().call("onSaveInstanceState", outState);
+		if (null != mHostInstr) {
+			mHostInstr.callActivityOnSaveInstanceState(mPlugin, outState);
+		}
 	}
 
 	/**
@@ -323,7 +332,9 @@ public class PluginActivityControl implements PluginActivityCallback {
 	 */
 	@Override
 	public void callOnRestoreInstanceState(Bundle savedInstanceState) {
-		getPluginRef().call("onRestoreInstanceState", savedInstanceState);
+		if (null != mHostInstr) {
+			mHostInstr.callActivityOnRestoreInstanceState(mPlugin, savedInstanceState);
+		}
 	}
 
 	/**
@@ -333,8 +344,8 @@ public class PluginActivityControl implements PluginActivityCallback {
 	 */
 	@Override
 	public void callOnPause() {
-		if (null != mHostInstr) {
-			mHostInstr.callActivityOnPause(mPlugin);
+		if (null != getPluginRef()) {
+			getPluginRef().call("performPause");
 		}
 	}
 

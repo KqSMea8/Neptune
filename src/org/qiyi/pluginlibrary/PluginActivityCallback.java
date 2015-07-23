@@ -15,6 +15,8 @@ public interface PluginActivityCallback {
 
 	void callOnCreate(Bundle saveInstance);
 
+	void callOnPostCreate(Bundle savedInstanceState);
+
 	void callOnStart();
 
 	void callOnResume();

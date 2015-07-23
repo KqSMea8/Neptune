@@ -147,15 +147,14 @@ public class InstrActivityProxy extends Activity {
 			mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
 					pluginPkgName);
 			ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
-			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper, pluginPkgName);
 			if (actInfo != null) {
 				ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
-
-				int resTheme = actInfo.getThemeResource();
-				setTheme(resTheme);
-				// Set plugin's default theme.
-				plugin.setTheme(resTheme);
 			}
+			mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper, pluginPkgName);
+			int resTheme = mPluginEnv.getTargetActivityThemeResource(pluginActivityName);
+			setTheme(resTheme);
+			// Set plugin's default theme.
+			plugin.setTheme(resTheme);
 			try {
 				mPluginContrl.callOnCreate(savedInstanceState);
 				if (getParent() == null) {
@@ -259,23 +258,34 @@ public class InstrActivityProxy extends Activity {
 	protected void onResume() {
 		super.onResume();
 		if (getController() != null) {
-			getController().callOnResume();
-			// LCallbackManager.callAllOnResume();
+			try {
+				getController().callOnResume();
+			} catch (Exception e) {
+				processError(e);
+			}
 		}
 	}
 
 	@Override
 	protected void onStart() {
 		super.onStart();
-
 		if (getController() != null) {
-
 			try {
 				getController().callOnStart();
 			} catch (Exception e) {
-
 				processError(e);
+			}
+		}
+	}
 
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
+		if (getController() != null) {
+			try {
+				getController().callOnPostCreate(savedInstanceState);
+			} catch (Exception e) {
+				processError(e);
 			}
 		}
 	}
@@ -583,6 +593,22 @@ public class InstrActivityProxy extends Activity {
 			return getController().getPlugin().onCreateThumbnail(outBitmap, canvas);
 		} else {
 			return super.onCreateThumbnail(outBitmap, canvas);
+		}
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		if (getController() != null) {
+			getController().callOnRestoreInstanceState(savedInstanceState);
+		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		if (getController() != null) {
+			getController().callOnSaveInstanceState(outState);
 		}
 	}
 

@@ -382,4 +382,12 @@ public class ResourcesProxy extends Resources {
         }
     }
 
+    @Override
+	public int getIdentifier(String name, String defType, String defPackage) {
+		int result = super.getIdentifier(name, defType, defPackage);
+		if (result == 0) {
+			result = mHostResources.getIdentifier(name, defType, defPackage);
+		}
+		return result;
+	}
 }
