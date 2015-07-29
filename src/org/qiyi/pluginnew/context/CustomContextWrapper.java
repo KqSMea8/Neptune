@@ -1,6 +1,8 @@
 package org.qiyi.pluginnew.context;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.plugin.InterfeceToGetHost;
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginnew.ActivityJumpUtil;
 import org.qiyi.pluginnew.service.PluginServiceWrapper;
 
@@ -15,7 +17,7 @@ import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.Log;
 
-public abstract class CustomContextWrapper extends ContextWrapper {
+public abstract class CustomContextWrapper extends ContextWrapper implements InterfeceToGetHost {
 
 	public CustomContextWrapper(Context base) {
 		super(base);
@@ -119,6 +121,32 @@ public abstract class CustomContextWrapper extends ContextWrapper {
 	 */
 	public boolean isOppoStyle() {
 		return false;
+	}
+
+	/**
+	 * Get the context which start this plugin
+	 * 
+	 * @return
+	 */
+	@Override
+	public Context getOriginalContext() {
+		if (null != getEnvironment()) {
+			return getEnvironment().getHostContext();
+		}
+		return null;
+	}
+
+	/**
+	 * Get host resource
+	 * 
+	 * @return host resource tool
+	 */
+	@Override
+	public ResourcesToolForPlugin getHostResourceTool() {
+		if (null != getEnvironment()) {
+			return getEnvironment().getHostResourceTool();
+		}
+		return null;
 	}
 
 	/**

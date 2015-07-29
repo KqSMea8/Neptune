@@ -6,9 +6,11 @@ import java.io.PrintWriter;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.plugin.InterfeceToGetHost;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginnew.ActivityJumpUtil;
 import org.qiyi.pluginnew.ActivityOverider;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
@@ -38,7 +40,7 @@ import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 
-public class InstrActivityProxy extends Activity {
+public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 
 	private static final String TAG = InstrActivityProxy.class.getSimpleName();
 
@@ -617,11 +619,25 @@ public class InstrActivityProxy extends Activity {
 	 * 
 	 * @return
 	 */
+	@Override
 	public Context getOriginalContext() {
 		if (null != mPluginEnv) {
 			return mPluginEnv.getHostContext();
 		}
-		return this;
+		return null;
+	}
+
+	/**
+	 * Get host resource
+	 * 
+	 * @return host resource tool
+	 */
+	@Override
+	public ResourcesToolForPlugin getHostResourceTool() {
+		if (null != mPluginEnv) {
+			return mPluginEnv.getHostResourceTool();
+		}
+		return null;
 	}
 
 	/**

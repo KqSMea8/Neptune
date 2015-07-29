@@ -29,6 +29,7 @@ import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginnew.ActivityJumpUtil;
 import org.qiyi.pluginnew.classloader.PluginClassLoader;
 import org.qiyi.pluginnew.context.PluginContextWrapper;
@@ -131,6 +132,7 @@ public class ProxyEnvironmentNew {
 
 	private PluginClassLoader dexClassLoader;
 	private Resources targetResources;
+	private ResourcesToolForPlugin mResTool;
 	private AssetManager targetAssetManager;
 	private Theme targetTheme;
 	private TargetMapping targetMapping;
@@ -860,6 +862,9 @@ public class ProxyEnvironmentNew {
 				config, hostRes);
 		targetTheme = targetResources.newTheme();
 		targetTheme.setTo(mContext.getTheme());
+		
+		// Create Resource Tool for host
+		mResTool = new ResourcesToolForPlugin(mContext);
 	}
 
 	/**
@@ -953,6 +958,18 @@ public class ProxyEnvironmentNew {
 			return mParent;
 		}
 		return mContext;
+	}
+
+	/**
+	 * Get host resource
+	 * 
+	 * @return host resource
+	 */
+	public ResourcesToolForPlugin getHostResourceTool() {
+		if (mResTool != null) {
+			return mResTool;
+		}
+		return null;
 	}
 
 	private void changeInstrumentation(Context context, String pkgName) {
