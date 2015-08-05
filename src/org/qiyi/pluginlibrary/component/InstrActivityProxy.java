@@ -7,6 +7,7 @@ import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.plugin.InterfeceToGetHost;
+import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -262,6 +263,7 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 		if (getController() != null) {
 			try {
 				getController().callOnResume();
+				IResourchStaticsticsControllerManager.onResume(this);
 			} catch (Exception e) {
 				processError(e);
 			}
@@ -316,6 +318,7 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 
 			try {
 				getController().callOnPause();
+				IResourchStaticsticsControllerManager.onPause(this);
 				// LCallbackManager.callAllOnPause();
 			} catch (Exception e) {
 				processError(e);
