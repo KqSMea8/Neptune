@@ -2,8 +2,12 @@ package org.qiyi.pluginlibrary.utils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.text.TextUtils;
 
@@ -79,6 +83,33 @@ public class ContextUtils {
 		return activity;
 	}
 
+	public static String getTopActivityName(Activity context, String packName) {
+		String topActivity = getTopActivity(context);
+		if (topActivity != null) {
+			if (TextUtils
+					.equals(topActivity,
+							"org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent")
+					|| TextUtils
+							.equals(topActivity,
+									"org.qiyi.pluginlibrary.component.InstrActivityProxy")) {
+				return "plugin:" + ProxyEnvironmentNew.getTopActivity();
+			} else {
+				return topActivity;
+			}
+		}
+		return null;
+	}
+
+
+	private static String getTopActivity(Activity context) {
+		ActivityManager manager = (ActivityManager) context.getSystemService(context.ACTIVITY_SERVICE);
+		List<ActivityManager.RunningTaskInfo> runningTaskInfos = manager.getRunningTasks(1);
+		if (runningTaskInfos != null)
+			return runningTaskInfos.get(0).topActivity.getClassName();
+		else
+			return null;
+	}
+	
 	/**
 	 * Try to get host ResourcesToolForPlugin in the plugin environment or the
 	 * ResourcesToolForPlugin with param context will be return

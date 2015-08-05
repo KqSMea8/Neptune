@@ -2,6 +2,7 @@ package org.qiyi.plugin.manager;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -58,6 +60,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
+import android.util.Log;
 
 /**
  * 插件运行的环境
@@ -194,6 +197,54 @@ public class ProxyEnvironmentNew {
 		createClassLoader();
 		// 加载资源
 		createTargetResource();
+	}
+	
+	public static String getTopActivity() {
+		String topPackage = null;
+		Iterator<?> iter = sPluginsMap.entrySet().iterator();
+		while (iter.hasNext()) {
+			Map.Entry<String, ProxyEnvironmentNew> entry = (Entry<String, ProxyEnvironmentNew>) iter.next();
+			String packageName = (String) entry.getKey();
+			ProxyEnvironmentNew environmentNew = (ProxyEnvironmentNew) entry.getValue();
+			if (environmentNew.activityStack.size() == 0) {
+				continue;
+			} else if (isResumed(environmentNew.activityStack.getFirst())) {
+				topPackage = packageName;
+			}
+		}
+		return topPackage;
+	}
+
+
+	private static boolean isResumed(Activity mActivity) {
+		boolean result = true;
+		try {
+			Class<?> clazz = Class.forName("android.app.Activity");
+			Method isResumed = clazz.getDeclaredMethod("isResumed");
+			result = (Boolean) isResumed.invoke(mActivity);
+		} catch (ClassNotFoundException e) {
+			if (PluginDebugLog.isDebug()) {
+				e.printStackTrace();
+			}
+		} catch (NoSuchMethodException e) {
+			if (PluginDebugLog.isDebug()) {
+				e.printStackTrace();
+			}
+		} catch (IllegalAccessException e) {
+			if (PluginDebugLog.isDebug()) {
+				e.printStackTrace();
+			}
+		} catch (IllegalArgumentException e) {
+			if (PluginDebugLog.isDebug()) {
+				e.printStackTrace();
+			}
+		} catch (InvocationTargetException e) {
+			if (PluginDebugLog.isDebug()) {
+				e.printStackTrace();
+			}
+		}
+
+		return result;
 	}
 
 	/**
@@ -845,7 +896,7 @@ public class ProxyEnvironmentNew {
 	@SuppressLint("NewApi")
 	private void createTargetResource() {
 		try {
-			AssetManager am = (AssetManager) AssetManager.class.newInstance();
+			AssetManager am = AssetManager.class.newInstance();
 			JavaCalls.callMethod(am, "addAssetPath", new Object[] { mApkFile.getAbsolutePath() });
 			targetAssetManager = am;
 		} catch (Exception e) {
