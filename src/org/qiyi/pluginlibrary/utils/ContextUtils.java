@@ -83,7 +83,7 @@ public class ContextUtils {
 		return activity;
 	}
 
-	public static String getTopActivityName(Activity context, String packName) {
+	public static String getTopActivityName(Context context, String packName) {
 		String topActivity = getTopActivity(context);
 		if (topActivity != null) {
 			if (TextUtils
@@ -101,7 +101,7 @@ public class ContextUtils {
 	}
 
 
-	private static String getTopActivity(Activity context) {
+	private static String getTopActivity(Context context) {
 		ActivityManager manager = (ActivityManager) context.getSystemService(context.ACTIVITY_SERVICE);
 		List<ActivityManager.RunningTaskInfo> runningTaskInfos = manager.getRunningTasks(1);
 		if (runningTaskInfos != null)
