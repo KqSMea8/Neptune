@@ -41,7 +41,7 @@ import org.qiyi.pluginnew.service.ServiceProxyNew;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
-import android.app.Application.ActivityLifecycleCallbacks;
+//import android.app.Application.ActivityLifecycleCallbacks;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -89,44 +89,44 @@ public class ProxyEnvironmentNew {
 	/** 插件包名对应Environment的Hash */
 	private static HashMap<String, ProxyEnvironmentNew> sPluginsMap = new HashMap<String, ProxyEnvironmentNew>();
 
-	/** 插件调试日志 **/
-	private static ActivityLifecycleCallbacks sActivityLifecycleCallback = new ActivityLifecycleCallbacks() {
-
-		@Override
-		public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-			PluginDebugLog.log(TAG, "onActivityCreated: " + activity);
-		}
-
-		@Override
-		public void onActivityStarted(Activity activity) {
-			PluginDebugLog.log(TAG, "onActivityStarted: " + activity);
-		}
-
-		@Override
-		public void onActivityResumed(Activity activity) {
-			PluginDebugLog.log(TAG, "onActivityResumed: " + activity);
-		}
-
-		@Override
-		public void onActivityPaused(Activity activity) {
-			PluginDebugLog.log(TAG, "onActivityPaused: " + activity);
-		}
-
-		@Override
-		public void onActivityStopped(Activity activity) {
-			PluginDebugLog.log(TAG, "onActivityStopped: " + activity);
-		}
-
-		@Override
-		public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
-			PluginDebugLog.log(TAG, "onActivitySaveInstanceState: " + activity);
-		}
-
-		@Override
-		public void onActivityDestroyed(Activity activity) {
-			PluginDebugLog.log(TAG, "onActivityDestroyed: " + activity);
-		}
-	};
+//	/** 插件调试日志 **/
+//	private static ActivityLifecycleCallbacks sActivityLifecycleCallback = new ActivityLifecycleCallbacks() {
+//
+//		@Override
+//		public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+//			PluginDebugLog.log(TAG, "onActivityCreated: " + activity);
+//		}
+//
+//		@Override
+//		public void onActivityStarted(Activity activity) {
+//			PluginDebugLog.log(TAG, "onActivityStarted: " + activity);
+//		}
+//
+//		@Override
+//		public void onActivityResumed(Activity activity) {
+//			PluginDebugLog.log(TAG, "onActivityResumed: " + activity);
+//		}
+//
+//		@Override
+//		public void onActivityPaused(Activity activity) {
+//			PluginDebugLog.log(TAG, "onActivityPaused: " + activity);
+//		}
+//
+//		@Override
+//		public void onActivityStopped(Activity activity) {
+//			PluginDebugLog.log(TAG, "onActivityStopped: " + activity);
+//		}
+//
+//		@Override
+//		public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+//			PluginDebugLog.log(TAG, "onActivitySaveInstanceState: " + activity);
+//		}
+//
+//		@Override
+//		public void onActivityDestroyed(Activity activity) {
+//			PluginDebugLog.log(TAG, "onActivityDestroyed: " + activity);
+//		}
+//	};
 
 	/** 插件安装方式 **/
 	private final Context mContext;
@@ -518,7 +518,7 @@ public class ProxyEnvironmentNew {
 			env.application.onCreate();
 			env.changeInstrumentation(context, packageName);
 			env.bIsApplicationInit = true;
-			env.application.registerActivityLifecycleCallbacks(sActivityLifecycleCallback);
+//			env.application.registerActivityLifecycleCallbacks(sActivityLifecycleCallback);
 
 			synchronized (gLoadingMap) {
 				cacheIntents = gLoadingMap.remove(packageName);
