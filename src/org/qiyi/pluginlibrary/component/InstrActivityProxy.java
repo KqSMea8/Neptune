@@ -159,10 +159,10 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 			// Set plugin's default theme.
 			plugin.setTheme(resTheme);
 			try {
-				mPluginContrl.callOnCreate(savedInstanceState);
 				if (getParent() == null) {
 					mPluginEnv.pushActivityToStack(this);
 				}
+				mPluginContrl.callOnCreate(savedInstanceState);
 			} catch (Exception e) {
 			    ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
 				processError(e);
