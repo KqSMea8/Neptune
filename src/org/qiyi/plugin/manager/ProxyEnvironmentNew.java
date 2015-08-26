@@ -166,6 +166,8 @@ public class ProxyEnvironmentNew {
     
     public LPluginInstrument mPluginInstrument;
     
+    private static Resources hostRes;
+    
 	/**
 	 * 构造方法，解析apk文件，创建插件运行环境
 	 * 
@@ -213,7 +215,15 @@ public class ProxyEnvironmentNew {
 		return topPackage;
 	}
 
-
+	public static void updateConfiguration(Configuration config){
+		Iterator<?> iter = sPluginsMap.entrySet().iterator();
+		while (iter.hasNext()) {
+			Map.Entry<?,?> entry = (Map.Entry<?,?>) iter.next();
+			ProxyEnvironmentNew env = (ProxyEnvironmentNew) entry.getValue();
+			env.getTargetResources().updateConfiguration(config, hostRes != null?hostRes.getDisplayMetrics():null);
+		}
+	}
+	
 	private static boolean isResumed(Activity mActivity) {
 		boolean result = true;
 		try {
@@ -903,7 +913,7 @@ public class ProxyEnvironmentNew {
 		}
 
 		// 解决一个HTC ONE X上横竖屏会黑屏的问题
-		Resources hostRes = mContext.getResources();
+		hostRes = mContext.getResources();
 		Configuration config = new Configuration();
 		config.setTo(hostRes.getConfiguration());
 		config.orientation = Configuration.ORIENTATION_UNDEFINED;
