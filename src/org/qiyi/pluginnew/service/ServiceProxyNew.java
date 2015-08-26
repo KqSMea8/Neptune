@@ -65,7 +65,7 @@ public class ServiceProxyNew extends Service {
 				}
 				Service pluginService = ((Service) env.getDexClassLoader()
 						.loadClass(targetClassName).newInstance());
-				CMContextWrapperNew actWrapper = new CMContextWrapperNew(env.getApplication(),
+				CMContextWrapperNew actWrapper = new CMContextWrapperNew(ServiceProxyNew.this.getBaseContext(),
 						targetPackageName);
 				ReflectionUtils.on(pluginService).call("attach", actWrapper,
 						ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,

@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.component;
 
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
@@ -30,6 +31,9 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
+import android.database.DatabaseErrorHandler;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.Bundle;
@@ -147,7 +151,7 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 			this.finish();
 		}
 		if (null != mPluginContrl) {
-			mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this,
+			mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this.getBaseContext(),
 					pluginPkgName);
 			ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
 			if (actInfo != null) {
@@ -239,6 +243,60 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 		}
 		return mPluginEnv.getTargetAssetManager() == null ? super.getAssets() : mPluginEnv
 				.getTargetAssetManager();
+	}
+
+	@Override
+	public File getFilesDir() {
+		return mPluginContextWrapper.getFilesDir();
+	}
+
+	@Override
+	public File getCacheDir() {
+		return mPluginContextWrapper.getCacheDir();
+	}
+	
+	@Override
+	public File getFileStreamPath(String name) {
+		return mPluginContextWrapper.getFileStreamPath(name);
+	}
+
+	@Override
+	public File getDir(String name, int mode) {
+		return mPluginContextWrapper.getDir(name, mode);
+
+	}
+
+	@Override
+	public File getDatabasePath(String name) {
+		return mPluginContextWrapper.getDatabasePath(name);
+	}
+
+	@Override
+	public boolean deleteFile(String name) {
+		return mPluginContextWrapper.deleteFile(name);
+	}
+
+	@Override
+	public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory) {
+
+		return mPluginContextWrapper.openOrCreateDatabase(name, mode, factory);
+	}
+
+	@Override
+	public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory,
+			DatabaseErrorHandler errorHandler) {
+		return mPluginContextWrapper.openOrCreateDatabase(name, mode, factory, errorHandler);
+	}
+
+	@Override
+	public boolean deleteDatabase(String name) {
+		
+		return mPluginContextWrapper.deleteDatabase(name);
+	}
+
+	@Override
+	public String[] databaseList() {
+		return mPluginContextWrapper.databaseList();
 	}
 
 	@Override
@@ -442,11 +500,7 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 
 	@Override
 	public SharedPreferences getSharedPreferences(String name, int mode) {
-		if (mPluginEnv != null && mPluginEnv.getTargetMapping() != null
-				&& mPluginEnv.getTargetMapping().isDataNeedPrefix()) {
-			name = mPluginEnv.getTargetPackageName() + "_" + name;
-		}
-		return super.getSharedPreferences(name, mode);
+		return mPluginContextWrapper.getSharedPreferences(name, mode);
 	}
 
 	@Override

@@ -1,8 +1,19 @@
 package org.qiyi.pluginnew.context;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.plugin.InterfeceToGetHost;
+import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
+import org.qiyi.pluginlibrary.utils.Util;
 import org.qiyi.pluginnew.ActivityJumpUtil;
 import org.qiyi.pluginnew.service.PluginServiceWrapper;
 
@@ -14,7 +25,11 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.database.DatabaseErrorHandler;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.os.Bundle;
+import android.util.ArrayMap;
 import android.util.Log;
 
 public abstract class CustomContextWrapper extends ContextWrapper implements InterfeceToGetHost {
@@ -105,13 +120,336 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
 	
 	@Override
+	public File getFilesDir() {
+		
+		File superFile = super.getFilesDir();
+		
+		if (getEnvironment() == null) {
+			return superFile;
+		}
+		
+		File fileDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/files/");
+		if(!fileDir.exists()){
+			fileDir.mkdir();
+		}
+		return getEnvironment().getTargetAssetManager() == null ? superFile : fileDir;
+	}
+
+	@Override
+	public File getCacheDir() {
+		
+		if (getEnvironment() == null) {
+			return super.getCacheDir();
+		}
+		File cacheDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/cache/");
+		if(!cacheDir.exists()){
+			cacheDir.mkdir();
+		}
+		return getEnvironment().getTargetAssetManager() == null ? super.getCacheDir() : cacheDir;
+	}
+	
+	@Override
+	public File getFileStreamPath(String name) {
+		if (getEnvironment() == null) {
+			return super.getFilesDir();
+		}
+		File fileDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/files/"+name);
+		if(!fileDir.exists()){
+			fileDir.mkdir();
+		}
+		return getEnvironment().getTargetAssetManager() == null ? super.getFileStreamPath(name) : fileDir;
+	}
+
+	@Override
+	public File getDir(String name, int mode) {
+		if (getEnvironment() == null) {
+			return super.getFilesDir();
+		}
+		File fileDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/app_"+name+"/");
+		if(!fileDir.exists()){
+			fileDir.mkdir();
+		}
+		return getEnvironment().getTargetAssetManager() == null ? super.getDir(name, mode) : fileDir;
+
+	}
+
+	@Override
+	public File getDatabasePath(String name) {
+		File dir;
+		File f;
+		if(name.charAt(0) == File.separatorChar){
+			String dirPath = name.substring(0,name.lastIndexOf(File.separatorChar));
+			dir = new File(dirPath);
+			name = name.substring(name.lastIndexOf(File.separatorChar));
+			f = new File(dir,name);
+			return f;
+		}else{
+			if (getEnvironment() == null) {
+				return super.getDatabasePath(name);
+			}
+			f = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/"+name);
+			if(!f.exists()){
+				f.mkdir();
+			}
+		}
+		
+		return getEnvironment().getTargetAssetManager() == null ? super.getDatabasePath(name) : f;
+	}
+
+	@Override
+	public boolean deleteFile(String name) {
+		if (getEnvironment() == null) {
+			return super.deleteFile(name);
+		}
+		File fileDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/files/"+name);
+		return getEnvironment().getTargetAssetManager() == null ? super.deleteFile(name) : fileDir.delete();
+	}
+
+	@Override
+	public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory) {
+		// TODO Auto-generated method stub
+		File databaseDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/");
+		if(!databaseDir.exists()){
+			databaseDir.mkdir();
+		}
+		//  backup database for old version start
+		checkBackupDB(name);
+		//  backup database for old version end
+		return super.openOrCreateDatabase(databaseDir.getAbsolutePath()+"/"+name, mode, factory);
+	}
+
+	/**
+	 *  this is move DB from /data/data/packageName/database to /data/data/package/app_pluginapp/pluginpackage/databases
+	 *  if the app is upgrade,we need backup and recover the db for user,
+	 * @param name db name
+	 */
+	private void checkBackupDB(String name){
+		String dbName = name.substring(0, name.lastIndexOf("."));
+
+		String dbPath = "/data/data/"+this.getPackageName()+"/databases/";
+		File file = new File(dbPath,name);
+		if(file.exists()){
+			File targetFile = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/"+name);
+			Util.moveFile(file, targetFile);
+			File bakFile = new File(dbPath,dbName+".db-journal");
+			File targetBakFile = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/"+dbName+".db-journal");
+			if(bakFile.exists()){
+				Util.moveFile(bakFile, targetBakFile);
+			}
+		}
+	}
+	
+	@Override
+	public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory,
+			DatabaseErrorHandler errorHandler) {
+		File databaseDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/");
+		if(!databaseDir.exists()){
+			databaseDir.mkdir();
+		}
+		//  backup database for old version start
+		checkBackupDB(name);
+		//  backup database for old version end
+		
+		return super.openOrCreateDatabase(databaseDir.getAbsolutePath()+"/"+name, mode, factory, errorHandler);
+	}
+
+	@Override
+	public boolean deleteDatabase(String name) {
+		File databaseDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/");
+		if(!databaseDir.exists()){
+			databaseDir.mkdir();
+		}
+		return super.deleteDatabase(databaseDir.getAbsolutePath()+"/"+name);
+	}
+
+	@Override
+	public String[] databaseList() {
+		File databaseDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/");
+		if(!databaseDir.exists()){
+			databaseDir.mkdir();
+		}
+		return databaseDir.list();
+	}
+
+	private File getSharedPrefsFile(String name){
+		File base = null;
+		base = new File(getEnvironment().getTargetMapping().getDataDir()+"/shared_prefs/");
+		if(!base.exists()){
+			base.mkdir();
+		}
+		return new File(base,name+".xml");
+	}
+	
+	private static File makeBackupFile(File prefsFile){
+		return new File(prefsFile.getPath()+".bak");
+	}
+	
+	private SharedPreferences getSharedPreferecesForPlugin(String name, int mode){
+		try {
+			Object sp = null;
+
+			if(android.os.Build.VERSION.SDK_INT <=10){     // now the plugin don't support 2.3,but if it will support in the furture,we can use this.
+				Class<?> SharedPreferencesImpl = Class.forName("android.app.ContextImpl$SharedPreferencesImpl");
+				Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class,int.class);
+				constructor.setAccessible(true);
+				Class<?> clazz = Class.forName("android.app.ContextImpl");
+				Field sSharedPrefs = clazz.getDeclaredField("sSharedPrefs");
+				File prefsFile;
+				sSharedPrefs.setAccessible(true);
+				boolean needInitialLoad = false;
+				HashMap<String,Object> oSharedPrefs = (HashMap<String,Object>)sSharedPrefs.get(this.getBaseContext());
+				synchronized(oSharedPrefs){
+					sp = oSharedPrefs.get(name);
+					Method hasFileChangedUnexpectedly = SharedPreferencesImpl.getDeclaredMethod("hasFileChangedUnexpectedly");
+					boolean mHasFileChangedUnexpectedly = (Boolean) hasFileChangedUnexpectedly.invoke(sp);
+					if(sp != null && !mHasFileChangedUnexpectedly){
+						return (SharedPreferences) sp;
+					}
+					prefsFile = getSharedPrefsFile(name);
+					if(sp == null){
+						sp = constructor.newInstance(prefsFile,mode);
+						oSharedPrefs.put(name, sp);
+						needInitialLoad = true;
+					}
+				}
+				synchronized(sp){
+					Method isLoaded = SharedPreferencesImpl.getDeclaredMethod("isLoaded");
+					boolean isLoadResult = (Boolean) isLoaded.invoke(sp);
+					if(needInitialLoad && isLoadResult){
+						return (SharedPreferences) sp;
+					}
+					File backup = makeBackupFile(prefsFile);
+					if(backup.exists()){
+						prefsFile.delete();
+						backup.renameTo(prefsFile);
+					}
+					
+					if(prefsFile.exists() && !prefsFile.canRead()){
+						
+					}
+					
+					Map map = null;
+					Class<?> fileUtilsClass = Class.forName("android.os.FileUtils");
+					
+					Class<?> fileStatusClass = Class.forName("android.os.FileUtils$FileStatus");
+					Constructor<?> fileStatusConstructor = fileStatusClass.getConstructor();
+					Object FileStatus = fileStatusConstructor.newInstance();
+					
+					Method getFileStatus = fileUtilsClass.getDeclaredMethod("getFileStatus",String.class,fileStatusClass);
+					boolean getFileStatusResult = (Boolean) getFileStatus.invoke(FileStatus,prefsFile.getPath(),FileStatus);
+					if(getFileStatusResult && prefsFile.canRead()){
+						try{
+							FileInputStream str = new FileInputStream(prefsFile);
+							Class<?> xmlUtilClass = Class.forName("com.android.internal.util.XmlUtils");
+							map = (Map) xmlUtilClass.getDeclaredMethod("readMapXml", FileInputStream.class).invoke(xmlUtilClass.newInstance(), str);
+							str.close();
+						}catch(Exception e){
+							
+						}
+					}
+					SharedPreferencesImpl.getMethod("replace", Map.class,fileStatusClass).invoke(sp, map,FileStatus);
+				}
+				return (SharedPreferences) sp;
+			} else if (android.os.Build.VERSION.SDK_INT <=18){
+				
+				Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
+				Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class,int.class);
+				constructor.setAccessible(true);
+				HashMap<String,Object> oSharedPrefs = (HashMap<String,Object>)JavaCalls.getField(this.getBaseContext(),"sSharedPrefs");
+				
+				synchronized(oSharedPrefs){
+					sp = oSharedPrefs.get(name);
+					if(sp == null){
+						File prefsFile = getSharedPrefsFile(name);
+						sp = constructor.newInstance(prefsFile,mode);
+						oSharedPrefs.put(name, sp);
+					}
+				}
+				if((mode & Context.MODE_MULTI_PROCESS)!=0 ||
+						getEnvironment().getTargetMapping().getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB){
+					JavaCalls.invokeMethod(sp, "startReloadIfChangedUnexpectedly",null,null);
+				}
+			}else{
+				Class<?> clazz = Class.forName("android.app.ContextImpl");
+				Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
+				Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class,int.class);
+				constructor.setAccessible(true);
+				ArrayMap<String, ArrayMap<String, Object>> oSharedPrefs = (ArrayMap<String, ArrayMap<String, Object>>)JavaCalls.getField(this.getBaseContext(),"sSharedPrefs");
+				synchronized(clazz){
+					if(oSharedPrefs == null){
+						oSharedPrefs = new ArrayMap<String, ArrayMap<String, Object>>();
+					}
+					
+					final String packageName = getPackageName();
+					ArrayMap<String,Object> packagePrefs = oSharedPrefs.get(packageName);
+					if(packagePrefs == null){
+						packagePrefs = new ArrayMap<String, Object>();
+						oSharedPrefs.put(packageName, packagePrefs);
+					}
+					
+					sp = packagePrefs.get(name);
+					if(sp == null){
+						File prefsFile = getSharedPrefsFile(name);
+						sp = constructor.newInstance(prefsFile,mode);
+						packagePrefs.put(name, sp);
+						return (SharedPreferences) sp;
+					}
+					if((mode & Context.MODE_MULTI_PROCESS) != 0||
+							getEnvironment().getTargetMapping().getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB){
+						JavaCalls.invokeMethod(sp, "startReloadIfChangedUnexpectedly",null,null);
+					}
+				}
+			}
+
+			return (SharedPreferences) sp;
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (NoSuchFieldException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	@Override
 	public SharedPreferences getSharedPreferences(String name, int mode) {
-		if (getEnvironment().getTargetMapping().isDataNeedPrefix()) {
-			name = getTargetPackageName() + "_" + name;
+		if (getEnvironment() != null && getEnvironment().getTargetMapping() != null) {
+			backupSharedPreference(name);
+			SharedPreferences sp = getSharedPreferecesForPlugin(name,mode);
+			if(sp != null){
+				return sp;
+			}
 		}
 		return super.getSharedPreferences(name, mode);
 	}
-
+	
+	private void backupSharedPreference(String name){
+		
+		String sharePath = "/data/data/"+this.getPackageName()+"/shared_prefs/";
+		File sFile = new File(sharePath);
+		String[] fileList = sFile.list();
+		for(int i=0;i<fileList.length;i++){
+			String file = fileList[i];
+			if(file != null && (file.equals(name+".xml") || file.contains("_"+name+".xml"))){
+				File oriFile = new File(sharePath+file);
+				File tarFile = getSharedPrefsFile(name);
+				Util.moveFile(oriFile, tarFile);
+			}
+		}
+	}
+	
+	
 	/**
 	 * Override Oppo method in Context
 	 * Resolve cann't start plugin on oppo devices,

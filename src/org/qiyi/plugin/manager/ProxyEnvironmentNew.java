@@ -55,12 +55,10 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
-import android.util.Log;
 
 /**
  * 插件运行的环境
@@ -612,7 +610,7 @@ public class ProxyEnvironmentNew {
 
 	private void setApplicationBase(ProxyEnvironmentNew env, Application application,
 			String packageName) {
-		PluginContextWrapper ctxWrapper = new PluginContextWrapper(mContext, env);
+		PluginContextWrapper ctxWrapper = new PluginContextWrapper(((Application)mContext).getBaseContext(), env);
 		this.appWrapper = ctxWrapper;
 		// attach
 		Method attachMethod;

@@ -1,7 +1,10 @@
 package org.qiyi.pluginlibrary.utils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -372,4 +375,36 @@ public final class Util {
         }
         return PackageManager.SIGNATURE_NO_MATCH;
     }
+    
+	private static void copyFile(File sourceFile, File targetFile) throws IOException {
+
+		FileInputStream input = new FileInputStream(sourceFile);
+		BufferedInputStream inBuff = new BufferedInputStream(input);
+
+		FileOutputStream output = new FileOutputStream(targetFile);
+		BufferedOutputStream outBuff = new BufferedOutputStream(output);
+
+		byte[] b = new byte[1024 * 5];
+		int len;
+		while ((len = inBuff.read(b)) != -1) {
+			outBuff.write(b, 0, len);
+		}
+
+		outBuff.flush();
+
+		inBuff.close();
+		outBuff.close();
+		output.close();
+		input.close();
+	}
+	
+	public static void moveFile(File sourceFile, File targetFile){
+		try {
+			copyFile(sourceFile,targetFile);
+			sourceFile.delete();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }
