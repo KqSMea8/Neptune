@@ -224,6 +224,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 	 * @param name db name
 	 */
 	private void checkBackupDB(String name){
+	
+		if(name.lastIndexOf(".") == -1) {
+			return;             //if migrate file is not db file,ignore it.
+		}
+		
 		String dbName = name.substring(0, name.lastIndexOf("."));
 
 		String dbPath = "/data/data/"+this.getPackageName()+"/databases/";
