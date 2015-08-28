@@ -4,7 +4,7 @@ import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
 import android.content.Context;
 
-public interface InterfeceToGetHost {
+public interface InterfaceToGetHost {
 	/**
 	 * Get the context which start this plugin
 	 * 
@@ -18,4 +18,14 @@ public interface InterfeceToGetHost {
 	 * @return host resource tool
 	 */
 	ResourcesToolForPlugin getHostResourceTool();
+
+	/**
+	 * Get plugin's pkgName
+	 */
+	String getPluginPackageName();
+
+	/**
+	 * Finish all alive activity and kill the current process
+	 */
+	void exitApp();
 }

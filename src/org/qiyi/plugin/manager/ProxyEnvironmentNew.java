@@ -33,10 +33,10 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginnew.ActivityJumpUtil;
+import org.qiyi.pluginnew.ProxyComponentMappingByProcess;
 import org.qiyi.pluginnew.classloader.PluginClassLoader;
 import org.qiyi.pluginnew.context.PluginContextWrapper;
 import org.qiyi.pluginnew.service.PluginServiceWrapper;
-import org.qiyi.pluginnew.service.ServiceProxyNew;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -130,6 +130,7 @@ public class ProxyEnvironmentNew {
 	private final Context mContext;
 	private final File mApkFile;
 	private final String mInstallType;
+	private final String mProcessName;
 
 	private PluginClassLoader dexClassLoader;
 	private Resources targetResources;
@@ -141,7 +142,7 @@ public class ProxyEnvironmentNew {
 	// private boolean bIsDataNeedPrefix = true;
 	private String parentPackagename;
 	/** 插件的Activity栈 */
-	private LinkedList<Activity> activityStack;
+	private LinkedList<Activity> mActivityStack;
 	/** 插件虚拟的Application实例 */
 	private Application application;
 	// /** 插件数据根目录 */
@@ -165,7 +166,9 @@ public class ProxyEnvironmentNew {
     public PluginContextWrapper appWrapper;
     
     public LPluginInstrument mPluginInstrument;
-    
+
+    // 插件APP退出时要处理的事情
+    private static IAppExitStuff sExitStuff;
     private static Resources hostRes;
     
 	/**
@@ -178,7 +181,7 @@ public class ProxyEnvironmentNew {
 	 * @throws Exception 
 	 */
 	private ProxyEnvironmentNew(Context context, File apkFile, String pluginPakName,
-			String installType) throws Exception {
+			String installType, String processName) throws Exception {
 		if (context == null || apkFile == null || TextUtils.isEmpty(pluginPakName)
 				|| TextUtils.isEmpty(installType)) {
 			throw new Exception(
@@ -188,10 +191,11 @@ public class ProxyEnvironmentNew {
 		}
 		mContext = context.getApplicationContext();
 		mApkFile = apkFile;
-		activityStack = new LinkedList<Activity>();
+		mActivityStack = new LinkedList<Activity>();
 		parentPackagename = context.getPackageName();
 		mPluginPakName = pluginPakName;
 		mInstallType = installType;
+		mProcessName = processName;
 		createTargetMapping(pluginPakName);
 		// 加载classloader
 		createClassLoader();
@@ -206,21 +210,22 @@ public class ProxyEnvironmentNew {
 			Map.Entry<String, ProxyEnvironmentNew> entry = (Entry<String, ProxyEnvironmentNew>) iter.next();
 			String packageName = (String) entry.getKey();
 			ProxyEnvironmentNew environmentNew = (ProxyEnvironmentNew) entry.getValue();
-			if (environmentNew.activityStack.size() == 0) {
+			if (environmentNew.mActivityStack.size() == 0) {
 				continue;
-			} else if (isResumed(environmentNew.activityStack.getFirst())) {
+			} else if (isResumed(environmentNew.mActivityStack.getFirst())) {
 				topPackage = packageName;
 			}
 		}
 		return topPackage;
 	}
 
-	public static void updateConfiguration(Configuration config){
+	public static void updateConfiguration(Configuration config) {
 		Iterator<?> iter = sPluginsMap.entrySet().iterator();
 		while (iter.hasNext()) {
-			Map.Entry<?,?> entry = (Map.Entry<?,?>) iter.next();
+			Map.Entry<?, ?> entry = (Map.Entry<?, ?>) iter.next();
 			ProxyEnvironmentNew env = (ProxyEnvironmentNew) entry.getValue();
-			env.getTargetResources().updateConfiguration(config, hostRes != null?hostRes.getDisplayMetrics():null);
+			env.getTargetResources().updateConfiguration(config,
+					hostRes != null ? hostRes.getDisplayMetrics() : null);
 		}
 	}
 	
@@ -262,6 +267,19 @@ public class ProxyEnvironmentNew {
 	 */
 	public String getInstallType() {
 		return mInstallType;
+	}
+
+	/**
+	 * For support multiple process.
+	 * 
+	 * @return current running process name
+	 */
+	public String getRunningProcessName() {
+		if (TextUtils.isEmpty(mProcessName)) {
+			return ProxyComponentMappingByProcess.getDefaultPlugProcessName();
+		} else {
+			return mProcessName;
+		}
 	}
 
 	/**
@@ -361,20 +379,13 @@ public class ProxyEnvironmentNew {
 		return ret;
 	}
 
-	/**
-	 * 运行插件代理
-	 * 
-	 * @param context
-	 *            host 的application context
-	 * @param intent
-	 *            加载插件运行的intent
-	 */
 	public static void enterProxy(final Context context, final ServiceConnection conn,
-			final Intent intent) {
+			final Intent intent, final String processName) {
 		if (context instanceof Activity) {
 			mParent = (Activity) context;
 		}
-		final String packageName = tryParsePkgName(context, intent);;
+		final String packageName = tryParsePkgName(context, intent);
+		;
 		if (TextUtils.isEmpty(packageName)) {
 			deliverPlug(false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);// 添加投递
 			PluginDebugLog.log(TAG, "enterProxy packageName is null return! packageName: "
@@ -423,7 +434,7 @@ public class ProxyEnvironmentNew {
 					public void onPacakgeInstalled(String packageName) {
 						PluginDebugLog.log(TAG, "安装完成：开始初始化initTarget");
 
-						initTarget(context.getApplicationContext(), packageName,
+						initTarget(context.getApplicationContext(), packageName, processName,
 								new ITargetLoadListenner() {
 
 									@Override
@@ -437,6 +448,19 @@ public class ProxyEnvironmentNew {
 								});
 					}
 				});
+	}
+
+	/**
+	 * 运行插件代理
+	 * 
+	 * @param context
+	 *            host 的application context
+	 * @param intent
+	 *            加载插件运行的intent
+	 */
+	public static void enterProxy(final Context context, final ServiceConnection conn,
+			final Intent intent) {
+		enterProxy(context, conn, intent, ProxyComponentMappingByProcess.getDefaultPlugProcessName());
 	}
 
 	/**
@@ -584,14 +608,14 @@ public class ProxyEnvironmentNew {
 							ProxyEnvironmentNew.BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
 				}
 
-			} else if (targetClass != null && BroadcastReceiver.class.isAssignableFrom(targetClass)) { // 发一个内部用的动态广播
+			} else if (targetClass != null && BroadcastReceiver.class.isAssignableFrom(targetClass)) {
+				// 发一个内部用的动态广播
 				Intent newIntent = new Intent(curIntent);
 				newIntent.setComponent(null);
 				newIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, packageName);
 				newIntent.setPackage(context.getPackageName());
 				context.sendBroadcast(newIntent);
 			} else {
-//				mappingActivity(context, curIntent);
 				ActivityJumpUtil.handleStartActivityIntent(env.mPluginPakName, intent, -1, null, context);
 				env.dealLaunchMode(intent);
 				context.startActivity(curIntent);
@@ -645,7 +669,7 @@ public class ProxyEnvironmentNew {
 	 * @param pluginInstallMethod 插件安装方式
 	 */
 	public static void initProxyEnvironment(Context context, String packageName,
-			String pluginInstallMethod) {
+			String pluginInstallMethod, String processName) {
 		PluginDebugLog.log(TAG,
 				"sPluginsMap.containsKey(packageName):" + sPluginsMap.containsKey(packageName));
 		if (sPluginsMap.containsKey(packageName)) {
@@ -655,7 +679,7 @@ public class ProxyEnvironmentNew {
 		try {
 			newEnv = new ProxyEnvironmentNew(context,
 					PluginInstaller.getInstalledApkFile(context, packageName), packageName,
-					pluginInstallMethod);
+					pluginInstallMethod, processName);
 		} catch (Exception e) {
 			e.printStackTrace();
 			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
@@ -730,15 +754,16 @@ public class ProxyEnvironmentNew {
 	}
 
 	public void pushActivityToStack(Activity activity) {
-		activityStack.addFirst(activity);
+		mActivityStack.addFirst(activity);
 	}
 
 	public boolean popActivityFromStack(Activity activity) {
-		if (!activityStack.isEmpty()) {
-			return activityStack.remove(activity);
-		} else {
-			return false;
+		boolean result = false;
+		if (!mActivityStack.isEmpty()) {
+			result = mActivityStack.remove(activity);
 		}
+		quitApp(false);
+		return result;
 	}
 
 	public void dealLaunchMode(Intent intent) {
@@ -760,10 +785,10 @@ public class ProxyEnvironmentNew {
 
 			// 判断栈顶是否为需要启动的Activity
 			Activity activity = null;
-			if (!activityStack.isEmpty()) {
-				activity = activityStack.getFirst();
+			if (!mActivityStack.isEmpty()) {
+				activity = mActivityStack.getFirst();
 			}
-			String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType(), info);
+			String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType(), info, mProcessName);
 			if (activity != null && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
 				String key = getActivityStackKey(activity, getInstallType());
 				
@@ -774,10 +799,10 @@ public class ProxyEnvironmentNew {
 		} else if (isSingleTask || isClearTop) {
 
 			Activity found = null;
-			Iterator<Activity> it = activityStack.iterator();
+			Iterator<Activity> it = mActivityStack.iterator();
 			while (it.hasNext()) {
 				Activity activity = it.next();
-				String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType(), info);
+				String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(getInstallType(), info, mProcessName);
 				if (activity != null
 						&& TextUtils.equals(proxyClsName, activity.getClass().getName())) {
 					String key = getActivityStackKey(activity, getInstallType());
@@ -790,7 +815,7 @@ public class ProxyEnvironmentNew {
 
 			// 栈中已经有当前activity
 			if (found != null) {
-				Iterator<Activity> iterator = activityStack.iterator();
+				Iterator<Activity> iterator = mActivityStack.iterator();
 				while (iterator.hasNext()) {
 					Activity activity = iterator.next();
 					if (activity == found) {
@@ -835,7 +860,12 @@ public class ProxyEnvironmentNew {
 		intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE, targetService);
 		intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, targetMapping.getPackageName());
 
-		intent.setClass(mContext, ServiceProxyNew.class);
+		try {
+			intent.setClass(mContext,
+					Class.forName(ProxyComponentMappingByProcess.mappingService(mProcessName)));
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -975,13 +1005,31 @@ public class ProxyEnvironmentNew {
 	/**
 	 * 退出某个应用。不是卸载插件应用
 	 * 
-	 * @param packageName
+	 * @param force
+	 *            indicate whether quit by user or by system, true for trigger
+	 *            by user, false for trigger by plugin system.
 	 */
-	public void quitApp() {
-		while (!activityStack.isEmpty()) {
-			activityStack.poll().finish();
+	public void quitApp(boolean force) {
+		if (force) {
+			while (!mActivityStack.isEmpty()) {
+				mActivityStack.poll().finish();
+			}
+			mActivityStack.clear();
+			Service service;
+			for (Entry<String, PluginServiceWrapper> entry : sAliveServices.entrySet()) {
+				service = entry.getValue().getCurrentService();
+				if (service != null) {
+					service.stopSelf();
+				}
+			}
+			sAliveServices.clear();
+			service = null;
 		}
-		activityStack.clear();
+		if (force || (mActivityStack.isEmpty() && sAliveServices.isEmpty())) {
+			if (null != sExitStuff) {
+				sExitStuff.doExitStuff(getTargetPackageName());
+			}
+		}
 	}
 
 	/**
@@ -994,11 +1042,11 @@ public class ProxyEnvironmentNew {
 	 * @param listenner
 	 *            插件加载后的回调
 	 */
-	public static void initTarget(final Context context, String packageName,
+	public static void initTarget(final Context context, String packageName, String processName,
 			final ITargetLoadListenner listenner) {
 		PluginDebugLog.log("plugin", "initTarget");
 		try {
-			new InitProxyEnvireonment(context, packageName, listenner).start();
+			new InitProxyEnvireonment(context, packageName, processName, listenner).start();
 		} catch (Exception e) {
 			deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_TARGET);
 			e.printStackTrace();
@@ -1061,11 +1109,14 @@ public class ProxyEnvironmentNew {
 		public String pakName;
 		public Context pContext;
 		ITargetLoadListenner listenner;
+		String mProcName;
 
-		public InitProxyEnvireonment(Context context, String pakName, ITargetLoadListenner listenner) {
+		public InitProxyEnvireonment(Context context, String pakName, String processName,
+				ITargetLoadListenner listenner) {
 			this.pakName = pakName;
 			this.pContext = context;
 			this.listenner = listenner;
+			mProcName = processName;
 		}
 
 		@Override
@@ -1075,8 +1126,8 @@ public class ProxyEnvironmentNew {
 				String installMethod = CMPackageManager.getInstance(pContext).getPackageInfo(
 						pakName).pluginInfo.mPluginInstallMethod;
 				PluginDebugLog.log("plugin", "doInBackground:" + pakName + ", installMethod: "
-						+ installMethod);
-				ProxyEnvironmentNew.initProxyEnvironment(pContext, pakName, installMethod);
+						+ installMethod + " mProcName: " + mProcName);
+				ProxyEnvironmentNew.initProxyEnvironment(pContext, pakName, installMethod, mProcName);
 				new InitHandler(listenner, pakName, Looper.getMainLooper()).sendEmptyMessage(1);
 			} catch (Exception e) {
 				if (e instanceof PluginStartupException) {
@@ -1113,42 +1164,6 @@ public class ProxyEnvironmentNew {
 		}
 	}
 
-//	private static class FrameworkInstrumentation extends Instrumentation {
-//		private Context mContext;
-//
-//		public FrameworkInstrumentation(Context context) {
-//			super();
-//			mContext = context;
-//		}
-//
-//		@Override
-//		public Activity newActivity(ClassLoader cl, String className, Intent intent)
-//				throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-//
-//			if (className.equals(ActivityJumpUtil.TARGET_CLASS_NAME)) {
-//				String pluginId = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
-//				String actClassName = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY);
-//
-//				ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
-//				if (env == null && mContext != null) {
-//					// Check whether pluginId has installed, then init the
-//					// installed apk
-//					CMPackageInfo info = CMPackageManager.getInstance(mContext).getPackageInfo(
-//							pluginId);
-//					if (null != info && null != info.pluginInfo) {
-//						initProxyEnvironment(mContext, pluginId, info.pluginInfo.mPluginInstallMethod);
-//						env = ProxyEnvironmentNew.getInstance(pluginId);
-//					}
-//				}
-//				if (env != null && env.dexClassLoader != null) {
-//					return (Activity) ProxyEnvironmentNew.getInstance(pluginId).dexClassLoader
-//							.loadActivityClass(actClassName).newInstance();
-//				}
-//			}
-//			return super.newActivity(cl, className, intent);
-//		}
-//	}
-
 	private static IDeliverPlug iDeliverPlug;
 
 	public static void setiDeliverPlug(IDeliverPlug iDeliverPlug) {
@@ -1157,5 +1172,13 @@ public class ProxyEnvironmentNew {
 
 	public interface IDeliverPlug {
 		void deliverPlug(boolean success, String pakName, int errorCode);
+	}
+
+	public static void setPluginAppExitStuff(IAppExitStuff stuff) {
+		sExitStuff = stuff;
+	}
+
+	public interface IAppExitStuff {
+		void doExitStuff(String pkgName);
 	}
 }

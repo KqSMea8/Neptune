@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.plugin.InterfeceToGetHost;
+import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
@@ -45,7 +45,7 @@ import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 
-public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
+public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 	private static final String TAG = InstrActivityProxy.class.getSimpleName();
 
@@ -104,7 +104,7 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 				}
 				PluginDebugLog.log("plugin", "doInBackground:" + pkgName + ", installMethod: "
 						+ installMethod);
-				ProxyEnvironmentNew.initProxyEnvironment(InstrActivityProxy.this, pkgName, installMethod);
+//				ProxyEnvironmentNew.initProxyEnvironment(InstrActivityProxy.this, pkgName, installMethod);
 			}
 			mPluginEnv = ProxyEnvironmentNew.getInstance(pkgName);
 		}
@@ -697,11 +697,26 @@ public class InstrActivityProxy extends Activity implements InterfeceToGetHost {
 		return null;
 	}
 
-	/**
-	 * Get the real package name for this plugin
-	 * 
-	 * @return
-	 */
+//	/**
+//	 * Get the real package name for this plugin
+//	 * 
+//	 * @return
+//	 */
+//	public String getPluginPackageName() {
+//		if (null != mPluginEnv) {
+//			return mPluginEnv.getTargetPackageName();
+//		}
+//		return this.getPackageName();
+//	}
+
+	@Override
+	public void exitApp() {
+		if (null != mPluginEnv) {
+			mPluginEnv.quitApp(true);
+		}
+	}
+
+	@Override
 	public String getPluginPackageName() {
 		if (null != mPluginEnv) {
 			return mPluginEnv.getTargetPackageName();

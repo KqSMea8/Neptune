@@ -33,7 +33,7 @@ public class CMContextWrapperNew extends CustomContextWrapper {
 	}
 	
 	@Override
-	protected String getTargetPackageName() {
+	public String getPluginPackageName() {
 		return mPackagename;
 	}
 

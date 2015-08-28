@@ -57,7 +57,7 @@ public class PluginContextWrapper extends CustomContextWrapper {
 	}
 
 	@Override
-	protected String getTargetPackageName() {
+	public String getPluginPackageName() {
 		return plugin.getTargetPackageName();
 	}
 

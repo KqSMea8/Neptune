@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.pluginlibrary.plugin.InterfeceToGetHost;
+import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginlibrary.utils.Util;
@@ -32,7 +32,7 @@ import android.os.Bundle;
 import android.util.ArrayMap;
 import android.util.Log;
 
-public abstract class CustomContextWrapper extends ContextWrapper implements InterfeceToGetHost {
+public abstract class CustomContextWrapper extends ContextWrapper implements InterfaceToGetHost {
 
 	public CustomContextWrapper(Context base) {
 		super(base);
@@ -80,7 +80,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		if (env != null) {
 			String actServiceClsName = name.getComponent().getClassName();
 			PluginServiceWrapper plugin = ProxyEnvironmentNew.sAliveServices
-					.get(PluginServiceWrapper.getIndeitfy(getTargetPackageName(), actServiceClsName));
+					.get(PluginServiceWrapper.getIndeitfy(getPluginPackageName(), actServiceClsName));
 			if (plugin != null) {
 				plugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
 				plugin.tryToDestroyService(name);
@@ -108,13 +108,13 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
 	@Override
 	public void startActivity(Intent intent) {
-		super.startActivity(ActivityJumpUtil.handleStartActivityIntent(getTargetPackageName(),
+		super.startActivity(ActivityJumpUtil.handleStartActivityIntent(getPluginPackageName(),
 				intent, -1, null, this));
 	}
 
 	@Override
 	public void startActivity(Intent intent, Bundle options) {
-		super.startActivity(ActivityJumpUtil.handleStartActivityIntent(getTargetPackageName(),
+		super.startActivity(ActivityJumpUtil.handleStartActivityIntent(getPluginPackageName(),
 				intent, -1, options, this), options);
 	}
 
@@ -426,8 +426,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 	public SharedPreferences getSharedPreferences(String name, int mode) {
 		if (getEnvironment() != null && getEnvironment().getTargetMapping() != null) {
 			backupSharedPreference(name);
-			SharedPreferences sp = getSharedPreferecesForPlugin(name,mode);
-			if(sp != null){
+			SharedPreferences sp = getSharedPreferecesForPlugin(name, mode);
+			if (sp != null) {
 				return sp;
 			}
 		}
@@ -487,12 +487,19 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		return null;
 	}
 
-	/**
-	 * Return the real packageName(plugin)
-	 * 
-	 * @return real package name
-	 */
-	protected abstract String getTargetPackageName();
+	@Override
+	public void exitApp() {
+		if (null != getEnvironment()) {
+			getEnvironment().quitApp(true);
+		}
+	}
+
+//	/**
+//	 * Return the real packageName(plugin)
+//	 * 
+//	 * @return real package name
+//	 */
+//	protected abstract String getPluginPackageName();
 
 	/**
 	 * Get proxy environment

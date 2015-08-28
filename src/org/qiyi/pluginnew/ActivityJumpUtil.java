@@ -36,12 +36,13 @@ public class ActivityJumpUtil {
 	 *            {@link CMPackageManager#PLUGIN_METHOD_DEFAULT}
 	 *            {@link CMPackageManager#PLUGIN_METHOD_DEXMAKER}
 	 *            {@link CMPackageManager#PLUGIN_METHOD_INSTR}
+	 * @param processName process name which the activity will running
 	 * 
 	 * @return proxy activity's fully class name
 	 */
 	@Deprecated
-	public static String getProxyActivityClsName(String plunginInstallType) {
-		return getProxyActivityClsName(plunginInstallType, false);
+	public static String getProxyActivityClsName(String plunginInstallType, String processName) {
+		return getProxyActivityClsName(plunginInstallType, false, processName);
 	}
 
 	/**
@@ -56,27 +57,31 @@ public class ActivityJumpUtil {
 	 * @param actInfo plugin Activity's ActivityInfo
 	 * @return proxy activity's fully class name
 	 */
-	public static String getProxyActivityClsName(String plunginInstallType, ActivityInfo actInfo) {
+	public static String getProxyActivityClsName(String plunginInstallType, ActivityInfo actInfo,
+			String processName) {
 		String translucentCfg = "";
 		if (actInfo != null && actInfo.metaData != null) {
 			translucentCfg = actInfo.metaData.getString(META_KEY_ACTIVITY_SPECIAL);
 		}
 		return getProxyActivityClsName(plunginInstallType,
-				TextUtils.equals(PLUGIN_ACTIVITY_TRANSLUCENT, translucentCfg));
+				TextUtils.equals(PLUGIN_ACTIVITY_TRANSLUCENT, translucentCfg), processName);
 	}
 
-	static String getProxyActivityClsName(String plunginInstallType, boolean isTranslucent) {
+	static String getProxyActivityClsName(String plunginInstallType, boolean isTranslucent,
+			String processName) {
 		if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, plunginInstallType)) {
 			return TARGET_CLASS_NAME;
 		} else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, plunginInstallType)) {
-			if (isTranslucent) {
-				return InstrActivityProxyTranslucent.class.getName();
-			} else {
-				return InstrActivityProxy.class.getName();
-			}
+			return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, processName);
+//			if (isTranslucent) {
+//				return InstrActivityProxyTranslucent.class.getName();
+//			} else {
+//				return InstrActivityProxy.class.getName();
+//			}
 		} else {
 			// Default option
-			return InstrActivityProxy.class.getName();
+//			return InstrActivityProxy.class.getName();
+			return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, processName);
 		}
 	}
 
@@ -111,7 +116,7 @@ public class ActivityJumpUtil {
 			return;
 		}
 		ComponentName compname = new ComponentName(env.getParentPackagename(),
-				getProxyActivityClsName(env.getInstallType(), info));
+				getProxyActivityClsName(env.getInstallType(), info, env.getRunningProcessName()));
 		intent.setComponent(compname).putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, pluginId)
 				.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY, actName);
 	}
@@ -161,19 +166,22 @@ public class ActivityJumpUtil {
 					}
 				}
 				// check in all other installed apk, but hasn't init.
-				if (targetActivity == null) {
-					mgr = ProxyEnvironmentNew.getInstance(pluginId);
-					CMPackageManager pkm = CMPackageManager.getInstance(mgr.getHostContext());
-					for (CMPackageInfo plugInfo : pkm.getInstalledApps()) {
-						if (TextUtils.equals(pkg, plugInfo.packageName)
-								&& !TextUtils.equals(plugInfo.packageName, pluginId)) {
-							targetActivity = new ActivityInfo();
-							targetActivity.packageName = pkg;
-							targetActivity.name = toActName;
-							break;
-						}
-					}
-				}
+				// In multiple process environment, currently plugin shouldn't
+				// invoke other plugin directly, only can invoke other plugin
+				// by host
+//				if (targetActivity == null) {
+//					mgr = ProxyEnvironmentNew.getInstance(pluginId);
+//					CMPackageManager pkm = CMPackageManager.getInstance(mgr.getHostContext());
+//					for (CMPackageInfo plugInfo : pkm.getInstalledApps()) {
+//						if (TextUtils.equals(pkg, plugInfo.packageName)
+//								&& !TextUtils.equals(plugInfo.packageName, pluginId)) {
+//							targetActivity = new ActivityInfo();
+//							targetActivity.packageName = pkg;
+//							targetActivity.name = toActName;
+//							break;
+//						}
+//					}
+//				}
 			}
 		} else {
 			mgr = ProxyEnvironmentNew.getInstance(pluginId);
