@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.utils;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 /**
@@ -20,31 +21,29 @@ public class PluginDebugLog {
 		sIsDebug = b;
 	}
 	
-    /**
-     * Check the debug configuration and check TAG with android.util.Log.isLoggable
-     * 
-     * @return
-     */
-    public static boolean isDebug() {
-        return sIsDebug || android.util.Log.isLoggable(TAG, android.util.Log.VERBOSE);
-    }
+	/**
+	 * Check the debug configuration and check TAG with
+	 * android.util.Log.isLoggable
+	 * 
+	 * @return
+	 */
+	public static boolean isDebug() {
+		return sIsDebug || android.util.Log.isLoggable(TAG, android.util.Log.VERBOSE);
+	}
 
-	public static void log(String LOG_CLASS_NAME, Object msg) {
-		if ((null != LOG_CLASS_NAME && !LOG_CLASS_NAME.equals("")) && null != msg) {
-			if (isDebug()) {
-				Log.i(LOG_CLASS_NAME,
-						"[INFO " + LOG_CLASS_NAME + "] " + String.valueOf(msg));
+	public static void log(String tag, Object msg) {
+		if (isDebug()) {
+			if (!TextUtils.isEmpty(tag) && null != msg) {
+				Log.i(tag, String.valueOf(msg));
 			}
 		}
 	}
 
-	public static void log(String TAG, String LOG_CLASS_NAME, Object msg) {
-		if ((null != LOG_CLASS_NAME && !LOG_CLASS_NAME.equals("")) && null != msg) {
-			if (isDebug()) {
-				Log.i(TAG,
-						"[INFO " + LOG_CLASS_NAME + "] " + String.valueOf(msg));
+	public static void log(String tag, String identify, Object msg) {
+		if (isDebug()) {
+			if (!TextUtils.isEmpty(tag) && null != msg) {
+				Log.i(tag, "[INFO " + identify + "] " + String.valueOf(msg));
 			}
 		}
 	}
-
 }
