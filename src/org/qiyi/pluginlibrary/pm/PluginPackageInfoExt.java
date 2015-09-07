@@ -31,7 +31,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public static final String INSTALL_METHOD = "install_method";// 插件安装方法
 	public static final String TYPE = "type";
 	public static final String DESC = "desc";
-	public static final String ICON_URL = "icon_url";
+	public static final String ICON_URL = "icon_url";   //插件的启动引导图的背景图url
 	public static final String URL = "url";
 	public static final String UNINSTALL_FLAG = "uninstall_flag";
 	public static final String UPDATE_TIME = "time";// 插件更新时间
@@ -42,6 +42,11 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public static final String SUFFIX_TYPE = "suffix_type";// 插件的文件APK\SO\JAR
 	public static final String FILE_SOURCE_TYPE = "file_source_type";// 插件文件来源  type(内置、网络下载)
 	public static final String PACKAGENAME = "packageName";// 插件文件来源
+	public static final String START_ICON = "start_icon";// 显示插件启动按钮
+	public static final String UPGRADE_TYPE = "upgrade_type"; //更新方式，自动，手动？
+	public static final String GRAY_VER = "gray_ver"; //灰度版本号
+	public static final String PLUGIN_VER = "plugin_ver"; //插件显示版本号
+
 
 	// 插件ID
 	public String id = "";
@@ -77,6 +82,15 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public String mSuffixType = "";
 	// 插件文件来源 type(内置、网络下载)
 	public String mFileSourceType = CMPackageManager.PLUGIN_SOURCE_NETWORK;
+	
+	public int start_icon = 0;  //默认为0，不启动
+	
+	public int upgrade_type = 0;  //默认为0
+
+	public int gray_ver = 0;  //默认为0
+	
+	public String plugin_ver = "";//插件版本显示版本号。
+
 
 	@Override
 	public String toString() {
@@ -107,6 +121,10 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 			url = ext.optString(DOWNLOAD_URL);
 			mSuffixType = ext.optString(SUFFIX_TYPE);
 			mFileSourceType = ext.optString(FILE_SOURCE_TYPE);
+			start_icon = ext.optInt(START_ICON); 
+			upgrade_type = ext.optInt(UPGRADE_TYPE); 
+			gray_ver = ext.optInt(GRAY_VER); 
+			plugin_ver = ext.optString(PLUGIN_VER);
 		}
 	}
 
@@ -167,6 +185,11 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		mPluginInstallMethod = parcel.readString();
 		mSuffixType = parcel.readString();
 		mFileSourceType = parcel.readString();
+		start_icon = parcel.readInt();
+		upgrade_type = parcel.readInt();
+		gray_ver = parcel.readInt();
+		plugin_ver = parcel.readString();
+
 	}
 
 	@Override
@@ -193,9 +216,13 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		dest.writeString(mPluginInstallMethod);
 		dest.writeString(mSuffixType);
 		dest.writeString(mFileSourceType);
+		dest.writeInt(start_icon);
+		dest.writeInt(upgrade_type);
+		dest.writeInt(gray_ver);
+		dest.writeString(plugin_ver);
 	}
 
-	public JSONObject object2Json() throws JSONException {
+	public JSONObject data2JsonObj() throws JSONException {
 		JSONObject result = new JSONObject();
 		result.put(ID, id);
 		result.put(NAME, name);
@@ -214,6 +241,11 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		result.put(URL, url);
 		result.put(SUFFIX_TYPE, mSuffixType);
 		result.put(FILE_SOURCE_TYPE, mFileSourceType);
+		result.put(START_ICON, start_icon);
+		result.put(UPGRADE_TYPE, upgrade_type);
+		result.put(GRAY_VER, gray_ver);
+		result.put(PLUGIN_VER, plugin_ver);
 		return result;
 	}
+	
 }

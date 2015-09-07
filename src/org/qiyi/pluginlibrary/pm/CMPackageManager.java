@@ -275,7 +275,7 @@ public class CMPackageManager {
                 object.put(CMPackageInfo.TAG_APK_PATH, pkg.srcApkPath);
                 object.put(CMPackageInfo.TAG_INSTALL_STATUS, pkg.installStatus);
                 if (pkg.pluginInfo != null) {
-                	JSONObject pluginExt = pkg.pluginInfo.object2Json();
+                	JSONObject pluginExt = pkg.pluginInfo.data2JsonObj();
                 	object.put(PluginPackageInfoExt.INFO_EXT, pluginExt);
                 }
                 
