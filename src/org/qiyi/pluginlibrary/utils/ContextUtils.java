@@ -27,7 +27,7 @@ public class ContextUtils {
 		} else {
 			if (context instanceof Activity) {
 				Context base = ((Activity) context).getBaseContext();
-				if (context instanceof InterfaceToGetHost) {
+				if (base instanceof InterfaceToGetHost) {
 					PluginDebugLog.log(TAG, "Return host  context for getOriginalContext");
 					return ((InterfaceToGetHost) base).getOriginalContext();
 				}
