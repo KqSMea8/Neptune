@@ -243,6 +243,11 @@ public class CMPackageManager {
 						ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext,
 								new File(pkgInfo.srcApkPath));
 						pkgInfo.targetInfo = targetInfo;
+						if (pkgInfo.pluginInfo != null
+								&& TextUtils.isEmpty(pkgInfo.pluginInfo.plugin_ver)
+								&& pkgInfo.targetInfo != null) {
+							pkgInfo.pluginInfo.plugin_ver = pkgInfo.targetInfo.getVersionName();
+						}
 
 						mInstalledPkgs.put(pkgInfo.packageName, pkgInfo);
 					}
@@ -275,6 +280,9 @@ public class CMPackageManager {
                 object.put(CMPackageInfo.TAG_APK_PATH, pkg.srcApkPath);
                 object.put(CMPackageInfo.TAG_INSTALL_STATUS, pkg.installStatus);
                 if (pkg.pluginInfo != null) {
+                	if (TextUtils.isEmpty(pkg.pluginInfo.plugin_ver) && pkg.targetInfo != null) {
+                		pkg.pluginInfo.plugin_ver = pkg.targetInfo.getVersionName();
+                	}
                 	JSONObject pluginExt = pkg.pluginInfo.data2JsonObj();
                 	object.put(PluginPackageInfoExt.INFO_EXT, pluginExt);
                 }

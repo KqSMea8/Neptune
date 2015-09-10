@@ -44,7 +44,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public static final String PACKAGENAME = "packageName";// 插件文件来源
 	public static final String START_ICON = "start_icon";// 显示插件启动按钮
 	public static final String UPGRADE_TYPE = "upgrade_type"; //更新方式，自动，手动？
-	public static final String GRAY_VER = "gray_ver"; //灰度版本号
+	public static final String GRAY_VER = "plugin_gray_ver"; //灰度版本号
 	public static final String PLUGIN_VER = "plugin_ver"; //插件显示版本号
 
 
@@ -87,7 +87,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	
 	public int upgrade_type = 0;  //默认为0
 
-	public int gray_ver = 0;  //默认为0
+	public String plugin_gray_ver = "";  //灰度版本，默认为""
 	
 	public String plugin_ver = "";//插件版本显示版本号。
 
@@ -123,7 +123,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 			mFileSourceType = ext.optString(FILE_SOURCE_TYPE);
 			start_icon = ext.optInt(START_ICON); 
 			upgrade_type = ext.optInt(UPGRADE_TYPE); 
-			gray_ver = ext.optInt(GRAY_VER); 
+			plugin_gray_ver = ext.optString(GRAY_VER); 
 			plugin_ver = ext.optString(PLUGIN_VER);
 		}
 	}
@@ -187,7 +187,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		mFileSourceType = parcel.readString();
 		start_icon = parcel.readInt();
 		upgrade_type = parcel.readInt();
-		gray_ver = parcel.readInt();
+		plugin_gray_ver = parcel.readString();
 		plugin_ver = parcel.readString();
 
 	}
@@ -218,7 +218,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		dest.writeString(mFileSourceType);
 		dest.writeInt(start_icon);
 		dest.writeInt(upgrade_type);
-		dest.writeInt(gray_ver);
+		dest.writeString(plugin_gray_ver);
 		dest.writeString(plugin_ver);
 	}
 
@@ -243,7 +243,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		result.put(FILE_SOURCE_TYPE, mFileSourceType);
 		result.put(START_ICON, start_icon);
 		result.put(UPGRADE_TYPE, upgrade_type);
-		result.put(GRAY_VER, gray_ver);
+		result.put(GRAY_VER, plugin_gray_ver);
 		result.put(PLUGIN_VER, plugin_ver);
 		return result;
 	}

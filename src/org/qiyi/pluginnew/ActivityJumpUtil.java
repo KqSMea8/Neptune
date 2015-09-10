@@ -92,10 +92,10 @@ public class ActivityJumpUtil {
 						.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY))
 				&& !TextUtils.isEmpty(originalIntent
 						.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME))) {
-			if (TextUtils.equals(originalIntent.getComponent().getClassName(),
-					InstrActivityProxy.class.getName())
-					|| TextUtils.equals(originalIntent.getComponent().getClassName(),
-							InstrActivityProxyTranslucent.class.getName())) {
+			if (originalIntent.getComponent().getClassName()
+					.startsWith(InstrActivityProxy.class.getName())
+					|| originalIntent.getComponent().getClassName()
+							.startsWith(InstrActivityProxyTranslucent.class.getName())) {
 				return true;
 			}
 		}
