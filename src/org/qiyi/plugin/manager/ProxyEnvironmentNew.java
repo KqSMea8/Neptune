@@ -393,6 +393,8 @@ public class ProxyEnvironmentNew {
 			return;
 		}
 
+		deliverPlug(true, packageName, ErrorType.SUCCESS);
+
 		boolean isEnterProxy = false;
 		synchronized (gLoadingMap) {
 			List<Intent> cacheIntents = gLoadingMap.get(packageName);
