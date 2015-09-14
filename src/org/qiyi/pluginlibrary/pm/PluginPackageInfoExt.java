@@ -102,6 +102,33 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public PluginPackageInfoExt() {
 	}
 
+	public PluginPackageInfoExt(CMPackageInfo mCMPackageInfo) {
+
+		if (mCMPackageInfo != null) {
+			id = mCMPackageInfo.pluginInfo.id;
+			name = mCMPackageInfo.pluginInfo.name;
+			ver = mCMPackageInfo.pluginInfo.ver;
+			crc = mCMPackageInfo.pluginInfo.crc;
+			type = mCMPackageInfo.pluginInfo.type;
+			desc = mCMPackageInfo.pluginInfo.desc;
+			icon_url = mCMPackageInfo.pluginInfo.icon_url;
+			isAllowUninstall = mCMPackageInfo.pluginInfo.isAllowUninstall;
+			pluginTotalSize = mCMPackageInfo.pluginInfo.pluginTotalSize;
+			packageName = mCMPackageInfo.pluginInfo.packageName;
+			local = mCMPackageInfo.pluginInfo.local;
+			invisible = mCMPackageInfo.pluginInfo.invisible;
+			scrc = mCMPackageInfo.pluginInfo.scrc;
+			mPluginInstallMethod = mCMPackageInfo.pluginInfo.mPluginInstallMethod;
+			url = mCMPackageInfo.pluginInfo.url;
+			mSuffixType = mCMPackageInfo.pluginInfo.mSuffixType;
+			mFileSourceType = mCMPackageInfo.pluginInfo.mFileSourceType;
+			start_icon = mCMPackageInfo.pluginInfo.start_icon;
+			upgrade_type = mCMPackageInfo.pluginInfo.upgrade_type;
+			plugin_gray_ver = mCMPackageInfo.pluginInfo.plugin_gray_ver;
+			plugin_ver = mCMPackageInfo.pluginInfo.plugin_ver;
+		}
+	}
+	
 	public PluginPackageInfoExt(JSONObject ext) {
 		if (ext != null) {
 			id = ext.optString(ID);
