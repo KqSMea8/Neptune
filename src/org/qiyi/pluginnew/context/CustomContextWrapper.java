@@ -444,6 +444,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		String sharePath = "/data/data/"+this.getPackageName()+"/shared_prefs/";
 		File sFile = new File(sharePath);
 		String[] fileList = sFile.list();
+		if (fileList == null)
+			return;
 		for(int i=0;i<fileList.length;i++){
 			String file = fileList[i];
 			if(file != null && (file.equals(name+".xml") || file.contains("_"+name+".xml"))){
