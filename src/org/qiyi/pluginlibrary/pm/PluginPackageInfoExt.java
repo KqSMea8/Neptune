@@ -145,7 +145,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 			invisible = ext.optInt(PLUGIN_VISIBLE);
 			scrc = ext.optString(SCRC);
 			mPluginInstallMethod = ext.optString(INSTALL_METHOD);
-			url = ext.optString(DOWNLOAD_URL);
+			url = ext.optString(URL);
 			mSuffixType = ext.optString(SUFFIX_TYPE);
 			mFileSourceType = ext.optString(FILE_SOURCE_TYPE);
 			start_icon = ext.optInt(START_ICON); 
