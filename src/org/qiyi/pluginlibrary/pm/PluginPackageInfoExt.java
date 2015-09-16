@@ -102,30 +102,30 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public PluginPackageInfoExt() {
 	}
 
-	public PluginPackageInfoExt(CMPackageInfo mCMPackageInfo) {
+	public PluginPackageInfoExt(PluginPackageInfoExt packageInfo) {
 
-		if (mCMPackageInfo != null) {
-			id = mCMPackageInfo.pluginInfo.id;
-			name = mCMPackageInfo.pluginInfo.name;
-			ver = mCMPackageInfo.pluginInfo.ver;
-			crc = mCMPackageInfo.pluginInfo.crc;
-			type = mCMPackageInfo.pluginInfo.type;
-			desc = mCMPackageInfo.pluginInfo.desc;
-			icon_url = mCMPackageInfo.pluginInfo.icon_url;
-			isAllowUninstall = mCMPackageInfo.pluginInfo.isAllowUninstall;
-			pluginTotalSize = mCMPackageInfo.pluginInfo.pluginTotalSize;
-			packageName = mCMPackageInfo.pluginInfo.packageName;
-			local = mCMPackageInfo.pluginInfo.local;
-			invisible = mCMPackageInfo.pluginInfo.invisible;
-			scrc = mCMPackageInfo.pluginInfo.scrc;
-			mPluginInstallMethod = mCMPackageInfo.pluginInfo.mPluginInstallMethod;
-			url = mCMPackageInfo.pluginInfo.url;
-			mSuffixType = mCMPackageInfo.pluginInfo.mSuffixType;
-			mFileSourceType = mCMPackageInfo.pluginInfo.mFileSourceType;
-			start_icon = mCMPackageInfo.pluginInfo.start_icon;
-			upgrade_type = mCMPackageInfo.pluginInfo.upgrade_type;
-			plugin_gray_ver = mCMPackageInfo.pluginInfo.plugin_gray_ver;
-			plugin_ver = mCMPackageInfo.pluginInfo.plugin_ver;
+		if (packageInfo != null) {
+			id = packageInfo.id;
+			name = packageInfo.name;
+			ver = packageInfo.ver;
+			crc = packageInfo.crc;
+			type = packageInfo.type;
+			desc = packageInfo.desc;
+			icon_url = packageInfo.icon_url;
+			isAllowUninstall = packageInfo.isAllowUninstall;
+			pluginTotalSize = packageInfo.pluginTotalSize;
+			packageName = packageInfo.packageName;
+			local = packageInfo.local;
+			invisible = packageInfo.invisible;
+			scrc = packageInfo.scrc;
+			mPluginInstallMethod = packageInfo.mPluginInstallMethod;
+			url = packageInfo.url;
+			mSuffixType = packageInfo.mSuffixType;
+			mFileSourceType = packageInfo.mFileSourceType;
+			start_icon = packageInfo.start_icon;
+			upgrade_type = packageInfo.upgrade_type;
+			plugin_gray_ver = packageInfo.plugin_gray_ver;
+			plugin_ver = packageInfo.plugin_ver;
 		}
 	}
 	
