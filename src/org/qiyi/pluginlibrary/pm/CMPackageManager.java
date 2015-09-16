@@ -12,6 +12,7 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.plugin.manager.TargetActivatorNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
@@ -25,8 +26,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 
 /**
  * 负责安装卸载app，获取安装列表等工作.<br>
@@ -551,10 +556,38 @@ public class CMPackageManager {
 	 */
 	private void tryToClearPackage(String packageName) {
 		if (!TextUtils.isEmpty(packageName) && getUninstallPkgs().containsKey(packageName)) {
-			deletePackage(packageName, null, false, false);
+	    	boolean configDel = isDataNeedPrefix(mContext,packageName);
+			deletePackage(packageName, null, configDel, false);
 		}
 	}
-
+	
+	private boolean isDataNeedPrefix(Context context,String packageName){
+		
+		boolean result = false;
+		Bundle metaData = null;
+		File apkFile = new File(context.getDir("qiyi_plugin", Context.MODE_PRIVATE), packageName+".apk");
+		if(!apkFile.exists())
+			return result;
+		PackageInfo packageInfo = context.getPackageManager().getPackageArchiveInfo(
+				apkFile.getAbsolutePath(),
+				PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS
+						| PackageManager.GET_META_DATA | PackageManager.GET_SERVICES
+						| PackageManager.GET_CONFIGURATIONS);
+		
+		if (packageInfo.activities != null && packageInfo.activities.length > 0) {
+			metaData = packageInfo.activities[0].metaData;
+		}
+		if (metaData == null) {
+			metaData = packageInfo.applicationInfo.metaData;
+		}
+		
+		if (metaData != null) {
+			result = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
+		}
+		
+		return result;
+	}
+	
     /**
      * 删除安装包。
      * 卸载插件应用程序
@@ -562,7 +595,7 @@ public class CMPackageManager {
      * @param observer 卸载结果回调
      */
     public void deletePackage(final String packageName, IPackageDeleteObserver observer) {
-    	deletePackage(packageName, observer, true, true);
+    	deletePackage(packageName, observer, false, true);
     }
 
     /**
@@ -586,11 +619,11 @@ public class CMPackageManager {
     		if (deleteData) {
     			// 删除生成的data数据文件
     			// 清除environment中相关的数据:按前缀匹配
-    			PluginInstaller.deleteData(mContext, packageName);
+    			PluginInstaller.deletePluginData(mContext, packageName);
     		}
     		
     		//删除安装文件，apk，dex，so
-    		PluginInstaller.deletePackage(mContext, packageName);
+    		PluginInstaller.deleteInstallerPackage(mContext, packageName);
     		
     		//从安装列表中删除，并且更新存储安装列表的文件
     		getInstalledPkgsInstance().remove(packageName);

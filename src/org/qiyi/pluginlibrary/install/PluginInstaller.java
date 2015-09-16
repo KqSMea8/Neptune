@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
@@ -322,6 +321,14 @@ public class PluginInstaller {
             return null;
         }
     }
+    
+    public static File getInstalledDexFile(Context context, String packageName) {
+    	File dataDir = null;
+		dataDir = new File(PluginInstaller.getPluginappRootPath(context),packageName);
+		
+		File dexFile = new File(dataDir,packageName+".dex");
+		return dexFile;
+    }
 
     private static BroadcastReceiver sApkInstallerReceiver = new BroadcastReceiver() {
 
@@ -418,70 +425,83 @@ public class PluginInstaller {
 //            editor.commit();
 //        }
 //    }
-    
+
     /**
-     * 删除安装包的安装文件，apk，dex，so。
-     * @param context app context
-     * @param packageName 包名
+     * delete the apk,so.dex
+     * @param context
+     * @param packageName
      */
-    public static void deletePackage(Context context, String packageName) {
-        // 删除 apk 文件，因为有可能安装在sdcard，所以单独删除。
-        File apkPath = getInstalledApkFile(context, packageName);
-        if (apkPath != null) {
-            apkPath.delete();
-        }
-        File dataDir = null;
-        // 删除 dex,so 安装目录
-        if(ProxyEnvironmentNew.getInstance(packageName)!= null){
-        	dataDir = ProxyEnvironmentNew.getInstance(packageName).getDataDir(context, packageName);
-        }
-        if (dataDir != null) {
+	public static void deleteInstallerPackage(Context context, String packageName) {
+
+		File dataDir = null;
+		dataDir = new File(PluginInstaller.getPluginappRootPath(context),packageName);
+		File apkPath = getInstalledApkFile(context, packageName);
+		File dexPath = getInstalledDexFile(context, packageName);
+		if (apkPath != null) {
+			apkPath.delete();
+		}
+
+		if (dexPath != null) {
+			dexPath.delete();
+		}
+
+		File lib = new File(dataDir, "lib");
+
+        if (lib != null) {
             try {
-                Util.deleteDirectory(dataDir);
+                Util.deleteDirectory(lib);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-    }
+	}
 
-    /**
-     * 删除插件的数据
-     * 
-     * @param context
-     *            host的application context
-     * @param packageName
-     *            插件包名
-     */
-    public static void deleteData(Context context, final String packageName) {
-        String dataRoot = context.getApplicationInfo().dataDir;
-        FileFilter filter = new FileFilter() {
+	/**
+	 * delete the database,sharedPreference,file and cache.
+	 * @param context
+	 * @param packageName
+	 */
+	public static void deletePluginData(Context context, String packageName) {
+		File dataDir = null;
+		dataDir = new File(PluginInstaller.getPluginappRootPath(context),packageName);
+		File db = new File(dataDir, "databases");
+		File sharedPreference = new File(dataDir, "shared_prefs");
+		File file = new File(dataDir, "files");
+		File cache = new File(dataDir, "cache");
 
-            @Override
-            public boolean accept(File pathname) {
-                return pathname.getName().startsWith(packageName);
-            }
-        };
-
-        // 按前缀删除数据库
-        File[] databases = new File(dataRoot, "databases").listFiles(filter);
-        if (databases != null) {
-            for (File file : databases) {
-                if (file.isFile()) {
-                    file.delete();
-                }
+        if (db != null) {
+            try {
+                Util.deleteDirectory(db);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+        
+        if (sharedPreference != null) {
+            try {
+                Util.deleteDirectory(sharedPreference);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        if (file != null) {
+            try {
+                Util.deleteDirectory(file);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        if (cache != null) {
+            try {
+                Util.deleteDirectory(cache);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+	}
 
-        // 按前缀删除shared_prefs
-//        File[] sharedPrefs = new File(dataRoot, "shared_prefs").listFiles(filter);
-//        if (sharedPrefs != null) {
-//            for (File file : sharedPrefs) {
-//                if (file.isFile()) {
-//                    file.delete();
-//                }
-//            }
-//        }
-    }
     
     /**
      * 查看某个app是否正在安装
