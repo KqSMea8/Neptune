@@ -621,8 +621,8 @@ public class ProxyEnvironmentNew {
 				newIntent.setPackage(context.getPackageName());
 				context.sendBroadcast(newIntent);
 			} else {
-				ActivityJumpUtil.handleStartActivityIntent(env.mPluginPakName, intent, -1, null, context);
-				env.dealLaunchMode(intent);
+				ActivityJumpUtil.handleStartActivityIntent(env.mPluginPakName, curIntent, -1, null, context);
+				env.dealLaunchMode(curIntent);
 				context.startActivity(curIntent);
 				haveLaunchActivity = true;
 			}
