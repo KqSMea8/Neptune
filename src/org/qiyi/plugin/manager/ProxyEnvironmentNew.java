@@ -821,6 +821,7 @@ public class ProxyEnvironmentNew {
 
 			// 栈中已经有当前activity
 			if (found != null) {
+				List<Activity> popActivities = new ArrayList<Activity>(5);
 				Iterator<Activity> iterator = mActivityStack.iterator();
 				while (iterator.hasNext()) {
 					Activity activity = iterator.next();
@@ -832,7 +833,11 @@ public class ProxyEnvironmentNew {
 						intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 						break;
 					}
+					popActivities.add(activity);
 					activity.finish();
+				}
+				for(Activity act : popActivities){               //不需要等到onDestroy再出栈，由于是对象出栈，所以多次出栈不会引起问题。
+					popActivityFromStack(act);
 				}
 			}
 		}
