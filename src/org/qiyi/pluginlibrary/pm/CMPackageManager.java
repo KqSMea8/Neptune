@@ -662,6 +662,8 @@ public class CMPackageManager {
 			File apk = PluginInstaller.getInstalledApkFile(mContext, pkgName);
 	        if (apk != null && apk.exists()) {
 	        	uninstallFlag = apk.delete();
+	        } else {
+	        	uninstallFlag = true;
 	        }
 
 			// 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
