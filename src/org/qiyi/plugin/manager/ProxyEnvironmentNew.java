@@ -392,8 +392,6 @@ public class ProxyEnvironmentNew {
 			return;
 		}
 
-		deliverPlug(true, packageName, ErrorType.SUCCESS);
-
 		boolean isEnterProxy = false;
 		synchronized (gLoadingMap) {
 			List<Intent> cacheIntents = gLoadingMap.get(packageName);
@@ -548,6 +546,8 @@ public class ProxyEnvironmentNew {
 					// throw new RuntimeException(e.getMessage(), e);
 				}
 			}
+			
+			deliverPlug(true, packageName, ErrorType.SUCCESS);
 
 			env.setApplicationBase(env, env.application, packageName);
 			env.application.onCreate();
