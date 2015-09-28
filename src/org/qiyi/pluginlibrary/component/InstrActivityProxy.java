@@ -55,7 +55,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 	/**
 	 * 装载插件的Activity
-	 * 
+	 *
 	 * @param mPlugin
 	 */
 	private Activity fillPluginActivity(ProxyEnvironmentNew env, String actClsName) {
@@ -87,7 +87,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 	/**
 	 * Try to init proxy environment
-	 * 
+	 *
 	 * @param pkgName
 	 */
 	private void tryToInitEnvironment(String pkgName) {
@@ -229,8 +229,8 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 	 * Override Oppo method in Context
 	 * Resolve cann't start plugin on oppo devices,
 	 * true or false both OK, false as the temporary result
-	 * 
-	 * @return 
+	 *
+	 * @return
 	 */
 	public boolean isOppoStyle() {
 		return false;
@@ -254,7 +254,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 	public File getCacheDir() {
 		return mPluginContextWrapper.getCacheDir();
 	}
-	
+
 	@Override
 	public File getFileStreamPath(String name) {
 		return mPluginContextWrapper.getFileStreamPath(name);
@@ -290,7 +290,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 	@Override
 	public boolean deleteDatabase(String name) {
-		
+
 		return mPluginContextWrapper.deleteDatabase(name);
 	}
 
@@ -570,9 +570,10 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 	@Override
 	public void onAttachFragment(Fragment fragment) {
-
 		super.onAttachFragment(fragment);
-		getController().getPlugin().onAttachFragment(fragment);
+		if (getController() != null && getController().getPlugin() != null) {
+			getController().getPlugin().onAttachFragment(fragment);
+		}
 	}
 
 	@Override
@@ -673,7 +674,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 	/**
 	 * Get the context which start this plugin
-	 * 
+	 *
 	 * @return
 	 */
 	@Override
@@ -686,7 +687,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 	/**
 	 * Get host resource
-	 * 
+	 *
 	 * @return host resource tool
 	 */
 	@Override
@@ -699,7 +700,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
 //	/**
 //	 * Get the real package name for this plugin
-//	 * 
+//	 *
 //	 * @return
 //	 */
 //	public String getPluginPackageName() {
