@@ -23,54 +23,52 @@ import android.content.pm.Signature;
 import android.os.Build;
 
 /**
- * 
- * @since 
+ *
+ * @since
  */
 public final class Util {
-	public static final String TAG = PluginDebugLog.TAG;
-	 /** apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so */
-    public static String APK_LIB_DIR_PREFIX = "lib/";
+    private static final String TAG = PluginDebugLog.TAG;
+    /** apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so */
+    private static final String APK_LIB_DIR_PREFIX = "lib/";
     /** lib中so后缀*/
-    public static final String APK_LIB_SUFFIX = ".so";
-    /** lib目录的 cpu abi 其实位置。比如 x86 的起始位置 */
-    public static int APK_LIB_CPUABI_OFFSITE = APK_LIB_DIR_PREFIX.length();
+    private static final String APK_LIB_SUFFIX = ".so";
     /** utility class private constructor*/
     private Util() { }
     /**
      * 6.2扩展了几个方法
      */
     public static final String pluginSDKVersion = "6.2";
-    
+
     public static String getPluginSDKVersion(){
-    	return pluginSDKVersion;
+        return pluginSDKVersion;
     }
-    
+
     /**
-     * 读取 apk 文件的最后修改时间（生成时间），通过编译命令编译出来的apk第一个 entry 为 
+     * 读取 apk 文件的最后修改时间（生成时间），通过编译命令编译出来的apk第一个 entry 为
      * META-INF/MANIFEST.MF  所以我们只读取此文件的修改时间可以。
-     * 
+     *
      * 对于 eclipse 插件打包的 apk 不适用。文件 entry顺序不确定。
-     * 
-     * @param fis 
-     * @throws IOException 
+     *
+     * @param fis
+     * @throws IOException
      * @return 返回 {@link SimpleDateTime}
      */
     public static SimpleDateTime readApkModifyTime(InputStream fis) throws IOException {
-        
+
         int LOCHDR = 30; //header 部分信息截止字节 // SUPPRESS CHECKSTYLE
         int LOCVER = 4; //排除掉magic number 后的第四个字节，version部分 // SUPPRESS CHECKSTYLE
         int LOCTIM = 10; //最后修改时间 第10个字节。 // SUPPRESS CHECKSTYLE
-        
+
         byte[] hdrBuf = new byte[LOCHDR - LOCVER];
-        
+
         // Read the local file header.
         byte[] magicNumer = new byte[4]; // SUPPRESS CHECKSTYLE magic number
         fis.read(magicNumer);
         fis.read(hdrBuf, 0, hdrBuf.length);
-        
+
         int time = peekShort(hdrBuf, LOCTIM - LOCVER);
         int modDate = peekShort(hdrBuf, LOCTIM - LOCVER + 2);
-        
+
         SimpleDateTime cal = new SimpleDateTime();
         /*
          * zip中的日期格式为 dos 格式，从 1980年开始计时。
@@ -78,12 +76,12 @@ public final class Util {
         cal.set(1980 + ((modDate >> 9) & 0x7f), ((modDate >> 5) & 0xf), // SUPPRESS CHECKSTYLE magic number
                 modDate & 0x1f, (time >> 11) & 0x1f, (time >> 5) & 0x3f, // SUPPRESS CHECKSTYLE magic number
                 (time & 0x1f) << 1);  // SUPPRESS CHECKSTYLE magic number
-        
+
         fis.skip(0);
-        
+
         return cal;
     }
-    
+
     /**
      * 从buffer数组中读取一个 short。
      * @param buffer buffer数组
@@ -92,19 +90,19 @@ public final class Util {
      */
     private static int peekShort(byte[] buffer, int offset) {
         short result = (short) ((buffer[offset + 1] << 8) | (buffer[offset] & 0xff)); // SUPPRESS CHECKSTYLE magic number
-        
+
         return result & 0xffff; // SUPPRESS CHECKSTYLE magic number
     }
-    
-    
-    
+
+
+
     /**
      * Copy data from a source stream to destFile.
      * Return true if succeed, return false if failed.
-     * 
+     *
      * @param inputStream source file inputstream
      * @param destFile destFile
-     * 
+     *
      * @return success return true
      */
     public static boolean copyToFile(InputStream inputStream, File destFile) {
@@ -112,7 +110,7 @@ public final class Util {
         if (inputStream == null || destFile == null) {
             return false;
         }
-        
+
         try {
             if (destFile.exists()) {
                 destFile.delete();
@@ -141,124 +139,146 @@ public final class Util {
             return false;
         }
     }
-    
+
     /**
      * 安装 apk 中的 so 库。
-     * 
+     *
      * @param apkFilePath
      * @param libDir
      *            lib目录。
      */
     @SuppressWarnings("resource")
-	@SuppressLint("NewApi")
-	public static boolean installNativeLibrary(String apkFilePath, String libDir) {
-    	boolean flag = false;
-    	PluginDebugLog.log("plugin", "apkFilePath:"+apkFilePath+"libDir:"+libDir);
-        final String cpuAbi = Build.CPU_ABI;
-
+    @SuppressLint("NewApi")
+    public static boolean installNativeLibrary(String apkFilePath, String libDir) {
+        PluginDebugLog.log("plugin", "apkFilePath: " + apkFilePath + " libDir: " + libDir);
+        boolean installResult = false;
         ZipFile zipFile = null;
-
         try {
             zipFile = new ZipFile(apkFilePath);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
+
         if (zipFile == null) {
-            return flag;
+            PluginDebugLog.log("plugin", "apkfile: " + apkFilePath + "doesn't exist when try to install native lib");
+            return false;
         }
 
-        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        if (installNativeLibrary(zipFile, libDir, Build.CPU_ABI)
+                || installNativeLibrary(zipFile, libDir, Build.CPU_ABI2)) {
+            installResult = true;
+        } else {
+            PluginDebugLog.log("plugin", "can't install native lib of " + apkFilePath + "as no matched ABI");
+        }
+
+        try {
+            zipFile.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return installResult;
+    }
+
+    private static boolean installNativeLibrary(ZipFile apk, String libDir, String abi) {
+        PluginDebugLog.log("plugin", "start to extract native lib for ABI: " + abi);
+        boolean installResult = true;
+        Enumeration<? extends ZipEntry> entries = apk.entries();
         ZipEntry entry;
         while (entries.hasMoreElements()) {
             entry = entries.nextElement();
             String name = entry.getName();
-            // 不是 lib 目录 继续
-            if (!name.startsWith(APK_LIB_DIR_PREFIX) || !name.endsWith(APK_LIB_SUFFIX)) {
+            if (!name.startsWith(APK_LIB_DIR_PREFIX + abi) || !name.endsWith(APK_LIB_SUFFIX)) {
                 continue;
             }
 
             int lastSlash = name.lastIndexOf("/");
-            String targetCupAbi = name.substring(APK_LIB_CPUABI_OFFSITE, lastSlash);
-            
-            PluginDebugLog.log("plugin", "targetCupAbi:"+targetCupAbi+";name:"+name+";cpuAbi:"+cpuAbi);
-            
+            InputStream entryInputStream = null;
             try {
-                InputStream entryIS = zipFile.getInputStream(entry);
+                entryInputStream = apk.getInputStream(entry);
                 String soFileName = name.substring(lastSlash);
-                PluginDebugLog.log("plugin", "libDir:"+libDir+";soFileName:"+soFileName);
-                flag = copyToFile(entryIS, new File(libDir, soFileName));
-                entryIS.close();
-
+                PluginDebugLog.log("plugin", "libDir: " + libDir + " soFileName: " + soFileName);
+                if (!copyToFile(entryInputStream, new File(libDir, soFileName))) {
+                    return false;
+                }
             } catch (IOException e) {
                 e.printStackTrace();
-                flag = false;
+                installResult = false;
+            } finally {
+                try {
+                    if (entryInputStream != null) {
+                        entryInputStream.close();
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
-        return flag;
+        return installResult;
     }
 
     /**
      * Write byte array to file
-     * 
+     *
      * @param data source byte array
      * @param target the target file to write
      * @return success or not
      */
-	public static boolean writeToFile(byte[] data, File target) {
-		if (data == null || target == null) {
-			PluginDebugLog.log(TAG, "writeToFile failed will null check!");
-			return false;
-		}
-		FileOutputStream fo = null;
-		ReadableByteChannel src = null;
-		FileChannel out = null;
-		try {
-			src = Channels.newChannel(new ByteArrayInputStream(data));
-			fo = new FileOutputStream(target);
-			out = fo.getChannel();
-			out.transferFrom(src, 0, data.length);
-			PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " success!");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " failed!");
-			return false;
-		} catch (IOException e) {
-			e.printStackTrace();
-			PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " failed!");
-			return false;
-		} finally {
-			if (src != null) {
-				try {
-					src.close();
-				} catch (IOException e) {
-				}
+    public static boolean writeToFile(byte[] data, File target) {
+        if (data == null || target == null) {
+            PluginDebugLog.log(TAG, "writeToFile failed will null check!");
+            return false;
+        }
+        FileOutputStream fo = null;
+        ReadableByteChannel src = null;
+        FileChannel out = null;
+        try {
+            src = Channels.newChannel(new ByteArrayInputStream(data));
+            fo = new FileOutputStream(target);
+            out = fo.getChannel();
+            out.transferFrom(src, 0, data.length);
+            PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " success!");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " failed!");
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " failed!");
+            return false;
+        } finally {
+            if (src != null) {
+                try {
+                    src.close();
+                } catch (IOException e) {
+                }
 
-			}
-			if (out != null) {
-				try {
-					out.force(true);
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-				try {
-					out.close();
-				} catch (IOException e) {
-				}
-			}
-			if (fo != null) {
-				try {
-					fo.flush();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-				try {
-					fo.close();
-				} catch (IOException e) {
-				}
-			}
-		}
-		return true;
-	}
+            }
+            if (out != null) {
+                try {
+                    out.force(true);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                try {
+                    out.close();
+                } catch (IOException e) {
+                }
+            }
+            if (fo != null) {
+                try {
+                    fo.flush();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                try {
+                    fo.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+        return true;
+    }
 
     /**
      * Deletes a directory recursively.
@@ -278,7 +298,7 @@ public final class Util {
             throw new IOException(message);
         }
     }
-    
+
     /**
      * Cleans a directory without deleting it.
      *
@@ -315,7 +335,7 @@ public final class Util {
             throw exception;
         }
     }
-    
+
     /**
      * Deletes a file. If file is a directory, delete it and all sub-directories.
      * <p>
@@ -349,7 +369,7 @@ public final class Util {
 
     /**
      * 比较两个签名是否相同
-     * 
+     *
      * @param s1
      * @param s2
      * @return
@@ -375,36 +395,36 @@ public final class Util {
         }
         return PackageManager.SIGNATURE_NO_MATCH;
     }
-    
-	private static void copyFile(File sourceFile, File targetFile) throws IOException {
 
-		FileInputStream input = new FileInputStream(sourceFile);
-		BufferedInputStream inBuff = new BufferedInputStream(input);
+    private static void copyFile(File sourceFile, File targetFile) throws IOException {
 
-		FileOutputStream output = new FileOutputStream(targetFile);
-		BufferedOutputStream outBuff = new BufferedOutputStream(output);
+        FileInputStream input = new FileInputStream(sourceFile);
+        BufferedInputStream inBuff = new BufferedInputStream(input);
 
-		byte[] b = new byte[1024 * 5];
-		int len;
-		while ((len = inBuff.read(b)) != -1) {
-			outBuff.write(b, 0, len);
-		}
+        FileOutputStream output = new FileOutputStream(targetFile);
+        BufferedOutputStream outBuff = new BufferedOutputStream(output);
 
-		outBuff.flush();
+        byte[] b = new byte[1024 * 5];
+        int len;
+        while ((len = inBuff.read(b)) != -1) {
+            outBuff.write(b, 0, len);
+        }
 
-		inBuff.close();
-		outBuff.close();
-		output.close();
-		input.close();
-	}
-	
-	public static void moveFile(File sourceFile, File targetFile){
-		try {
-			copyFile(sourceFile,targetFile);
-			sourceFile.delete();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+        outBuff.flush();
+
+        inBuff.close();
+        outBuff.close();
+        output.close();
+        input.close();
+    }
+
+    public static void moveFile(File sourceFile, File targetFile){
+        try {
+            copyFile(sourceFile,targetFile);
+            sourceFile.delete();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 }
