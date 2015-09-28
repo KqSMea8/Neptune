@@ -76,8 +76,8 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 		final Bundle pluginMessage = getIntent().getExtras();
 		String[] result = new String[2];
 		if (null != pluginMessage) {
-			result[1] = pluginMessage.getString(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY, "");
-			result[0] = pluginMessage.getString(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, "");
+			result[1] = pluginMessage.getString(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY);
+			result[0] = pluginMessage.getString(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
 			if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
 				return result;
 			}

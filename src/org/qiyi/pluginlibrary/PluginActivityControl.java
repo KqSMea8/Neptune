@@ -6,6 +6,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
@@ -33,14 +34,14 @@ public class PluginActivityControl implements PluginActivityCallback {
 	Instrumentation mHostInstr;
 
 	/**
-	 * 
+	 *
 	 * @param proxy
 	 *            代理Activity
 	 * @param plugin
 	 *            插件Activity
 	 * @param app
 	 *            分派给插件的Application
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public PluginActivityControl(Activity proxy, Activity plugin, Application app,
 			Instrumentation pluginInstr) throws Exception {
@@ -97,7 +98,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 						mProxy.getLastNonConfigurationInstance(),
 						// Configuration config
 						mProxyRef.get("mCurrentConfig"),
-						// String mReferrer 
+						// String mReferrer
 						mProxyRef.get("mReferrer"),
 						// IVoiceInteractor mVoiceInteractor
 						mProxyRef.get("mVoiceInteractor"));
@@ -189,7 +190,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 设置插件的Activity
-	 * 
+	 *
 	 * @param plugin
 	 */
 	public void setPlugin(Activity plugin) {
@@ -199,7 +200,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 得到代理的Activity
-	 * 
+	 *
 	 * @return
 	 */
 	public Activity getProxy() {
@@ -208,7 +209,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 设置代理的Activity
-	 * 
+	 *
 	 * @param proxy
 	 */
 	public void setProxy(Activity proxy) {
@@ -224,7 +225,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return 插件Activity的反射工具类
 	 */
 	public ReflectionUtils getPluginRef() {
@@ -233,7 +234,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onCreate方法
-	 * 
+	 *
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
 	 * @param saveInstance
 	 */
@@ -253,7 +254,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onStart方法
-	 * 
+	 *
 	 * @see android.app.Activity#onStart()
 	 */
 	@Override
@@ -265,7 +266,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onResume方法
-	 * 
+	 *
 	 * @see android.app.Activity#onResume()
 	 */
 	@Override
@@ -277,7 +278,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onDestroy方法
-	 * 
+	 *
 	 * @see android.app.Activity#onDestroy()
 	 */
 	@Override
@@ -289,7 +290,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onStop方法
-	 * 
+	 *
 	 * @see android.app.Activity#onStop()
 	 */
 	@Override
@@ -301,7 +302,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onRestart方法
-	 * 
+	 *
 	 * @see android.app.Activity#onRestart()
 	 */
 	@Override
@@ -313,7 +314,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onSaveInstanceState方法
-	 * 
+	 *
 	 * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
 	 * @param outState
 	 */
@@ -326,7 +327,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onRestoreInstanceState方法
-	 * 
+	 *
 	 * @see android.app.Activity#onRestoreInstanceState(android.os.Bundle)
 	 * @param savedInstanceState
 	 */
@@ -339,7 +340,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onStop方法
-	 * 
+	 *
 	 * @see android.app.Activity#onStop()
 	 */
 	@Override
@@ -351,7 +352,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onBackPressed方法
-	 * 
+	 *
 	 * @see android.app.Activity#onBackPressed()
 	 */
 	@Override
@@ -365,7 +366,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	/**
 	 * 执行插件的onKeyDown方法
-	 * 
+	 *
 	 * @see android.app.Activity#onKeyDown(int, android.view.KeyEvent)
 	 * @param keyCode
 	 * @param event
@@ -384,10 +385,12 @@ public class PluginActivityControl implements PluginActivityCallback {
 	// Finals ADD 修复Fragment BUG
 	@Override
 	public void callDump(String prefix, FileDescriptor fd, PrintWriter writer, String[] args) {
-		if (null != mPlugin) {
-			mPlugin.dump(prefix, fd, writer, args);
-		} else if (null != mProxy) {
-			mProxy.dump(prefix, fd, writer, args);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+			if (null != mPlugin) {
+				mPlugin.dump(prefix, fd, writer, args);
+			} else if (null != mProxy) {
+				mProxy.dump(prefix, fd, writer, args);
+			}
 		}
 	}
 
@@ -416,21 +419,25 @@ public class PluginActivityControl implements PluginActivityCallback {
 
 	@Override
 	public View callOnCreateView(String name, Context context, AttributeSet attrs) {
-		if (null != mPlugin) {
-			return mPlugin.onCreateView(name, context, attrs);
-		} else if (null != mProxy) {
-			return mProxy.onCreateView(name, context, attrs);
-		}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            if (null != mPlugin) {
+                return mPlugin.onCreateView(name, context, attrs);
+            } else if (null != mProxy) {
+                return mProxy.onCreateView(name, context, attrs);
+            }
+        }
 		return null;
 	}
 
 	@Override
 	public View callOnCreateView(View parent, String name, Context context, AttributeSet attrs) {
-		if (null != mPlugin) {
-			return mPlugin.onCreateView(parent, name, context, attrs);
-		} else if (null != mProxy) {
-			return mProxy.onCreateView(parent, name, context, attrs);
-		}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            if (null != mPlugin) {
+                return mPlugin.onCreateView(parent, name, context, attrs);
+            } else if (null != mProxy) {
+                return mProxy.onCreateView(parent, name, context, attrs);
+            }
+        }
 		return null;
 	}
 
