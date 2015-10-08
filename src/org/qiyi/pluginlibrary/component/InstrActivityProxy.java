@@ -167,6 +167,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 					mPluginEnv.pushActivityToStack(this);
 				}
 				mPluginContrl.callOnCreate(savedInstanceState);
+				mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
 			} catch (Exception e) {
 			    ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
 				processError(e);
