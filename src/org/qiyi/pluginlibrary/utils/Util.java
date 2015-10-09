@@ -181,7 +181,7 @@ public final class Util {
 
     private static boolean installNativeLibrary(ZipFile apk, String libDir, String abi) {
         PluginDebugLog.log("plugin", "start to extract native lib for ABI: " + abi);
-        boolean installResult = true;
+        boolean installResult = false;
         Enumeration<? extends ZipEntry> entries = apk.entries();
         ZipEntry entry;
         while (entries.hasMoreElements()) {
@@ -197,18 +197,14 @@ public final class Util {
                 entryInputStream = apk.getInputStream(entry);
                 String soFileName = name.substring(lastSlash);
                 PluginDebugLog.log("plugin", "libDir: " + libDir + " soFileName: " + soFileName);
-                if (!copyToFile(entryInputStream, new File(libDir, soFileName))) {
-                    return false;
-                }
+                installResult = copyToFile(entryInputStream, new File(libDir, soFileName));
             } catch (IOException e) {
                 e.printStackTrace();
-                installResult = false;
             } finally {
                 try {
                     if (entryInputStream != null) {
                         entryInputStream.close();
                     }
-
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
