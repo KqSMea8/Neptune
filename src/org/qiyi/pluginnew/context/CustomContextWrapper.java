@@ -2,6 +2,8 @@ package org.qiyi.pluginnew.context;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -196,6 +198,42 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		return getEnvironment().getTargetAssetManager() == null ? super.getDatabasePath(name) : f;
 	}
 
+	@Override
+	public FileInputStream openFileInput(String name) throws FileNotFoundException {
+		// TODO Auto-generated method stub
+		if(getEnvironment() == null){
+			return super.openFileInput(name);
+		}
+		File f = makeFilename(getFilesDir(),name);
+		return new FileInputStream(f);
+	}
+
+	@Override
+	public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
+		if(getEnvironment() == null){
+			return super.openFileOutput(name, mode);
+		}
+		final boolean append = (mode&MODE_APPEND) != 0;
+		File f = makeFilename(getFilesDir(),name);
+		try{
+			FileOutputStream fos = new FileOutputStream(f,append);
+			return fos;
+		}catch(FileNotFoundException e){
+			
+		}
+		File parent = f.getParentFile();
+		parent.mkdir();
+		FileOutputStream fos = new FileOutputStream(f,append);
+		return fos;
+	}
+
+	private File makeFilename(File base,String name){
+		if(name.indexOf(File.separatorChar) < 0){
+			return new File(base,name);
+		}
+		throw new IllegalArgumentException("File " + name + "contains a path separator");
+	}
+	
 	@Override
 	public boolean deleteFile(String name) {
 		if (getEnvironment() == null) {

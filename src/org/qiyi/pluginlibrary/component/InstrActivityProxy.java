@@ -2,6 +2,9 @@ package org.qiyi.pluginlibrary.component;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
@@ -265,6 +268,18 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 	public File getDir(String name, int mode) {
 		return mPluginContextWrapper.getDir(name, mode);
 
+	}
+
+	@Override
+	public FileInputStream openFileInput(String name) throws FileNotFoundException {
+		// TODO Auto-generated method stub
+		return mPluginContextWrapper.openFileInput(name);
+	}
+
+	@Override
+	public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
+		// TODO Auto-generated method stub
+		return mPluginContextWrapper.openFileOutput(name, mode);
 	}
 
 	@Override
