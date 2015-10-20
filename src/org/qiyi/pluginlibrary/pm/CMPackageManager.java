@@ -20,6 +20,7 @@ import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginnew.ApkTargetMappingNew;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -130,6 +131,7 @@ public class CMPackageManager {
      */
     public static final int DELETE_FAILED_INTERNAL_ERROR = -1;
     
+    private static boolean mDirtyFlag = false;
     
     private CMPackageManager(Context context) {
         mContext = context.getApplicationContext();
@@ -195,7 +197,7 @@ public class CMPackageManager {
 	 */
 	private void initInstalledPackageListIfNeeded() {
 		// 第一次初始化安装列表。
-		if (mInstalledPkgs == null) {
+		if (mInstalledPkgs == null || mDirtyFlag) {
 			mInstalledPkgs = new Hashtable<String, CMPackageInfo>();
 
 			SharedPreferences sp = mContext.getSharedPreferences(
@@ -257,9 +259,10 @@ public class CMPackageManager {
 						mInstalledPkgs.put(pkgInfo.packageName, pkgInfo);
 					}
 
-					if (needReSave) { // 把兼容数据重新写回文件
+					if (needReSave&&!mDirtyFlag) { // 把兼容数据重新写回文件
 						saveInstalledPackageList();
 					}
+					mDirtyFlag = false;
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -297,14 +300,30 @@ public class CMPackageManager {
                 e.printStackTrace();
             }
         }
-        //Context.MODE_MULTI_PROCESS
-		SharedPreferences sp = mContext.getSharedPreferences(
-				PluginInstaller.SHARED_PREFERENCE_NAME, 4);
-        String value = pkgs.toString();
-        Editor editor = sp.edit();
-        editor.putString(SP_APP_LIST, value);
-        editor.commit();
+		// Context.MODE_MULTI_PROCESS
+		if (mContext.getPackageName().equals(getCurrentProcessName(mContext))) {
+			SharedPreferences sp = mContext.getSharedPreferences(
+					PluginInstaller.SHARED_PREFERENCE_NAME, 4);
+			String value = pkgs.toString();
+			Editor editor = sp.edit();
+			editor.putString(SP_APP_LIST, value);
+			editor.commit();
+		} else {
+			mDirtyFlag = true;
+		}
     }
+    
+	private String getCurrentProcessName(Context context) {
+		int pid = android.os.Process.myPid();
+		ActivityManager manager = (ActivityManager) context
+				.getSystemService(Context.ACTIVITY_SERVICE);
+		for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
+			if (process.pid == pid) {
+				return process.processName;
+			}
+		}
+		return null;
+	}
     
     /**
      * 安装广播，用于监听安装过程中是否成功。
@@ -321,6 +340,7 @@ public class CMPackageManager {
 						.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
 
 				CMPackageInfo pkgInfo = new CMPackageInfo();
+				Log.v("XPC","pkgName="+pkgName);
 				pkgInfo.packageName = pkgName;
 				pkgInfo.srcApkPath = destApkPath;
 				pkgInfo.installStatus = PLUGIN_INSTALLED;
@@ -364,7 +384,7 @@ public class CMPackageManager {
     /**
      * 监听安装列表变化.
      */
-    private void registerInstallderReceiver() {
+    public void registerInstallderReceiver() {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_PACKAGE_INSTALLED);
         filter.addAction(ACTION_PACKAGE_INSTALLFAIL);
@@ -658,13 +678,14 @@ public class CMPackageManager {
 			if (TextUtils.isEmpty(pkgName)) {
 				return false;
 			}
-
+            Log.v("XPC","uninstall         pkgName="+pkgName);
 			File apk = PluginInstaller.getInstalledApkFile(mContext, pkgName);
 	        if (apk != null && apk.exists()) {
-	        	uninstallFlag = apk.delete();
-	        } else {
-	        	uninstallFlag = true;
+                Log.v("XPC","uninstall         pkgName=   enter");
+
+                uninstallFlag = apk.delete();
 	        }
+            Log.v("XPC","uninstall         pkgName=   uninstallFlag="+uninstallFlag);
 
 			// 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
 			// 1，卸载语音插件之后会出现，找不到库文件
@@ -675,6 +696,7 @@ public class CMPackageManager {
 			e.printStackTrace();
 			uninstallFlag = false;
 		}
+        Log.v("XPC","uninstall         pkgName=  111111111111111 uninstallFlag="+uninstallFlag);
 		if (uninstallFlag) {
 			getPackageInfo(pkgName).installStatus = PLUGIN_UNINSTALLED;
 			saveInstalledPackageList();
