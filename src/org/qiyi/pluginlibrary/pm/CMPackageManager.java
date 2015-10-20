@@ -301,16 +301,12 @@ public class CMPackageManager {
             }
         }
 		// Context.MODE_MULTI_PROCESS
-		if (mContext.getPackageName().equals(getCurrentProcessName(mContext))) {
 			SharedPreferences sp = mContext.getSharedPreferences(
 					PluginInstaller.SHARED_PREFERENCE_NAME, 4);
 			String value = pkgs.toString();
 			Editor editor = sp.edit();
 			editor.putString(SP_APP_LIST, value);
 			editor.commit();
-		} else {
-			mDirtyFlag = true;
-		}
     }
     
 	private String getCurrentProcessName(Context context) {
@@ -338,19 +334,21 @@ public class CMPackageManager {
 				String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
 				PluginPackageInfoExt infoExt = intent
 						.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-
-				CMPackageInfo pkgInfo = new CMPackageInfo();
-				Log.v("XPC","pkgName="+pkgName);
-				pkgInfo.packageName = pkgName;
-				pkgInfo.srcApkPath = destApkPath;
-				pkgInfo.installStatus = PLUGIN_INSTALLED;
-				pkgInfo.pluginInfo = infoExt;
-				ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
-						pkgInfo.srcApkPath));
-				pkgInfo.targetInfo = targetInfo;
-
-				getInstalledPkgsInstance().put(pkgName, pkgInfo);// 将安装的插件名称保存到集合中。
-				saveInstalledPackageList(); // 存储变化后的安装列表
+				if (mContext.getPackageName().equals(getCurrentProcessName(mContext))) {
+					CMPackageInfo pkgInfo = new CMPackageInfo();
+					pkgInfo.packageName = pkgName;
+					pkgInfo.srcApkPath = destApkPath;
+					pkgInfo.installStatus = PLUGIN_INSTALLED;
+					pkgInfo.pluginInfo = infoExt;
+					ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
+							pkgInfo.srcApkPath));
+					pkgInfo.targetInfo = targetInfo;
+	
+					getInstalledPkgsInstance().put(pkgName, pkgInfo);// 将安装的插件名称保存到集合中。
+					saveInstalledPackageList(); // 存储变化后的安装列表
+				} else {
+					mDirtyFlag = true;
+				}
 				if (listenerMap.get(pkgName) != null) {
 					listenerMap.get(pkgName).onPacakgeInstalled(pkgName);
 					listenerMap.remove(pkgName);
@@ -678,15 +676,10 @@ public class CMPackageManager {
 			if (TextUtils.isEmpty(pkgName)) {
 				return false;
 			}
-            Log.v("XPC","uninstall         pkgName="+pkgName);
 			File apk = PluginInstaller.getInstalledApkFile(mContext, pkgName);
 	        if (apk != null && apk.exists()) {
-                Log.v("XPC","uninstall         pkgName=   enter");
-
                 uninstallFlag = apk.delete();
 	        }
-            Log.v("XPC","uninstall         pkgName=   uninstallFlag="+uninstallFlag);
-
 			// 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
 			// 1，卸载语音插件之后会出现，找不到库文件
 			// 2.卸载了啪啪奇插件之后，会出现 .so库 已经被打开，无法被另一个打开
@@ -696,7 +689,6 @@ public class CMPackageManager {
 			e.printStackTrace();
 			uninstallFlag = false;
 		}
-        Log.v("XPC","uninstall         pkgName=  111111111111111 uninstallFlag="+uninstallFlag);
 		if (uninstallFlag) {
 			getPackageInfo(pkgName).installStatus = PLUGIN_UNINSTALLED;
 			saveInstalledPackageList();
