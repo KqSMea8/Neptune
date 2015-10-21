@@ -7,6 +7,8 @@ import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.Application;
+import android.app.Service;
 import android.content.Context;
 import android.text.TextUtils;
 
@@ -21,6 +23,7 @@ public class ContextUtils {
 	 * @return
 	 */
 	public static Context getOriginalContext(Context context) {
+
 		if (context instanceof InterfaceToGetHost) {
 			PluginDebugLog.log(TAG, "Return host  context for getOriginalContext");
 			return ((InterfaceToGetHost) context).getOriginalContext();
@@ -29,6 +32,18 @@ public class ContextUtils {
 				Context base = ((Activity) context).getBaseContext();
 				if (base instanceof InterfaceToGetHost) {
 					PluginDebugLog.log(TAG, "Return host  context for getOriginalContext");
+					return ((InterfaceToGetHost) base).getOriginalContext();
+				}
+			} else if(context instanceof Application){
+				Context base = ((Application) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG, "Return Application host  context for getOriginalContext");
+					return ((InterfaceToGetHost) base).getOriginalContext();
+				}
+			} else if(context instanceof Service){
+				Context base = ((Service) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG, "Return Service host  context for getOriginalContext");
 					return ((InterfaceToGetHost) base).getOriginalContext();
 				}
 			}
