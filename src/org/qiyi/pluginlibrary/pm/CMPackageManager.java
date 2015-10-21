@@ -334,7 +334,7 @@ public class CMPackageManager {
 				String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
 				PluginPackageInfoExt infoExt = intent
 						.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-				if (mContext.getPackageName().equals(getCurrentProcessName(mContext))) {
+				if (context.getPackageName().equals(getCurrentProcessName(context))) {
 					CMPackageInfo pkgInfo = new CMPackageInfo();
 					pkgInfo.packageName = pkgName;
 					pkgInfo.srcApkPath = destApkPath;
