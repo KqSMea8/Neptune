@@ -14,11 +14,15 @@ public class IResourchStaticsticsControllerManager {
     }
 
     public static void onResume(Context context){
-        listener.onResume(context);
+    	if (null != listener) {
+    		listener.onResume(context);
+    	}
     }
 
     public static void onPause(Context context){
-        listener.onPause(context);
+    	if (null != listener) {
+    		listener.onPause(context);
+    	}
     }
 
     public interface IResourchStaticsticsControllerListener{

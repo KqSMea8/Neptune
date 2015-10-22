@@ -6,9 +6,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.annotation.SuppressLint;
 import android.app.Application;
+import android.os.Build;
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 
@@ -66,11 +68,16 @@ public class ClassLoaderInjectHelper {
         } catch (ClassNotFoundException e) {
             hasBaseDexClassLoader = false;
         }
-        if (!hasBaseDexClassLoader) {
-            return injectBelowApiLevel14(parentClassLoader, childClassLoader, someClass);
+        // If version > 22 LOLLIPOP_MR1
+        if (Build.VERSION.SDK_INT > 22) {
+        	return injectAboveApiLevel22(parentClassLoader, childClassLoader);
         } else {
-            return injectAboveEqualApiLevel14(parentClassLoader, childClassLoader);
-        }        
+        	if (!hasBaseDexClassLoader) {
+        		return injectBelowApiLevel14(parentClassLoader, childClassLoader, someClass);
+        	} else {
+        		return injectAboveEqualApiLevel14(parentClassLoader, childClassLoader);
+        	}        
+        }
     }
 
     /**
@@ -259,12 +266,88 @@ public class ClassLoaderInjectHelper {
                 aLibPath, aApp.getClassLoader());
         InjectResult result = null;
 
-        result = injectAboveEqualApiLevel14(pathClassLoader, dexClassLoader);
+        // If version > 22 LOLLIPOP_MR1
+        if (Build.VERSION.SDK_INT > 22) {
+        	injectAboveApiLevel22(pathClassLoader, dexClassLoader);
+        } else {
+        	result = injectAboveEqualApiLevel14(pathClassLoader, dexClassLoader);
+        }
         
         return result;
     }
-    
-    
+
+	private static InjectResult injectAboveApiLevel22(ClassLoader parentClassLoader,
+			ClassLoader childClassLoader) {
+		InjectResult result = null;
+
+		PathClassLoader pathClassLoader = null;
+		if (parentClassLoader instanceof PathClassLoader) {
+			pathClassLoader = (PathClassLoader) parentClassLoader;
+		} else {
+			return result;
+		}
+
+		DexClassLoader dexClassLoader = (DexClassLoader) childClassLoader;
+		try {
+			// 注入 dex
+			Object dexElements = combineArray(getDexElements(getPathList(pathClassLoader)),
+					getDexElements(getPathList(dexClassLoader)));
+
+			Object pathList = getPathList(pathClassLoader);
+
+			setField(pathList, pathList.getClass(), "dexElements", dexElements);
+
+			// 注入 native lib so 目录，需要parent class loader
+			// 遍历此目录能够找到。因为注入了以后，不处理这个目录找不到。
+			// Android M版本修改了native lib 目录
+			// http://androidxref.com/6.0.0_r1/diff/libcore/dalvik/src/main/java/dalvik/system/DexPathList.java?r2=%2Flibcore%2Fdalvik%2Fsrc%2Fmain%2Fjava%2Fdalvik%2Fsystem%2FDexPathList.java%40f38cae4f22e46c49f5fba94e6e0579dedd2d8fd1&r1=%2Flibcore%2Fdalvik%2Fsrc%2Fmain%2Fjava%2Fdalvik%2Fsystem%2FDexPathList.java%407694b783f48e2cc57928b61c84fd90311cb0c35a
+			// nativeLibraryPathElements
+			Object dexNativeLibraryDirs = combineArray(
+					getNativeLibraryPathElements(getPathList(pathClassLoader)),
+					getNativeLibraryPathElements(getPathList(dexClassLoader)));
+			setField(pathList, pathList.getClass(), "nativeLibraryPathElements",
+					dexNativeLibraryDirs);
+
+			Object parentDirs = getPathList(pathClassLoader);
+			Class<?> parentDirsLocalClass = parentDirs.getClass().getComponentType();
+			@SuppressWarnings("unchecked")
+			List<File> nativeLibraryDirectories = (List<File>) getField(parentDirs,
+					parentDirsLocalClass, "nativeLibraryDirectories");
+
+			Object childDirs = getPathList(childClassLoader);
+			Class<?> childDirsLocalClass = childDirs.getClass().getComponentType();
+			@SuppressWarnings("unchecked")
+			List<File> childNativeLibraryDirectories = (List<File>) getField(childDirs,
+					childDirsLocalClass, "nativeLibraryDirectories");
+
+			if (nativeLibraryDirectories == null) {
+				nativeLibraryDirectories = new ArrayList<File>();
+			}
+			if (childNativeLibraryDirectories != null) {
+				nativeLibraryDirectories.addAll(childNativeLibraryDirectories);
+			}
+		} catch (IllegalArgumentException e) {
+			result = makeInjectResult(false, e);
+			e.printStackTrace();
+		} catch (NoSuchFieldException e) {
+			result = makeInjectResult(false, e);
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			result = makeInjectResult(false, e);
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			result = makeInjectResult(false, e);
+			e.printStackTrace();
+		} catch (Exception e) {
+			result = makeInjectResult(false, e);
+			e.printStackTrace();
+		}
+		if (result == null) {
+			result = makeInjectResult(true, null);
+		}
+		return result;
+	}
+
     private static InjectResult injectAboveEqualApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
     	InjectResult result = null;
     	
@@ -551,7 +634,11 @@ public class ClassLoaderInjectHelper {
         return getField(aParamObject, aParamObject.getClass(), "dexElements");
     }
     
-    
+	private static Object getNativeLibraryPathElements(Object aParamObject) throws IllegalArgumentException,
+			NoSuchFieldException, IllegalAccessException {
+		return getField(aParamObject, aParamObject.getClass(), "nativeLibraryPathElements");
+	}
+
     private static Object getNativeLibraryDirectories(Object aParamObject) throws IllegalArgumentException, NoSuchFieldException,
             IllegalAccessException {
         return getField(aParamObject, aParamObject.getClass(), "nativeLibraryDirectories");
