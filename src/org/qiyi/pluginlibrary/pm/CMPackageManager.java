@@ -201,7 +201,7 @@ public class CMPackageManager {
 			mInstalledPkgs = new Hashtable<String, CMPackageInfo>();
 
 			SharedPreferences sp = mContext.getSharedPreferences(
-					PluginInstaller.SHARED_PREFERENCE_NAME, Context.MODE_PRIVATE);
+					PluginInstaller.SHARED_PREFERENCE_NAME, 4);//Context.MODE_MULTI_PROCESS
 			String jsonPkgs = sp.getString(SP_APP_LIST, "");
 
 			if (jsonPkgs != null && jsonPkgs.length() > 0) {
