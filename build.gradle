@@ -79,4 +79,17 @@ android {
         // but continue the build even when errors are found:
         abortOnError false
     }
+
+    task clearJar(type: Delete) {
+        delete 'build/outputs/libplugin.jar'
+    }
+
+    task makeJar(type: Copy) {
+        from('build/intermediates/bundles/debug/')
+        into('build/outputs/')
+        include('classes.jar')
+        rename ('classes.jar', 'libplugin.jar')
+    }
+
+    makeJar.dependsOn(clearJar, build)
 }
