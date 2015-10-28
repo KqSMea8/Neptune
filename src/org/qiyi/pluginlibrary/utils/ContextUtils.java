@@ -34,13 +34,14 @@ public class ContextUtils {
 					PluginDebugLog.log(TAG, "Return host  context for getOriginalContext");
 					return ((InterfaceToGetHost) base).getOriginalContext();
 				}
-			} else if(context instanceof Application){
+			} else if (context instanceof Application) {
 				Context base = ((Application) context).getBaseContext();
 				if (base instanceof InterfaceToGetHost) {
-					PluginDebugLog.log(TAG, "Return Application host  context for getOriginalContext");
+					PluginDebugLog.log(TAG,
+							"Return Application host  context for getOriginalContext");
 					return ((InterfaceToGetHost) base).getOriginalContext();
 				}
-			} else if(context instanceof Service){
+			} else if (context instanceof Service) {
 				Context base = ((Service) context).getBaseContext();
 				if (base instanceof InterfaceToGetHost) {
 					PluginDebugLog.log(TAG, "Return Service host  context for getOriginalContext");
@@ -91,12 +92,25 @@ public class ContextUtils {
 		} else {
 			if (context instanceof Activity) {
 				Context base = ((Activity) context).getBaseContext();
-				if (context instanceof InterfaceToGetHost) {
+				if (base instanceof InterfaceToGetHost) {
 					PluginDebugLog.log(TAG, "Return host  resource tool for getHostResourceTool");
 					return ((InterfaceToGetHost) base).getHostResourceTool();
 				}
+			} else if (context instanceof Application) {
+				Context base = ((Application) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG,
+							"Return Application host  resource tool for getHostResourceTool");
+					return ((InterfaceToGetHost) base).getHostResourceTool();
+				}
+			} else if (context instanceof Service) {
+				Context base = ((Service) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG, "Return Service host  resource tool for getHostResourceTool");
+					return ((InterfaceToGetHost) base).getHostResourceTool();
+				}
 			}
-			PluginDebugLog.log(TAG, "Return local context for getHostResourceTool");
+			PluginDebugLog.log(TAG, "Return local resource tool for getHostResourceTool");
 			return new ResourcesToolForPlugin(context);
 		}
 	}
@@ -117,9 +131,22 @@ public class ContextUtils {
 		} else {
 			if (context instanceof Activity) {
 				Context base = ((Activity) context).getBaseContext();
-				if (context instanceof InterfaceToGetHost) {
+				if (base instanceof InterfaceToGetHost) {
 					PluginDebugLog
 							.log(TAG, "Return plugin's package name for getPluginPackageName");
+					return ((InterfaceToGetHost) base).getPluginPackageName();
+				}
+			} else if (context instanceof Application) {
+				Context base = ((Application) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG,
+							"Return Application plugin's package name for getPluginPackageName");
+					return ((InterfaceToGetHost) base).getPluginPackageName();
+				}
+			} else if (context instanceof Service) {
+				Context base = ((Service) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG, "Return Service plugin's package name for getPluginPackageName");
 					return ((InterfaceToGetHost) base).getPluginPackageName();
 				}
 			}
@@ -136,7 +163,25 @@ public class ContextUtils {
 	public static void exitApp(Context context) {
 		if (null != context) {
 			if (context instanceof InterfaceToGetHost) {
-				((InterfaceToGetHost)context).exitApp();
+				((InterfaceToGetHost) context).exitApp();
+			} else if (context instanceof Activity) {
+				Context base = ((Activity) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG, "Activity exit");
+					((InterfaceToGetHost) base).exitApp();
+				}
+			} else if (context instanceof Application) {
+				Context base = ((Application) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG, "Application exit");
+					((InterfaceToGetHost) base).exitApp();
+				}
+			} else if (context instanceof Service) {
+				Context base = ((Service) context).getBaseContext();
+				if (base instanceof InterfaceToGetHost) {
+					PluginDebugLog.log(TAG, "Service exit");
+					((InterfaceToGetHost) base).exitApp();
+				}
 			}
 		}
 	}
