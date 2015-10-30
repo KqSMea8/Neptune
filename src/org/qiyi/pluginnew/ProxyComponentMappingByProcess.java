@@ -8,6 +8,8 @@ import org.qiyi.pluginlibrary.component.InstrActivityProxy4;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy5;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy6;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy7;
+import org.qiyi.pluginlibrary.component.InstrActivityProxy8;
+import org.qiyi.pluginlibrary.component.InstrActivityProxy9;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent1;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent2;
@@ -16,6 +18,8 @@ import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent4;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent5;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent6;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent7;
+import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent8;
+import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent9;
 import org.qiyi.pluginlibrary.component.ServiceProxy1;
 import org.qiyi.pluginlibrary.component.ServiceProxy2;
 import org.qiyi.pluginlibrary.component.ServiceProxy3;
@@ -23,6 +27,8 @@ import org.qiyi.pluginlibrary.component.ServiceProxy4;
 import org.qiyi.pluginlibrary.component.ServiceProxy5;
 import org.qiyi.pluginlibrary.component.ServiceProxy6;
 import org.qiyi.pluginlibrary.component.ServiceProxy7;
+import org.qiyi.pluginlibrary.component.ServiceProxy8;
+import org.qiyi.pluginlibrary.component.ServiceProxy9;
 import org.qiyi.pluginnew.service.ServiceProxyNew;
 
 public class ProxyComponentMappingByProcess {
@@ -135,6 +141,18 @@ public class ProxyComponentMappingByProcess {
 			} else {
 				return InstrActivityProxy7.class.getName();
 			}
+		case 8:
+			if (isTranslucent) {
+				return InstrActivityProxyTranslucent8.class.getName();
+			} else {
+				return InstrActivityProxy8.class.getName();
+			}
+		case 9:
+			if (isTranslucent) {
+				return InstrActivityProxyTranslucent9.class.getName();
+			} else {
+				return InstrActivityProxy9.class.getName();
+			}
 
 		default:
 			if (isTranslucent) {
@@ -143,63 +161,6 @@ public class ProxyComponentMappingByProcess {
 				return InstrActivityProxy.class.getName();
 			}
 		}
-//		if (TextUtils.isEmpty(processName) || TextUtils.equals(PROXY_PROCESS, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent.class.getName();
-//			} else {
-//				return InstrActivityProxy.class.getName();
-//			}
-//		}
-//
-//		if (TextUtils.equals(PROXY_PROCESS1, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent1.class.getName();
-//			} else {
-//				return InstrActivityProxy1.class.getName();
-//			}
-//		} else if (TextUtils.equals(PROXY_PROCESS2, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent2.class.getName();
-//			} else {
-//				return InstrActivityProxy2.class.getName();
-//			}
-//		} else if (TextUtils.equals(PROXY_PROCESS3, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent3.class.getName();
-//			} else {
-//				return InstrActivityProxy3.class.getName();
-//			}
-//		} else if (TextUtils.equals(PROXY_PROCESS4, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent4.class.getName();
-//			} else {
-//				return InstrActivityProxy4.class.getName();
-//			}
-//		} else if (TextUtils.equals(PROXY_PROCESS5, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent5.class.getName();
-//			} else {
-//				return InstrActivityProxy5.class.getName();
-//			}
-//		} else if (TextUtils.equals(PROXY_PROCESS6, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent6.class.getName();
-//			} else {
-//				return InstrActivityProxy6.class.getName();
-//			}
-//		} else if (TextUtils.equals(PROXY_PROCESS7, processName)) {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent7.class.getName();
-//			} else {
-//				return InstrActivityProxy7.class.getName();
-//			}
-//		} else {
-//			if (isTranslucent) {
-//				return InstrActivityProxyTranslucent.class.getName();
-//			} else {
-//				return InstrActivityProxy.class.getName();
-//			}
-//		}
 	}
 
 	/**
@@ -229,29 +190,12 @@ public class ProxyComponentMappingByProcess {
 			return ServiceProxy6.class.getName();
 		case 7:
 			return ServiceProxy7.class.getName();
+		case 8:
+			return ServiceProxy8.class.getName();
+		case 9:
+			return ServiceProxy9.class.getName();
 		default:
 			return ServiceProxyNew.class.getName();
 		}
-//		if (TextUtils.isEmpty(processName) || TextUtils.equals(PROXY_PROCESS, processName)) {
-//			return ServiceProxyNew.class.getName();
-//		}
-//
-//		if (TextUtils.equals(PROXY_PROCESS1, processName)) {
-//			return ServiceProxy1.class.getName();
-//		} else if (TextUtils.equals(PROXY_PROCESS2, processName)) {
-//			return ServiceProxy2.class.getName();
-//		} else if (TextUtils.equals(PROXY_PROCESS3, processName)) {
-//			return ServiceProxy3.class.getName();
-//		} else if (TextUtils.equals(PROXY_PROCESS4, processName)) {
-//			return ServiceProxy4.class.getName();
-//		} else if (TextUtils.equals(PROXY_PROCESS5, processName)) {
-//			return ServiceProxy5.class.getName();
-//		} else if (TextUtils.equals(PROXY_PROCESS6, processName)) {
-//			return ServiceProxy6.class.getName();
-//		} else if (TextUtils.equals(PROXY_PROCESS7, processName)) {
-//			return ServiceProxy7.class.getName();
-//		} else {
-//			return ServiceProxyNew.class.getName();
-//		}
 	}
 }
