@@ -309,13 +309,13 @@ public class ClassLoaderInjectHelper {
 					dexNativeLibraryDirs);
 
 			Object parentDirs = getPathList(pathClassLoader);
-			Class<?> parentDirsLocalClass = parentDirs.getClass().getComponentType();
+			Class<?> parentDirsLocalClass = parentDirs.getClass();
 			@SuppressWarnings("unchecked")
 			List<File> nativeLibraryDirectories = (List<File>) getField(parentDirs,
 					parentDirsLocalClass, "nativeLibraryDirectories");
 
 			Object childDirs = getPathList(childClassLoader);
-			Class<?> childDirsLocalClass = childDirs.getClass().getComponentType();
+			Class<?> childDirsLocalClass = childDirs.getClass();
 			@SuppressWarnings("unchecked")
 			List<File> childNativeLibraryDirectories = (List<File>) getField(childDirs,
 					childDirsLocalClass, "nativeLibraryDirectories");
