@@ -89,6 +89,11 @@ public class PluginInstallerService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+    	if(intent == null){
+    		PluginDebugLog.log(TAG, "onHandleIntent intent is null");
+    		return;
+    	}
+    		
         String action = intent.getAction();
         PluginDebugLog.log(TAG, "pluginInstallerService:action"+action);
         if (action == null) {
