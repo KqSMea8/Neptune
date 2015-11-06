@@ -26,6 +26,7 @@ import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.proxy.BroadcastReceiverProxy;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
@@ -420,8 +421,8 @@ public class ProxyEnvironmentNew {
 			return;
 		}
 
-		CMPackageManager.getInstance(context.getApplicationContext()).packageAction(packageName,
-				new IInstallCallBack() {
+		CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(packageName,
+				new IInstallCallBack.Stub() {
 
 					@Override
 					public void onPackageInstallFail(String packageName, int failReason) {
@@ -490,7 +491,7 @@ public class ProxyEnvironmentNew {
 				return "";
 			}
 			// Here, loop all installed packages to get pkgName.
-			for (CMPackageInfo info : CMPackageManager.getInstance(context).getInstalledApps()) {
+			for (CMPackageInfo info : CMPackageManagerImpl.getInstance(context).getInstalledApps()) {
 				if (info != null && info.targetInfo != null) {
 					if (info.targetInfo.resolveActivity(intent) != null) {
 						return info.packageName;
@@ -972,7 +973,7 @@ public class ProxyEnvironmentNew {
 	 * @throws Exception 
 	 */
 	private void createTargetMapping(String pkgName) throws Exception {
-		CMPackageInfo pkgInfo = CMPackageManager.getInstance(mContext).getPackageInfo(pkgName);
+		CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(mContext).getPackageInfo(pkgName);
 		if (pkgInfo != null) {
 			targetMapping = pkgInfo.targetInfo;
 		} else {
@@ -1135,7 +1136,7 @@ public class ProxyEnvironmentNew {
 		public void run() {
 			super.run();
 			try {
-				String installMethod = CMPackageManager.getInstance(pContext).getPackageInfo(
+				String installMethod = CMPackageManagerImpl.getInstance(pContext).getPackageInfo(
 						pakName).pluginInfo.mPluginInstallMethod;
 				PluginDebugLog.log("plugin", "doInBackground:" + pakName + ", installMethod: "
 						+ installMethod + " mProcName: " + mProcName);

@@ -11,6 +11,7 @@ import java.util.List;
 
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.SimpleDateTime;
@@ -177,7 +178,7 @@ public class PluginInstaller {
         int end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         String mapPackagename = assetsPath.substring(start + 1, end);
         
-        CMPackageInfo pkgInfo = CMPackageManager.getInstance(context).getPackageInfo(mapPackagename);
+        CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(context).getPackageInfo(mapPackagename);
         
         if (!TextUtils.isEmpty(mapPackagename) && pkgInfo != null) {
             
@@ -234,7 +235,7 @@ public class PluginInstaller {
         String packageName = null;
         
         boolean isBuildin = false;
-        
+
         if (filePath.startsWith(CMPackageManager.SCHEME_ASSETS)) {
             int start = filePath.lastIndexOf("/");
             int end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
@@ -292,7 +293,7 @@ public class PluginInstaller {
      */
     @Deprecated
     public static ArrayList<File> getInstalledApps(Context context) {
-        List<CMPackageInfo> pkgList = CMPackageManager.getInstance(context).getInstalledApps();
+        List<CMPackageInfo> pkgList = CMPackageManagerImpl.getInstance(context).getInstalledApps();
         
         ArrayList<File> result = new ArrayList<File>();
         for (CMPackageInfo pkg : pkgList) {
@@ -313,7 +314,7 @@ public class PluginInstaller {
      * @return File
      */
     public static File getInstalledApkFile(Context context, String packageName) {
-        CMPackageInfo info = CMPackageManager.getInstance(context).getPackageInfo(packageName);
+        CMPackageInfo info = CMPackageManagerImpl.getInstance(context).getPackageInfo(packageName);
     
         if (info != null && !TextUtils.isEmpty(info.srcApkPath)) {
             return new File(info.srcApkPath);

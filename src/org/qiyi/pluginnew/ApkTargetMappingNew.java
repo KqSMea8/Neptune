@@ -18,14 +18,17 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ServiceInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.TextUtils;
 
 /**
  * @author huangbo 插件apk资源初始化
  */
-public class ApkTargetMappingNew implements TargetMapping {
+public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 
 	private String versionName;
 	private int versionCode;
@@ -42,17 +45,63 @@ public class ApkTargetMappingNew implements TargetMapping {
 
 	private boolean isDataNeedPrefix = false;
 	/** Save all activity's resolve info */
-	private Map<String, ActivityIntentInfo> mActivitiyIntentInfos;
+	private Map<String, ActivityIntentInfo> mActivitiyIntentInfos = new HashMap<String, ActivityIntentInfo>(0);
 
 	/** Save all service's resolve info */
-	private Map<String, ServiceIntentInfo> mServiceIntentInfos;
+	private Map<String, ServiceIntentInfo> mServiceIntentInfos = new HashMap<String, ServiceIntentInfo>(0);
 
 	/** Save all receiver's resolve info */
-	private Map<String, ReceiverIntentInfo> mReceiverIntentInfos;
+	private Map<String, ReceiverIntentInfo> mReceiverIntentInfos = new HashMap<String, ReceiverIntentInfo>(0);
 
 	public ApkTargetMappingNew(Context context, File apkFile) {
 		init(context, apkFile);
 	}
+
+	protected ApkTargetMappingNew(Parcel in) {
+		versionName = in.readString();
+		versionCode = in.readInt();
+		packageName = in.readString();
+		applicationClassName = in.readString();
+		defaultActivityName = in.readString();
+		permissions = in.createTypedArray(PermissionInfo.CREATOR);
+		packageInfo = in.readParcelable(PackageInfo.class.getClassLoader());
+		metaData = in.readBundle();
+		dataDir = in.readString();
+		nativeLibraryDir = in.readString();
+		isDataNeedPrefix = in.readByte() != 0;
+
+		final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
+
+		for (String key : activityStates.keySet()) {
+			final ActivityIntentInfo state = activityStates.getParcelable(key);
+			mActivitiyIntentInfos.put(key, state);
+		}
+
+		final Bundle serviceStates = in.readBundle(ServiceIntentInfo.class.getClassLoader());
+		for (String key : serviceStates.keySet()) {
+			final ServiceIntentInfo state = serviceStates.getParcelable(key);
+			mServiceIntentInfos.put(key, state);
+		}
+
+		final Bundle receiverStates = in.readBundle(ReceiverIntentInfo.class.getClassLoader());
+		for (String key : receiverStates.keySet()) {
+			final ReceiverIntentInfo state = receiverStates.getParcelable(key);
+			mReceiverIntentInfos.put(key, state);
+		}
+
+	}
+
+	public static final Creator<ApkTargetMappingNew> CREATOR = new Creator<ApkTargetMappingNew>() {
+		@Override
+		public ApkTargetMappingNew createFromParcel(Parcel in) {
+			return new ApkTargetMappingNew(in);
+		}
+
+		@Override
+		public ApkTargetMappingNew[] newArray(int size) {
+			return new ApkTargetMappingNew[size];
+		}
+	};
 
 	private void init(Context context, File apkFile) {
 		try {
@@ -327,27 +376,154 @@ public class ApkTargetMappingNew implements TargetMapping {
 		mServiceIntentInfos.put(service.mInfo.name, service);
 	}
 
-	public final static class ActivityIntentInfo extends IntentInfo {
+	@Override
+	public int describeContents() {
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel parcel, int i) {
+		parcel.writeString(versionName);
+		parcel.writeInt(versionCode);
+		parcel.writeString(packageName);
+		parcel.writeString(applicationClassName);
+		parcel.writeString(defaultActivityName);
+		parcel.writeTypedArray(permissions, i);
+		parcel.writeParcelable(packageInfo, i);
+		parcel.writeBundle(metaData);
+		parcel.writeString(dataDir);
+		parcel.writeString(nativeLibraryDir);
+		parcel.writeByte((byte) (isDataNeedPrefix ? 1 : 0));
+
+		final Bundle activityStates = new Bundle();
+		for (String uri : mActivitiyIntentInfos.keySet()) {
+			final ActivityIntentInfo aii = mActivitiyIntentInfos.get(uri);
+			activityStates.putParcelable(uri.toString(), aii);
+		}
+		parcel.writeBundle(activityStates);
+
+		final Bundle serviceStates = new Bundle();
+		for (String uri : mServiceIntentInfos.keySet()) {
+			final ServiceIntentInfo aii = mServiceIntentInfos.get(uri);
+			serviceStates.putParcelable(uri.toString(), aii);
+		}
+		parcel.writeBundle(serviceStates);
+
+		final Bundle receiverStates = new Bundle();
+		for (String uri : mReceiverIntentInfos.keySet()) {
+			final ReceiverIntentInfo aii = mReceiverIntentInfos.get(uri);
+			receiverStates.putParcelable(uri.toString(), aii);
+		}
+		parcel.writeBundle(receiverStates);
+
+	}
+
+	public final static class ActivityIntentInfo extends IntentInfo implements Parcelable{
 		public final ActivityInfo mInfo;
 
 		public ActivityIntentInfo(final ActivityInfo info) {
 			mInfo = info;
 		}
+
+		protected ActivityIntentInfo(Parcel in) {
+			mInfo = ActivityInfo.CREATOR.createFromParcel(in);
+		}
+
+		public static final Creator<ActivityIntentInfo> CREATOR = new Creator<ActivityIntentInfo>() {
+			@Override
+			public ActivityIntentInfo createFromParcel(Parcel in) {
+				return new ActivityIntentInfo(in);
+			}
+
+			@Override
+			public ActivityIntentInfo[] newArray(int size) {
+				return new ActivityIntentInfo[size];
+			}
+		};
+
+		@Override
+		public int describeContents() {
+			return 0;
+		}
+
+		@Override
+		public void writeToParcel(Parcel parcel, int i) {
+			if(mInfo != null){
+				mInfo.writeToParcel(parcel,i);
+			}
+		}
 	}
 
-	public final static class ServiceIntentInfo extends IntentInfo {
+	public final static class ServiceIntentInfo extends IntentInfo implements Parcelable{
 		public final ServiceInfo mInfo;
 
 		public ServiceIntentInfo(final ServiceInfo info) {
 			mInfo = info;
 		}
+
+		protected ServiceIntentInfo(Parcel in) {
+			mInfo = ServiceInfo.CREATOR.createFromParcel(in);
+
+		}
+
+		public static final Creator<ServiceIntentInfo> CREATOR = new Creator<ServiceIntentInfo>() {
+			@Override
+			public ServiceIntentInfo createFromParcel(Parcel in) {
+				return new ServiceIntentInfo(in);
+			}
+
+			@Override
+			public ServiceIntentInfo[] newArray(int size) {
+				return new ServiceIntentInfo[size];
+			}
+		};
+
+		@Override
+		public int describeContents() {
+			return 0;
+		}
+
+		@Override
+		public void writeToParcel(Parcel parcel, int i) {
+			if(mInfo != null){
+				mInfo.writeToParcel(parcel,i);
+			}
+		}
 	}
 
-	public final static class ReceiverIntentInfo extends IntentInfo {
+	public final static class ReceiverIntentInfo extends IntentInfo implements Parcelable{
 		public final ActivityInfo mInfo;
 
 		public ReceiverIntentInfo(final ActivityInfo info) {
 			mInfo = info;
+		}
+
+		protected ReceiverIntentInfo(Parcel in) {
+			mInfo = ActivityInfo.CREATOR.createFromParcel(in);
+		}
+
+		public static final Creator<ReceiverIntentInfo> CREATOR = new Creator<ReceiverIntentInfo>() {
+			@Override
+			public ReceiverIntentInfo createFromParcel(Parcel in) {
+				return new ReceiverIntentInfo(in);
+			}
+
+			@Override
+			public ReceiverIntentInfo[] newArray(int size) {
+				return new ReceiverIntentInfo[size];
+			}
+		};
+
+		@Override
+		public int describeContents() {
+			return 0;
+		}
+
+		@Override
+		public void writeToParcel(Parcel parcel, int i) {
+			if(mInfo != null){
+				mInfo.writeToParcel(parcel,i);
+			}
 		}
 	}
 

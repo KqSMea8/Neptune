@@ -6,6 +6,7 @@ import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.ComponentName;
@@ -192,7 +193,7 @@ public class ActivityJumpUtil {
 				}
 			} else {
 				if (null != context) {
-					for (CMPackageInfo pkgInfo : CMPackageManager.getInstance(context)
+					for (CMPackageInfo pkgInfo : CMPackageManagerImpl.getInstance(context)
 							.getInstalledApps()) {
 						if (pkgInfo != null && pkgInfo.targetInfo != null) {
 							targetActivity = pkgInfo.targetInfo.resolveActivity(intent);

@@ -1,14 +1,13 @@
 package org.qiyi.pluginlibrary.pm;
 
-import java.io.Serializable;
-
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
+
+import java.io.Serializable;
 
 /**
  * 网络请求的数据信息
@@ -156,7 +155,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static final android.os.Parcelable.Creator CREATOR = new android.os.Parcelable.Creator() {
+	public static final android.os.Parcelable.Creator<PluginPackageInfoExt> CREATOR = new android.os.Parcelable.Creator<PluginPackageInfoExt>() {
 
 		public PluginPackageInfoExt createFromParcel(Parcel parcel) {
 			return new PluginPackageInfoExt(parcel);
