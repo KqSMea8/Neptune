@@ -310,24 +310,20 @@ public class CMPackageManagerImpl {
 
     private void clearExpiredPkgAction() {
         long currentTime = System.currentTimeMillis();
-
-        ArrayList<ExecutionPackageAction> deletedList = new ArrayList<ExecutionPackageAction>();
-
         synchronized (this) {
-            // 查找需要删除的
-            for (ExecutionPackageAction action : mPackageActions) {
+            Iterator<ExecutionPackageAction> iterator = mPackageActions.iterator();
+            while (iterator.hasNext()) {
+                ExecutionPackageAction action = iterator.next();
                 if (currentTime - action.time >= 1 * 60 * 1000) {// 1分钟
-                    deletedList.add(action);
-                }
-            }
-            // 实际删除
-            for (ExecutionPackageAction action : deletedList) {
-                mPackageActions.remove(action);
-                try {
-                    action.callBack.onPackageInstallFail(action.packageName,
-                            ErrorType.ERROR_CLIENT_TIME_OUT);
-                } catch (RemoteException e) {
-                    e.printStackTrace();
+                    if (action != null && action.callBack != null) {
+                        try {
+                            action.callBack.onPackageInstallFail(action.packageName,
+                                    ErrorType.ERROR_CLIENT_TIME_OUT);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    iterator.remove();
                 }
             }
         }

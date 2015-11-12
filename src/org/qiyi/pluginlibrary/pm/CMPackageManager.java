@@ -327,19 +327,6 @@ public class CMPackageManager {
         editor.putString(SP_APP_LIST, value);
         editor.commit();
     }
-
-    private String getCurrentProcessName(Context context) {
-        int pid = android.os.Process.myPid();
-        ActivityManager manager = (ActivityManager) context
-                .getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
-            if (process.pid == pid) {
-                return process.processName;
-            }
-        }
-        return null;
-    }
-
     /**
      * 安装广播，用于监听安装过程中是否成功。
      */
@@ -352,20 +339,18 @@ public class CMPackageManager {
                 String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
                 String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
                 PluginPackageInfoExt infoExt = intent
-                        .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-                if (context.getPackageName().equals(getCurrentProcessName(context))) {
-                    CMPackageInfo pkgInfo = new CMPackageInfo();
-                    pkgInfo.packageName = pkgName;
-                    pkgInfo.srcApkPath = destApkPath;
-                    pkgInfo.installStatus = PLUGIN_INSTALLED;
-                    pkgInfo.pluginInfo = infoExt;
-                    ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
-                            pkgInfo.srcApkPath));
-                    pkgInfo.targetInfo = targetInfo;
+                    .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
+                CMPackageInfo pkgInfo = new CMPackageInfo();
+                pkgInfo.packageName = pkgName;
+                pkgInfo.srcApkPath = destApkPath;
+                pkgInfo.installStatus = PLUGIN_INSTALLED;
+                pkgInfo.pluginInfo = infoExt;
+                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
+                        pkgInfo.srcApkPath));
+                pkgInfo.targetInfo = targetInfo;
 
-                    getInstalledPkgsInstance().put(pkgName, pkgInfo);// 将安装的插件名称保存到集合中。
-                    saveInstalledPackageList(); // 存储变化后的安装列表
-                }
+                getInstalledPkgsInstance().put(pkgName, pkgInfo);// 将安装的插件名称保存到集合中。
+                saveInstalledPackageList(); // 存储变化后的安装列表
                 if (listenerMap.get(pkgName) != null) {
                     try {
                         listenerMap.get(pkgName).onPacakgeInstalled(pkgName);
