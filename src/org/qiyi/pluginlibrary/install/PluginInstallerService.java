@@ -239,7 +239,7 @@ public class PluginInstallerService extends IntentService {
             int start = srcPathWithScheme.lastIndexOf("/");
             int end = srcPathWithScheme.lastIndexOf(PluginInstaller.APK_SUFFIX);
             String fileName = srcPathWithScheme.substring(start + 1, end);
-            
+            info.pluginTotalSize = tempFile.length(); //如果是内置的apk，需要自己获取大小，并存储，
             if (!packageName.equals(fileName)) {
                 tempFile.delete();
 //                throw new RuntimeException(srcPathWithScheme + " must be named with it's package name : "

@@ -1,23 +1,5 @@
 package org.qiyi.pluginlibrary.install;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
-import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.SimpleDateTime;
-import org.qiyi.pluginlibrary.utils.Util;
-//import org.qiyi.pluginnew.ActivityClassGenerator;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -27,6 +9,24 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.os.Parcelable;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.pm.CMPackageInfo;
+import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.SimpleDateTime;
+import org.qiyi.pluginlibrary.utils.Util;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+//import org.qiyi.pluginnew.ActivityClassGenerator;
 
 /**
  * app 安装接口。实际安装采用 {@link PluginInstallerService} 独立进程异步安装。<br>
@@ -107,7 +107,7 @@ public class PluginInstaller {
      * 安装内置在 assets/pluginapp 目录下的 apk
      * 
      * @param context
-     * @param pluginMethodVersion 插件方案版本号
+     * @param info 插件方案版本号
      */
 	public synchronized static void installBuildinApps(String packageName, Context context,
 			PluginPackageInfoExt info) {
@@ -166,7 +166,7 @@ public class PluginInstaller {
      * 
      * @param context
      * @param assetsPath
-     * @param pluginMethodVersion 插件方案版本号
+     * @param info 插件信息
      * @return 需要安装 返回 true，不需要安装 返回 false.
      */
 	private static boolean installBuildinApp(Context context, String assetsPath,
@@ -189,7 +189,6 @@ public class PluginInstaller {
                     InputStream currentIs = new FileInputStream(installedFile);
                     SimpleDateTime currentDateTime = Util.readApkModifyTime(currentIs);
                     currentIs.close();
-                    
                     // 内置版本信息 asset 目录下的
                     InputStream buildinIs = context.getAssets().open(assetsPath);
                     SimpleDateTime buildinDateTime = Util.readApkModifyTime(buildinIs);
@@ -223,8 +222,8 @@ public class PluginInstaller {
      * 调用 {@link PluginInstallerService} 进行实际的安装过程。采用独立进程异步操作。
      * 
      * @param context
-     * @param filePath 支持两种scheme {@link PluginInstallerService#SCHEME_ASSETS} 和 {@link PluginInstallerService#SCHEME_FILE}
-     * @param pluginMethodVersion 插件方案版本号 
+     * @param filePath 支持两种scheme {@link CMPackageManager#SCHEME_ASSETS} 和 {@link CMPackageManager#SCHEME_FILE}
+     * @param pluginInfo 插件信息
      */
     private static void startInstall(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
         /*
@@ -240,7 +239,6 @@ public class PluginInstaller {
             int start = filePath.lastIndexOf("/");
             int end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
             packageName = filePath.substring(start + 1, end);
-            
             isBuildin = true;
             
         } else if(filePath.startsWith(CMPackageManager.SCHEME_FILE)) {
@@ -269,10 +267,10 @@ public class PluginInstaller {
 
     /**
      * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
-     * 安装完会有 {@link #ACTION_PACKAGE_INSTALLED} broadcast。
+     * 安装完会有 {@link CMPackageManager＃ACTION_PACKAGE_INSTALLED} broadcast。
      * @param context 
      * @param filePath apk 文件目录 比如  /sdcard/xxxx.apk
-     * @param pluginMethodVersion 插件方案版本号 
+     * @param pluginInfo 插件信息
      */
 	public static void installApkFile(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
         registerInstallderReceiver(context);
@@ -368,7 +366,7 @@ public class PluginInstaller {
     
     /**
      * 增加到安装列表
-     * @param srcPath
+     * @param packagename
      */
     private synchronized static void add2InstallList(String packagename) {
         if (sInstallList.contains(packagename)) {
