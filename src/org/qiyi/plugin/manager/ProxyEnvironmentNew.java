@@ -72,6 +72,7 @@ public class ProxyEnvironmentNew {
     public static final String EXTRA_TARGET_SERVICE = "pluginapp_extra_target_service";
     public static final String EXTRA_TARGET_RECEIVER= "pluginapp_extra_target_receiver";
     public static final String EXTRA_TARGET_PACKAGNAME = "pluginapp_extra_target_pacakgename";
+    private static final String EXTRA_TARGET_CATEGORY = "pluginapp_service_category";
     public static final String EXTRA_TARGET_ISBASE = "pluginapp_extra_target_isbase";
     public static final String EXTRA_TARGET_REDIRECT_ACTIVITY = "pluginapp_extra_target_redirect_activity";
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "pluginapp_loadtarget_stub";
@@ -871,7 +872,9 @@ public class ProxyEnvironmentNew {
 		}
 		intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE, targetService);
 		intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, targetMapping.getPackageName());
-
+		// 同一个进程内service的bind是否重新走onBind方法，以intent的参数匹配为准(FilterComparison.filterHashCode)
+		// 手动添加一个category 让系统认为不同的插件activity每次bind都会走service的onBind的方法
+		intent.addCategory(EXTRA_TARGET_CATEGORY + System.currentTimeMillis());
 		try {
 			intent.setClass(mContext,
 					Class.forName(ProxyComponentMappingByProcess.mappingService(mProcessName)));

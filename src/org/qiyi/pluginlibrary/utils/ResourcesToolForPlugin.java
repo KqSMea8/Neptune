@@ -19,8 +19,8 @@ public class ResourcesToolForPlugin {
 	static final String ANIM = "anim";
 	static final String ATTR = "attr";
 
-	static String mPackageName;
-	static Resources mResources;
+	String mPackageName;
+	Resources mResources;
 //	private static Object sInitLock = new Object();
 
 	public ResourcesToolForPlugin(Context appContext) {
@@ -31,6 +31,13 @@ public class ResourcesToolForPlugin {
 			}
 //		}
 	}
+
+    public ResourcesToolForPlugin(Resources resource, String packageName) {
+        if (resource != null && !TextUtils.isEmpty(packageName)) {
+            mPackageName = packageName;
+            mResources = resource;
+        }
+    }
 
 	/**
 	 * 获取主包资源id
