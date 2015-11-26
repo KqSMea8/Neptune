@@ -426,6 +426,7 @@ public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 		}
 
 		protected ActivityIntentInfo(Parcel in) {
+			super(in);
 			mInfo = ActivityInfo.CREATOR.createFromParcel(in);
 		}
 
@@ -448,6 +449,7 @@ public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 
 		@Override
 		public void writeToParcel(Parcel parcel, int i) {
+			super.writeToParcel(parcel,i);
 			if(mInfo != null){
 				mInfo.writeToParcel(parcel,i);
 			}
@@ -462,6 +464,7 @@ public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 		}
 
 		protected ServiceIntentInfo(Parcel in) {
+			super(in);
 			mInfo = ServiceInfo.CREATOR.createFromParcel(in);
 
 		}
@@ -485,6 +488,7 @@ public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 
 		@Override
 		public void writeToParcel(Parcel parcel, int i) {
+			super.writeToParcel(parcel,i);
 			if(mInfo != null){
 				mInfo.writeToParcel(parcel,i);
 			}
@@ -499,6 +503,7 @@ public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 		}
 
 		protected ReceiverIntentInfo(Parcel in) {
+			super(in);
 			mInfo = ActivityInfo.CREATOR.createFromParcel(in);
 		}
 
@@ -521,17 +526,49 @@ public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 
 		@Override
 		public void writeToParcel(Parcel parcel, int i) {
+			super.writeToParcel(parcel,i);
 			if(mInfo != null){
 				mInfo.writeToParcel(parcel,i);
 			}
 		}
 	}
 
-	public static abstract class IntentInfo {
+	public static class IntentInfo implements Parcelable {
 		public List<IntentFilter> mFilter;
+
+		protected IntentInfo() {
+		}
+
+		protected IntentInfo(Parcel in) {
+			mFilter = in.createTypedArrayList(IntentFilter.CREATOR);
+		}
+
+		public static final Creator<IntentInfo> CREATOR = new Creator<IntentInfo>() {
+			@Override
+			public IntentInfo createFromParcel(Parcel in) {
+				return new IntentInfo(in);
+			}
+
+			@Override
+			public IntentInfo[] newArray(int size) {
+				return new IntentInfo[size];
+			}
+		};
 
 		public void setFilter(List<IntentFilter> filters) {
 			mFilter = filters;
+		}
+
+		@Override
+		public int describeContents() {
+			return 0;
+		}
+
+		@Override
+		public void writeToParcel(Parcel dest, int flags) {
+			if(mFilter != null) {
+				dest.writeTypedList(mFilter);
+			}
 		}
 	}
 }
