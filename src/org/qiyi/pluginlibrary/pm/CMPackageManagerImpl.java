@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.pm;
 
+import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -19,8 +20,7 @@ import org.qiyi.pluginnew.ApkTargetMappingNew;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +33,7 @@ public class CMPackageManagerImpl {
     private static ICMPackageManager mService = null;
     private static CMPackageManagerImpl sInstance = null;
     private Context mContext;
+    private static HashMap<String, CMPackageInfo> mInstalledPkgs = null;
     /**
      * 安装包任务队列。
      */
@@ -69,6 +70,10 @@ public class CMPackageManagerImpl {
                 }
                 if (mService != null) {
                     executePackageAction();
+                }
+                if (mInstalledPkgs != null) {
+                    mInstalledPkgs.clear();
+                    mInstalledPkgs = null;
                 }
             }
 
@@ -357,10 +362,10 @@ public class CMPackageManagerImpl {
      * @return 已安装插件列表
      */
     private List<CMPackageInfo> getInstalledAppsDirectly() {
-        Enumeration<CMPackageInfo> packages = getInstalledPackageList().elements();
+        Iterator iterator = getInstalledPackageList().keySet().iterator();
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
-        while (packages.hasMoreElements()) {
-            CMPackageInfo pkg = packages.nextElement();
+        while (iterator.hasNext()) {
+            CMPackageInfo pkg = (CMPackageInfo)iterator.next();
             if (pkg != null && TextUtils.equals(pkg.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
                 list.add(pkg);
             }
@@ -404,73 +409,92 @@ public class CMPackageManagerImpl {
 
     /**
      * 从sharedPreference直接读取，此case只有当service不存在时会发生，概率较小。
+     * 经测试此文件耗时：主进程 120ms   插件进程：1s   所以尽量放到非主线程使用
      *
      * @return 返回的是素有插件的信息，其中包括安装和未安装的插件
      */
-    private Hashtable<String, CMPackageInfo> getInstalledPackageList() {
-        Hashtable<String, CMPackageInfo> mInstalledPkgs;
-        mInstalledPkgs = new Hashtable<String, CMPackageInfo>();
+    private HashMap<String, CMPackageInfo> getInstalledPackageList() {
+        HashMap<String, CMPackageInfo> installedPkgsTemp = null;
+        if (mInstalledPkgs == null) { //如果是正在读取，此时的mInstalledPkgs值是不对的，所以需要从新进入获取
+            installedPkgsTemp = new HashMap<String, CMPackageInfo>();
 
-        SharedPreferences sp = CMPackageManager.getPreferences(mContext, PluginInstaller.SHARED_PREFERENCE_NAME);
-        String jsonPkgs = sp.getString(CMPackageManager.SP_APP_LIST, "");
+            SharedPreferences sp = CMPackageManager.getPreferences(mContext, PluginInstaller.SHARED_PREFERENCE_NAME);
+            String jsonPkgs = sp.getString(CMPackageManager.SP_APP_LIST, "");
 
-        if (jsonPkgs != null && jsonPkgs.length() > 0) {
-            try {
-                JSONArray pkgs = new JSONArray(jsonPkgs);
-                int count = pkgs.length();
-                for (int i = 0; i < count; i++) {
-                    JSONObject pkg = (JSONObject) pkgs.get(i);
-                    CMPackageInfo pkgInfo = new CMPackageInfo();
-                    pkgInfo.packageName = pkg.optString(CMPackageInfo.TAG_PKG_NAME);
-                    pkgInfo.srcApkPath = pkg.optString(CMPackageInfo.TAG_APK_PATH);
-                    pkgInfo.installStatus = pkg.optString(CMPackageInfo.TAG_INSTALL_STATUS);
-                    JSONObject ext = pkg.optJSONObject(PluginPackageInfoExt.INFO_EXT);
-                    if (ext != null) {
-                        pkgInfo.pluginInfo = new PluginPackageInfoExt(ext);
-                    } else {
-                        // try to do migrate for old version
-                        SharedPreferences spf = CMPackageManager.getPreferences(mContext, pkgInfo.packageName);
-                        if (null != spf && spf.getInt("plugin_state", 0) == 7) {
-                            PluginPackageInfoExt extInfo = new PluginPackageInfoExt();
-                            extInfo.id = spf.getString("ID", "");
-                            extInfo.name = spf.getString("NAME", "");
-                            extInfo.ver = spf.getInt("VER", -1);
-                            extInfo.crc = spf.getString("CRC", "");
-                            extInfo.type = spf.getInt("TYPE", 0);
-                            extInfo.desc = spf.getString("DESC", "");
-                            // Old version don't have this item
-                            extInfo.icon_url = "";
-                            extInfo.isAllowUninstall = spf.getInt("uninstall_flag", 0);
-                            extInfo.pluginTotalSize = spf.getLong("plugin_total_size", 0);
-                            extInfo.local = spf.getInt("plugin_local", 0);
-                            extInfo.invisible = spf.getInt("plugin_visible", 0);
-                            extInfo.scrc = spf.getString("SCRC", "");
-                            extInfo.url = spf.getString("URL", "");
-                            extInfo.mPluginInstallMethod = spf.getString("INSTALL_METHOD",
-                                    CMPackageManager.PLUGIN_METHOD_DEFAULT);
-                            pkgInfo.pluginInfo = extInfo;
+            if (jsonPkgs != null && jsonPkgs.length() > 0) {
+                try {
+                    JSONArray pkgs = new JSONArray(jsonPkgs);
+                    int count = pkgs.length();
+                    for (int i = 0; i < count; i++) {
+                        JSONObject pkg = (JSONObject) pkgs.get(i);
+                        CMPackageInfo pkgInfo = new CMPackageInfo();
+                        pkgInfo.packageName = pkg.optString(CMPackageInfo.TAG_PKG_NAME);
+                        pkgInfo.srcApkPath = pkg.optString(CMPackageInfo.TAG_APK_PATH);
+                        pkgInfo.installStatus = pkg.optString(CMPackageInfo.TAG_INSTALL_STATUS);
+                        JSONObject ext = pkg.optJSONObject(PluginPackageInfoExt.INFO_EXT);
+                        if (ext != null) {
+                            pkgInfo.pluginInfo = new PluginPackageInfoExt(ext);
                         } else {
-                            // 如果存在packageinfo package name信息但是没有详细的插件信息，认为不是合法的配置
-                            // TODO 需要考虑本地APK加载或者SO jar加载情况。
-                            continue;
+                            // try to do migrate for old version
+                            SharedPreferences spf = CMPackageManager.getPreferences(mContext, pkgInfo.packageName);
+                            if (null != spf && spf.getInt("plugin_state", 0) == 7) {
+                                PluginPackageInfoExt extInfo = new PluginPackageInfoExt();
+                                extInfo.id = spf.getString("ID", "");
+                                extInfo.name = spf.getString("NAME", "");
+                                extInfo.ver = spf.getInt("VER", -1);
+                                extInfo.crc = spf.getString("CRC", "");
+                                extInfo.type = spf.getInt("TYPE", 0);
+                                extInfo.desc = spf.getString("DESC", "");
+                                // Old version don't have this item
+                                extInfo.icon_url = "";
+                                extInfo.isAllowUninstall = spf.getInt("uninstall_flag", 0);
+                                extInfo.pluginTotalSize = spf.getLong("plugin_total_size", 0);
+                                extInfo.local = spf.getInt("plugin_local", 0);
+                                extInfo.invisible = spf.getInt("plugin_visible", 0);
+                                extInfo.scrc = spf.getString("SCRC", "");
+                                extInfo.url = spf.getString("URL", "");
+                                extInfo.mPluginInstallMethod = spf.getString("INSTALL_METHOD",
+                                        CMPackageManager.PLUGIN_METHOD_DEFAULT);
+                                pkgInfo.pluginInfo = extInfo;
+                            } else {
+                                // 如果存在packageinfo package name信息但是没有详细的插件信息，认为不是合法的配置
+                                // TODO 需要考虑本地APK加载或者SO jar加载情况。
+                                continue;
+                            }
                         }
-                    }
-                    ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext,
-                            new File(pkgInfo.srcApkPath));
-                    pkgInfo.targetInfo = targetInfo;
-                    if (pkgInfo.pluginInfo != null
-                            && TextUtils.isEmpty(pkgInfo.pluginInfo.plugin_ver)
-                            && pkgInfo.targetInfo != null) {
-                        pkgInfo.pluginInfo.plugin_ver = pkgInfo.targetInfo.getVersionName();
+                        if (!mContext.getPackageName().equals(getCurrentProcessName(mContext))) { //主进程不需要各个插件信息，
+                            ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext,
+                                    new File(pkgInfo.srcApkPath));
+                            pkgInfo.targetInfo = targetInfo;
+
+
+                            if (pkgInfo.pluginInfo != null
+                                    && TextUtils.isEmpty(pkgInfo.pluginInfo.plugin_ver)
+                                    && pkgInfo.targetInfo != null) {
+                                pkgInfo.pluginInfo.plugin_ver = pkgInfo.targetInfo.getVersionName();    //从配置文件中读取，正常不应该为null
+                            }
+                        }
+                        installedPkgsTemp.put(pkgInfo.packageName, pkgInfo);
                     }
 
-                    mInstalledPkgs.put(pkgInfo.packageName, pkgInfo);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+            mInstalledPkgs = installedPkgsTemp;
         }
         return mInstalledPkgs;
+    }
+
+    private String getCurrentProcessName(Context context) {
+        int pid = android.os.Process.myPid();
+        ActivityManager manager = (ActivityManager) context
+                .getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
+            if (process.pid == pid) {
+                return process.processName;
+            }
+        }
+        return null;
     }
 }
