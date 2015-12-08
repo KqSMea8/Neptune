@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by xiepengchong on 15/10/29.
@@ -38,7 +39,7 @@ public class CMPackageManagerImpl {
     /**
      * 安装包任务队列。
      */
-    private List<ExecutionPackageAction> mPackageActions = Collections.synchronizedList(new LinkedList<ExecutionPackageAction>());
+    private ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions = new ConcurrentLinkedQueue<ExecutionPackageAction>();
 
     public static CMPackageManagerImpl getInstance(Context context) {
         if (sInstance == null) {
