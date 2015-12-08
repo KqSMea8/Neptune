@@ -1,43 +1,62 @@
 package org.qiyi.pluginlibrary.utils;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 
 import android.content.Context;
 import android.content.res.Resources;
 import android.text.TextUtils;
 
+/**
+ * Wrapper class for invoker to get resource id Wrapper of gen/R.java
+ */
 public class ResourcesToolForPlugin {
+	static final String ANIM = "anim";
+	static final String ARRAY = "array";
+	static final String ATTR = "attr";
+	static final String BOOL = "bool";
+	static final String COLOR = "color";
+	static final String DIMEN = "dimen";
 	static final String DRAWABLE = "drawable";
+	static final String ID = "id";
+	static final String INTEGER = "integer";
+	static final String INTERPOLATOR = "interpolator";
+	static final String LAYOUT = "layout";
+	static final String MENU = "menu";
+	static final String RAW = "raw";
 	static final String STRING = "string";
 	static final String STYLE = "style";
-	static final String LAYOUT = "layout";
-	static final String ID = "id";
-	static final String COLOR = "color";
-	static final String RAW = "raw";
-	static final String ANIM = "anim";
-	static final String ATTR = "attr";
+	static final String STYLEABLE = "styleable";
+	static final String TRANSITION = "transition";
+	static final String XML = "xml";
 
 	String mPackageName;
 	Resources mResources;
-//	private static Object sInitLock = new Object();
+	ClassLoader mClassLoader;
 
 	public ResourcesToolForPlugin(Context appContext) {
-//		synchronized (sInitLock) {
-			if (mResources == null && TextUtils.isEmpty(mPackageName)) {
-				mPackageName = appContext.getPackageName();
-				mResources = appContext.getResources();
-			}
-//		}
+		if (null != appContext) {
+			mPackageName = appContext.getPackageName();
+			mResources = appContext.getResources();
+			mClassLoader = appContext.getClassLoader();
+		}
 	}
 
-    public ResourcesToolForPlugin(Resources resource, String packageName) {
-        if (resource != null && !TextUtils.isEmpty(packageName)) {
-            mPackageName = packageName;
-            mResources = resource;
-        }
-    }
+	/**
+	 * Create resource tool
+	 *
+	 * @param resource
+	 * @param packageName
+	 * @param clsLoader
+	 *            corresponding classloader for resource/view.java, can be null,
+	 *            if null will use Class.forName(xx)
+	 */
+	public ResourcesToolForPlugin(Resources resource, String packageName, ClassLoader clsLoader) {
+		if (resource != null && !TextUtils.isEmpty(packageName)) {
+			mPackageName = packageName;
+			mResources = resource;
+			mClassLoader = clsLoader;
+		}
+	}
 
 	/**
 	 * 获取主包资源id
@@ -60,13 +79,6 @@ public class ResourcesToolForPlugin {
 			sourceName = "emptey_string_res";
 		}
 
-		if (isForceGetResourceByR) {
-			Integer id = stringIds.get(sourceName);
-			if (null != id) {
-				return id;
-			}
-		}
-
 		int id = getResourceId(sourceName, STRING);
 		if (id < 0) {
 			id = getResourceId("emptey_string_res", STRING);
@@ -76,26 +88,10 @@ public class ResourcesToolForPlugin {
 	}
 
 	public int getResourceIdForID(String sourceName) {
-
-		if (isForceGetResourceByR) {
-			Integer id = idIds.get(sourceName);
-			if (null != id) {
-				return id;
-			}
-		}
-
 		return getResourceId(sourceName, ID);
 	}
 
 	public int getResourceIdForLayout(String sourceName) {
-
-		if (isForceGetResourceByR) {
-			Integer id = layoutIds.get(sourceName);
-			if (null != id) {
-				return id;
-			}
-		}
-
 		return getResourceId(sourceName, LAYOUT);
 	}
 
@@ -103,14 +99,6 @@ public class ResourcesToolForPlugin {
 		if (TextUtils.isEmpty(sourceName)) {
 			sourceName = "default_empty_drawable_transparent";// 默认一个透明图片资源
 		}
-
-		if (isForceGetResourceByR) {
-			Integer id = drawableIds.get(sourceName);
-			if (null != id) {
-				return id;
-			}
-		}
-
 		return getResourceId(sourceName, DRAWABLE);
 	}
 
@@ -119,14 +107,6 @@ public class ResourcesToolForPlugin {
 	}
 
 	public int getResourceIdForColor(String sourceName) {
-
-		if (isForceGetResourceByR) {
-			Integer id = colorIds.get(sourceName);
-			if (null != id) {
-				return id;
-			}
-		}
-
 		return getResourceId(sourceName, COLOR);
 	}
 
@@ -142,109 +122,130 @@ public class ResourcesToolForPlugin {
 		return getResourceId(sourceName, ATTR);
 	}
 
-	// ////////////////////////////////////////////////////////////////////
-	// ///// 针对 反射和R获取资源的动态切换需求
-	// ////////////////////////////////////////////////////////////////////
+	public int getResourceForArray(String sourceName) {
+		return optValue(sourceName, ARRAY);
+	}
 
-	private static boolean isForceGetResourceByR = false;
-	private static Map<String, Integer> stringIds = new HashMap<String, Integer>(32);
-	private static Map<String, Integer> drawableIds = new HashMap<String, Integer>(32);
-	private static Map<String, Integer> colorIds = new HashMap<String, Integer>(32);
-	private static Map<String, Integer> layoutIds = new HashMap<String, Integer>(16);
-	private static Map<String, Integer> idIds = new HashMap<String, Integer>(64);
-	private static Map<String, Integer> animIds = new HashMap<String, Integer>(64);
+	public int getResourceForBool(String sourceName) {
+		return optValue(sourceName, BOOL);
+	}
 
-	public void clear() {
-		drawableIds.clear();
-		stringIds.clear();
-		colorIds.clear();
-		layoutIds.clear();
-		idIds.clear();
-		animIds.clear();
+	public int getResourceForDimen(String sourceName) {
+		return optValue(sourceName, DIMEN);
+	}
+
+	public int getResourceForInteger(String sourceName) {
+		return optValue(sourceName, INTEGER);
+	}
+
+	public int getResourceForInterpolator(String sourceName) {
+		return optValue(sourceName, INTERPOLATOR);
+	}
+
+	public int getResourceForMenu(String sourceName) {
+		return optValue(sourceName, MENU);
+	}
+
+	public int getResourceForStyleable(String sourceName) {
+		return optValue(sourceName, STYLEABLE);
+	}
+
+	public int[] getResourceForStyleables(String sourceName) {
+		return optValueArray(sourceName, STYLEABLE);
+	}
+
+	public int getResourceForTransition(String sourceName) {
+		return optValue(sourceName, TRANSITION);
+	}
+
+	public int getResourceForXml(String sourceName) {
+		return optValue(sourceName, XML);
 	}
 
 	/**
-	 * 初始资源池
+	 * Get int id from packagename.R.java result will by int
+	 * 
+	 * @param resourceName
+	 *            resource name
+	 * @param resourceType
+	 *            resource type
+	 * @return
 	 */
-	public void initResourcePool(Context ctx) {
-		String packageName = ctx.getPackageName();
-		String rName = packageName + ".R";
-
-		Class<?> cls = null;
+	private int optValue(String resourceName, String resourceType) {
+		int result = 0;
+		if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType)
+				|| TextUtils.isEmpty(mPackageName)) {
+			PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(),
+					"optValue resourceName: " + resourceName + " resourceType: " + resourceType
+							+ " mPackageName: " + mPackageName + ", just return 0!");
+			return result;
+		}
 		try {
-			cls = Class.forName(rName);
+			Class<?> cls;
+			if (null != mClassLoader) {
+				cls = Class.forName(mPackageName + ".R$" + resourceType, true, mClassLoader);
+			} else {
+				cls = Class.forName(mPackageName + ".R$" + resourceType);
+			}
+			Field field = cls.getDeclaredField(resourceName);
+			if (null != field) {
+				field.setAccessible(true);
+				result = field.getInt(cls);
+			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
-			return;
+		} catch (NoSuchFieldException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-
-		Class<?>[] cs = cls.getDeclaredClasses();
-
-		for (Class<?> c : cs) {
-			if (c.getName().contains("$string")) {
-				optResourcePool(c, stringIds);
-			} else if (c.getName().contains("$drawable")) {
-				optResourcePool(c, drawableIds);
-			} else if (c.getName().contains("$color")) {
-				optResourcePool(c, colorIds);
-			} else if (c.getName().contains("$layout")) {
-				optResourcePool(c, layoutIds);
-			} else if (c.getName().contains("$id")) {
-				optResourcePool(c, idIds);
-			} else if (c.getName().contains("$anim")) {
-				optResourcePool(c, animIds);
-			} else {
-				continue;
-			}
-		}
-	}
-
-	private void optResourcePool(Class<?> obj, Map<String, Integer> container) {
-		container.clear();
-
-		Field[] fields = obj.getDeclaredFields();
-		if (null != fields) {
-			try {
-				for (Field f : fields) {
-					f.setAccessible(true);
-					if (f.getModifiers() == 25) {// 获取 public static final 修饰的字段
-						container.put(f.getName(), f.getInt(obj));
-					}
-				}
-
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-		/*
-		 * JAVA 反射机制中，Field的getModifiers()方法返回int类型值表示该字段的修饰符。
-		 * 其中，该修饰符是java.lang.reflect.Modifier的静态属性。
-		 * 
-		 * 对应表如下：
-		 * 
-		 * PUBLIC : 1 PRIVATE : 2 PROTECTED : 4 STATIC : 8 FINAL : 16
-		 * SYNCHRONIZED : 32 VOLATILE : 64 TRANSIENT : 128 NATIVE : 256
-		 * INTERFACE : 512 ABSTRACT : 1024 STRICT : 2048
-		 * 
-		 * 当一个方法或者字段被多个修饰符修饰的时候， getModifiers()返回的值等会各个修饰符累加的和
-		 */
-	}
-
-	public boolean isForceGetResourceByR() {
-		return isForceGetResourceByR;
+		return result;
 	}
 
 	/**
-	 * 设置是否强制要求使用 R.type.name 方式获取资源id，如果设置成true，那么务必调用 初始化资源池的方法。
+	 * Get int ids from packagename.R.java result will by int[]
 	 * 
-	 * @see #initResourcePool()
-	 * @param isForceGetResourceByR
+	 * @param resourceName
+	 *            resource name
+	 * @param resourceType
+	 *            resource type
+	 * @return
 	 */
-	public void setForceGetResourceByR(boolean isForceGetResourceByR) {
+	private int[] optValueArray(String resourceName, String resourceType) {
+		int[] result = null;
+		if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType)
+				|| TextUtils.isEmpty(mPackageName)) {
+			PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(),
+					"optValueArray resourceName: " + resourceName + " resourceType: "
+							+ resourceType + " mPackageName: " + mPackageName + ", just return 0!");
+			return result;
+		}
+		try {
+			Class<?> cls;
+			if (null != mClassLoader) {
+				cls = Class.forName(mPackageName + ".R$" + resourceType, true, mClassLoader);
+			} else {
+				cls = Class.forName(mPackageName + ".R$" + resourceType);
+			}
+			Field field = cls.getDeclaredField(resourceName);
+			if (null != field) {
+				field.setAccessible(true);
+				Object res = field.get(cls);
+				if (res != null && res.getClass().isArray()) {
+					result = (int[]) res;
+				}
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (NoSuchFieldException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
 	}
 }
