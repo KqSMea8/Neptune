@@ -363,7 +363,7 @@ public class CMPackageManagerImpl {
      * @return 已安装插件列表
      */
     private List<CMPackageInfo> getInstalledAppsDirectly() {
-        Iterator iterator = getInstalledPackageList().keySet().iterator();
+        Iterator iterator = getInstalledPackageList().entrySet().iterator();
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
         while (iterator.hasNext()) {
             Map.Entry entry = (Map.Entry)iterator.next();
