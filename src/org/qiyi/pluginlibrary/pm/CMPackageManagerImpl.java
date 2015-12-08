@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by xiepengchong on 15/10/29.
@@ -365,7 +366,8 @@ public class CMPackageManagerImpl {
         Iterator iterator = getInstalledPackageList().keySet().iterator();
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
         while (iterator.hasNext()) {
-            CMPackageInfo pkg = (CMPackageInfo)iterator.next();
+            Map.Entry entry = (Map.Entry)iterator.next();
+            CMPackageInfo pkg = (CMPackageInfo)entry.getValue();
             if (pkg != null && TextUtils.equals(pkg.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
                 list.add(pkg);
             }
