@@ -1,8 +1,10 @@
 package org.qiyi.pluginlibrary.utils;
 
+import java.io.File;
 import java.util.List;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 
 import android.app.Activity;
@@ -184,5 +186,17 @@ public class ContextUtils {
 				}
 			}
 		}
+	}
+
+	/**
+	 * @param context
+	 * @param pkg
+	 * @return /data/data/com.qiyi.video/app_pluginapp/pkg/databases
+	 */
+	public static String getPluginappDBPath(Context context, String pkg) {
+		if (context == null || TextUtils.isEmpty(pkg)) {
+			return null;
+		}
+		return PluginInstaller.getPluginappRootPath(context) + File.separator + pkg + File.separator + "databases";
 	}
 }
