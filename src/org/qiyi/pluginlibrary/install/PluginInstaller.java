@@ -147,8 +147,7 @@ public class PluginInstaller {
                 	//如果外面传递的packagename 为空则全部安装
                     continue;
                 }
-                PluginDebugLog.log("plugin", "file:"+file);
-//                needInstall |= 
+                PluginDebugLog.log("plugin", "file:" + file);
                 installBuildinApp(context, ASSETS_PATH + "/" + file, info);
             }
             
@@ -213,7 +212,8 @@ public class PluginInstaller {
 		} else {
 			infoExt = info;
 		}
-		startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, infoExt);
+
+        startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, infoExt);
         return true;
     }
     
@@ -256,7 +256,14 @@ public class PluginInstaller {
                 sBuildinAppList.add(packageName); // 添加到内置app安装列表中
             }
         }
-        
+        if (pluginInfo == null) {
+            return;
+        }
+
+        CMPackageInfo installedInfo = CMPackageManagerImpl.getInstance(context).getPackageInfo(pluginInfo.packageName);
+        if(installedInfo != null && lessOrEqualInstalled(installedInfo.pluginInfo,pluginInfo,false)){
+            return;
+        }
         Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
         intent.setClass(context, PluginInstallerService.class);
         intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, filePath);
@@ -508,5 +515,75 @@ public class PluginInstaller {
      */
     public static synchronized boolean isInstalling(String packageName) {
         return sInstallList.contains(packageName);
+    }
+
+    /**
+     * @param localData  this should be installed plugin
+     * @param remoteData this is which need to compare plugin
+     * @param onlyLess   true:only less return true   false :less or equal return true
+     * @return true the remote plugin less or equal the installed plugin
+     */
+    private static boolean lessOrEqualInstalled(PluginPackageInfoExt localData, PluginPackageInfoExt remoteData, boolean onlyLess) {
+
+        if(localData == null || remoteData == null){
+            return false;
+        }
+
+        if (!TextUtils.equals(localData.packageName,remoteData.packageName)) {
+            return false;
+        }
+        int result = comparePluginVersion(localData.plugin_ver, remoteData.plugin_ver);
+        if (result > 0) {
+            return true;
+        } else if (result == 0) {
+            int greResult = comparePluginVersion(localData.plugin_gray_ver, remoteData.plugin_gray_ver);
+            if (greResult > 0) {
+                return true;
+            } else if (greResult == 0 && !onlyLess) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Compare left and right version with style a.b.c...
+     *
+     * @param leftVersionName
+     * @param rightVersionName
+     * @return return positive if left > right, 0 for left equals right and negative for left <
+     * right
+     */
+    public static int comparePluginVersion(String leftVersionName, String rightVersionName) {
+        if (TextUtils.equals(leftVersionName, rightVersionName)) {
+            return 0;
+        }
+        if (TextUtils.isEmpty(leftVersionName)) {
+            return -1;
+        } else if (TextUtils.isEmpty(rightVersionName)) {
+            return 1;
+        }
+        String[] lVersions = leftVersionName.split("\\.");
+        String[] rVersions = rightVersionName.split("\\.");
+        if (lVersions == null || lVersions.length == 0) {
+            return -1;
+        } else if (rVersions == null || rVersions.length == 0) {
+            return 1;
+        }
+        try {
+            for (int i = 0; i < lVersions.length; i++) {
+                if (rVersions.length < i + 1) {
+                    return 1;
+                }
+                if (Integer.valueOf(lVersions[i]) != Integer.valueOf(rVersions[i])) {
+                    return Integer.valueOf(lVersions[i]) - Integer.valueOf(rVersions[i]);
+                } else {
+                    continue;
+                }
+            }
+        } catch (NumberFormatException nfe) {
+            nfe.printStackTrace();
+        }
+        return -1;
     }
 }
