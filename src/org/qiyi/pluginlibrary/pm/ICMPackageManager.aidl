@@ -12,13 +12,13 @@ interface ICMPackageManager {
 
     boolean isPackageInstalled(String pkg);
 
-    void installApkFile(String filePath, IInstallCallBack listener,in PluginPackageInfoExt pluginInfo);
+    oneway void installApkFile(String filePath, IInstallCallBack listener,in PluginPackageInfoExt pluginInfo);
 
-    void installBuildinApps(String packageName, IInstallCallBack listener,in PluginPackageInfoExt info);
+    oneway void installBuildinApps(String packageName, IInstallCallBack listener,in PluginPackageInfoExt info);
 
-    void deletePackage(String packageName, IPackageDeleteObserver observer);
+    oneway void deletePackage(String packageName, IPackageDeleteObserver observer);
 
     boolean uninstall(String pkgName);
 
-    void packageAction(String packageName, IInstallCallBack callBack);
+    oneway void packageAction(String packageName, IInstallCallBack callBack);
 }

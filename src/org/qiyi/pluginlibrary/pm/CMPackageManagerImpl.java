@@ -15,6 +15,7 @@ import org.json.JSONObject;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginnew.ApkTargetMappingNew;
 
 import java.io.File;
@@ -32,6 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class CMPackageManagerImpl {
 
+    private static final String TAG = CMPackageManagerImpl.class.getSimpleName();
     private static ICMPackageManager mService = null;
     private static CMPackageManagerImpl sInstance = null;
     private Context mContext;
@@ -61,29 +63,46 @@ public class CMPackageManagerImpl {
     }
 
     private void onBindService(Context context) {
+        if (null == context || context.getApplicationContext() == null) {
+            PluginDebugLog.log(TAG, "onBindService context is null return!");
+            return;
+        }
 
-        Intent intent = new Intent(context, CMPackageManagerService.class);
-        context.bindService(intent, new ServiceConnection() {
+        Intent intent = new Intent(context.getApplicationContext(), CMPackageManagerService.class);
+        try {
+            context.getApplicationContext().bindService(intent, new ServiceConnection() {
 
-            @Override
-            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-                if (null != iBinder) {
-                    mService = ICMPackageManager.Stub.asInterface(iBinder);
+                @Override
+                public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                    if (null != iBinder) {
+                        mService = ICMPackageManager.Stub.asInterface(iBinder);
+                    }
+                    if (mService != null) {
+                        executePackageAction();
+                    }
+                    if (mInstalledPkgs != null) {
+                        mInstalledPkgs.clear();
+                        mInstalledPkgs = null;
+                    }
                 }
-                if (mService != null) {
-                    executePackageAction();
-                }
-                if (mInstalledPkgs != null) {
-                    mInstalledPkgs.clear();
-                    mInstalledPkgs = null;
-                }
-            }
 
-            @Override
-            public void onServiceDisconnected(ComponentName componentName) {
-                mService = null;
-            }
-        }, Context.BIND_AUTO_CREATE);
+                @Override
+                public void onServiceDisconnected(ComponentName componentName) {
+                    mService = null;
+                }
+            }, Context.BIND_AUTO_CREATE);
+        } catch (Exception e) {
+            // 灰度时出现binder，从系统代码查不可能出现这个异常，添加保护
+            // Caused by: java.lang.NullPointerException
+            // at android.os.Parcel.readException(Parcel.java:1437)
+            // at android.os.Parcel.readException(Parcel.java:1385)
+            // at android.app.ActivityManagerProxy.bindService(ActivityManagerNative.java:2801)
+            // at android.app.ContextImpl.bindServiceAsUser(ContextImpl.java:1489)
+            // at android.app.ContextImpl.bindService(ContextImpl.java:1464)
+            // at android.content.ContextWrapper.bindService(ContextWrapper.java:496)
+            // at org.qiyi.pluginlibrary.pm.CMPackageManagerImpl.onBindService(Unknown Source)
+            e.printStackTrace();
+        }
     }
 
 
