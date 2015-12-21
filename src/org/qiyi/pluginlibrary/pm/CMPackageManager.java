@@ -20,7 +20,6 @@ import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginnew.ApkTargetMappingNew;
 
-import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -719,8 +718,11 @@ public class CMPackageManager {
             uninstallFlag = false;
         }
         if (uninstallFlag) {
-            getPackageInfo(pkgName).installStatus = PLUGIN_UNINSTALLED;
-            saveInstalledPackageList();
+            CMPackageInfo packageInfo = getPackageInfo(pkgName);
+            if (packageInfo != null) {
+                packageInfo.installStatus = PLUGIN_UNINSTALLED;
+                saveInstalledPackageList();
+            }
         }
         return uninstallFlag;
     }
