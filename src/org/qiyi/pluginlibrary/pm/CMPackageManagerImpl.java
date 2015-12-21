@@ -20,13 +20,12 @@ import org.qiyi.pluginnew.ApkTargetMappingNew;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Created by xiepengchong on 15/10/29.
@@ -37,7 +36,7 @@ public class CMPackageManagerImpl {
     private static ICMPackageManager mService = null;
     private static CMPackageManagerImpl sInstance = null;
     private Context mContext;
-    private static HashMap<String, CMPackageInfo> mInstalledPkgs = null;
+    private static ConcurrentMap<String, CMPackageInfo> mInstalledPkgs = null;
     /**
      * 安装包任务队列。
      */
@@ -435,10 +434,10 @@ public class CMPackageManagerImpl {
      *
      * @return 返回的是素有插件的信息，其中包括安装和未安装的插件
      */
-    private HashMap<String, CMPackageInfo> getInstalledPackageList() {
-        HashMap<String, CMPackageInfo> installedPkgsTemp = null;
+    private ConcurrentMap<String, CMPackageInfo> getInstalledPackageList() {
+        ConcurrentMap<String, CMPackageInfo> installedPkgsTemp = null;
         if (mInstalledPkgs == null) { //如果是正在读取，此时的mInstalledPkgs值是不对的，所以需要从新进入获取
-            installedPkgsTemp = new HashMap<String, CMPackageInfo>();
+            installedPkgsTemp = new ConcurrentHashMap<String, CMPackageInfo>();
 
             SharedPreferences sp = CMPackageManager.getPreferences(mContext, PluginInstaller.SHARED_PREFERENCE_NAME);
             String jsonPkgs = sp.getString(CMPackageManager.SP_APP_LIST, "");
