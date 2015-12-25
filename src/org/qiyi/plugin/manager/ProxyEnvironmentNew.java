@@ -1092,7 +1092,7 @@ public class ProxyEnvironmentNew {
 		config.setTo(hostRes.getConfiguration());
 		config.orientation = Configuration.ORIENTATION_UNDEFINED;
 		targetResources = new ResourcesProxy(targetAssetManager, hostRes.getDisplayMetrics(),
-				config, hostRes);
+				config, hostRes, mPluginPakName);
 		targetTheme = targetResources.newTheme();
 		targetTheme.setTo(mContext.getTheme());
 		
