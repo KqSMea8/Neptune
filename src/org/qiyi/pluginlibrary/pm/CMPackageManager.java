@@ -215,7 +215,7 @@ public class CMPackageManager {
     /**
      * 初始化安装列表
      */
-    private void initInstalledPackageListIfNeeded() {
+    private synchronized void initInstalledPackageListIfNeeded() {
         // 第一次初始化安装列表。
         if (mInstalledPkgs == null) {
             mInstalledPkgs = new Hashtable<String, CMPackageInfo>();
