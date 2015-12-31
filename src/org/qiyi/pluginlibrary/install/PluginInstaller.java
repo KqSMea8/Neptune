@@ -261,7 +261,8 @@ public class PluginInstaller {
         }
 
         CMPackageInfo installedInfo = CMPackageManagerImpl.getInstance(context).getPackageInfo(pluginInfo.packageName);
-        if(installedInfo != null && lessOrEqualInstalled(installedInfo.pluginInfo,pluginInfo,false)){
+        if (installedInfo != null
+                && lessOrEqualInstalled(installedInfo.pluginInfo, pluginInfo, false)) {
             return;
         }
         Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);

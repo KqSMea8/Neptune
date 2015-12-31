@@ -93,24 +93,30 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
      *
      * @param pkgName
      */
-    private void tryToInitEnvironment(String pkgName) {
+    private boolean tryToInitEnvironment(String pkgName) {
         if (!TextUtils.isEmpty(pkgName) && null == mPluginEnv) {
-            if (!ProxyEnvironmentNew.hasInstance(pkgName)) {
-                String installMethod = "";
-                CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(this).getPackageInfo(pkgName);
-                if (null != pkgInfo && pkgInfo.pluginInfo != null) {
-                    installMethod = pkgInfo.pluginInfo.mPluginInstallMethod;
-                } else {
-                    ProxyEnvironmentNew.deliverPlug(false, pkgName, ErrorType.ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL);
-                    Log.e(TAG, "Cann't get pkginfo for: " + pkgName);
-                    return;
-                }
-                PluginDebugLog.log("plugin", "doInBackground:" + pkgName + ", installMethod: "
-                        + installMethod);
+            // in multiple process environment plugin doesn't know which process to
+            // launch environment, so one plugin cann't start other plugin.
+//            if (!ProxyEnvironmentNew.hasInstance(pkgName)) {
+//                String installMethod = "";
+//                CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(this).getPackageInfo(pkgName);
+//                if (null != pkgInfo && pkgInfo.pluginInfo != null) {
+//                    installMethod = pkgInfo.pluginInfo.mPluginInstallMethod;
+//                } else {
+//                    ProxyEnvironmentNew.deliverPlug(false, pkgName, ErrorType.ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL);
+//                    Log.e(TAG, "Cann't get pkginfo for: " + pkgName);
+//                    return false;
+//                }
+//                PluginDebugLog.log("plugin", "doInBackground:" + pkgName + ", installMethod: "
+//                        + installMethod);
 //				ProxyEnvironmentNew.initProxyEnvironment(InstrActivityProxy.this, pkgName, installMethod);
-            }
+//            }
             mPluginEnv = ProxyEnvironmentNew.getInstance(pkgName);
         }
+        if (null != mPluginEnv) {
+            return true;
+        }
+        return false;
     }
 
 //	private boolean mNeedUpdateConfiguration = true;
@@ -128,11 +134,16 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
             Log.e(TAG, "Pkg or activity is null in LActivityProxy, just return!");
             this.finish();
+            return;
             // throw new
             // PluginCreateFailedException("Please put the Plugin Path!");
         }
 
-        tryToInitEnvironment(pluginPkgName);
+        if (!tryToInitEnvironment(pluginPkgName)) {
+            this.finish();
+            Log.e(TAG, "mPluginEnv is null in LActivityProxy, just return!");
+            return;
+        }
         if (!ProxyEnvironmentNew.isEnterProxy(pluginPkgName)) {
             Intent i = new Intent();
             i.setComponent(new ComponentName(pluginPkgName,
@@ -144,6 +155,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL);
             Log.e(TAG, "Cann't get pluginActivityName class finish!");
             this.finish();
+            return;
         }
         try {
             mPluginContrl = new PluginActivityControl(InstrActivityProxy.this, plugin,
@@ -152,6 +164,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL);
             e1.printStackTrace();
             this.finish();
+            return;
         }
         if (null != mPluginContrl) {
             mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this.getBaseContext(),
@@ -175,6 +188,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
                 ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
                 processError(e);
                 this.finish();
+                return;
             }
         }
     }

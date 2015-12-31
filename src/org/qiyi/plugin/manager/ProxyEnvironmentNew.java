@@ -516,7 +516,7 @@ public class ProxyEnvironmentNew {
 	 * 
 	 * @return true表示启动了activity，false表示启动失败，或者启动非activity
 	 */
-	public static boolean launchIntent(Context context, ServiceConnection conn, Intent intent) {
+    public static boolean launchIntent(Context context, ServiceConnection conn, Intent intent) {
 		PluginDebugLog.log("plugin", "launchIntent: " + intent);
 		String packageName = tryParsePkgName(context, intent);
 		ProxyEnvironmentNew env = sPluginsMap.get(packageName);
@@ -550,12 +550,22 @@ public class ProxyEnvironmentNew {
 				}
 			}
 			
-			deliverPlug(true, packageName, ErrorType.SUCCESS);
-
 			env.setApplicationBase(env, env.application, packageName);
-			env.application.onCreate();
+			try {
+			    env.application.onCreate();
+			} catch (Throwable t) {
+			    synchronized (gLoadingMap) {
+	                gLoadingMap.remove(packageName);
+	            }
+                PluginDebugLog.log(TAG, "launchIntent application oncreate failed!");
+			    t.printStackTrace();
+			    // catch exception when application oncreate
+			    System.exit(0);
+			    return false;
+			}
 			env.changeInstrumentation(context, packageName);
 			env.bIsApplicationInit = true;
+			deliverPlug(true, packageName, ErrorType.SUCCESS);
 //			env.application.registerActivityLifecycleCallbacks(sActivityLifecycleCallback);
 
 			synchronized (gLoadingMap) {
