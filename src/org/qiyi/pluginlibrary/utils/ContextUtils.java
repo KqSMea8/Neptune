@@ -12,6 +12,7 @@ import android.app.ActivityManager;
 import android.app.Application;
 import android.app.Service;
 import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.text.TextUtils;
 
 public class ContextUtils {
@@ -198,5 +199,20 @@ public class ContextUtils {
 			return null;
 		}
 		return PluginInstaller.getPluginappRootPath(context) + File.separator + pkg + File.separator + "databases";
+	}
+
+	public static PackageInfo getPluginPluginInfo(Context context) {
+		String pkg = getPluginPackageName(context);
+		if (context == null || TextUtils.isEmpty(pkg)) {
+			return null;
+		}
+
+		ProxyEnvironmentNew proxyNew = ProxyEnvironmentNew.getInstance(pkg);
+
+		if (proxyNew == null) {
+			return null;
+		}
+		PackageInfo pkgInfo = proxyNew.getTargetPackageInfo();
+		return pkgInfo;
 	}
 }

@@ -52,6 +52,7 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -748,6 +749,10 @@ public class ProxyEnvironmentNew {
 
 	public String getTargetPackageName() {
 		return targetMapping.getPackageName();
+	}
+
+	public PackageInfo getTargetPackageInfo() {
+		return targetMapping.getPackageInfo();
 	}
 
 	public void remapStartServiceIntent(Intent originIntent) {
