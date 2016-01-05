@@ -85,6 +85,8 @@ public class ProxyEnvironmentNew {
     /** 插件加载成功的广播 */
     public static final String ACTION_TARGET_LOADED = "org.qiyi.pluginapp.action.TARGET_LOADED";
 
+    public static final String ACTION_QUIT = "org.qiyi.pluginapp.action.QUIT";
+
 	/** pluginapp开关:data是否【去掉】包名前缀，默认加载包名前缀 */
 	public static final String META_KEY_DATA_WITH_PREFIX = "pluginapp_cfg_data_with_prefix";
 	/** 插件包名对应Environment的Hash */
@@ -163,6 +165,9 @@ public class ProxyEnvironmentNew {
 	 */
 	public static ConcurrentMap<String, PluginServiceWrapper> sAliveServices = new ConcurrentHashMap<String, PluginServiceWrapper>(
 			1);
+
+    public static ConcurrentMap<String, ServiceConnection> sAliveServiceConnection =
+            new ConcurrentHashMap<String, ServiceConnection>();
 
 	public static Activity mParent;// 保存宿主activity
 
@@ -1032,6 +1037,37 @@ public class ProxyEnvironmentNew {
 		return targetMapping.getActivityInfo(activityClsName);
 	}
 
+    public static void quit(Context context, String processName) {
+
+        CMPackageManagerImpl.getInstance(context).exit();
+
+        for (Map.Entry<String, ProxyEnvironmentNew> entry : sPluginsMap.entrySet()) {
+            ProxyEnvironmentNew plugin = entry.getValue();
+            if (plugin != null) {
+                plugin.quitApp(true, false);
+            }
+        }
+
+        if (context != null) {
+            Intent intent = new Intent();
+            String proxyServiceName = ProxyComponentMappingByProcess.mappingService(processName);
+
+            Class<?> proxyServiceNameClass = null;
+            try {
+                proxyServiceNameClass = Class.forName(proxyServiceName);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            if (proxyServiceNameClass != null) {
+                PluginDebugLog.log(TAG, "try to stop service " + proxyServiceName);
+                intent.setClass(context, proxyServiceNameClass);
+                intent.setAction(ACTION_QUIT);
+                context.startService(intent);
+            }
+        }
+    }
+
 	/**
 	 * 退出某个应用。不是卸载插件应用
 	 * 
@@ -1040,27 +1076,43 @@ public class ProxyEnvironmentNew {
 	 *            by user, false for trigger by plugin system.
 	 */
 	public void quitApp(boolean force) {
-		if (force) {
-			while (!mActivityStack.isEmpty()) {
-				mActivityStack.poll().finish();
-			}
-			mActivityStack.clear();
-			Service service;
-			for (Entry<String, PluginServiceWrapper> entry : sAliveServices.entrySet()) {
-				service = entry.getValue().getCurrentService();
-				if (service != null) {
-					service.stopSelf();
-				}
-			}
-			sAliveServices.clear();
-			service = null;
-		}
-		if (force || (mActivityStack.isEmpty() && sAliveServices.isEmpty())) {
-			if (null != sExitStuff) {
-				sExitStuff.doExitStuff(getTargetPackageName());
-			}
-		}
+        quitApp(force, true);
 	}
+
+    private void quitApp(boolean force, boolean notifyHost) {
+        if (force) {
+            while (!mActivityStack.isEmpty()) {
+                mActivityStack.poll().finish();
+            }
+            mActivityStack.clear();
+
+            for (Entry<String, ServiceConnection> entry : sAliveServiceConnection.entrySet()) {
+                if (entry != null && mContext != null) {
+                    try {
+                        mContext.unbindService(entry.getValue());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            sAliveServiceConnection.clear();
+
+            Service service;
+            for (Entry<String, PluginServiceWrapper> entry : sAliveServices.entrySet()) {
+                service = entry.getValue().getCurrentService();
+                if (service != null) {
+                    service.stopSelf();
+                }
+            }
+            sAliveServices.clear();
+            service = null;
+        }
+        if (notifyHost && (force || (mActivityStack.isEmpty() && sAliveServices.isEmpty()))) {
+            if (null != sExitStuff) {
+                sExitStuff.doExitStuff(getTargetPackageName());
+            }
+        }
+    }
 
 	/**
 	 * 加载插件

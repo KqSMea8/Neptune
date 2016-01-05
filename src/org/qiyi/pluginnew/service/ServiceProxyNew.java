@@ -13,12 +13,16 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.IBinder;
+import android.os.Process;
+import android.text.TextUtils;
 
 /**
  * Plugin service's host service(Real service)
  */
 public class ServiceProxyNew extends Service {
 	private static final String TAG = ServiceProxyNew.class.getSimpleName();
+
+    private boolean mKillProcessOnDestroy = false;
 
 	@Override
 	public void onCreate() {
@@ -112,6 +116,7 @@ public class ServiceProxyNew extends Service {
 
 		PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onBind():"
 				+ (paramIntent == null ? "null" : paramIntent));
+        mKillProcessOnDestroy = false;
 		if (paramIntent == null) {
 			return null;
 		}
@@ -144,7 +149,7 @@ public class ServiceProxyNew extends Service {
 
 	@Override
 	public void onDestroy() {
-		PluginDebugLog.log(TAG, "ServiceProxyNew_onDestory");
+		PluginDebugLog.log(TAG, "onDestroy " + getClass().getName());
 		if (ProxyEnvironmentNew.sAliveServices != null) {
 			// Notify all alive plugin service to do destroy
 			for (PluginServiceWrapper plugin : ProxyEnvironmentNew.sAliveServices.values()) {
@@ -155,6 +160,9 @@ public class ServiceProxyNew extends Service {
 			ProxyEnvironmentNew.sAliveServices.clear();
 		}
 		super.onDestroy();
+        if (mKillProcessOnDestroy) {
+            Process.killProcess(Process.myPid());
+        }
 	}
 
 	public void onLowMemory() {
@@ -175,8 +183,20 @@ public class ServiceProxyNew extends Service {
 		PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand():"
 				+ (paramIntent == null ? "null" : paramIntent));
 		if (paramIntent == null) {
-			return super.onStartCommand(paramIntent, paramInt1, paramInt2);
+            mKillProcessOnDestroy = false;
+			super.onStartCommand(paramIntent, paramInt1, paramInt2);
+            return START_NOT_STICKY;
 		}
+
+        if (paramIntent != null && !TextUtils.isEmpty(paramIntent.getAction())) {
+            if (paramIntent.getAction().equals(ProxyEnvironmentNew.ACTION_QUIT)) {
+                PluginDebugLog.log(TAG, "service " +
+                        getClass().getName() + " received quit intent action");
+                mKillProcessOnDestroy = true;
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+        }
 		String targetClassName = paramIntent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE);
 		String targetPackageName = paramIntent
 				.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
@@ -190,10 +210,13 @@ public class ServiceProxyNew extends Service {
 			if (result == START_REDELIVER_INTENT || result == START_STICKY) {
 				currentPlugin.mNeedSelfLaunch = true;
 			}
-			return result;
+            mKillProcessOnDestroy = false;
+			return START_NOT_STICKY;
 		} else {
 			PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand() currentPlugin is null!");
-			return super.onStartCommand(paramIntent, paramInt1, paramInt2);
+            mKillProcessOnDestroy = false;
+			super.onStartCommand(paramIntent, paramInt1, paramInt2);
+            return START_NOT_STICKY;
 		}
 	}
 

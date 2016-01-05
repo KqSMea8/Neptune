@@ -31,12 +31,13 @@ import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.Log;
 
 public abstract class CustomContextWrapper extends ContextWrapper implements InterfaceToGetHost {
 
-	public CustomContextWrapper(Context base) {
+    public CustomContextWrapper(Context base) {
 		super(base);
 	}
 
@@ -99,12 +100,27 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		if (env != null) {
 			env.remapStartServiceIntent(service);
 		}
+        if (conn != null) {
+            if (env != null && service != null && service.getComponent() != null) {
+                String serviceClass = service.
+                        getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE);
+                String packageName = env.getTargetPackageName();
+                if (!TextUtils.isEmpty(serviceClass) &&
+                        !TextUtils.isEmpty(packageName)) {
+                    ProxyEnvironmentNew.
+                            sAliveServiceConnection.put(packageName + "." + serviceClass, conn);
+                }
+            }
+        }
 		return super.bindService(service, conn, flags);
 	}
 
 	@Override
 	public void unbindService(ServiceConnection conn) {
 		super.unbindService(conn);
+        if (ProxyEnvironmentNew.sAliveServiceConnection.keySet().contains(conn)) {
+            ProxyEnvironmentNew.sAliveServiceConnection.remove(conn);
+        }
 		Log.d(getLogTag(), "unbindService: " + conn);
 	}
 
@@ -120,16 +136,16 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 				intent, -1, options, this), options);
 	}
 
-	
+
 	@Override
 	public File getFilesDir() {
-		
+
 		File superFile = super.getFilesDir();
-		
+
 		if (getEnvironment() == null) {
 			return superFile;
 		}
-		
+
 		File fileDir = new File(getEnvironment().getTargetMapping().getDataDir()+"/files/");
 		if(!fileDir.exists()){
 			fileDir.mkdir();
@@ -139,7 +155,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
 	@Override
 	public File getCacheDir() {
-		
+
 		if (getEnvironment() == null) {
 			return super.getCacheDir();
 		}
@@ -149,7 +165,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		}
 		return getEnvironment().getTargetAssetManager() == null ? super.getCacheDir() : cacheDir;
 	}
-	
+
 	@Override
 	public File getFileStreamPath(String name) {
 		if (getEnvironment() == null) {
@@ -194,7 +210,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 				f.mkdir();
 			}
 		}
-		
+
 		return getEnvironment().getTargetAssetManager() == null ? super.getDatabasePath(name) : f;
 	}
 
@@ -219,7 +235,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 			FileOutputStream fos = new FileOutputStream(f,append);
 			return fos;
 		}catch(FileNotFoundException e){
-			
+
 		}
 		File parent = f.getParentFile();
 		parent.mkdir();
@@ -233,7 +249,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		}
 		throw new IllegalArgumentException("File " + name + "contains a path separator");
 	}
-	
+
 	@Override
 	public boolean deleteFile(String name) {
 		if (getEnvironment() == null) {
@@ -262,11 +278,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 	 * @param name db name
 	 */
 	private void checkBackupDB(String name){
-	
+
 		if(name.lastIndexOf(".") == -1) {
 			return;             //if migrate file is not db file,ignore it.
 		}
-		
+
 		String dbName = name.substring(0, name.lastIndexOf("."));
 
 		String dbPath = "/data/data/"+this.getPackageName()+"/databases/";
@@ -281,7 +297,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 			}
 		}
 	}
-	
+
 	@Override
 	public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory,
 			DatabaseErrorHandler errorHandler) {
@@ -292,7 +308,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		//  backup database for old version start
 		checkBackupDB(name);
 		//  backup database for old version end
-		
+
 		return super.openOrCreateDatabase(databaseDir.getAbsolutePath()+"/"+name, mode, factory, errorHandler);
 	}
 
@@ -322,11 +338,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		}
 		return new File(base,name+".xml");
 	}
-	
+
 	private static File makeBackupFile(File prefsFile){
 		return new File(prefsFile.getPath()+".bak");
 	}
-	
+
 	private SharedPreferences getSharedPreferecesForPlugin(String name, int mode){
 		try {
 			Object sp = null;
@@ -366,18 +382,18 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 						prefsFile.delete();
 						backup.renameTo(prefsFile);
 					}
-					
+
 					if(prefsFile.exists() && !prefsFile.canRead()){
-						
+
 					}
-					
+
 					Map map = null;
 					Class<?> fileUtilsClass = Class.forName("android.os.FileUtils");
-					
+
 					Class<?> fileStatusClass = Class.forName("android.os.FileUtils$FileStatus");
 					Constructor<?> fileStatusConstructor = fileStatusClass.getConstructor();
 					Object FileStatus = fileStatusConstructor.newInstance();
-					
+
 					Method getFileStatus = fileUtilsClass.getDeclaredMethod("getFileStatus",String.class,fileStatusClass);
 					boolean getFileStatusResult = (Boolean) getFileStatus.invoke(FileStatus,prefsFile.getPath(),FileStatus);
 					if(getFileStatusResult && prefsFile.canRead()){
@@ -387,19 +403,19 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 							map = (Map) xmlUtilClass.getDeclaredMethod("readMapXml", FileInputStream.class).invoke(xmlUtilClass.newInstance(), str);
 							str.close();
 						}catch(Exception e){
-							
+
 						}
 					}
 					SharedPreferencesImpl.getMethod("replace", Map.class,fileStatusClass).invoke(sp, map,FileStatus);
 				}
 				return (SharedPreferences) sp;
 			} else if (android.os.Build.VERSION.SDK_INT <=18){
-				
+
 				Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
 				Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class,int.class);
 				constructor.setAccessible(true);
 				HashMap<String,Object> oSharedPrefs = (HashMap<String,Object>)JavaCalls.getField(this.getBaseContext(),"sSharedPrefs");
-				
+
 				synchronized(oSharedPrefs){
 					sp = oSharedPrefs.get(name);
 					if(sp == null){
@@ -422,14 +438,14 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 					if(oSharedPrefs == null){
 						oSharedPrefs = new ArrayMap<String, ArrayMap<String, Object>>();
 					}
-					
+
 					final String packageName = getPackageName();
 					ArrayMap<String,Object> packagePrefs = oSharedPrefs.get(packageName);
 					if(packagePrefs == null){
 						packagePrefs = new ArrayMap<String, Object>();
 						oSharedPrefs.put(packageName, packagePrefs);
 					}
-					
+
 					sp = packagePrefs.get(name);
 					if(sp == null){
 						File prefsFile = getSharedPrefsFile(name);
@@ -464,7 +480,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		}
 		return null;
 	}
-	
+
 	@Override
 	public SharedPreferences getSharedPreferences(String name, int mode) {
 		if (getEnvironment() != null && getEnvironment().getTargetMapping() != null) {
@@ -476,9 +492,9 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		}
 		return super.getSharedPreferences(name, mode);
 	}
-	
+
 	private void backupSharedPreference(String name){
-		
+
 		String sharePath = "/data/data/"+this.getPackageName()+"/shared_prefs/";
 		File sFile = new File(sharePath);
 		String[] fileList = sFile.list();
@@ -493,13 +509,13 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * Override Oppo method in Context
 	 * Resolve cann't start plugin on oppo devices,
 	 * true or false both OK, false as the temporary result
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isOppoStyle() {
@@ -508,7 +524,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
 	/**
 	 * Get the context which start this plugin
-	 * 
+	 *
 	 * @return
 	 */
 	@Override
@@ -521,7 +537,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
 	/**
 	 * Get host resource
-	 * 
+	 *
 	 * @return host resource tool
 	 */
 	@Override
@@ -541,21 +557,21 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
 //	/**
 //	 * Return the real packageName(plugin)
-//	 * 
+//	 *
 //	 * @return real package name
 //	 */
 //	protected abstract String getPluginPackageName();
 
 	/**
 	 * Get proxy environment
-	 * 
+	 *
 	 * @return plugin's environment
 	 */
 	protected abstract ProxyEnvironmentNew getEnvironment();
 
 	/**
 	 * Get log tag
-	 * 
+	 *
 	 * @return log tag
 	 */
 	protected abstract String getLogTag();

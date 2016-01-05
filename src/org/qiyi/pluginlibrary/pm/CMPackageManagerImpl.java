@@ -33,14 +33,45 @@ import java.util.concurrent.ConcurrentMap;
 public class CMPackageManagerImpl {
 
     private static final String TAG = CMPackageManagerImpl.class.getSimpleName();
+
+    private static class CMPackageManagerServiceConnection implements ServiceConnection {
+
+        private Context mContext;
+
+        public CMPackageManagerServiceConnection(Context context) {
+            mContext = context;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            if (null != service) {
+                mService = ICMPackageManager.Stub.asInterface(service);
+            }
+            if (mService != null) {
+                executePackageAction(mContext);
+            }
+            if (mInstalledPkgs != null) {
+                mInstalledPkgs.clear();
+                mInstalledPkgs = null;
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+        }
+    }
+
     private static ICMPackageManager mService = null;
     private static CMPackageManagerImpl sInstance = null;
     private Context mContext;
     private static ConcurrentMap<String, CMPackageInfo> mInstalledPkgs = null;
+    private ServiceConnection mServiceConnection = null;
+
     /**
      * 安装包任务队列。
      */
-    private ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions = new ConcurrentLinkedQueue<ExecutionPackageAction>();
+    private static ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions = new ConcurrentLinkedQueue<ExecutionPackageAction>();
 
     public static CMPackageManagerImpl getInstance(Context context) {
         if (sInstance == null) {
@@ -69,27 +100,9 @@ public class CMPackageManagerImpl {
 
         Intent intent = new Intent(context.getApplicationContext(), CMPackageManagerService.class);
         try {
-            context.getApplicationContext().bindService(intent, new ServiceConnection() {
-
-                @Override
-                public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-                    if (null != iBinder) {
-                        mService = ICMPackageManager.Stub.asInterface(iBinder);
-                    }
-                    if (mService != null) {
-                        executePackageAction();
-                    }
-                    if (mInstalledPkgs != null) {
-                        mInstalledPkgs.clear();
-                        mInstalledPkgs = null;
-                    }
-                }
-
-                @Override
-                public void onServiceDisconnected(ComponentName componentName) {
-                    mService = null;
-                }
-            }, Context.BIND_AUTO_CREATE);
+            Context appContext = context.getApplicationContext();
+            appContext.bindService(intent,
+                    getConnection(appContext), Context.BIND_AUTO_CREATE);
         } catch (Exception e) {
             // 灰度时出现binder，从系统代码查不可能出现这个异常，添加保护
             // Caused by: java.lang.NullPointerException
@@ -108,30 +121,31 @@ public class CMPackageManagerImpl {
     /**
      * 执行之前为执行的操做
      */
-    private void executePackageAction() {
-
-        Iterator<ExecutionPackageAction> iterator = mPackageActions.iterator();
-        while (iterator.hasNext()) {
-            ExecutionPackageAction action = iterator.next();
-            ActionType type = action.type;
-            switch (type) {
-                case DELETE_PACKAGE:
-                    deletePackage(action.packageName, action.observer);
-                    break;
-                case INSTALL_APK_FILE:
-                    installApkFile(action.filePath, action.callBack, action.pluginInfo);
-                    break;
-                case INSTALL_BUILD_IN_APPS:
-                    installBuildinApps(action.packageName, action.callBack, action.pluginInfo);
-                    break;
-                case PACKAGE_ACTION:
-                    packageAction(action.packageName, action.callBack);
-                    break;
-                case UNINSTALL_ACTION:
-                    uninstall(action.packageName);
-                    break;
+    private static void executePackageAction(Context context) {
+        if (context != null) {
+            Iterator<ExecutionPackageAction> iterator = mPackageActions.iterator();
+            while (iterator.hasNext()) {
+                ExecutionPackageAction action = iterator.next();
+                ActionType type = action.type;
+                switch (type) {
+                    case DELETE_PACKAGE:
+                        CMPackageManager.getInstance(context).deletePackage(action.packageName, action.observer);
+                        break;
+                    case INSTALL_APK_FILE:
+                        CMPackageManager.getInstance(context).installApkFile(action.filePath, action.callBack, action.pluginInfo);
+                        break;
+                    case INSTALL_BUILD_IN_APPS:
+                        CMPackageManager.getInstance(context).installBuildinApps(action.packageName, action.callBack, action.pluginInfo);
+                        break;
+                    case PACKAGE_ACTION:
+                        CMPackageManager.getInstance(context).packageAction(action.packageName, action.callBack);
+                        break;
+                    case UNINSTALL_ACTION:
+                        CMPackageManager.getInstance(context).uninstall(action.packageName);
+                        break;
+                }
+                iterator.remove();
             }
-            iterator.remove();
         }
     }
 
@@ -517,5 +531,30 @@ public class CMPackageManagerImpl {
             }
         }
         return null;
+    }
+
+    public ServiceConnection getConnection(Context context) {
+        if (mServiceConnection == null) {
+            mServiceConnection = new CMPackageManagerServiceConnection(context);
+        }
+        return mServiceConnection;
+    }
+
+    public void exit() {
+        if (mContext != null) {
+            Context applicationContext = mContext.getApplicationContext();
+            if (applicationContext != null) {
+                if (mServiceConnection != null) {
+                    try {
+                        applicationContext.unbindService(mServiceConnection);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                mService = null;
+                Intent intent = new Intent(applicationContext, CMPackageManagerService.class);
+                applicationContext.stopService(intent);
+            }
+        }
     }
 }
