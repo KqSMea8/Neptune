@@ -11,6 +11,7 @@ import android.text.TextUtils;
  */
 public class ResourcesToolForPlugin {
     static final String ANIM = "anim";
+    static final String ANIMATOR = "animator";
     static final String ARRAY = "array";
     static final String ATTR = "attr";
     static final String BOOL = "bool";
@@ -179,6 +180,13 @@ public class ResourcesToolForPlugin {
         return getResourceId(sourceName, ANIM);
     }
 
+    public int getResourceForAnimator(String sourceName) {
+        if (mResolveByReflect) {
+            return optValue(sourceName, ANIMATOR);
+        }
+        return getResourceId(sourceName, ANIMATOR);
+    }
+
     public int getResourceForAttr(String sourceName) {
         if (mResolveByReflect) {
             return optValue(sourceName, ATTR);
@@ -187,7 +195,10 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForArray(String sourceName) {
-        return optValue(sourceName, ARRAY);
+        if (mResolveByReflect) {
+            return optValue(sourceName, ARRAY);
+        }
+        return getResourceId(sourceName, ARRAY);
     }
 
     public int getResourceForBool(String sourceName) {
@@ -195,7 +206,10 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForDimen(String sourceName) {
-        return optValue(sourceName, DIMEN);
+        if (mResolveByReflect) {
+            return optValue(sourceName, DIMEN);
+        }
+        return getResourceId(sourceName, DIMEN);
     }
 
     public int getResourceForInteger(String sourceName) {
@@ -223,7 +237,10 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForXml(String sourceName) {
-        return optValue(sourceName, XML);
+        if (mResolveByReflect) {
+            return optValue(sourceName, XML);
+        }
+        return getResourceId(sourceName, XML);
     }
 
     /**
