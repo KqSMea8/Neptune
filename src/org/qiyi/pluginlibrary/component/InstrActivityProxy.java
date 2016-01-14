@@ -702,6 +702,13 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         }
     }
 
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (getController() != null) {
+            getController().getPluginRef().call("onRequestPermissionsResult", requestCode, permissions, grantResults);
+        }
+    }
+
     /**
      * Get the context which start this plugin
      *
