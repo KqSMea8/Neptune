@@ -32,9 +32,6 @@ import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginnew.ActivityJumpUtil;
@@ -710,7 +707,12 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
                 //6.0.1用mHasCurrentPermissionsRequest保证分发permission result完成，根据现有
                 //的逻辑，第一次权限请求onRequestPermissionsResult一直是true，会影响之后的申请权限的
                 //dialog弹出
-                pluginRef.set("mHasCurrentPermissionsRequest", false);
+                try {
+                    pluginRef.set("mHasCurrentPermissionsRequest", false);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
                 pluginRef.call("onRequestPermissionsResult", requestCode, permissions, grantResults);
             }
         }
