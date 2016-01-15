@@ -3,6 +3,7 @@ package org.qiyi.pluginlibrary.component;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.assist.AssistContent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -22,9 +23,11 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
+import android.view.SearchEvent;
 import android.view.View;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
@@ -57,7 +60,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     /**
      * 装载插件的Activity
      *
-     * @param mPlugin
+     * @param actClsName
      */
     private Activity fillPluginActivity(ProxyEnvironmentNew env, String actClsName) {
         try {
@@ -715,6 +718,34 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
                 pluginRef.call("onRequestPermissionsResult", requestCode, permissions, grantResults);
             }
+        }
+    }
+
+    public void onStateNotSaved() {
+        super.onStateNotSaved();
+        if (getController() != null) {
+            getController().getPluginRef().call("onStateNotSaved");
+        }
+    }
+
+    public boolean onSearchRequested(SearchEvent searchEvent) {
+        if (getController() != null) {
+            return getController().getPlugin().onSearchRequested(searchEvent);
+        }
+        return super.onSearchRequested(searchEvent);
+    }
+
+    public boolean onSearchRequested() {
+        if (getController() != null) {
+            getController().getPlugin().onSearchRequested();
+        }
+        return super.onSearchRequested();
+    }
+
+    public void onProvideAssistContent(AssistContent outContent) {
+        super.onProvideAssistContent(outContent);
+        if (getController() != null) {
+            getController().getPlugin().onProvideAssistContent(outContent);
         }
     }
 

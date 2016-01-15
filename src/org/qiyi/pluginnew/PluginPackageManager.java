@@ -12,6 +12,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.FeatureInfo;
 import android.content.pm.InstrumentationInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionGroupInfo;
 import android.content.pm.PermissionInfo;
@@ -20,7 +21,9 @@ import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.UserHandle;
 import android.text.TextUtils;
 
 public class PluginPackageManager extends PackageManager {
@@ -58,6 +61,10 @@ public class PluginPackageManager extends PackageManager {
 		// //TODO
 		// }
 		return orig.getLaunchIntentForPackage(packageName);
+	}
+
+	public Intent getLeanbackLaunchIntentForPackage(String packageName) {
+		return orig.getLeanbackLaunchIntentForPackage(packageName);
 	}
 
 	@Override
@@ -170,6 +177,10 @@ public class PluginPackageManager extends PackageManager {
 	public int checkPermission(String permName, String pkgName) {
 		// TODO checkPermission
 		return orig.checkPermission(permName, pkgName);
+	}
+
+	public boolean isPermissionRevokedByPolicy(String permName, String pkgName) {
+		return orig.isPermissionRevokedByPolicy(permName,pkgName);
 	}
 
 	@Override
@@ -347,6 +358,14 @@ public class PluginPackageManager extends PackageManager {
 		return orig.getActivityIcon(intent);
 	}
 
+	public Drawable getActivityBanner(ComponentName activityName) throws NameNotFoundException {
+		return orig.getActivityBanner(activityName);
+	}
+
+	public Drawable getActivityBanner(Intent intent) throws NameNotFoundException {
+		return orig.getActivityBanner(intent);
+	}
+
 	@Override
 	public Drawable getDefaultActivityIcon() {
 		// TODO getDefaultActivityIcon
@@ -373,6 +392,14 @@ public class PluginPackageManager extends PackageManager {
 			}
 		}
 		return orig.getApplicationIcon(packageName);
+	}
+
+	public Drawable getApplicationBanner(ApplicationInfo info) {
+		return orig.getApplicationBanner(info);
+	}
+
+	public Drawable getApplicationBanner(String packageName) throws NameNotFoundException {
+		return orig.getApplicationBanner(packageName);
 	}
 
 	@Override
@@ -418,6 +445,18 @@ public class PluginPackageManager extends PackageManager {
 			throws NameNotFoundException {
 		// TODO Auto-generated method stub
 		return orig.getApplicationLogo(packageName);
+	}
+
+	public Drawable getUserBadgedIcon(Drawable icon, UserHandle user) {
+		return orig.getUserBadgedIcon(icon,user);
+	}
+
+	public Drawable getUserBadgedDrawableForDensity(Drawable drawable, UserHandle user, Rect badgeLocation, int badgeDensity) {
+		return orig.getUserBadgedDrawableForDensity(drawable,user,badgeLocation,badgeDensity);
+	}
+
+	public CharSequence getUserBadgedLabel(CharSequence label, UserHandle user) {
+		return orig.getUserBadgedLabel(label,user);
 	}
 
 	/*
@@ -664,6 +703,10 @@ public class PluginPackageManager extends PackageManager {
 		return false;
 	}
 
+	public PackageInstaller getPackageInstaller() {
+		return orig.getPackageInstaller();
+	}
+
 	@Override
 	public List<PackageInfo> getPackagesHoldingPermissions(
 			String[] permissions, int flags) {
@@ -690,7 +733,6 @@ public class PluginPackageManager extends PackageManager {
 		// TODO Auto-generated method stub
 		
 	}
-
 	@Override
 	public void setInstallerPackageName(String targetPackage,
 			String installerPackageName) {
