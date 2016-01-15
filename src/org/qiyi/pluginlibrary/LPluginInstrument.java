@@ -48,13 +48,28 @@ public class LPluginInstrument extends Instrumentation {
 
     }
 
-    /** @Override */
+    /**
+     * @Override
+     * For below android 6.0
+     */
     public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread,
             IBinder token, Activity target, Intent intent, int requestCode, Bundle options,
             int userId) {
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
         return instrumentRef.call("execStartActivityAsCaller", who, contextThread, token, target,
                 intent, requestCode, options, userId).get();
+    }
+
+    /**
+     * @Override
+     * For android 6.0
+     */
+    public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread,
+            IBinder token, Activity target, Intent intent, int requestCode, Bundle options,
+            boolean ignoreTargetSecurity, int userId) {
+        ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
+        return instrumentRef.call("execStartActivityAsCaller", who, contextThread, token, target,
+                intent, requestCode, options, ignoreTargetSecurity, userId).get();
     }
 
     /** @Override */
@@ -67,11 +82,25 @@ public class LPluginInstrument extends Instrumentation {
                 options, userId);
     }
 
-    /** @Override */
+    /**
+     * @Override
+     * For below android 6.0, start activity from Fragment
+     */
     public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token,
                 Fragment target, Intent intent, int requestCode, Bundle options) {
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
         return instrumentRef.call("execStartActivity",
                 who, contextThread, token, target, intent, requestCode, options).get();
+    }
+
+    /**
+     * @Override
+     * For android 6.0, start activity from Fragment
+     */
+    public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token,
+            String target, Intent intent, int requestCode, Bundle options) {
+        ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
+        return instrumentRef.call("execStartActivity", who, contextThread, token, target, intent,
+                requestCode, options).get();
     }
 }
