@@ -608,25 +608,43 @@ public class CMPackageManager {
     private boolean isDataNeedPrefix(Context context, String packageName) {
 
         boolean result = false;
-        Bundle metaData = null;
-        File apkFile = new File(context.getDir("qiyi_plugin", Context.MODE_PRIVATE), packageName + ".apk");
-        if (!apkFile.exists())
+
+        if (context == null || TextUtils.isEmpty(packageName)) {
             return result;
-        PackageInfo packageInfo = context.getPackageManager().getPackageArchiveInfo(
-                apkFile.getAbsolutePath(),
-                PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS
-                        | PackageManager.GET_META_DATA | PackageManager.GET_SERVICES
-                        | PackageManager.GET_CONFIGURATIONS);
-
-        if (packageInfo.activities != null && packageInfo.activities.length > 0) {
-            metaData = packageInfo.activities[0].metaData;
-        }
-        if (metaData == null) {
-            metaData = packageInfo.applicationInfo.metaData;
         }
 
-        if (metaData != null) {
-            result = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
+        Bundle metaData = null;
+        File apkFile = new File(context.
+                getDir("qiyi_plugin", Context.MODE_PRIVATE), packageName + ".apk");
+        if (!apkFile.exists()) {
+            return result;
+        }
+
+        try {
+            PackageInfo packageInfo = context.getPackageManager().getPackageArchiveInfo(
+                    apkFile.getAbsolutePath(),
+                    PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS
+                            | PackageManager.GET_META_DATA | PackageManager.GET_SERVICES
+                            | PackageManager.GET_CONFIGURATIONS);
+
+            //如果PackageManager解析apk文件失败，packageInfo为null
+            if (packageInfo == null) {
+                return result;
+            }
+
+            if (packageInfo != null && packageInfo.activities != null &&
+                    packageInfo.activities.length > 0 && packageInfo.activities[0] != null) {
+                metaData = packageInfo.activities[0].metaData;
+            }
+            if (metaData == null && packageInfo != null && packageInfo.applicationInfo != null) {
+                metaData = packageInfo.applicationInfo.metaData;
+            }
+
+            if (metaData != null) {
+                result = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
 
         return result;
