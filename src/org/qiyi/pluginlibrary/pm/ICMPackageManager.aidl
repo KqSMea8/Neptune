@@ -3,6 +3,7 @@ package org.qiyi.pluginlibrary.pm;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.pm.IPackageDeleteObserver;
 interface ICMPackageManager {
 
@@ -21,4 +22,6 @@ interface ICMPackageManager {
     boolean uninstall(String pkgName);
 
     oneway void packageAction(String packageName, IInstallCallBack callBack);
+
+    oneway void setActionFinishCallback(IActionFinishCallback actionFinishCallback);
 }

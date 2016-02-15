@@ -8,6 +8,7 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,6 +16,7 @@ import org.json.JSONObject;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.plugin.manager.TargetActivatorNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -117,6 +119,8 @@ public class CMPackageManager {
 
     private static CMPackageManager sInstance;//安装对象
 
+    private ConcurrentHashMap<String, IActionFinishCallback> mActionFinishCallbacks = new ConcurrentHashMap<String, IActionFinishCallback>();
+
     /**
      * 已安装列表。
      * !!!!!!! 不要直接引用该变量。 因为该变量是 lazy init 方式，不需要的时不进行初始化。
@@ -149,6 +153,14 @@ public class CMPackageManager {
      * failed to delete the package for an unspecified reason.
      */
     public static final int DELETE_FAILED_INTERNAL_ERROR = -1;
+
+    public static final int INSTALL_SUCCESS = 2;
+
+    public static final int INSTALL_FAILED = -2;
+
+    public static final int UNINSTALL_SUCCESS = 3;
+
+    public static final int UNINSTALL_FAILED = -3;
 
     private CMPackageManager(Context context) {
         mContext = context.getApplicationContext();
@@ -362,6 +374,7 @@ public class CMPackageManager {
                 }
                 // 执行等待执行的action
                 executePackageAction(pkgName, true, 0);
+                onActionFinish(pkgName, INSTALL_SUCCESS);
             } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
 
                 String assetsPath = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
@@ -386,6 +399,7 @@ public class CMPackageManager {
                         }
                     }
                     executePackageAction(mapPackagename, false, failReason);
+                    onActionFinish(mapPackagename, INSTALL_FAILED);
                 }
             }
         }
@@ -707,6 +721,8 @@ public class CMPackageManager {
         } catch (Exception e) {
             // TODO: handle exception
             e.printStackTrace();
+        } finally {
+            onActionFinish(packageName, DELETE_SUCCEEDED);
         }
     }
 
@@ -742,6 +758,9 @@ public class CMPackageManager {
                 saveInstalledPackageList();
             }
         }
+
+        onActionFinish(pkgName, uninstallFlag ? UNINSTALL_SUCCESS : UNINSTALL_FAILED);
+
         return uninstallFlag;
     }
 
@@ -757,5 +776,28 @@ public class CMPackageManager {
 
     private static boolean hasHoneycomb() {
         return Build.VERSION.SDK_INT >= 11;
+    }
+
+    public void setActionFinishCallback(IActionFinishCallback callback) {
+        if (callback != null) {
+            try {
+                mActionFinishCallbacks.put(callback.getProcessName(), callback);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void onActionFinish(String packageName, int errorCode) {
+        for(Map.Entry<String, IActionFinishCallback> entry: mActionFinishCallbacks.entrySet()) {
+            IActionFinishCallback callback = entry.getValue();
+            if (callback != null) {
+                try {
+                    callback.onActionComplete(packageName, errorCode);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

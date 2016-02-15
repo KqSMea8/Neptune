@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 
 import java.util.List;
@@ -102,6 +103,13 @@ public class CMPackageManagerService extends Service {
                     return;
                 }
                 mManager.packageAction(packageName, callBack);
+            }
+
+            @Override
+            public void setActionFinishCallback(IActionFinishCallback actionFinishCallback) throws RemoteException {
+                if (mManager != null) {
+                    mManager.setActionFinishCallback(actionFinishCallback);
+                }
             }
         };
     }

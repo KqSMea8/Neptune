@@ -13,6 +13,7 @@ import android.text.TextUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -26,11 +27,226 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by xiepengchong on 15/10/29.
  */
 public class CMPackageManagerImpl {
+
+    private static final int STATUS_PACKAGE_INSTALLED = 0x00;
+    private static final int STATUS_PACKAGE_INSTALLING = 0x01;
+    private static final int STATUS_PACAKGE_UPDATING = 0x02;
+    private static final int STATUS_PACKAGE_DELETING = 0x03;
+    private static final int STATUS_PACKAGE_NOT_INSTALLED = 0x04;
+
+    private interface Action {
+        String getPackageName();
+        boolean meetCondition();
+        void doAction();
+        int getStatus();
+    }
+
+    private static class ActionFinishCallback extends IActionFinishCallback.Stub {
+
+        private String mProcessName = null;
+
+        public ActionFinishCallback(String processName) {
+            mProcessName = processName;
+        }
+
+        @Override
+        public void onActionComplete(String packageName, int errorCode) throws RemoteException {
+            PluginDebugLog.log(TAG,
+                    "onActionComplete with " + packageName + " errorcode " + errorCode);
+            if (mActionMap.containsKey(packageName)) {
+                CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
+                PluginDebugLog.log(TAG, packageName + "has " + list.size() + " pending actions");
+                if (list.size() > 1) {
+                    Action finishedAction = list.remove(0);
+                    if (finishedAction != null && finishedAction instanceof PluginUninstallAction) {
+                        PluginUninstallAction uninstallAction =
+                                (PluginUninstallAction)finishedAction;
+                        if (uninstallAction != null &&
+                                uninstallAction.observer != null &&
+                                uninstallAction.info != null &&
+                                !TextUtils.isEmpty(uninstallAction.info.packageName)) {
+                            uninstallAction.observer.packageDeleted(
+                                    uninstallAction.info.packageName, errorCode);
+                        }
+                    }
+
+                    Iterator<Action> iterator = list.iterator();
+                    while (iterator.hasNext()) {
+                        Action action = iterator.next();
+                        if (action != null && action.meetCondition()) {
+                            action.doAction();
+                            break;
+                        } else {
+                            PluginDebugLog.log(TAG, "remove action from action list");
+                            iterator.remove();
+                        }
+                    }
+                } else {
+                    PluginDebugLog.log(TAG, "remove action from action list map");
+                    mActionMap.remove(packageName);
+                }
+            }
+        }
+
+        @Override
+        public String getProcessName() throws RemoteException {
+            return mProcessName;
+        }
+    }
+
+    private static class PluginInstallAction implements Action {
+
+        public String filePath;
+        public IInstallCallBack listener;
+        public PluginPackageInfoExt info;
+        public CMPackageManagerImpl callbackHost;
+
+        @Override
+        public String getPackageName() {
+            return info != null ? info.packageName : null;
+        }
+
+        @Override
+        public boolean meetCondition() {
+            boolean canMeetCondition = false;
+            if (mService != null && info != null && !TextUtils.isEmpty(info.packageName)) {
+                boolean packageInstalled = false;
+                try {
+                    packageInstalled = mService.isPackageInstalled(info.packageName);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+
+                PluginDebugLog.log(TAG, info.packageName + "PluginInstallAction " +
+                        "check condition, " + "packageInstalled: " + packageInstalled);
+
+                if (packageInstalled) {
+                    CMPackageInfo packageInfo = null;
+                    try {
+                        packageInfo = mService.getPackageInfo(info.packageName);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (packageInfo != null) {
+                        PluginPackageInfoExt packageInfoExt = packageInfo.pluginInfo;
+                        if (packageInfoExt != null) {
+                            if (versionCompare(info.plugin_ver, info.plugin_gray_ver,
+                                    packageInfoExt.plugin_ver, packageInfoExt.plugin_gray_ver) > 0) {
+                                canMeetCondition = true;
+                            }
+                        }
+                    }
+                } else {
+                    canMeetCondition = true;
+                }
+            }
+            PluginDebugLog.log(TAG, info.packageName +
+                    "PluginInstallAction check condition with result " + canMeetCondition);
+            return canMeetCondition;
+        }
+
+        @Override
+        public void doAction() {
+            if (callbackHost != null) {
+                callbackHost.installApkFileInternal(filePath, listener, info);
+            }
+        }
+
+        @Override
+        public int getStatus() {
+            return STATUS_PACKAGE_INSTALLING;
+        }
+    }
+
+    private static class BuildinPluginInstallAction extends PluginInstallAction {
+        @Override
+        public void doAction() {
+            if (callbackHost != null) {
+                callbackHost.installBuildinAppsInternal(info.packageName, listener, info);
+            }
+        }
+    }
+
+    private static class PluginDeleteAction implements Action {
+
+        IPackageDeleteObserver observer;
+        public PluginPackageInfoExt info;
+        public CMPackageManagerImpl callbackHost;
+
+        @Override
+        public String getPackageName() {
+            return info != null ? info.packageName : null;
+        }
+
+        @Override
+        public boolean meetCondition() {
+            boolean canMeetCondition = false;
+            if (mService != null && info != null && !TextUtils.isEmpty(info.packageName)) {
+                boolean packageInstalled = false;
+                try {
+                    packageInstalled = mService.isPackageInstalled(info.packageName);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+
+                PluginDebugLog.log(TAG, info.packageName + "PluginDeleteAction " +
+                        "check condition, " + "packageInstalled: " + packageInstalled);
+
+                if (packageInstalled) {
+                    CMPackageInfo packageInfo = null;
+                    try {
+                        packageInfo = mService.getPackageInfo(info.packageName);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (packageInfo != null) {
+                        PluginPackageInfoExt packageInfoExt = packageInfo.pluginInfo;
+                        if (packageInfoExt != null) {
+                            if (TextUtils.equals(info.plugin_ver, packageInfoExt.plugin_ver) &&
+                                    TextUtils.equals(
+                                            info.plugin_gray_ver, packageInfoExt.plugin_gray_ver)) {
+                                canMeetCondition = true;
+                            }
+                        }
+                    }
+                }
+            }
+            PluginDebugLog.log(TAG, info.packageName +
+                    "PluginInstallAction check condition with result " + canMeetCondition);
+            return canMeetCondition;
+        }
+
+        @Override
+        public void doAction() {
+            if (callbackHost != null) {
+                callbackHost.deletePackageInternal(info, observer);
+            }
+        }
+
+        @Override
+        public int getStatus() {
+            return STATUS_PACKAGE_DELETING;
+        }
+    }
+
+    private static class PluginUninstallAction extends PluginDeleteAction {
+        @Override
+        public void doAction() {
+            if (callbackHost != null) {
+                callbackHost.uninstallInternal(info);
+            }
+        }
+    }
+
+    private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> mActionMap = new ConcurrentHashMap();
 
     private static final String TAG = CMPackageManagerImpl.class.getSimpleName();
 
@@ -48,7 +264,13 @@ public class CMPackageManagerImpl {
                 mService = ICMPackageManager.Stub.asInterface(service);
             }
             if (mService != null) {
+                try {
+                    mService.setActionFinishCallback(new ActionFinishCallback(mProcessName));
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
                 executePackageAction(mContext);
+                executePendingAction();
             }
             if (mInstalledPkgs != null) {
                 mInstalledPkgs.clear();
@@ -67,6 +289,7 @@ public class CMPackageManagerImpl {
     private Context mContext;
     private static ConcurrentMap<String, CMPackageInfo> mInstalledPkgs = null;
     private ServiceConnection mServiceConnection = null;
+    private static String mProcessName = null;
 
     /**
      * 安装包任务队列。
@@ -90,6 +313,7 @@ public class CMPackageManagerImpl {
 
     public void init() {
         onBindService(mContext);
+        mProcessName = getCurrentProcessName(mContext);
     }
 
     private void onBindService(Context context) {
@@ -117,6 +341,28 @@ public class CMPackageManagerImpl {
         }
     }
 
+    private static void executePendingAction() {
+        for(Map.Entry<String, CopyOnWriteArrayList<Action>> entry : mActionMap.entrySet()) {
+            if (entry != null) {
+                CopyOnWriteArrayList<Action> actions = entry.getValue();
+                PluginDebugLog.log(TAG, "execute " +
+                        actions.size() + " Pending Action on " + entry.getValue());
+                if (actions != null) {
+                    Iterator<Action> iterator = actions.iterator();
+                    while (iterator.hasNext()) {
+                        Action action = iterator.next();
+                        if (action != null && action.meetCondition()) {
+                            action.doAction();
+                            break;
+                        } else {
+                            iterator.remove();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     /**
      * 执行之前为执行的操做
@@ -128,20 +374,8 @@ public class CMPackageManagerImpl {
                 ExecutionPackageAction action = iterator.next();
                 ActionType type = action.type;
                 switch (type) {
-                    case DELETE_PACKAGE:
-                        CMPackageManager.getInstance(context).deletePackage(action.packageName, action.observer);
-                        break;
-                    case INSTALL_APK_FILE:
-                        CMPackageManager.getInstance(context).installApkFile(action.filePath, action.callBack, action.pluginInfo);
-                        break;
-                    case INSTALL_BUILD_IN_APPS:
-                        CMPackageManager.getInstance(context).installBuildinApps(action.packageName, action.callBack, action.pluginInfo);
-                        break;
                     case PACKAGE_ACTION:
                         CMPackageManager.getInstance(context).packageAction(action.packageName, action.callBack);
-                        break;
-                    case UNINSTALL_ACTION:
-                        CMPackageManager.getInstance(context).uninstall(action.packageName);
                         break;
                 }
                 iterator.remove();
@@ -209,6 +443,39 @@ public class CMPackageManagerImpl {
         return isInstalled;
     }
 
+    private static boolean actionIsReady(Action action) {
+        if (action != null) {
+            String packageName = action.getPackageName();
+            if (!TextUtils.isEmpty(packageName)) {
+                if (mActionMap.containsKey(packageName)) {
+                    List<Action> actionList = mActionMap.get(packageName);
+                    if (actionList != null && actionList.indexOf(action) == 0) {
+                        PluginDebugLog.log(TAG, packageName + "action IsReady: true");
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean addAction(Action action) {
+        if (action != null) {
+            String packageName = action.getPackageName();
+            if (!TextUtils.isEmpty(packageName)) {
+                CopyOnWriteArrayList<Action> actionList = mActionMap.get(packageName);
+                if (actionList == null) {
+                    actionList = new CopyOnWriteArrayList<Action>();
+                    mActionMap.put(packageName, actionList);
+                }
+                PluginDebugLog.log(TAG, "add " + packageName + "plugin action in action list");
+                actionList.add(action);
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * 通知安装插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
      *
@@ -216,7 +483,19 @@ public class CMPackageManagerImpl {
      * @param listener
      * @param info
      */
-    public void installApkFile(String filePath, IInstallCallBack listener, PluginPackageInfoExt info) {
+    public void installApkFile(String filePath,
+                               IInstallCallBack listener, PluginPackageInfoExt info) {
+        PluginInstallAction action = new PluginInstallAction();
+        action.filePath = filePath;
+        action.listener = listener;
+        action.info = info;
+        action.callbackHost = this;
+        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+            action.doAction();
+        }
+    }
+
+    void installApkFileInternal(String filePath, IInstallCallBack listener, PluginPackageInfoExt info) {
         if (mService != null) {
             try {
                 mService.installApkFile(filePath, listener, info);
@@ -226,15 +505,7 @@ public class CMPackageManagerImpl {
                 // TODO: 15/10/29 catch should do something
             }
         }
-        ExecutionPackageAction action = new ExecutionPackageAction();
-        action.type = ActionType.INSTALL_APK_FILE;
-        action.time = System.currentTimeMillis();
-        action.filePath = filePath;
-        action.callBack = listener;
-        action.pluginInfo = info;
-        packageActionModified(action);
         onBindService(mContext);
-
     }
 
     /**
@@ -244,7 +515,19 @@ public class CMPackageManagerImpl {
      * @param listener
      * @param info
      */
-    public void installBuildinApps(String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
+    public void installBuildinApps(
+            String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
+        BuildinPluginInstallAction action = new BuildinPluginInstallAction();
+        action.listener = listener;
+        action.info = info;
+        action.callbackHost = this;
+        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+            action.doAction();
+        }
+    }
+
+    private void installBuildinAppsInternal(
+            String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
         if (mService != null) {
             try {
                 mService.installBuildinApps(packageName, listener, info);
@@ -254,13 +537,6 @@ public class CMPackageManagerImpl {
                 // TODO: 15/10/29 catch should do something
             }
         }
-        ExecutionPackageAction action = new ExecutionPackageAction();
-        action.type = ActionType.INSTALL_BUILD_IN_APPS;
-        action.time = System.currentTimeMillis();
-        action.packageName = packageName;
-        action.callBack = listener;
-        action.pluginInfo = info;
-        packageActionModified(action);
         onBindService(mContext);
     }
 
@@ -270,22 +546,36 @@ public class CMPackageManagerImpl {
      * @param packageName 删除的插件包名
      * @param observer    删除成功回调监听
      */
-    public void deletePackage(String packageName, IPackageDeleteObserver observer) {
+    public void deletePackage(PluginPackageInfoExt info, IPackageDeleteObserver observer) {
+        PluginDeleteAction action = new PluginDeleteAction();
+        action.info = info;
+        action.callbackHost = this;
+        action.observer = observer;
+        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+            action.doAction();
+        }
+    }
+
+    private void deletePackageInternal(PluginPackageInfoExt info, IPackageDeleteObserver observer) {
         if (mService != null) {
             try {
-                mService.deletePackage(packageName, observer);
+                mService.deletePackage(info.packageName, observer);
                 return;
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
-        ExecutionPackageAction action = new ExecutionPackageAction();
-        action.type = ActionType.DELETE_PACKAGE;
-        action.time = System.currentTimeMillis();
-        action.packageName = packageName;
-        action.observer = observer;
-        packageActionModified(action);
         onBindService(mContext);
+    }
+
+    public void uninstall(PluginPackageInfoExt info, IPackageDeleteObserver observer) {
+        PluginUninstallAction action = new PluginUninstallAction();
+        action.info = info;
+        action.callbackHost = this;
+        action.observer = observer;
+        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+            action.doAction();
+        }
     }
 
     /**
@@ -294,28 +584,17 @@ public class CMPackageManagerImpl {
      * @param pkgName
      * @return
      */
-    public boolean uninstall(String pkgName) {
+    public void uninstallInternal(PluginPackageInfoExt info) {
         if (mService != null) {
             try {
-                return mService.uninstall(pkgName);
+                mService.uninstall(info.packageName);
+                return;
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
-        boolean uninstallFlag;
-        ExecutionPackageAction action = new ExecutionPackageAction();
-        action.type = ActionType.UNINSTALL_ACTION;
-        action.time = System.currentTimeMillis();
-        action.packageName = pkgName;
-        packageActionModified(action);
+
         onBindService(mContext);
-        File apk = PluginInstaller.getInstalledApkFile(mContext, pkgName);
-        if (apk != null && apk.exists()) {  //assume that if the apk is exist,it will delete successful,
-            uninstallFlag = true;
-        } else {
-            uninstallFlag = false;
-        }
-        return uninstallFlag;
     }
 
     /**
@@ -497,7 +776,7 @@ public class CMPackageManagerImpl {
                                 continue;
                             }
                         }
-                        if (!mContext.getPackageName().equals(getCurrentProcessName(mContext))) { //主进程不需要各个插件信息，
+                        if (!mContext.getPackageName().equals(mProcessName)) { //主进程不需要各个插件信息，
                             ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext,
                                     new File(pkgInfo.srcApkPath));
                             pkgInfo.targetInfo = targetInfo;
@@ -556,5 +835,77 @@ public class CMPackageManagerImpl {
                 applicationContext.stopService(intent);
             }
         }
+    }
+
+    public boolean isPackageAvailable(String packageName)  {
+        if (mActionMap.contains(packageName) && !TextUtils.isEmpty(packageName)) {
+            List<Action> actions = mActionMap.get(packageName);
+            if (actions != null && actions.size() > 0) {
+                PluginDebugLog.log(TAG, actions.size() +
+                        " actions in action list" + packageName + "isPackageAvailable : true");
+                return true;
+            }
+        }
+
+        if (mService != null) {
+            try {
+                return mService.isPackageInstalled(packageName);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+        PluginDebugLog.log(TAG, packageName + "isPackageAvailable : false");
+        return false;
+    }
+
+    public int getPackageStatus(String packageName) {
+        if (mActionMap.contains(packageName)) {
+            List<Action> list = mActionMap.get(packageName);
+            if (list != null) {
+                Action action = list.get(0);
+                if (action != null) {
+                    return action.getStatus();
+                }
+            }
+        }
+
+        if (mService != null) {
+            boolean packageInstalled = false;
+            try {
+                packageInstalled = mService.isPackageInstalled(packageName);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+            if (packageInstalled) {
+                return STATUS_PACKAGE_INSTALLED;
+            }
+        }
+
+        return STATUS_PACKAGE_NOT_INSTALLED;
+    }
+
+    private static int versionCompare(String leftPluginVersion, String leftPluginGreyVersion,
+                                      String rightPluginVersion, String rightPluginGreyVersion) {
+
+        PluginDebugLog.log(TAG, "version compare :" + leftPluginVersion + ":" +
+                leftPluginGreyVersion + rightPluginVersion + ":" + rightPluginGreyVersion);
+        int pluginVersionCompareResult =
+                PluginInstaller.comparePluginVersion(leftPluginVersion, rightPluginVersion);
+
+        if (pluginVersionCompareResult == 0) {
+            if (TextUtils.isEmpty(leftPluginGreyVersion) &&
+                    !TextUtils.isEmpty(rightPluginGreyVersion)) {
+                pluginVersionCompareResult = 1;
+            } else if (!TextUtils.isEmpty(leftPluginGreyVersion) &&
+                    TextUtils.isEmpty(rightPluginGreyVersion)) {
+                pluginVersionCompareResult = -1;
+            } else {
+                // 与基线灰度升级策略一致，同一个主版本号下如果灰度版本号不同不能升级，均认为已安装
+                pluginVersionCompareResult = 0;
+            }
+        }
+
+        PluginDebugLog.log(TAG, "version compare with result: " + pluginVersionCompareResult);
+        return pluginVersionCompareResult;
     }
 }
