@@ -781,6 +781,8 @@ public class CMPackageManager {
     public void setActionFinishCallback(IActionFinishCallback callback) {
         if (callback != null) {
             try {
+                PluginDebugLog.log(TAG,
+                        "setActionFinishCallback with process name: " + callback.getProcessName());
                 mActionFinishCallbacks.put(callback.getProcessName(), callback);
             } catch (RemoteException e) {
                 e.printStackTrace();

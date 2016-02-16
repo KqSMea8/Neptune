@@ -61,16 +61,36 @@ public class CMPackageManagerImpl {
                     "onActionComplete with " + packageName + " errorcode " + errorCode);
             if (mActionMap.containsKey(packageName)) {
                 CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
-                PluginDebugLog.log(TAG, packageName + "has " + list.size() + " pending actions");
-                if (list.size() > 1) {
+                PluginDebugLog.log(TAG, packageName + " has " + list.size() + " in action list");
+                if (list.size() > 0) {
+                    if (PluginDebugLog.isDebug()) {
+                        for (int index = 0; index < list.size(); index ++) {
+                            Action action = list.get(index);
+                            if (action != null) {
+                                PluginDebugLog.log(TAG, index +
+                                        " action in action list: " + action.toString());
+                            }
+                        }
+                    }
+
                     Action finishedAction = list.remove(0);
+                    if (finishedAction != null) {
+                        PluginDebugLog.log(TAG,
+                                "remove done action from action list for " +
+                                        finishedAction.toString());
+                    }
+
                     if (finishedAction != null && finishedAction instanceof PluginUninstallAction) {
+                        PluginDebugLog.log(TAG,
+                                "PluginUninstallAction onActionComplete for " + packageName);
                         PluginUninstallAction uninstallAction =
                                 (PluginUninstallAction)finishedAction;
                         if (uninstallAction != null &&
                                 uninstallAction.observer != null &&
                                 uninstallAction.info != null &&
                                 !TextUtils.isEmpty(uninstallAction.info.packageName)) {
+                            PluginDebugLog.log(TAG,
+                                    "PluginUninstallAction packageDeleted for " + packageName);
                             uninstallAction.observer.packageDeleted(
                                     uninstallAction.info.packageName, errorCode);
                         }
@@ -80,16 +100,24 @@ public class CMPackageManagerImpl {
                     while (iterator.hasNext()) {
                         Action action = iterator.next();
                         if (action != null && action.meetCondition()) {
+                            PluginDebugLog.log(TAG,
+                                    "start doAction for " + action.toString());
                             action.doAction();
                             break;
                         } else {
-                            PluginDebugLog.log(TAG, "remove action from action list");
+                            if (action != null) {
+                                PluginDebugLog.log(TAG,
+                                        "remove deprecate action from action list for "
+                                                + action.toString());
+                            }
                             iterator.remove();
                         }
                     }
-                } else {
-                    PluginDebugLog.log(TAG, "remove action from action list map");
-                    mActionMap.remove(packageName);
+
+                    if (list.size() == 0) {
+                        PluginDebugLog.log(TAG, "remove empty action list");
+                        mActionMap.remove(packageName);
+                    }
                 }
             }
         }
@@ -108,6 +136,22 @@ public class CMPackageManagerImpl {
         public CMPackageManagerImpl callbackHost;
 
         @Override
+        public String toString() {
+            StringBuilder infoBuider = new StringBuilder();
+            infoBuider.append("PluginInstallAction: ");
+            infoBuider.append("filePath: ").append(filePath);
+            infoBuider.append(" has IInstallCallBack: ").append(listener != null ? true : false);
+            if (info != null) {
+                infoBuider.append(" packagename: ").append(info.packageName);
+                infoBuider.append(" plugin_ver: ").append(info.plugin_ver);
+                infoBuider.append(" plugin_gray_version: ").append(info.plugin_gray_ver);
+                infoBuider.append(" file_source_type: ").append(info.mFileSourceType);
+            }
+
+            return infoBuider.toString();
+        }
+
+        @Override
         public String getPackageName() {
             return info != null ? info.packageName : null;
         }
@@ -123,7 +167,7 @@ public class CMPackageManagerImpl {
                     e.printStackTrace();
                 }
 
-                PluginDebugLog.log(TAG, info.packageName + "PluginInstallAction " +
+                PluginDebugLog.log(TAG, info.packageName + " PluginInstallAction " +
                         "check condition, " + "packageInstalled: " + packageInstalled);
 
                 if (packageInstalled) {
@@ -186,6 +230,22 @@ public class CMPackageManagerImpl {
         }
 
         @Override
+        public String toString() {
+            StringBuilder infoBuider = new StringBuilder();
+            infoBuider.append("PluginDeleteAction: ");
+            infoBuider.append(
+                    " has IPackageDeleteObserver: ").append(observer != null ? true : false);
+            if (info != null) {
+                infoBuider.append(" packagename: ").append(info.packageName);
+                infoBuider.append(" plugin_ver: ").append(info.plugin_ver);
+                infoBuider.append(" plugin_gray_ver: ").append(info.plugin_gray_ver);
+                infoBuider.append(" file_source_type: ").append(info.mFileSourceType);
+            }
+
+            return infoBuider.toString();
+        }
+
+        @Override
         public boolean meetCondition() {
             boolean canMeetCondition = false;
             if (mService != null && info != null && !TextUtils.isEmpty(info.packageName)) {
@@ -196,7 +256,7 @@ public class CMPackageManagerImpl {
                     e.printStackTrace();
                 }
 
-                PluginDebugLog.log(TAG, info.packageName + "PluginDeleteAction " +
+                PluginDebugLog.log(TAG, info.packageName + " PluginDeleteAction " +
                         "check condition, " + "packageInstalled: " + packageInstalled);
 
                 if (packageInstalled) {
@@ -213,6 +273,10 @@ public class CMPackageManagerImpl {
                             if (TextUtils.equals(info.plugin_ver, packageInfoExt.plugin_ver) &&
                                     TextUtils.equals(
                                             info.plugin_gray_ver, packageInfoExt.plugin_gray_ver)) {
+                                PluginDebugLog.log(TAG, info.packageName + " PluginDeleteAction " +
+                                        info.plugin_ver + ":" + info.plugin_gray_ver + " " +
+                                        packageInfoExt.plugin_ver + ":" +
+                                        packageInfoExt.plugin_gray_ver);
                                 canMeetCondition = true;
                             }
                         }
@@ -220,7 +284,7 @@ public class CMPackageManagerImpl {
                 }
             }
             PluginDebugLog.log(TAG, info.packageName +
-                    "PluginInstallAction check condition with result " + canMeetCondition);
+                    " PluginDeleteAction check condition with result " + canMeetCondition);
             return canMeetCondition;
         }
 
@@ -346,15 +410,20 @@ public class CMPackageManagerImpl {
             if (entry != null) {
                 CopyOnWriteArrayList<Action> actions = entry.getValue();
                 PluginDebugLog.log(TAG, "execute " +
-                        actions.size() + " Pending Action on " + entry.getValue());
+                        actions.size() + " Pending Actions");
                 if (actions != null) {
                     Iterator<Action> iterator = actions.iterator();
                     while (iterator.hasNext()) {
                         Action action = iterator.next();
                         if (action != null && action.meetCondition()) {
+                            PluginDebugLog.log(TAG,
+                                    "start doAction for pending action " + action.toString());
                             action.doAction();
                             break;
                         } else {
+                            PluginDebugLog.log(TAG,
+                                    "remove deprecate pending action " +
+                                            "from action list for " + action.toString());
                             iterator.remove();
                         }
                     }
@@ -450,7 +519,7 @@ public class CMPackageManagerImpl {
                 if (mActionMap.containsKey(packageName)) {
                     List<Action> actionList = mActionMap.get(packageName);
                     if (actionList != null && actionList.indexOf(action) == 0) {
-                        PluginDebugLog.log(TAG, packageName + "action IsReady: true");
+                        PluginDebugLog.log(TAG, "action is ready for " + action.toString());
                         return true;
                     }
                 }
@@ -468,7 +537,7 @@ public class CMPackageManagerImpl {
                     actionList = new CopyOnWriteArrayList<Action>();
                     mActionMap.put(packageName, actionList);
                 }
-                PluginDebugLog.log(TAG, "add " + packageName + "plugin action in action list");
+                PluginDebugLog.log(TAG, "add action in action list for " + action.toString());
                 actionList.add(action);
                 return true;
             }
@@ -841,8 +910,17 @@ public class CMPackageManagerImpl {
         if (mActionMap.contains(packageName) && !TextUtils.isEmpty(packageName)) {
             List<Action> actions = mActionMap.get(packageName);
             if (actions != null && actions.size() > 0) {
-                PluginDebugLog.log(TAG, actions.size() +
-                        " actions in action list" + packageName + "isPackageAvailable : true");
+                PluginDebugLog.log(TAG, actions.size() + " actions in action list for "
+                        + packageName + " isPackageAvailable : true");
+                if (PluginDebugLog.isDebug()) {
+                    for (int index = 0; index < actions.size(); index ++) {
+                        Action action = actions.get(index);
+                        if (action != null) {
+                            PluginDebugLog.log(TAG, index +
+                                    " action in action list: " + action.toString());
+                        }
+                    }
+                }
                 return true;
             }
         }
@@ -854,14 +932,25 @@ public class CMPackageManagerImpl {
                 e.printStackTrace();
             }
         }
-        PluginDebugLog.log(TAG, packageName + "isPackageAvailable : false");
+        PluginDebugLog.log(TAG, packageName + " isPackageAvailable : false");
         return false;
     }
 
     public int getPackageStatus(String packageName) {
         if (mActionMap.contains(packageName)) {
             List<Action> list = mActionMap.get(packageName);
-            if (list != null) {
+            if (list != null && list.size() > 0) {
+                PluginDebugLog.log(TAG, list.size() + " actions in action list for "
+                        + packageName + " isPackageAvailable : true");
+                if (PluginDebugLog.isDebug()) {
+                    for (int index = 0; index < list.size(); index ++) {
+                        Action action = list.get(index);
+                        if (action != null) {
+                            PluginDebugLog.log(TAG, index +
+                                    " action in action list: " + action.toString());
+                        }
+                    }
+                }
                 Action action = list.get(0);
                 if (action != null) {
                     return action.getStatus();
@@ -888,7 +977,7 @@ public class CMPackageManagerImpl {
                                       String rightPluginVersion, String rightPluginGreyVersion) {
 
         PluginDebugLog.log(TAG, "version compare :" + leftPluginVersion + ":" +
-                leftPluginGreyVersion + rightPluginVersion + ":" + rightPluginGreyVersion);
+                leftPluginGreyVersion + " " + rightPluginVersion + ":" + rightPluginGreyVersion);
         int pluginVersionCompareResult =
                 PluginInstaller.comparePluginVersion(leftPluginVersion, rightPluginVersion);
 
