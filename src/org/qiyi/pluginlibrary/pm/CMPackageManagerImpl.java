@@ -64,7 +64,7 @@ public class CMPackageManagerImpl {
                 PluginDebugLog.log(TAG, packageName + " has " + list.size() + " in action list");
                 if (list.size() > 0) {
                     if (PluginDebugLog.isDebug()) {
-                        for (int index = 0; index < list.size(); index ++) {
+                        for (int index = 0; index < list.size(); index++) {
                             Action action = list.get(index);
                             if (action != null) {
                                 PluginDebugLog.log(TAG, index +
@@ -84,7 +84,7 @@ public class CMPackageManagerImpl {
                         PluginDebugLog.log(TAG,
                                 "PluginUninstallAction onActionComplete for " + packageName);
                         PluginUninstallAction uninstallAction =
-                                (PluginUninstallAction)finishedAction;
+                                (PluginUninstallAction) finishedAction;
                         if (uninstallAction != null &&
                                 uninstallAction.observer != null &&
                                 uninstallAction.info != null &&
@@ -96,21 +96,21 @@ public class CMPackageManagerImpl {
                         }
                     }
 
-                    Iterator<Action> iterator = list.iterator();
-                    while (iterator.hasNext()) {
-                        Action action = iterator.next();
-                        if (action != null && action.meetCondition()) {
-                            PluginDebugLog.log(TAG,
-                                    "start doAction for " + action.toString());
-                            action.doAction();
-                            break;
-                        } else {
-                            if (action != null) {
+                    int index = 0;
+                    while (index < list.size()) {
+                        Action action = list.get(index);
+                        if (action != null) {
+                            if (action.meetCondition()) {
+                                PluginDebugLog.log(TAG,
+                                        "start doAction for " + action.toString());
+                                action.doAction();
+                                break;
+                            } else {
                                 PluginDebugLog.log(TAG,
                                         "remove deprecate action from action list for "
                                                 + action.toString());
+                                list.remove(index);
                             }
-                            iterator.remove();
                         }
                     }
 
@@ -406,25 +406,27 @@ public class CMPackageManagerImpl {
     }
 
     private static void executePendingAction() {
-        for(Map.Entry<String, CopyOnWriteArrayList<Action>> entry : mActionMap.entrySet()) {
+        for (Map.Entry<String, CopyOnWriteArrayList<Action>> entry : mActionMap.entrySet()) {
             if (entry != null) {
                 CopyOnWriteArrayList<Action> actions = entry.getValue();
                 PluginDebugLog.log(TAG, "execute " +
                         actions.size() + " Pending Actions");
                 if (actions != null) {
-                    Iterator<Action> iterator = actions.iterator();
-                    while (iterator.hasNext()) {
-                        Action action = iterator.next();
-                        if (action != null && action.meetCondition()) {
-                            PluginDebugLog.log(TAG,
-                                    "start doAction for pending action " + action.toString());
-                            action.doAction();
-                            break;
-                        } else {
-                            PluginDebugLog.log(TAG,
-                                    "remove deprecate pending action " +
-                                            "from action list for " + action.toString());
-                            iterator.remove();
+                    int index = 0;
+                    while (index < actions.size()) {
+                        Action action = actions.get(index);
+                        if (action != null) {
+                            if (action.meetCondition()) {
+                                PluginDebugLog.log(TAG,
+                                        "start doAction for pending action " + action.toString());
+                                action.doAction();
+                                break;
+                            } else {
+                                PluginDebugLog.log(TAG,
+                                        "remove deprecate pending action " +
+                                                "from action list for " + action.toString());
+                                actions.remove(index);
+                            }
                         }
                     }
                 }
@@ -532,14 +534,16 @@ public class CMPackageManagerImpl {
         if (action != null) {
             String packageName = action.getPackageName();
             if (!TextUtils.isEmpty(packageName)) {
-                CopyOnWriteArrayList<Action> actionList = mActionMap.get(packageName);
-                if (actionList == null) {
-                    actionList = new CopyOnWriteArrayList<Action>();
-                    mActionMap.put(packageName, actionList);
+                synchronized (mActionMap) {
+                    CopyOnWriteArrayList<Action> actionList = mActionMap.get(packageName);
+                    if (actionList == null) {
+                        actionList = new CopyOnWriteArrayList<Action>();
+                        mActionMap.put(packageName, actionList);
+                    }
+                    PluginDebugLog.log(TAG, "add action in action list for " + action.toString());
+                    actionList.add(action);
+                    return true;
                 }
-                PluginDebugLog.log(TAG, "add action in action list for " + action.toString());
-                actionList.add(action);
-                return true;
             }
         }
         return false;
