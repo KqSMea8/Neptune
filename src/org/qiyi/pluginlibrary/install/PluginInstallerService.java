@@ -17,15 +17,14 @@ import org.qiyi.pluginlibrary.utils.Util;
 import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.Parcelable;
 import android.text.TextUtils;
-import android.util.Log;
 import dalvik.system.DexClassLoader;
 
 /**
@@ -135,6 +134,8 @@ public class PluginInstallerService extends IntentService {
 			
 			boolean flag = Util.installNativeLibrary(soFilePath, PluginInstaller
 					.getPluginappRootPath(this).getAbsolutePath() + File.separator + fileName);
+            PluginDebugLog.log(TAG, "Send install result success ? " + flag
+                    + " PluginPackageInfoExt: " + info);
 			if (flag) {
 				setInstallSuccess(fileName, srcFile, null, info);
 			} else {
@@ -275,7 +276,7 @@ public class PluginInstallerService extends IntentService {
                 return null;
             } 
         }
-        PluginDebugLog.log(TAG, "pluginInstallerService");
+        PluginDebugLog.log(TAG, "pluginInstallerService begain install lib");
         File pkgDir = new File(PluginInstaller.getPluginappRootPath(this), packageName);
 
         if(!pkgDir.exists())
@@ -283,9 +284,14 @@ public class PluginInstallerService extends IntentService {
         File libDir = new File(pkgDir, PluginInstaller.NATIVE_LIB_PATH);
         libDir.mkdirs();
         Util.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());
-    
+        PluginDebugLog.log(TAG, "pluginInstallerService finish install lib");
         //dexopt
-        installDex(destFile.getAbsolutePath(), packageName);
+        PluginDebugLog.log(TAG, "pluginInstallerService begain install dex");
+        new InstallDexTask(destFile.getAbsolutePath(), packageName,
+                PluginInstaller.getPluginappRootPath(this).getAbsolutePath(), getClassLoader()).execute();
+//        installDex(destFile.getAbsolutePath(), packageName,
+//                PluginInstaller.getPluginappRootPath(this).getAbsolutePath(), getClassLoader());
+        PluginDebugLog.log(TAG, "pluginInstallerService finish install dex");
 		setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
         return packageName;
     }
@@ -305,6 +311,7 @@ public class PluginInstallerService extends IntentService {
 		intent.putExtra(ErrorType.ERROR_RESON, failReason);
 		intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable)info);// 同时返回APK的插件信息
 		sendBroadcast(intent);
+		PluginDebugLog.log(TAG, "Send setInstallFail " + " PluginPackageInfoExt: " + info);
 	}
 
 	private void setInstallSuccess(String pkgName, String srcPathWithScheme, String destPath,
@@ -316,6 +323,7 @@ public class PluginInstallerService extends IntentService {
 		intent.putExtra(CMPackageManager.EXTRA_DEST_FILE, destPath);// 同时返回安装前的安装文件目录。
 		intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable)info);// 同时返回APK的插件信息
 		sendBroadcast(intent);
+        PluginDebugLog.log(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
 	}
     
     
@@ -325,19 +333,22 @@ public class PluginInstallerService extends IntentService {
      * @param apkFile
      * @param packageName
      */
-    private void installDex(String apkFile, String packageName) {
-    	
-    	File pkgDir = new File(PluginInstaller.getPluginappRootPath(this), packageName);
-        
-        ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null, getClassLoader()); // 构造函数会执行loaddex底层函数。
-        
-        //android 2.3以及以上会执行dexopt，2.2以及下不会执行。需要额外主动load一次类才可以
+    private static void installDex(String apkFile, String packageName, String pkgDirPath,
+            ClassLoader clsLoader) {
+
+        File pkgDir = new File(pkgDirPath, packageName);
+
+        ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null,
+                clsLoader);
+        // 构造函数会执行loaddex底层函数。
+
+        // android 2.3以及以上会执行dexopt，2.2以及下不会执行。需要额外主动load一次类才可以
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.FROYO) {
             try {
                 classloader.loadClass(packageName + ".R");
             } catch (ClassNotFoundException e) {
-                //e.printStackTrace();
-            	
+                // e.printStackTrace();
+
             }
         }
     }
@@ -413,4 +424,28 @@ public class PluginInstallerService extends IntentService {
         return destFile;
     }
 
+    private static class InstallDexTask extends AsyncTask<String, Integer, String> {
+        String mApkFilePath;
+        String mPkgName;
+        String mPkgDir;
+        ClassLoader mParentClsLoader;
+
+        public InstallDexTask(String apkFilePath, String pkgName, String pkgDir,
+                ClassLoader parentClsLoader) {
+            mApkFilePath = apkFilePath;
+            mPkgName = pkgName;
+            mPkgDir = pkgDir;
+            mParentClsLoader = parentClsLoader;
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            if (TextUtils.isEmpty(mApkFilePath) || TextUtils.isEmpty(mPkgName)
+                    || TextUtils.isEmpty(mPkgDir) || null == mParentClsLoader) {
+                return null;
+            }
+            installDex(mApkFilePath, mPkgName, mPkgDir, mParentClsLoader);
+            return null;
+        }
+    }
 }

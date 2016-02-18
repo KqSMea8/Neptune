@@ -337,6 +337,7 @@ public class CMPackageManager {
         Editor editor = sp.edit();
         editor.putString(SP_APP_LIST, value);
         editor.commit();
+        PluginDebugLog.log(TAG, "saveInstalledPackageList update InstalledPackageList");
     }
     /**
      * 安装广播，用于监听安装过程中是否成功。
@@ -346,22 +347,25 @@ public class CMPackageManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + action + " intent: " + intent);
             if (ACTION_PACKAGE_INSTALLED.equals(action)) {
                 String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
                 String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
                 PluginPackageInfoExt infoExt = intent
                     .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
+                PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
                 CMPackageInfo pkgInfo = new CMPackageInfo();
                 pkgInfo.packageName = pkgName;
                 pkgInfo.srcApkPath = destApkPath;
                 pkgInfo.installStatus = PLUGIN_INSTALLED;
                 pkgInfo.pluginInfo = infoExt;
-                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
-                        pkgInfo.srcApkPath));
-                pkgInfo.targetInfo = targetInfo;
 
                 getInstalledPkgsInstance().put(pkgName, pkgInfo);// 将安装的插件名称保存到集合中。
                 saveInstalledPackageList(); // 存储变化后的安装列表
+                // 此处耗时操作，先保存再更新ApkTarget
+                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
+                        pkgInfo.srcApkPath));
+                pkgInfo.targetInfo = targetInfo;
                 if (listenerMap.get(pkgName) != null) {
                     try {
                         listenerMap.get(pkgName).onPacakgeInstalled(pkgName);
@@ -389,6 +393,9 @@ public class CMPackageManager {
                     String mapPackagename = assetsPath.substring(start + 1, end);
                     //失败原因
                     int failReason = intent.getIntExtra(ErrorType.ERROR_RESON, ErrorType.SUCCESS);
+                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLFAIL mapPackagename: "
+                            + mapPackagename + " failReason: " + failReason + " assetsPath: "
+                            + assetsPath);
                     if (listenerMap.get(mapPackagename) != null) {
                         try {
                             listenerMap.get(mapPackagename).onPackageInstallFail(mapPackagename, failReason);

@@ -91,12 +91,21 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public String plugin_ver = "";//插件版本显示版本号。
 
 
-	@Override
-	public String toString() {
-		return "Plugin [id=" + id + ", name=" + name + ", ver=" + ver + ", crc=" + crc + ", type="
-				+ type + ", desc=" + desc + ", i_method=" + mPluginInstallMethod + ", url=" + url
-				+ ", mPluginFileType=" + mSuffixType + "]";
-	}
+    @Override
+    public String toString() {
+        try {
+            JSONObject json = data2JsonObj();
+            if (null != json) {
+                return json.toString();
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return "Plugin [id=" + id + ", name=" + name + ", plugin_ver=" + plugin_ver
+                + ", plugin_gray_ver=" + plugin_gray_ver + ", crc=" + crc + ", type=" + type
+                + ", desc=" + desc + ", i_method=" + mPluginInstallMethod + ", url=" + url
+                + ", mPluginFileType=" + mSuffixType + "]";
+    }
 
 	public PluginPackageInfoExt() {
 	}
