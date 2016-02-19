@@ -19,12 +19,10 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.Parcelable;
-import android.text.TextUtils;
 import dalvik.system.DexClassLoader;
 
 /**
@@ -279,20 +277,18 @@ public class PluginInstallerService extends IntentService {
         PluginDebugLog.log(TAG, "pluginInstallerService begain install lib");
         File pkgDir = new File(PluginInstaller.getPluginappRootPath(this), packageName);
 
-        if(!pkgDir.exists())
-        	pkgDir.mkdir();
+        if (!pkgDir.exists())
+            pkgDir.mkdir();
         File libDir = new File(pkgDir, PluginInstaller.NATIVE_LIB_PATH);
         libDir.mkdirs();
         Util.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());
         PluginDebugLog.log(TAG, "pluginInstallerService finish install lib");
-        //dexopt
+        setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
+        // dexopt
         PluginDebugLog.log(TAG, "pluginInstallerService begain install dex");
-        new InstallDexTask(destFile.getAbsolutePath(), packageName,
-                PluginInstaller.getPluginappRootPath(this).getAbsolutePath(), getClassLoader()).execute();
-//        installDex(destFile.getAbsolutePath(), packageName,
-//                PluginInstaller.getPluginappRootPath(this).getAbsolutePath(), getClassLoader());
+        installDex(destFile.getAbsolutePath(), packageName,
+                PluginInstaller.getPluginappRootPath(this).getAbsolutePath(), getClassLoader());
         PluginDebugLog.log(TAG, "pluginInstallerService finish install dex");
-		setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
         return packageName;
     }
     
@@ -422,30 +418,5 @@ public class PluginInstallerService extends IntentService {
             PluginDebugLog.log("plugin", "安装到外部存储器："+destFile.getPath());
         }
         return destFile;
-    }
-
-    private static class InstallDexTask extends AsyncTask<String, Integer, String> {
-        String mApkFilePath;
-        String mPkgName;
-        String mPkgDir;
-        ClassLoader mParentClsLoader;
-
-        public InstallDexTask(String apkFilePath, String pkgName, String pkgDir,
-                ClassLoader parentClsLoader) {
-            mApkFilePath = apkFilePath;
-            mPkgName = pkgName;
-            mPkgDir = pkgDir;
-            mParentClsLoader = parentClsLoader;
-        }
-
-        @Override
-        protected String doInBackground(String... params) {
-            if (TextUtils.isEmpty(mApkFilePath) || TextUtils.isEmpty(mPkgName)
-                    || TextUtils.isEmpty(mPkgDir) || null == mParentClsLoader) {
-                return null;
-            }
-            installDex(mApkFilePath, mPkgName, mPkgDir, mParentClsLoader);
-            return null;
-        }
     }
 }
