@@ -178,6 +178,7 @@ public class ProxyEnvironmentNew {
     // 插件APP退出时要处理的事情
     private static IAppExitStuff sExitStuff;
     private static Resources hostRes;
+    private static IPluginEnvironmentStatusListener sPluginEnvSatusListener;
     
 	/**
 	 * 构造方法，解析apk文件，创建插件运行环境
@@ -428,34 +429,38 @@ public class ProxyEnvironmentNew {
 			return;
 		}
 
-		CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(packageName,
-				new IInstallCallBack.Stub() {
+        CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(packageName,
+                new IInstallCallBack.Stub() {
 
-					@Override
-					public void onPackageInstallFail(String packageName, int failReason) {
-						clearLoadingIntent(packageName);
-						ProxyEnvironmentNew.deliverPlug(false, packageName, failReason);
-					}
+                    @Override
+                    public void onPackageInstallFail(String packageName, int failReason) {
+                        clearLoadingIntent(packageName);
+                        ProxyEnvironmentNew.deliverPlug(false, packageName, failReason);
+                    }
 
-					@Override
-					public void onPacakgeInstalled(String packageName) {
-						PluginDebugLog.log(TAG, "安装完成：开始初始化initTarget");
+                    @Override
+                    public void onPacakgeInstalled(String packageName) {
+                        PluginDebugLog.log(TAG, "安装完成：开始初始化initTarget");
 
-						initTarget(context.getApplicationContext(), packageName, processName,
-								new ITargetLoadListenner() {
+                        initTarget(context.getApplicationContext(), packageName, processName,
+                                new ITargetLoadListenner() {
 
-									@Override
-									public void onLoadFinished(String packageName) {
-										try {
-											launchIntent(context, conn, intent);
-										} catch (Exception e) {
-											clearLoadingIntent(packageName);
-											e.printStackTrace();
-										}
-									}
-								});
-					}
-				});
+                                    @Override
+                                    public void onLoadFinished(String packageName) {
+                                        try {
+                                            launchIntent(context, conn, intent);
+                                            if (sPluginEnvSatusListener != null) {
+                                                sPluginEnvSatusListener.
+                                                        onPluginEnvironmentIsReady(packageName);
+                                            }
+                                        } catch (Exception e) {
+                                            clearLoadingIntent(packageName);
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                    }
+                });
 	}
 
 	/**
@@ -1264,4 +1269,13 @@ public class ProxyEnvironmentNew {
 	public interface IAppExitStuff {
 		void doExitStuff(String pkgName);
 	}
+
+    public interface IPluginEnvironmentStatusListener {
+        void onPluginEnvironmentIsReady(String packageName);
+    }
+
+    public static void setPluginEnvironmentStatusListener(
+            IPluginEnvironmentStatusListener listener) {
+        sPluginEnvSatusListener = listener;
+    }
 }
