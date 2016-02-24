@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.os.AsyncTask;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
@@ -109,56 +110,37 @@ public class PluginInstaller {
      * @param context
      * @param info 插件方案版本号
      */
-	public synchronized static void installBuildinApps(String packageName, Context context,
-			PluginPackageInfoExt info) {
-//        if (sInstallBuildinAppsCalled) {
-//            return;
-//        }
-//        sInstallBuildinAppsCalled = true;
-        
+    public synchronized static void installBuildinApps(final String packageName, final Context context,
+            final PluginPackageInfoExt info) {
         registerInstallderReceiver(context);
-        
-//        // 使用hostapp 默认 sharedpref，减少初始化开销。
-//        SharedPreferences sp =  PreferenceManager.getDefaultSharedPreferences(context);
-//        int savedHostVersionCode = sp.getInt(SP_HOSTAPP_VERSIONCODE_FOR_INSTALL, -1);
-//        int hostVersionCode = -1;
-//        try {
-//            hostVersionCode = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionCode;
-//        } catch (NameNotFoundException e1) {
-//            e1.printStackTrace();
-//        }
-//        // 内置的app只需要安装一次，等下载hostapp升级，再次进行安装检查。debugable 模式除外.
-//        if (hostVersionCode == savedHostVersionCode) {
-//            setInstallBuildinAppsFinished(context, false);
-//            return;
-//        }
-        
-        AssetManager am = context.getAssets();
-        try {
-            String files[] = am.list(ASSETS_PATH);
-//            boolean needInstall = false; //是否有文件需要安装或升级.
-            String temp_file = "";
-            if(packageName != null){
-            	temp_file = packageName + APK_SUFFIX;
-            }
-            for (String file : files) {
-				if (!file.endsWith(APK_SUFFIX)
-						|| (!TextUtils.isEmpty(packageName) && !TextUtils.equals(file, temp_file))) {
-                	//如果外面传递的packagename 为空则全部安装
-                    continue;
+        new AsyncTask<Void, Void, Void>() {
+
+            @Override
+            protected Void doInBackground(Void... params) {
+                AssetManager am = context.getAssets();
+                try {
+                    String files[] = am.list(ASSETS_PATH);
+                    String temp_file = "";
+                    if (packageName != null) {
+                        temp_file = packageName + APK_SUFFIX;
+                    }
+                    for (String file : files) {
+                        if (!file.endsWith(APK_SUFFIX)
+                                || (!TextUtils.isEmpty(packageName) && !TextUtils.equals(file, temp_file))) {
+                            // 如果外面传递的packagename 为空则全部安装
+                            continue;
+                        }
+                        PluginDebugLog.log("plugin", "file:" + file);
+                        installBuildinApp(context, ASSETS_PATH + "/" + file, info);
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                PluginDebugLog.log("plugin", "file:" + file);
-                installBuildinApp(context, ASSETS_PATH + "/" + file, info);
+                return null;
             }
             
-//            if(!needInstall) { // 没有需要安装/升级的文件
-//                boolean writeVersioncide = savedHostVersionCode != hostVersionCode;
-//                setInstallBuildinAppsFinished(context, writeVersioncide);
-//            }           
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
