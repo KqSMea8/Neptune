@@ -925,19 +925,13 @@ public class CMPackageManagerImpl {
                         }
                     }
                 }
-                return true;
+                return false;
             }
         }
 
-        if (mService != null) {
-            try {
-                return mService.isPackageInstalled(packageName);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-        PluginDebugLog.log(TAG, packageName + " isPackageAvailable : false");
-        return false;
+        boolean available = isPackageInstalled(packageName);
+        PluginDebugLog.log(TAG, packageName + " isPackageAvailable : " + available);
+        return available;
     }
 
     public int getPackageStatus(String packageName) {
