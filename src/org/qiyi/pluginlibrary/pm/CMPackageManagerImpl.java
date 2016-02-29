@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
@@ -19,7 +20,9 @@ import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginnew.ApkTargetMappingNew;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -882,7 +885,19 @@ public class CMPackageManagerImpl {
                 return process.processName;
             }
         }
-        return null;
+
+        //try to read process name in /proc/pid/cmdline if no result from activity manager
+        String cmdline = null;
+        try {
+            BufferedReader processFileReader = new BufferedReader(
+                    new FileReader(String.format("/proc/%d/cmdline", Process.myPid())));
+            cmdline = processFileReader.readLine().trim();
+            processFileReader.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return cmdline;
     }
 
     public ServiceConnection getConnection(Context context) {
