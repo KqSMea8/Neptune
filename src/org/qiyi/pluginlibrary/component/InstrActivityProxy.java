@@ -385,6 +385,9 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     protected void onDestroy() {
+        if (null == this.getParent() && mPluginEnv != null) {
+            mPluginEnv.popActivityFromStack(this);
+        }
         if (getController() != null) {
 
             try {
@@ -393,9 +396,6 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             } catch (Exception e) {
                 processError(e);
             }
-        }
-        if (null == this.getParent() && mPluginEnv != null) {
-            mPluginEnv.popActivityFromStack(this);
         }
         super.onDestroy();
     }
