@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.qiyi.pluginlibrary.LPluginInstrument;
 import org.qiyi.pluginlibrary.PluginActivityControl;
@@ -27,8 +28,10 @@ import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.proxy.BroadcastReceiverProxy;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
+import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper.InjectResult;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -60,6 +63,7 @@ import android.content.res.Resources.Theme;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.RemoteException;
 import android.text.TextUtils;
 
 /**
@@ -92,6 +96,8 @@ public class ProxyEnvironmentNew {
 	/** 插件包名对应Environment的Hash */
 	private static HashMap<String, ProxyEnvironmentNew> sPluginsMap = new HashMap<String, ProxyEnvironmentNew>();
 
+	/** 运行在当前进程内所有插件依赖库 **/
+	private static List<PluginPackageInfoExt> sPluginDependences = new ArrayList<PluginPackageInfoExt>();
 //	/** 插件调试日志 **/
 //	private static ActivityLifecycleCallbacks sActivityLifecycleCallback = new ActivityLifecycleCallbacks() {
 //
@@ -207,7 +213,13 @@ public class ProxyEnvironmentNew {
 		mProcessName = processName;
 		createTargetMapping(pluginPakName);
 		// 加载classloader
-		createClassLoader();
+        boolean clsLoader = createClassLoader();
+        if (!clsLoader) {
+            deliverPlug(false, pluginPakName, ErrorType.ERROR_CLIENT_CREATE_CLSlOADER);
+            throw new Exception("ProxyEnvironmentNew init failed for createClassLoader failed: "
+                    + context + " apkFile: " + apkFile + " pluginPakName: " + pluginPakName
+                    + " installType: " + installType);
+        }
 		// 加载资源
 		createTargetResource();
 	}
@@ -389,69 +401,113 @@ public class ProxyEnvironmentNew {
 	}
 
 	public static void enterProxy(final Context context, final ServiceConnection conn,
-			final Intent intent, final String processName) {
-		if (context instanceof Activity) {
-			mParent = (Activity) context;
-		}
-		final String packageName = tryParsePkgName(context, intent);
-		if (TextUtils.isEmpty(packageName)) {
-			deliverPlug(false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);// 添加投递
-			PluginDebugLog.log(TAG, "enterProxy packageName is null return! packageName: "
-					+ packageName);
-			return;
-		}
+            final Intent intent, final String processName) {
+        if (context instanceof Activity) {
+            mParent = (Activity) context;
+        }
+        final String packageName = tryParsePkgName(context, intent);
+        if (TextUtils.isEmpty(packageName)) {
+            deliverPlug(false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);// 添加投递
+            PluginDebugLog.log(TAG, "enterProxy packageName is null return! packageName: "
+                    + packageName);
+            return;
+        }
 
-		boolean isEnterProxy = false;
-		synchronized (gLoadingMap) {
-			List<Intent> cacheIntents = gLoadingMap.get(packageName);
-			if (cacheIntents != null) {// 说明插件正在loading
-				// 正在loading，直接返回吧，等着loading完调起
-				// 把intent都缓存起来
-				cacheIntents.add(intent);
-				PluginDebugLog.log(TAG, "LoadingMap is not empty, Cache current intent, intent: "
-						+ intent);
-				return;
-			}
+        boolean isEnterProxy = false;
+        synchronized (gLoadingMap) {
+            List<Intent> cacheIntents = gLoadingMap.get(packageName);
+            if (cacheIntents != null) {// 说明插件正在loading
+                // 正在loading，直接返回吧，等着loading完调起
+                // 把intent都缓存起来
+                cacheIntents.add(intent);
+                PluginDebugLog.log(TAG, "LoadingMap is not empty, Cache current intent, intent: "
+                        + intent);
+                return;
+            }
 
-			isEnterProxy = isEnterProxy(packageName);// 判断是否已经进入到代理
-			if (!isEnterProxy) {
-				List<Intent> intents = new ArrayList<Intent>();
-				intents.add(intent);
-				PluginDebugLog.log(TAG, "Environment is loading cache current intent, intent: "
-						+ intent);
-				gLoadingMap.put(packageName, intents);// 正在加载的插件队列
-			}
-		}
+            isEnterProxy = isEnterProxy(packageName);// 判断是否已经进入到代理
+            if (!isEnterProxy) {
+                List<Intent> intents = new ArrayList<Intent>();
+                intents.add(intent);
+                PluginDebugLog.log(TAG, "Environment is loading cache current intent, intent: "
+                        + intent);
+                gLoadingMap.put(packageName, intents);// 正在加载的插件队列
+            }
+        }
 
-		if (isEnterProxy) {
-			// 已经初始化，直接起Intent
-			launchIntent(context, conn, intent);
-			return;
-		}
+        if (isEnterProxy) {
+            // 已经初始化，直接起Intent
+            launchIntent(context, conn, intent);
+            return;
+        }
+        // Handle plugin dependences
+        CMPackageInfo info = CMPackageManagerImpl.getInstance(context.getApplicationContext())
+                .getPackageInfo(packageName);
+        if (info != null && info.pluginInfo != null && info.pluginInfo.getPluginResfs() != null
+                && info.pluginInfo.getPluginResfs().size() > 0) {
+            PluginDebugLog.log(TAG, "Start to check dependence installation size: "
+                    + info.pluginInfo.getPluginResfs().size());
+            final AtomicInteger count = new AtomicInteger(info.pluginInfo.getPluginResfs().size());
+            for (String pkgName : info.pluginInfo.getPluginResfs()) {
+                PluginDebugLog.log(TAG, "Start to check installation pkgName: " + pkgName);
+                CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(
+                        pkgName, new IInstallCallBack.Stub() {
+                            @Override
+                            public void onPacakgeInstalled(String pName) {
+                                count.getAndDecrement();
+                                PluginDebugLog.log(TAG, "Check installation success pkgName: "
+                                        + pName);
+                                if (count.get() == 0) {
+                                    PluginDebugLog.log(TAG,
+                                            "Start Check installation after check dependence packageName: "
+                                                    + packageName);
+                                    checkPkgInstallationAndLaunch(context, packageName,
+                                            processName, conn, intent);
+                                }
+                            }
 
-        CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(packageName,
-                new IInstallCallBack.Stub() {
+                            @Override
+                            public void onPackageInstallFail(String pName, int failReason)
+                                    throws RemoteException {
+                                PluginDebugLog.log(TAG, "Check installation failed pkgName: "
+                                        + pName + " failReason: " + failReason);
+                                count.set(-1);
+                            }
+                        });
+            }
+        } else {
+            PluginDebugLog.log(TAG, "Start Check installation without dependences packageName: "
+                    + packageName);
+            checkPkgInstallationAndLaunch(context, packageName, processName, conn, intent);
+        }
+    }
+
+    private static void checkPkgInstallationAndLaunch(final Context context,
+            final String packageName, final String processName, final ServiceConnection conn,
+            final Intent intent) {
+        CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(
+                packageName, new IInstallCallBack.Stub() {
 
                     @Override
                     public void onPackageInstallFail(String packageName, int failReason) {
+                        PluginDebugLog.log(TAG,
+                                "checkPkgInstallationAndLaunch failed packageName: " + packageName
+                                        + " failReason: " + failReason);
                         clearLoadingIntent(packageName);
                         ProxyEnvironmentNew.deliverPlug(false, packageName, failReason);
                     }
 
                     @Override
                     public void onPacakgeInstalled(String packageName) {
-                        PluginDebugLog.log(TAG, "安装完成：开始初始化initTarget");
-
                         initTarget(context.getApplicationContext(), packageName, processName,
                                 new ITargetLoadListenner() {
-
                                     @Override
                                     public void onLoadFinished(String packageName) {
                                         try {
                                             launchIntent(context, conn, intent);
                                             if (sPluginEnvSatusListener != null) {
-                                                sPluginEnvSatusListener.
-                                                        onPluginEnvironmentIsReady(packageName);
+                                                sPluginEnvSatusListener
+                                                        .onPluginEnvironmentIsReady(packageName);
                                             }
                                         } catch (Exception e) {
                                             clearLoadingIntent(packageName);
@@ -461,7 +517,7 @@ public class ProxyEnvironmentNew {
                                 });
                     }
                 });
-	}
+    }
 
 	/**
 	 * 运行插件代理
@@ -863,9 +919,9 @@ public class ProxyEnvironmentNew {
 					popActivities.add(activity);
 					activity.finish();
 				}
-				for(Activity act : popActivities){               //不需要等到onDestroy再出栈，由于是对象出栈，所以多次出栈不会引起问题。
-					popActivityFromStack(act);
-				}
+                for (Activity act : popActivities) { // 不需要等到onDestroy再出栈，由于是对象出栈，所以多次出栈不会引起问题。
+                    popActivityFromStack(act);
+                }
 			}
 		}
 	}
@@ -943,11 +999,58 @@ public class ProxyEnvironmentNew {
 		return file;
 	}
 
+    /**
+     * Handle plugin dependences
+     *
+     * @return true for load dependences successfully otherwise false
+     */
+    private boolean handleDependences() {
+        CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(mContext).getPackageInfo(
+                mPluginPakName);
+        List<String> dependencies = pkgInfo.pluginInfo.getPluginResfs();
+        if (null != dependencies) {
+            CMPackageInfo libraryInfo;
+            InjectResult injectResult;
+            for (int i = 0; i < dependencies.size(); i++) {
+                libraryInfo = CMPackageManagerImpl.getInstance(mContext).getPackageInfo(
+                        dependencies.get(i));
+                if (null != libraryInfo) {
+                    if (!sPluginDependences.contains(libraryInfo)
+                            && !TextUtils.equals(libraryInfo.pluginInfo.mSuffixType,
+                                    CMPackageManager.PLUGIN_FILE_SO)) {
+                        PluginDebugLog.log(TAG, "handleDependences inject "
+                                + libraryInfo.pluginInfo);
+                        injectResult = ClassLoaderInjectHelper.inject(mContext,
+                                libraryInfo.srcApkPath, null, null);
+                        if (null != injectResult && injectResult.mIsSuccessful) {
+                            PluginDebugLog.log(TAG, "handleDependences injectResult success for "
+                                    + libraryInfo.pluginInfo);
+                            sPluginDependences.add(libraryInfo.pluginInfo);
+                        } else {
+                            PluginDebugLog.log(TAG, "handleDependences injectResult faild for "
+                                    + libraryInfo.pluginInfo);
+                            return false;
+                        }
+                    } else {
+                        PluginDebugLog.log(TAG, "handleDependences libraryInfo already handled!");
+                    }
+                }
+                libraryInfo = null;
+                injectResult = null;
+            }
+        }
+        return true;
+    }
+
 	/**
 	 * 创建ClassLoader， 需要在 createDataRoot之后调用
 	 */
-	private void createClassLoader() {
-
+	private boolean createClassLoader() {
+	    boolean dependence = handleDependences();
+	    PluginDebugLog.log(TAG, "handleDependences: " + dependence);
+	    if (!dependence) {
+	        return dependence;
+	    }
 		PluginDebugLog.log(TAG, "createClassLoader");
 		dexClassLoader = new PluginClassLoader(mApkFile.getAbsolutePath(), getDataDir(mContext,
 				mPluginPakName).getAbsolutePath(), mContext.getClassLoader(), this);
@@ -959,6 +1062,7 @@ public class ProxyEnvironmentNew {
 					targetMapping.getPackageName() + ".R");
 			PluginDebugLog.log(TAG, "--- Class injecting @ " + targetMapping.getPackageName());
 		}
+		return true;
 	}
 
 	/**

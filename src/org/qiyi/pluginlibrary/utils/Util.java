@@ -106,7 +106,7 @@ public final class Util {
      * @return success return true
      */
     public static boolean copyToFile(InputStream inputStream, File destFile) {
-        PluginDebugLog.log(TAG, "copyToFile:"+inputStream+","+destFile);
+        PluginDebugLog.log(TAG, "copyToFile:" + inputStream + "," + destFile);
         if (inputStream == null || destFile == null) {
             return false;
         }
@@ -138,6 +138,40 @@ public final class Util {
             PluginDebugLog.log(TAG, "拷贝失败");
             return false;
         }
+    }
+
+    /**
+     * Copy data from a source stream to destFile.
+     * Return true if succeed, return false if failed.
+     *
+     * @param srcFile source file
+     * @param destFile destFile
+     *
+     * @return success return true
+     */
+    public static boolean copyToFile(File srcFile, File destFile) {
+        PluginDebugLog.log(TAG, "copyToFile:" + srcFile + "," + destFile);
+        if (srcFile == null || !srcFile.exists() || destFile == null) {
+            return false;
+        }
+        InputStream inputStream = null;
+        try {
+            inputStream = new FileInputStream(srcFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            inputStream = null;
+        }
+        boolean result = false;
+        if (null != inputStream) {
+            result = copyToFile(inputStream, destFile);
+        }
+        try {
+            if (null != inputStream) {
+                inputStream.close();
+            }
+        } catch (Exception e) {
+        }
+        return result;
     }
 
     /**

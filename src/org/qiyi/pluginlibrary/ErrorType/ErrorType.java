@@ -134,7 +134,8 @@ public class ErrorType {
 	public static final int ERROR_CLIENT_CALL_ON_CREATE_FAIL= ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL + 1;
 	/**反射工具类异常，ReflectionUtils call方法发生异常*/
 	public static final int ERROR_CLIENT_REFLECTIONUTILS_CALL= ERROR_CLIENT_CALL_ON_CREATE_FAIL + 1;
-    
+	// Class loader创建失败
+	public static final int ERROR_CLIENT_CREATE_CLSlOADER = ERROR_CLIENT_REFLECTIONUTILS_CALL + 1;
     /**
      * 网络异常
      */

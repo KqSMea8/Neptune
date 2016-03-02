@@ -52,6 +52,7 @@ public class PluginInstaller {
     public static final String NATIVE_LIB_PATH = "lib";
     public static final String SO_SUFFIX = ".so";
 
+    public static final String DEX_SUFFIX = ".dex";
     
     /** shared preference file name. */
     public static final String SHARED_PREFERENCE_NAME = "pluginapp";
@@ -262,12 +263,19 @@ public class PluginInstaller {
      * @param filePath apk 文件目录 比如  /sdcard/xxxx.apk
      * @param pluginInfo 插件信息
      */
-	public static void installApkFile(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
+    public static void installApkFile(Context context, String filePath,
+            PluginPackageInfoExt pluginInfo) {
+        if (TextUtils.isEmpty(filePath)) {
+            PluginDebugLog.log(TAG, "installApkFile return!");
+            return;
+        }
         registerInstallderReceiver(context);
-        if(filePath.endsWith(SO_SUFFIX)){
-        	startInstall(context, CMPackageManager.SCHEME_SO + filePath, pluginInfo);
-        }else{
-        	startInstall(context, CMPackageManager.SCHEME_FILE + filePath, pluginInfo);
+        if (filePath.endsWith(SO_SUFFIX)) {
+            startInstall(context, CMPackageManager.SCHEME_SO + filePath, pluginInfo);
+        } else if (filePath.endsWith(DEX_SUFFIX)) {
+            startInstall(context, CMPackageManager.SCHEME_DEX + filePath, pluginInfo);
+        } else {
+            startInstall(context, CMPackageManager.SCHEME_FILE + filePath, pluginInfo);
         }
     }
     

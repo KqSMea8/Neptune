@@ -70,7 +70,7 @@ public class CMPackageManager {
      **/
     public static final String PLUGIN_FILE_APK = "apk";
     public static final String PLUGIN_FILE_SO = "so";
-    public static final String PLUGIN_FILE_JAR = "jar";
+    public static final String PLUGIN_FILE_DEX = "dex";
 
     /**
      * 插件文件来源类型
@@ -111,6 +111,7 @@ public class CMPackageManager {
     public static final String SCHEME_ASSETS = "assets://";
     public static final String SCHEME_FILE = "file://";
     public static final String SCHEME_SO = "so://";
+    public static final String SCHEME_DEX = "dex://";
 
     /**
      * application context
@@ -541,7 +542,23 @@ public class CMPackageManager {
      */
     public boolean isPackageInstalled(String packageName) {
         CMPackageInfo info = getInstalledPkgsInstance().get(packageName);
-        if (null != info && TextUtils.equals(info.installStatus, PLUGIN_INSTALLED)) {
+        if (null == info || null == info.pluginInfo) {
+            return false;
+        }
+        List<String> refs = info.pluginInfo.getPluginResfs();
+        if (null != refs && refs.size() > 0) {
+            CMPackageInfo rInfo;
+            for (String rPkg : refs) {
+                rInfo = getInstalledPkgsInstance().get(rPkg);
+                if (null == rInfo || !TextUtils
+                                .equals(rInfo.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
+                    PluginDebugLog.log(TAG, "refs not installed: " + rPkg);
+                    return false;
+                }
+            }
+            rInfo = null;
+        }
+        if (TextUtils.equals(info.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
             return true;
         } else {
             return false;
@@ -580,6 +597,8 @@ public class CMPackageManager {
         int end = start + 1;
         if (filePath.endsWith(PluginInstaller.SO_SUFFIX)) {
             end = filePath.lastIndexOf(PluginInstaller.SO_SUFFIX);
+        } else if (filePath.endsWith(PluginInstaller.DEX_SUFFIX)) {
+            end = filePath.lastIndexOf(PluginInstaller.DEX_SUFFIX);
         } else {
             end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         }

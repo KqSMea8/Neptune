@@ -10,6 +10,7 @@ import java.util.List;
 
 import android.annotation.SuppressLint;
 import android.app.Application;
+import android.content.Context;
 import android.os.Build;
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
@@ -28,16 +29,16 @@ public class ClassLoaderInjectHelper {
     /**
      * 注入jar
      *
-     * @param aApp
+     * @param context
      *            application object
-     * @param aLibPath
+     * @param dexPath
      *            lib path
      * @return inject result
      */
-    public static InjectResult inject(Application aApp, String aLibPath, String someClass) {
+    public static InjectResult inject(Context context, String dexPath, String someClass, String soPath) {
         try {
             Class.forName("dalvik.system.LexClassLoader");
-            return injectInAliyunOs(aApp, aLibPath);
+            return injectInAliyunOs(context, dexPath, soPath);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -48,9 +49,9 @@ public class ClassLoaderInjectHelper {
             hasBaseDexClassLoader = false;
         }
         if (!hasBaseDexClassLoader) {
-            return injectBelowApiLevel14(aApp, aLibPath, someClass);
+            return injectBelowApiLevel14(context, dexPath, someClass, soPath);
         } else {
-            return injectAboveEqualApiLevel14(aApp, aLibPath);
+            return injectAboveEqualApiLevel14(context, dexPath, soPath);
         }
     }
     
@@ -83,25 +84,25 @@ public class ClassLoaderInjectHelper {
     /**
      * 阿里云系统注入jar
      *
-     * @param aApp
+     * @param context
      *            application object
-     * @param aLibPath
+     * @param dexPath
      *            lib path
      * @return inject result
      */
-    private static InjectResult injectInAliyunOs(Application aApp, String aLibPath) {
+    private static InjectResult injectInAliyunOs(Context context, String dexPath, String soPath) {
         InjectResult result = null;
-        PathClassLoader localClassLoader = (PathClassLoader) aApp.getClassLoader();
-        new DexClassLoader(aLibPath, aApp.getDir("dex", 0).getAbsolutePath(), aLibPath, localClassLoader);
-        String lexFileName = new File(aLibPath).getName();
+        PathClassLoader localClassLoader = (PathClassLoader) context.getClassLoader();
+        new DexClassLoader(dexPath, context.getDir("dex", 0).getAbsolutePath(), soPath, localClassLoader);
+        String lexFileName = new File(dexPath).getName();
         lexFileName = lexFileName.replaceAll("\\.[a-zA-Z0-9]+", ".lex");
         try {
             Class<?> classLexClassLoader = Class.forName("dalvik.system.LexClassLoader");
             Constructor<?> constructorLexClassLoader = classLexClassLoader.getConstructor(String.class,
                     String.class, String.class, ClassLoader.class);
-            Object localLexClassLoader = constructorLexClassLoader.newInstance(aApp.getDir("dex", 0)
-                    .getAbsolutePath() + File.separator + lexFileName, aApp.getDir("dex", 0)
-                    .getAbsolutePath(), aLibPath, localClassLoader);
+            Object localLexClassLoader = constructorLexClassLoader.newInstance(context.getDir("dex", 0)
+                    .getAbsolutePath() + File.separator + lexFileName, context.getDir("dex", 0)
+                    .getAbsolutePath(), soPath, localClassLoader);
             setField(
                     localClassLoader,
                     PathClassLoader.class,
@@ -162,17 +163,18 @@ public class ClassLoaderInjectHelper {
     /**
      * api < 14时，注入jar
      *
-     * @param aApp
+     * @param context
      *            application
-     * @param aLibPath
+     * @param dexPath
      *            lib path
      * @return inject result
      */
-    private static InjectResult injectBelowApiLevel14(Application aApp, String aLibPath, String someClass) {
+    private static InjectResult injectBelowApiLevel14(Context context, String dexPath,
+            String someClass, String soPath) {
         InjectResult result = null;
-        PathClassLoader pathClassLoader = (PathClassLoader) aApp.getClassLoader();
-        DexClassLoader dexClassLoader = new DexClassLoader(aLibPath, aApp.getDir("dex", 0).getAbsolutePath(),
-                aLibPath, aApp.getClassLoader());
+        PathClassLoader pathClassLoader = (PathClassLoader) context.getClassLoader();
+        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, context.getDir("dex", 0).getAbsolutePath(),
+                soPath, context.getClassLoader());
         
         result = injectBelowApiLevel14(pathClassLoader, dexClassLoader, someClass);
  
@@ -181,14 +183,14 @@ public class ClassLoaderInjectHelper {
     
     
     @SuppressLint("NewApi")
-	private static InjectResult injectBelowApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader,
-            String someClass) {
+    private static InjectResult injectBelowApiLevel14(ClassLoader parentClassLoader,
+            ClassLoader childClassLoader, String someClass) {
         InjectResult result = null;
         PathClassLoader pathClassLoader = null;
-        if(parentClassLoader instanceof PathClassLoader){
-        	pathClassLoader = (PathClassLoader) parentClassLoader;
-        }else{
-        	return result;
+        if (parentClassLoader instanceof PathClassLoader) {
+            pathClassLoader = (PathClassLoader) parentClassLoader;
+        } else {
+            return result;
         }
         DexClassLoader dexClassLoader = (DexClassLoader)childClassLoader;
         try {
@@ -254,21 +256,22 @@ public class ClassLoaderInjectHelper {
     /**
      * api >= 14时，注入jar
      *
-     * @param aApp
+     * @param context
      *            application object
-     * @param aLibPath
+     * @param dexPath
      *            lib path
      * @return inject object
      */
-    private static InjectResult injectAboveEqualApiLevel14(Application aApp, String aLibPath) {
-        PathClassLoader pathClassLoader = (PathClassLoader) aApp.getClassLoader();
-        DexClassLoader dexClassLoader = new DexClassLoader(aLibPath, aApp.getDir("dex", 0).getAbsolutePath(),
-                aLibPath, aApp.getClassLoader());
+    private static InjectResult injectAboveEqualApiLevel14(Context context, String dexPath,
+            String soPath) {
+        PathClassLoader pathClassLoader = (PathClassLoader) context.getClassLoader();
+        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, context.getDir("dex", 0)
+                .getAbsolutePath(), soPath, context.getClassLoader());
         InjectResult result = null;
 
         // If version > 22 LOLLIPOP_MR1
         if (Build.VERSION.SDK_INT > 22) {
-        	injectAboveApiLevel22(pathClassLoader, dexClassLoader);
+            result = injectAboveApiLevel22(pathClassLoader, dexClassLoader);
         } else {
         	result = injectAboveEqualApiLevel14(pathClassLoader, dexClassLoader);
         }
@@ -348,7 +351,8 @@ public class ClassLoaderInjectHelper {
 		return result;
 	}
 
-    private static InjectResult injectAboveEqualApiLevel14(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
+    private static InjectResult injectAboveEqualApiLevel14(ClassLoader parentClassLoader,
+            ClassLoader childClassLoader) {
     	InjectResult result = null;
     	
         PathClassLoader pathClassLoader = null;

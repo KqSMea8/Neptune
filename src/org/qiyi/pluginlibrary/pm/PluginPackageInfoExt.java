@@ -8,6 +8,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 网络请求的数据信息
@@ -45,6 +47,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	public static final String UPGRADE_TYPE = "upgrade_type"; //更新方式，自动，手动？
 	public static final String GRAY_VER = "plugin_gray_ver"; //灰度版本号
 	public static final String PLUGIN_VER = "plugin_ver"; //插件显示版本号
+	public static final String PLUGIN_REFS = "refs"; //插件的依赖
+	public static final String IS_BASE = "is_base"; //标示是否是lib
 
 
 	// 插件ID
@@ -90,6 +94,9 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 	
 	public String plugin_ver = "";//插件版本显示版本号。
 
+	public String plugin_refs = null;//插件依赖部分
+
+	public int is_base = 0; //标示是否是lib
 
     @Override
     public String toString() {
@@ -134,6 +141,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 			upgrade_type = packageInfo.upgrade_type;
 			plugin_gray_ver = packageInfo.plugin_gray_ver;
 			plugin_ver = packageInfo.plugin_ver;
+			plugin_refs = packageInfo.plugin_refs;
+			is_base = packageInfo.is_base;
 		}
 	}
 	
@@ -160,6 +169,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 			upgrade_type = ext.optInt(UPGRADE_TYPE); 
 			plugin_gray_ver = ext.optString(GRAY_VER); 
 			plugin_ver = ext.optString(PLUGIN_VER);
+			plugin_refs = ext.optString(PLUGIN_REFS);
+			is_base = ext.optInt(IS_BASE);
 		}
 	}
 
@@ -180,27 +191,52 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		return this.ver < ver;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		PluginPackageInfoExt other = (PluginPackageInfoExt) obj;
-		if (!TextUtils.equals(id, other.id)) {
-			return false;
-		}
+    /**
+     * Get plugin refs may be null
+     *
+     * @return
+     */
+    public List<String> getPluginResfs() {
+        if (!TextUtils.isEmpty(plugin_refs)) {
+            return Arrays.asList(plugin_refs.split(","));
+        } else {
+            return null;
+        }
+    }
 
-		if (!TextUtils.equals(url, other.url)) {
-			return false;
-		}
-		return true;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        PluginPackageInfoExt other = (PluginPackageInfoExt) obj;
+        if (!TextUtils.equals(packageName, other.packageName)
+                || !TextUtils.equals(plugin_ver, other.plugin_ver)
+                || !TextUtils.equals(plugin_gray_ver, other.plugin_gray_ver)
+                || !TextUtils.equals(scrc, other.scrc)
+                || !TextUtils.equals(url, other.url)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        StringBuilder sBuilder = new StringBuilder();
+        sBuilder.append(packageName);
+        sBuilder.append(plugin_ver);
+        sBuilder.append(plugin_gray_ver);
+        sBuilder.append(scrc);
+        sBuilder.append(url);
+        return sBuilder.toString().hashCode();
+    }
 
 	public PluginPackageInfoExt(Parcel parcel) {
 		id = parcel.readString();
@@ -224,6 +260,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		upgrade_type = parcel.readInt();
 		plugin_gray_ver = parcel.readString();
 		plugin_ver = parcel.readString();
+		plugin_refs = parcel.readString();
+		is_base = parcel.readInt();
 
 	}
 
@@ -255,6 +293,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		dest.writeInt(upgrade_type);
 		dest.writeString(plugin_gray_ver);
 		dest.writeString(plugin_ver);
+		dest.writeString(plugin_refs);
+		dest.writeInt(is_base);
 	}
 
 	public JSONObject data2JsonObj() throws JSONException {
@@ -280,7 +320,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 		result.put(UPGRADE_TYPE, upgrade_type);
 		result.put(GRAY_VER, plugin_gray_ver);
 		result.put(PLUGIN_VER, plugin_ver);
+		result.put(PLUGIN_REFS, plugin_refs);
+		result.put(IS_BASE, is_base);
 		return result;
 	}
-	
 }

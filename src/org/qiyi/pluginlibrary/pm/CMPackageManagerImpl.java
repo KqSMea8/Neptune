@@ -790,7 +790,24 @@ public class CMPackageManagerImpl {
      */
     public boolean isPackageInstalledDirectly(String packageName) {
         CMPackageInfo info = getInstalledPackageList().get(packageName);
-        if (null != info && TextUtils.equals(info.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
+        if (null == info || null == info.pluginInfo) {
+            return false;
+        }
+        List<String> refs = info.pluginInfo.getPluginResfs();
+        if (null != refs && refs.size() > 0) {
+            CMPackageInfo rInfo;
+            for (String rPkg : refs) {
+                rInfo = getInstalledPackageList().get(rPkg);
+                if (null == rInfo || !TextUtils
+                                .equals(rInfo.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
+                    PluginDebugLog.log(TAG, "isPackageInstalledDirectly refs not installed: "
+                            + rPkg);
+                    return false;
+                }
+            }
+            rInfo = null;
+        }
+        if (TextUtils.equals(info.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
             return true;
         } else {
             return false;

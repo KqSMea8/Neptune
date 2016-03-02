@@ -23,6 +23,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.Parcelable;
+import android.text.TextUtils;
 import dalvik.system.DexClassLoader;
 
 /**
@@ -124,25 +125,69 @@ public class PluginInstallerService extends IntentService {
 			installAPKFile(srcFile, info);
 		} else if (srcFile.startsWith(CMPackageManager.SCHEME_SO)) {
 			info.mSuffixType = CMPackageManager.PLUGIN_FILE_SO;
-			String soFilePath = srcFile.substring(CMPackageManager.SCHEME_SO.length());
-			
-			int start = srcFile.lastIndexOf("/");
-			int end = srcFile.lastIndexOf(PluginInstaller.SO_SUFFIX);
-			String fileName = srcFile.substring(start + 1, end);
-			
-			boolean flag = Util.installNativeLibrary(soFilePath, PluginInstaller
-					.getPluginappRootPath(this).getAbsolutePath() + File.separator + fileName);
-            PluginDebugLog.log(TAG, "Send install result success ? " + flag
-                    + " PluginPackageInfoExt: " + info);
-			if (flag) {
-				setInstallSuccess(fileName, srcFile, null, info);
-			} else {
-				setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
-			}
-		}
+			installSoPlugin(srcFile, info);
+        } else if (srcFile.startsWith(CMPackageManager.SCHEME_DEX)) {
+            info.mSuffixType = CMPackageManager.PLUGIN_FILE_DEX;
+            installDexPlugin(srcFile, info);
+        }
 
 	}
-    
+
+	/**
+	 * Install so plugin, just do copy
+	 *
+	 * @param srcFile
+	 * @param info
+	 */
+    private void installSoPlugin(String srcFile, PluginPackageInfoExt info) {
+        String soFilePath = srcFile.substring(CMPackageManager.SCHEME_SO.length());
+        File destFileTemp = new File(PluginInstaller.getPluginappRootPath(this),
+                System.currentTimeMillis() + "");
+        boolean copyResult = Util.copyToFile(new File(soFilePath), destFileTemp);
+        if (copyResult && null != info && !TextUtils.isEmpty(info.packageName)) {
+            File destFile = new File(PluginInstaller.getPluginappRootPath(this), info.packageName
+                    + PluginInstaller.SO_SUFFIX);
+            if (destFileTemp != null && destFileTemp.exists() && destFileTemp.renameTo(destFile)) {
+                String libDir = PluginInstaller.getPluginappRootPath(this).getAbsolutePath()
+                        + File.separator + info.packageName;
+                boolean flag = Util.installNativeLibrary(destFile.getAbsolutePath(), libDir);
+                if (flag) {
+                    setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
+                    return;
+                } else {
+                    PluginDebugLog.log(TAG, "handleInstall SO, install so lib failed!");
+                }
+            } else {
+                PluginDebugLog.log(TAG, "handleInstall SO, rename failed!");
+            }
+        }
+        setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+    }
+
+	/**
+     * Install DEX plugin, just do copy
+     *
+     * @param srcFile
+     * @param info
+     */
+    private void installDexPlugin(String srcFile, PluginPackageInfoExt info) {
+        String dexFilePath = srcFile.substring(CMPackageManager.SCHEME_DEX.length());
+        File destFileTemp = new File(PluginInstaller.getPluginappRootPath(this),
+                System.currentTimeMillis() + "");
+        boolean copyResult = Util.copyToFile(new File(dexFilePath), destFileTemp);
+        if (copyResult && null != info && !TextUtils.isEmpty(info.packageName)) {
+            File destFile = new File(PluginInstaller.getPluginappRootPath(this),
+                    info.packageName + PluginInstaller.DEX_SUFFIX);
+            if (destFileTemp != null && destFileTemp.exists() && destFileTemp.renameTo(destFile)) {
+                setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
+                return;
+            } else {
+                PluginDebugLog.log(TAG, "handleInstall dex, rename failed!");
+            }
+        }
+        setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+    }
+
     /**
      * 安装内置的apk
      * @param assetsPath assets 目录
