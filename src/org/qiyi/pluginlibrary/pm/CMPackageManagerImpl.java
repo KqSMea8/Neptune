@@ -52,7 +52,7 @@ public class CMPackageManagerImpl {
 
     private static class ActionFinishCallback extends IActionFinishCallback.Stub {
 
-        private String mProcessName = null;
+        private String mProcessName;
 
         public ActionFinishCallback(String processName) {
             mProcessName = processName;
@@ -376,11 +376,11 @@ public class CMPackageManagerImpl {
 
     private CMPackageManagerImpl(Context context) {
         mContext = context;
+        mProcessName = getCurrentProcessName(mContext);
     }
 
     public void init() {
         onBindService(mContext);
-        mProcessName = getCurrentProcessName(mContext);
     }
 
     private void onBindService(Context context) {
