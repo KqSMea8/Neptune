@@ -84,6 +84,7 @@ public class CMPackageManager {
      **/
     static final String PLUGIN_INSTALLED = "installed";
     static final String PLUGIN_UNINSTALLED = "uninstall";
+    static final String PLUGIN_UPGRADING = "upgrading";
 
     /**
      * 安装完的pkg的包名
@@ -202,7 +203,7 @@ public class CMPackageManager {
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
         while (packages.hasMoreElements()) {
             CMPackageInfo pkg = packages.nextElement();
-            if (pkg != null && TextUtils.equals(pkg.installStatus, PLUGIN_INSTALLED)) {
+            if (pkg != null && !TextUtils.equals(pkg.installStatus, PLUGIN_UNINSTALLED)) {
                 list.add(pkg);
             }
         }
@@ -550,19 +551,15 @@ public class CMPackageManager {
             CMPackageInfo rInfo;
             for (String rPkg : refs) {
                 rInfo = getInstalledPkgsInstance().get(rPkg);
-                if (null == rInfo || !TextUtils
-                                .equals(rInfo.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
+                if (null == rInfo || TextUtils
+                                .equals(rInfo.installStatus, CMPackageManager.PLUGIN_UNINSTALLED)) {
                     PluginDebugLog.log(TAG, "refs not installed: " + rPkg);
                     return false;
                 }
             }
             rInfo = null;
         }
-        if (TextUtils.equals(info.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
-            return true;
-        } else {
-            return false;
-        }
+        return !TextUtils.equals(info.installStatus, CMPackageManager.PLUGIN_UNINSTALLED);
     }
 
     /**
@@ -577,7 +574,7 @@ public class CMPackageManager {
         }
 
         CMPackageInfo info = getInstalledPkgsInstance().get(packageName);
-        if (null != info && TextUtils.equals(info.installStatus, PLUGIN_INSTALLED)) {
+        if (null != info && !TextUtils.equals(info.installStatus, PLUGIN_UNINSTALLED)) {
             return info;
         }
         return null;
@@ -692,7 +689,7 @@ public class CMPackageManager {
 
     /**
      * 删除安装包。
-     * 卸载插件应用程序
+     * 卸载插件应用程序,目前只有在升级时调用次方法，把插件状态改成upgrading状态
      *
      * @param packageName 需要删除的package 的 packageName
      * @param observer    卸载结果回调
@@ -708,10 +705,10 @@ public class CMPackageManager {
      * @param packageName 需要删除的package 的 packageName
      * @param observer    卸载结果回调
      * @param deleteData  是否删除生成的data
-     * @param sendNotify  是否发送卸载相关的broadcast
+     * @param upgrading  是否是升级之前的操作
      */
     private void deletePackage(final String packageName, IPackageDeleteObserver observer,
-                               boolean deleteData, boolean sendNotify) {
+                               boolean deleteData, boolean upgrading) {
         try {
             // 先停止运行插件
             TargetActivatorNew.unLoadTarget(packageName);
@@ -729,20 +726,21 @@ public class CMPackageManager {
             //删除安装文件，apk，dex，so
             PluginInstaller.deleteInstallerPackage(mContext, packageName);
 
-            //从安装列表中删除，并且更新存储安装列表的文件
-            getInstalledPkgsInstance().remove(packageName);
-            saveInstalledPackageList();
+            if (upgrading) {
+                CMPackageInfo info = getInstalledPkgsInstance().get(packageName);
+                if (null != info) {
+                    info.installStatus = PLUGIN_UPGRADING;
+                    saveInstalledPackageList();
+                }
+            } else {
+                // 从安装列表中删除，并且更新存储安装列表的文件
+                getInstalledPkgsInstance().remove(packageName);
+                saveInstalledPackageList();
+            }
 
             // 回调
             if (observer != null) {
                 observer.packageDeleted(packageName, DELETE_SUCCEEDED);
-            }
-
-            if (sendNotify) {
-                //发送广播
-                Intent intent = new Intent(ACTION_PACKAGE_UNINSTALL);
-                intent.putExtra(EXTRA_PKG_NAME, packageName);
-                mContext.sendBroadcast(intent);
             }
         } catch (Exception e) {
             // TODO: handle exception
