@@ -12,16 +12,21 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
+
 //import org.qiyi.pluginnew.ActivityClassGenerator;
 
 import android.annotation.SuppressLint;
-import android.app.IntentService;
+import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
 import android.os.Parcelable;
 import android.text.TextUtils;
 import dalvik.system.DexClassLoader;
@@ -32,7 +37,7 @@ import dalvik.system.DexClassLoader;
  * dexopt系统bug：http://code.google.com/p/android/issues/detail?id=14962
  * 
  */
-public class PluginInstallerService extends IntentService {
+public class PluginInstallerService extends Service {
     
     /** TAG */
     public static final String TAG = PluginDebugLog.TAG;
@@ -46,16 +51,38 @@ public class PluginInstallerService extends IntentService {
     /** lib目录的 cpu abi 其实位置。比如 x86 的起始位置 */
     public static int APK_LIB_CPUABI_OFFSITE = APK_LIB_DIR_PREFIX.length();
 
-    public PluginInstallerService() {
-        super(PluginInstallerService.class.getSimpleName());
-    } 
+    private static int MSG_ACTION_INSTALL = 0;
+    private static int MSG_ACTION_QUIT = 1;
 
-    /**
-     * @param name
-     */
-    public PluginInstallerService(String name) {
-        super(name);
+    private static int DELAY_QUIT_STEP = 1000 * 10;
+
+    private final class ServiceHandler extends Handler {
+        public ServiceHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            PluginDebugLog.log(TAG, "handleMessage: what " + msg.what);
+            if (msg.what == MSG_ACTION_INSTALL) {
+                if (null != msg && msg.obj instanceof Intent) {
+                    onHandleIntent((Intent) msg.obj);
+                }
+                if (!mServiceHandler.hasMessages(MSG_ACTION_INSTALL)
+                        && !mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
+                    PluginDebugLog.log(TAG, "sendMessage MSG_ACTION_QUIT");
+                    Message quit = mServiceHandler.obtainMessage(MSG_ACTION_QUIT);
+                    mServiceHandler.sendMessageDelayed(quit, DELAY_QUIT_STEP);
+                }
+            } else if (msg.what == MSG_ACTION_QUIT) {
+                stopSelf();
+            }
+        }
     }
+
+    private volatile Looper mServiceLooper;
+    private volatile ServiceHandler mServiceHandler;
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -64,29 +91,38 @@ public class PluginInstallerService extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-    }
+        HandlerThread thread = new HandlerThread("PluginInstallerService");
+        thread.start();
 
-    @Override
-    public void onStart(Intent intent, int startId) {
-    	PluginDebugLog.log(TAG, "pluginInstallerService:onStart");
-        super.onStart(intent, startId);
-        
+        mServiceLooper = thread.getLooper();
+        mServiceHandler = new ServiceHandler(mServiceLooper);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return super.onStartCommand(intent, flags, startId);
+        PluginDebugLog.log(TAG, "pluginInstallerService:onStartCommand");
+        super.onStartCommand(intent, flags, startId);
+        if (mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
+            PluginDebugLog.log(TAG, "removeMessages MSG_ACTION_QUIT");
+            mServiceHandler.removeMessages(MSG_ACTION_QUIT);
+        }
+        PluginDebugLog.log(TAG, "sendMessage MSG_ACTION_INSTALL");
+        Message msg = mServiceHandler.obtainMessage(MSG_ACTION_INSTALL);
+        msg.arg1 = startId;
+        msg.obj = intent;
+        mServiceHandler.sendMessage(msg);
+        return START_REDELIVER_INTENT;
     }
 
     @Override
     public void onDestroy() {
+        mServiceLooper.quit();
         super.onDestroy();
         // 退出时结束进程
         android.os.Process.killProcess(android.os.Process.myPid());
     }
 
-    @Override
-    protected void onHandleIntent(Intent intent) {
+    private void onHandleIntent(Intent intent) {
     	if(intent == null){
     		PluginDebugLog.log(TAG, "onHandleIntent intent is null");
     		return;
