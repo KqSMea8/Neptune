@@ -338,9 +338,10 @@ public class CMPackageManager {
         String value = pkgs.toString();
         Editor editor = sp.edit();
         editor.putString(SP_APP_LIST, value);
-        editor.commit();
+        editor.apply();
         PluginDebugLog.log(TAG, "saveInstalledPackageList update InstalledPackageList");
     }
+
     /**
      * 安装广播，用于监听安装过程中是否成功。
      */
@@ -354,7 +355,7 @@ public class CMPackageManager {
                 String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
                 String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
                 PluginPackageInfoExt infoExt = intent
-                    .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
+                        .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
                 PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
                 CMPackageInfo pkgInfo = new CMPackageInfo();
                 pkgInfo.packageName = pkgName;
@@ -552,7 +553,7 @@ public class CMPackageManager {
             for (String rPkg : refs) {
                 rInfo = getInstalledPkgsInstance().get(rPkg);
                 if (null == rInfo || TextUtils
-                                .equals(rInfo.installStatus, CMPackageManager.PLUGIN_UNINSTALLED)) {
+                        .equals(rInfo.installStatus, CMPackageManager.PLUGIN_UNINSTALLED)) {
                     PluginDebugLog.log(TAG, "refs not installed: " + rPkg);
                     return false;
                 }
@@ -705,7 +706,7 @@ public class CMPackageManager {
      * @param packageName 需要删除的package 的 packageName
      * @param observer    卸载结果回调
      * @param deleteData  是否删除生成的data
-     * @param upgrading  是否是升级之前的操作
+     * @param upgrading   是否是升级之前的操作
      */
     private void deletePackage(final String packageName, IPackageDeleteObserver observer,
                                boolean deleteData, boolean upgrading) {
@@ -818,7 +819,7 @@ public class CMPackageManager {
     }
 
     private void onActionFinish(String packageName, int errorCode) {
-        for(Map.Entry<String, IActionFinishCallback> entry: mActionFinishCallbacks.entrySet()) {
+        for (Map.Entry<String, IActionFinishCallback> entry : mActionFinishCallbacks.entrySet()) {
             IActionFinishCallback callback = entry.getValue();
             if (callback != null) {
                 try {
