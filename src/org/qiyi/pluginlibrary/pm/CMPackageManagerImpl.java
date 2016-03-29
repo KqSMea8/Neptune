@@ -566,7 +566,7 @@ public class CMPackageManagerImpl {
         action.listener = listener;
         action.info = info;
         action.callbackHost = this;
-        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+        if (action.meetCondition() && addAction(action) && actionIsReady(action) ) {
             action.doAction();
         }
     }
@@ -597,7 +597,7 @@ public class CMPackageManagerImpl {
         action.listener = listener;
         action.info = info;
         action.callbackHost = this;
-        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+        if (action.meetCondition() && addAction(action) && actionIsReady(action) ) {
             action.doAction();
         }
     }
@@ -627,7 +627,7 @@ public class CMPackageManagerImpl {
         action.info = info;
         action.callbackHost = this;
         action.observer = observer;
-        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
             action.doAction();
         }
     }
@@ -649,7 +649,7 @@ public class CMPackageManagerImpl {
         action.info = info;
         action.callbackHost = this;
         action.observer = observer;
-        if (addAction(action) && actionIsReady(action) && action.meetCondition()) {
+        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
             action.doAction();
         }
     }
