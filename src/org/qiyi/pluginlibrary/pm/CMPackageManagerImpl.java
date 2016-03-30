@@ -193,6 +193,10 @@ public class CMPackageManagerImpl {
                 } else {
                     canMeetCondition = true;
                 }
+            } else if (mService == null) {
+                // set canMeetCondition to true in case of CMPackageManagerService
+                // is not connected, so that the action can be added in action list.
+                canMeetCondition = true;
             }
             PluginDebugLog.log(TAG, info.packageName +
                     "PluginInstallAction check condition with result " + canMeetCondition);
@@ -285,6 +289,10 @@ public class CMPackageManagerImpl {
                         }
                     }
                 }
+            } else if (mService == null) {
+                // set canMeetCondition to true in case of CMPackageManagerService
+                // is not connected, so that the action can be added in action list.
+                canMeetCondition = true;
             }
             PluginDebugLog.log(TAG, info.packageName +
                     " PluginDeleteAction check condition with result " + canMeetCondition);
