@@ -243,11 +243,6 @@ public class PluginInstaller {
             return;
         }
 
-        CMPackageInfo installedInfo = CMPackageManagerImpl.getInstance(context).getPackageInfo(pluginInfo.packageName);
-        if (installedInfo != null
-                && lessOrEqualInstalled(installedInfo.pluginInfo, pluginInfo, false)) {
-            return;
-        }
         Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
         intent.setClass(context, PluginInstallerService.class);
         intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, filePath);
