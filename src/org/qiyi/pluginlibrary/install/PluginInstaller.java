@@ -31,20 +31,24 @@ import java.util.List;
 
 /**
  * app 安装接口。实际安装采用 {@link PluginInstallerService} 独立进程异步安装。<br>
- * 
+ * <p/>
  * 插件支持的后缀名为 {@value #APK_SUFFIX}, 内置在 assets/pluginapp 目录下，以{@value #APK_SUFFIX}后缀命名，安装完后缀名也是 {@value #APK_SUFFIX}。<br>
- * 
+ * <p/>
  * 由于android 2.2 以及一下对 asset文件的大小有1M限制。所以我们需要在编译脚本中对 aapt 增加一个 -0 {@value #APK_SUFFIX}参数，告诉aapt不要对{@value #APK_SUFFIX} 进行压缩处理。
  * 对于此问题的解释:http://ponystyle.com/blog/2010/03/26/dealing-with-asset-compression-in-android-apps/
  */
 public class PluginInstaller {
-    
-    /** TAG */
+
+    /**
+     * TAG
+     */
     public static final String TAG = "PluginInstaller";
 
     public static final String PLUGIN_PATH = "pluginapp";
 
-    /** 内置app的目录 assets/pluginapp */
+    /**
+     * 内置app的目录 assets/pluginapp
+     */
     public static final String ASSETS_PATH = "pluginapp";
 
     public static final String APK_SUFFIX = ".apk";
@@ -53,27 +57,33 @@ public class PluginInstaller {
     public static final String SO_SUFFIX = ".so";
 
     public static final String DEX_SUFFIX = ".dex";
-    
-    /** shared preference file name. */
+
+    /**
+     * shared preference file name.
+     */
     public static final String SHARED_PREFERENCE_NAME = "pluginapp";
-  
+
     /** {@link #installBuildinApps(Context) 只能调用一次，再次调用，直接返回} */
 //    private static boolean sInstallBuildinAppsCalled = false;
-    /** receiver 只注册一次。 */
+    /**
+     * receiver 只注册一次。
+     */
     private static boolean sInstallerReceiverRegistered = false;
-    
-    /** 安装列表，用于存储正在安装的 文件列表（packageName），安装完从中删除。  */
+
+    /**
+     * 安装列表，用于存储正在安装的 文件列表（packageName），安装完从中删除。
+     */
     private static LinkedList<String> sInstallList = new LinkedList<String>();
-    
-    /** 安装阶段本次需要安装的内置app列表（packageName） */
-    private static ArrayList<String> sBuildinAppList  = new ArrayList<String>();
-    
+
+    /**
+     * 安装阶段本次需要安装的内置app列表（packageName）
+     */
+    private static ArrayList<String> sBuildinAppList = new ArrayList<String>();
+
     /**
      * 返回 pluginapp的根目录 /data/data/pluginapp/app_pluginapp
-     * 
-     * @param context
-     *            host的context
-     * 
+     *
+     * @param context host的context
      * @return 插件跟路径
      */
     public static File getPluginappRootPath(Context context) {
@@ -82,7 +92,7 @@ public class PluginInstaller {
         if (!repoDir.exists()) {
             repoDir.mkdir();
         }
-        PluginDebugLog.log(TAG, "getPluginappRootPath:"+repoDir);
+        PluginDebugLog.log(TAG, "getPluginappRootPath:" + repoDir);
         return repoDir;
     }
 
@@ -107,12 +117,12 @@ public class PluginInstaller {
 
     /**
      * 安装内置在 assets/pluginapp 目录下的 apk
-     * 
+     *
      * @param context
-     * @param info 插件方案版本号
+     * @param info    插件方案版本号
      */
-    public synchronized static void installBuildinApps(final String packageName, final Context context,
-            final PluginPackageInfoExt info) {
+    public synchronized static void installBuildinApps(
+            final String packageName, final Context context, final PluginPackageInfoExt info) {
         registerInstallderReceiver(context);
         new AsyncTask<Void, Void, Void>() {
 
@@ -140,72 +150,42 @@ public class PluginInstaller {
                 }
                 return null;
             }
-            
+
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
-     * 
      * @param context
      * @param assetsPath
-     * @param info 插件信息
+     * @param info       插件信息
      * @return 需要安装 返回 true，不需要安装 返回 false.
      */
-	private static boolean installBuildinApp(Context context, String assetsPath,
-			PluginPackageInfoExt info) {
-        
-        // 先判断是否有安装文件存在，然后判断一下更新时间是否一致。
-        // 内置app必须以包名命名
+    private static boolean installBuildinApp(
+            Context context, String assetsPath, PluginPackageInfoExt info) {
+
         int start = assetsPath.lastIndexOf("/");
         int end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         String mapPackagename = assetsPath.substring(start + 1, end);
-        
-        CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(context).getPackageInfo(mapPackagename);
-        
-        if (!TextUtils.isEmpty(mapPackagename) && pkgInfo != null) {
-            
-            File installedFile =  new File(pkgInfo.srcApkPath);
-            if (installedFile.exists() && installedFile.isFile() && installedFile.length() > 0 ) {
-                try {
-                    // 如果已经存在了 ，则比较两个文件的最后修改日期，决定是否更新。
-                    InputStream currentIs = new FileInputStream(installedFile);
-                    SimpleDateTime currentDateTime = Util.readApkModifyTime(currentIs);
-                    currentIs.close();
-                    // 内置版本信息 asset 目录下的
-                    InputStream buildinIs = context.getAssets().open(assetsPath);
-                    SimpleDateTime buildinDateTime = Util.readApkModifyTime(buildinIs);
-                    buildinIs.close();
-                    
-                    // 如果当前安装的时间>= 内置app，则直接返回. 这种情况出现在 通过下载安装
-                    if (currentDateTime.compareTo(buildinDateTime) >= 0) { 
-                        return false;
-                    } // else 继续往下执行，进行安装
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    // 异常继续往后执行.
-                }
-            }
-        }
+
         PluginPackageInfoExt infoExt = null;
-		if (info == null && !TextUtils.isEmpty(mapPackagename)) {
-			infoExt = new PluginPackageInfoExt();
-			infoExt.packageName = mapPackagename;
-			infoExt.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_ASSETS;
-			infoExt.mPluginInstallMethod = CMPackageManager.PLUGIN_METHOD_INSTR;
-		} else {
-			infoExt = info;
-		}
+        if (info == null && !TextUtils.isEmpty(mapPackagename)) {
+            infoExt = new PluginPackageInfoExt();
+            infoExt.packageName = mapPackagename;
+            infoExt.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_ASSETS;
+            infoExt.mPluginInstallMethod = CMPackageManager.PLUGIN_METHOD_INSTR;
+        } else {
+            infoExt = info;
+        }
 
         startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, infoExt);
         return true;
     }
-    
+
     /**
-     * 
      * 调用 {@link PluginInstallerService} 进行实际的安装过程。采用独立进程异步操作。
-     * 
+     *
      * @param context
-     * @param filePath 支持两种scheme {@link CMPackageManager#SCHEME_ASSETS} 和 {@link CMPackageManager#SCHEME_FILE}
+     * @param filePath   支持两种scheme {@link CMPackageManager#SCHEME_ASSETS} 和 {@link CMPackageManager#SCHEME_FILE}
      * @param pluginInfo 插件信息
      */
     private static void startInstall(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
@@ -215,7 +195,7 @@ public class PluginInstaller {
          * 2、外部文件的安装，直接从file中获取packagename, 消耗100ms级别，可以容忍。
          */
         String packageName = null;
-        
+
         boolean isBuildin = false;
 
         if (filePath.startsWith(CMPackageManager.SCHEME_ASSETS)) {
@@ -223,16 +203,16 @@ public class PluginInstaller {
             int end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
             packageName = filePath.substring(start + 1, end);
             isBuildin = true;
-            
-        } else if(filePath.startsWith(CMPackageManager.SCHEME_FILE)) {
-            PackageManager pm = context.getPackageManager();     
+
+        } else if (filePath.startsWith(CMPackageManager.SCHEME_FILE)) {
+            PackageManager pm = context.getPackageManager();
             String apkFilePath = filePath.substring(CMPackageManager.SCHEME_FILE.length());
             PackageInfo pkgInfo = pm.getPackageArchiveInfo(apkFilePath, 0);
             if (pkgInfo != null) {
                 packageName = pkgInfo.packageName;
             }
         }
-        
+
         if (packageName != null) {
             add2InstallList(packageName); // 添加到安装列表中
             if (isBuildin) {
@@ -246,20 +226,21 @@ public class PluginInstaller {
         Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
         intent.setClass(context, PluginInstallerService.class);
         intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, filePath);
-        intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable)pluginInfo);
-        
+        intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) pluginInfo);
+
         context.startService(intent);
     }
 
     /**
      * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
      * 安装完会有 {@link CMPackageManager＃ACTION_PACKAGE_INSTALLED} broadcast。
-     * @param context 
-     * @param filePath apk 文件目录 比如  /sdcard/xxxx.apk
+     *
+     * @param context
+     * @param filePath   apk 文件目录 比如  /sdcard/xxxx.apk
      * @param pluginInfo 插件信息
      */
     public static void installApkFile(Context context, String filePath,
-            PluginPackageInfoExt pluginInfo) {
+                                      PluginPackageInfoExt pluginInfo) {
         if (TextUtils.isEmpty(filePath)) {
             PluginDebugLog.log(TAG, "installApkFile return!");
             return;
@@ -273,53 +254,51 @@ public class PluginInstaller {
             startInstall(context, CMPackageManager.SCHEME_FILE + filePath, pluginInfo);
         }
     }
-    
+
     /**
      * 返回已安装的应用列表。临时函数。可能为空，安装内置app还没有执行完毕。需要监听安装broadcast来更新安装列表。
-     * 
+     * <p/>
      * Deprecated, use {@link CMPackageManager#getInstalledApps()}
-     * 
+     *
      * @param context
      * @return 安装apk文件的 列表
      */
     @Deprecated
     public static ArrayList<File> getInstalledApps(Context context) {
         List<CMPackageInfo> pkgList = CMPackageManagerImpl.getInstance(context).getInstalledApps();
-        
+
         ArrayList<File> result = new ArrayList<File>();
         for (CMPackageInfo pkg : pkgList) {
             String filePath = pkg.srcApkPath;
             result.add(new File(filePath));
         }
-        
+
         return result;
     }
-    
+
     /**
      * 获取安装插件的apk文件目录
-     * 
-     * @param context
-     *            host的application context
-     * @param packageName
-     *            包名
+     *
+     * @param context     host的application context
+     * @param packageName 包名
      * @return File
      */
     public static File getInstalledApkFile(Context context, String packageName) {
         CMPackageInfo info = CMPackageManagerImpl.getInstance(context).getPackageInfo(packageName);
-    
+
         if (info != null && !TextUtils.isEmpty(info.srcApkPath)) {
             return new File(info.srcApkPath);
         } else {
             return null;
         }
     }
-    
+
     public static File getInstalledDexFile(Context context, String packageName) {
-    	File dataDir = null;
-		dataDir = new File(PluginInstaller.getPluginappRootPath(context),packageName);
-		
-		File dexFile = new File(dataDir,packageName+".dex");
-		return dexFile;
+        File dataDir = null;
+        dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
+
+        File dexFile = new File(dataDir, packageName + ".dex");
+        return dexFile;
     }
 
     private static BroadcastReceiver sApkInstallerReceiver = new BroadcastReceiver() {
@@ -329,18 +308,18 @@ public class PluginInstaller {
             String action = intent.getAction();
             if (CMPackageManager.ACTION_PACKAGE_INSTALLED.equals(action)) {
                 String pkgName = intent.getStringExtra(CMPackageManager.EXTRA_PKG_NAME);
-                
+
                 handleApkInstalled(context, pkgName);
             } else if (CMPackageManager.ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
-            	String pkgName = intent.getStringExtra(CMPackageManager.EXTRA_PKG_NAME);
-            	if (!TextUtils.isEmpty(pkgName)) {
-            		sInstallList.remove(pkgName);
-            	}
+                String pkgName = intent.getStringExtra(CMPackageManager.EXTRA_PKG_NAME);
+                if (!TextUtils.isEmpty(pkgName)) {
+                    sInstallList.remove(pkgName);
+                }
             }
         }
     };
-    
-    
+
+
     private static void registerInstallderReceiver(Context context) {
         if (sInstallerReceiverRegistered) {
             // 已经注册过就不再注册
@@ -348,32 +327,33 @@ public class PluginInstaller {
         }
         sInstallerReceiverRegistered = true;
         Context appcontext = context.getApplicationContext();
-        
+
         IntentFilter filter = new IntentFilter();
         filter.addAction(CMPackageManager.ACTION_PACKAGE_INSTALLED);
         filter.addAction(CMPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-        
+
         appcontext.registerReceiver(sApkInstallerReceiver, filter);
     }
-    
+
     /**
      * 增加到安装列表
+     *
      * @param packagename
      */
     private synchronized static void add2InstallList(String packagename) {
         if (sInstallList.contains(packagename)) {
             return;
         }
-        
+
         sInstallList.add(packagename);
     }
-    
-    
+
+
     private synchronized static void handleApkInstalled(Context context, String packageName) {
-        
+
         sInstallList.remove(packageName); // 从安装列表中删除
-        
+
         // 检查内置app是否安装完成
 //        if (!sInstallBuildinAppsFinished) {
 //            if (sInstallList.isEmpty()) {
@@ -392,8 +372,8 @@ public class PluginInstaller {
 //            }
 //        }
     }
-    
-    
+
+
     /**
      * 内置app安装处理逻辑完成，有可能是检查不需要安装，有可能是实际安装完成。
      * @param context
@@ -420,24 +400,25 @@ public class PluginInstaller {
 
     /**
      * delete the apk,so.dex
+     *
      * @param context
      * @param packageName
      */
-	public static void deleteInstallerPackage(Context context, String packageName) {
+    public static void deleteInstallerPackage(Context context, String packageName) {
 
-		File dataDir = null;
-		dataDir = new File(PluginInstaller.getPluginappRootPath(context),packageName);
-		File apkPath = getInstalledApkFile(context, packageName);
-		File dexPath = getInstalledDexFile(context, packageName);
-		if (apkPath != null) {
-			apkPath.delete();
-		}
+        File dataDir = null;
+        dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
+        File apkPath = getInstalledApkFile(context, packageName);
+        File dexPath = getInstalledDexFile(context, packageName);
+        if (apkPath != null) {
+            apkPath.delete();
+        }
 
-		if (dexPath != null) {
-			dexPath.delete();
-		}
+        if (dexPath != null) {
+            dexPath.delete();
+        }
 
-		File lib = new File(dataDir, "lib");
+        File lib = new File(dataDir, "lib");
 
         if (lib != null) {
             try {
@@ -446,20 +427,21 @@ public class PluginInstaller {
                 e.printStackTrace();
             }
         }
-	}
+    }
 
-	/**
-	 * delete the database,sharedPreference,file and cache.
-	 * @param context
-	 * @param packageName
-	 */
-	public static void deletePluginData(Context context, String packageName) {
-		File dataDir = null;
-		dataDir = new File(PluginInstaller.getPluginappRootPath(context),packageName);
-		File db = new File(dataDir, "databases");
-		File sharedPreference = new File(dataDir, "shared_prefs");
-		File file = new File(dataDir, "files");
-		File cache = new File(dataDir, "cache");
+    /**
+     * delete the database,sharedPreference,file and cache.
+     *
+     * @param context
+     * @param packageName
+     */
+    public static void deletePluginData(Context context, String packageName) {
+        File dataDir = null;
+        dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
+        File db = new File(dataDir, "databases");
+        File sharedPreference = new File(dataDir, "shared_prefs");
+        File file = new File(dataDir, "files");
+        File cache = new File(dataDir, "cache");
 
         if (db != null) {
             try {
@@ -468,7 +450,7 @@ public class PluginInstaller {
                 e.printStackTrace();
             }
         }
-        
+
         if (sharedPreference != null) {
             try {
                 Util.deleteDirectory(sharedPreference);
@@ -476,7 +458,7 @@ public class PluginInstaller {
                 e.printStackTrace();
             }
         }
-        
+
         if (file != null) {
             try {
                 Util.deleteDirectory(file);
@@ -484,7 +466,7 @@ public class PluginInstaller {
                 e.printStackTrace();
             }
         }
-        
+
         if (cache != null) {
             try {
                 Util.deleteDirectory(cache);
@@ -492,44 +474,16 @@ public class PluginInstaller {
                 e.printStackTrace();
             }
         }
-	}
+    }
 
-    
+
     /**
      * 查看某个app是否正在安装
+     *
      * @param packageName
      */
     public static synchronized boolean isInstalling(String packageName) {
         return sInstallList.contains(packageName);
-    }
-
-    /**
-     * @param localData  this should be installed plugin
-     * @param remoteData this is which need to compare plugin
-     * @param onlyLess   true:only less return true   false :less or equal return true
-     * @return true the remote plugin less or equal the installed plugin
-     */
-    private static boolean lessOrEqualInstalled(PluginPackageInfoExt localData, PluginPackageInfoExt remoteData, boolean onlyLess) {
-
-        if(localData == null || remoteData == null){
-            return false;
-        }
-
-        if (!TextUtils.equals(localData.packageName,remoteData.packageName)) {
-            return false;
-        }
-        int result = comparePluginVersion(localData.plugin_ver, remoteData.plugin_ver);
-        if (result > 0) {
-            return true;
-        } else if (result == 0) {
-            int greResult = comparePluginVersion(localData.plugin_gray_ver, remoteData.plugin_gray_ver);
-            if (greResult > 0) {
-                return true;
-            } else if (greResult == 0 && !onlyLess) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
