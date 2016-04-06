@@ -422,7 +422,7 @@ public class PluginInstallerService extends Service {
 
         File pkgDir = new File(pkgDirPath, packageName);
 
-        if (pkgDir.exists()) {
+        if (pkgDir.exists() && pkgDir.canRead() && pkgDir.canWrite()) {
             ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null,
                     clsLoader);
             // 构造函数会执行loaddex底层函数。
