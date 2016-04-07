@@ -208,6 +208,16 @@ public class CMPackageManager {
             }
         }
 
+        if (PluginDebugLog.isDebug()) {
+            PluginDebugLog.log(TAG,"getInstalledApps begin");
+            for (CMPackageInfo info : list) {
+                if (info != null && info.pluginInfo != null) {
+                    PluginDebugLog.log(TAG, info.pluginInfo.toString());
+                }
+            }
+            PluginDebugLog.log(TAG,"getInstalledApps end");
+        }
+
         return list;
     }
 
@@ -338,8 +348,8 @@ public class CMPackageManager {
         String value = pkgs.toString();
         Editor editor = sp.edit();
         editor.putString(SP_APP_LIST, value);
+        PluginDebugLog.log(TAG, "saveInstalledPackageList with value: " + value);
         editor.apply();
-        PluginDebugLog.log(TAG, "saveInstalledPackageList update InstalledPackageList");
     }
 
     /**
@@ -545,6 +555,7 @@ public class CMPackageManager {
     public boolean isPackageInstalled(String packageName) {
         CMPackageInfo info = getInstalledPkgsInstance().get(packageName);
         if (null == info || null == info.pluginInfo) {
+            PluginDebugLog.log(TAG, "isPackageInstalled just return due to null plugin info");
             return false;
         }
         List<String> refs = info.pluginInfo.getPluginResfs();
@@ -571,6 +582,7 @@ public class CMPackageManager {
      */
     public CMPackageInfo getPackageInfo(String packageName) {
         if (packageName == null || packageName.length() == 0) {
+            PluginDebugLog.log(TAG, "getPackageInfo return null due to empty package name");
             return null;
         }
 
@@ -578,6 +590,13 @@ public class CMPackageManager {
         if (null != info && !TextUtils.equals(info.installStatus, PLUGIN_UNINSTALLED)) {
             return info;
         }
+        if (info == null) {
+            PluginDebugLog.log(TAG, "getPackageInfo return null due to null package info");
+        } else {
+            PluginDebugLog.log(TAG,
+                    "getPackageInfo return null due to infor.status: " + info.installStatus);
+        }
+
         return null;
     }
 
@@ -609,6 +628,8 @@ public class CMPackageManager {
         if (pluginInfo != null
                 && !TextUtils.equals(pluginInfo.mFileSourceType,
                 CMPackageManager.PLUGIN_SOURCE_SDCARD)) {
+            PluginDebugLog.log(TAG,
+                    "installApkFile: change mFileSourceType to PLUGIN_SOURCE_SDCARD");
             pluginInfo.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_NETWORK;
         }
         PluginInstaller.installApkFile(mContext, filePath, pluginInfo);
@@ -710,6 +731,8 @@ public class CMPackageManager {
      */
     private void deletePackage(final String packageName, IPackageDeleteObserver observer,
                                boolean deleteData, boolean upgrading) {
+        PluginDebugLog.log(TAG, "deletePackage with " + packageName +
+                " deleteData: " + deleteData + " upgrading: " + upgrading);
         try {
             // 先停止运行插件
             TargetActivatorNew.unLoadTarget(packageName);
@@ -732,9 +755,14 @@ public class CMPackageManager {
                 if (null != info) {
                     info.installStatus = PLUGIN_UPGRADING;
                     saveInstalledPackageList();
+                } else {
+                    PluginDebugLog.log(TAG, "deletePackage " + packageName +
+                            " with no installed info, can't update status");
                 }
             } else {
                 // 从安装列表中删除，并且更新存储安装列表的文件
+                PluginDebugLog.log(TAG, "deletePackage " + packageName +
+                        "remove from installed list");
                 getInstalledPkgsInstance().remove(packageName);
                 saveInstalledPackageList();
             }
@@ -758,9 +786,11 @@ public class CMPackageManager {
      * @return
      */
     public boolean uninstall(String pkgName) {
+        PluginDebugLog.log(TAG, "CMPackageManager::uninstall: " + pkgName);
         boolean uninstallFlag = false;
         try {
             if (TextUtils.isEmpty(pkgName)) {
+                PluginDebugLog.log(TAG, "CMPackageManager::uninstall pkgName is empty return");
                 return false;
             }
             File apk = PluginInstaller.getInstalledApkFile(mContext, pkgName);
@@ -781,6 +811,9 @@ public class CMPackageManager {
             if (packageInfo != null) {
                 packageInfo.installStatus = PLUGIN_UNINSTALLED;
                 saveInstalledPackageList();
+            } else {
+                PluginDebugLog.log(TAG,
+                        "CMPackageManager::uninstall plugin info of " + pkgName + " is null");
             }
         }
 

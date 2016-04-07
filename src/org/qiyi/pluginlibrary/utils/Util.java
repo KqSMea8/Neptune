@@ -317,6 +317,11 @@ public final class Util {
      * @throws IOException in case deletion is unsuccessful
      */
     public static void deleteDirectory(File directory) throws IOException {
+        if (directory == null) {
+            PluginDebugLog.log(TAG, "deleteDirectory pkgName is empty return");
+            return;
+        }
+
         if (!directory.exists()) {
             return;
         }

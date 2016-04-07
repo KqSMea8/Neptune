@@ -16,13 +16,10 @@ import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.SimpleDateTime;
 import org.qiyi.pluginlibrary.utils.Util;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -162,7 +159,6 @@ public class PluginInstaller {
      */
     private static boolean installBuildinApp(
             Context context, String assetsPath, PluginPackageInfoExt info) {
-
         int start = assetsPath.lastIndexOf("/");
         int end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         String mapPackagename = assetsPath.substring(start + 1, end);
@@ -175,6 +171,10 @@ public class PluginInstaller {
             infoExt.mPluginInstallMethod = CMPackageManager.PLUGIN_METHOD_INSTR;
         } else {
             infoExt = info;
+        }
+
+        if (infoExt != null) {
+            PluginDebugLog.log(TAG, "installBuildinApp" + infoExt.toString());
         }
 
         startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, infoExt);
@@ -198,6 +198,11 @@ public class PluginInstaller {
 
         boolean isBuildin = false;
 
+        if (pluginInfo != null) {
+            PluginDebugLog.log(TAG, "startInstall with file path: " + filePath
+                    + " and plugin info: " + pluginInfo.toString());
+        }
+
         if (filePath.startsWith(CMPackageManager.SCHEME_ASSETS)) {
             int start = filePath.lastIndexOf("/");
             int end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
@@ -216,10 +221,12 @@ public class PluginInstaller {
         if (packageName != null) {
             add2InstallList(packageName); // 添加到安装列表中
             if (isBuildin) {
+                PluginDebugLog.log(TAG, "add " + packageName + " in BuildinAppList");
                 sBuildinAppList.add(packageName); // 添加到内置app安装列表中
             }
         }
         if (pluginInfo == null) {
+            PluginDebugLog.log(TAG, "startInstall pluginInfo is null, just return!");
             return;
         }
 
@@ -242,9 +249,10 @@ public class PluginInstaller {
     public static void installApkFile(Context context, String filePath,
                                       PluginPackageInfoExt pluginInfo) {
         if (TextUtils.isEmpty(filePath)) {
-            PluginDebugLog.log(TAG, "installApkFile return!");
+            PluginDebugLog.log(TAG, "filePath is empty and installApkFile return!");
             return;
         }
+
         registerInstallderReceiver(context);
         if (filePath.endsWith(SO_SUFFIX)) {
             startInstall(context, CMPackageManager.SCHEME_SO + filePath, pluginInfo);
@@ -342,6 +350,7 @@ public class PluginInstaller {
      * @param packagename
      */
     private synchronized static void add2InstallList(String packagename) {
+        PluginDebugLog.log(TAG, "add2InstallList with" + packagename);
         if (sInstallList.contains(packagename)) {
             return;
         }

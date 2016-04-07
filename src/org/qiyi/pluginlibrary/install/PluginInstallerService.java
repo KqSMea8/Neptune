@@ -262,9 +262,8 @@ public class PluginInstallerService extends Service {
      * @param apkFilePath 文件绝对目录
      */
     private void installAPKFile(String apkFilePathWithScheme, PluginPackageInfoExt info) {
-
-        PluginDebugLog.log(TAG, "installAPKFile:----------------------");
         String apkFilePath = apkFilePathWithScheme.substring(CMPackageManager.SCHEME_FILE.length());
+        PluginDebugLog.log(TAG, "PluginInstallerService::installAPKFile: " + apkFilePath);
 
         File source = new File(apkFilePath);
         InputStream is = null;
@@ -274,7 +273,7 @@ public class PluginInstallerService extends Service {
             setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_FILE_NOTFOUND, info);
             e.printStackTrace();
         }
-        PluginDebugLog.log(TAG, is == null ? "判断流是否为空:true" : "判断流是否为空:false-------------------");
+        PluginDebugLog.log(TAG, is == null ? "判断流是否为空:true" : "判断流是否为空:false");
         doInstall(is, apkFilePathWithScheme, info);
 
         try {
@@ -289,14 +288,21 @@ public class PluginInstallerService extends Service {
 
 
     private String doInstall(InputStream is, String srcPathWithScheme, PluginPackageInfoExt info) {
-        PluginDebugLog.log(TAG, "--- doInstall : " + srcPathWithScheme);
-        PluginDebugLog.log(TAG, "pluginInstallerService:srcPathWithScheme" + srcPathWithScheme + "-------------");
+
         if (is == null || srcPathWithScheme == null) {
+            PluginDebugLog.log(TAG,
+                    "doInstall : srcPathWithScheme or InputStream is null and just return!");
             return null;
         }
+
+        PluginDebugLog.log(TAG, "doInstall : " + srcPathWithScheme);
+        if (info != null) {
+            PluginDebugLog.log(TAG, "doInstall : " + info.toString());
+        }
+
         File tempFile = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + "");
         boolean result = Util.copyToFile(is, tempFile);
-        PluginDebugLog.log(TAG, "pluginInstallerService:result" + result + "+++++++++++++");
+        PluginDebugLog.log(TAG, "doInstall copy result" + result);
         if (!result) {
             tempFile.delete();
             setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
@@ -313,6 +319,17 @@ public class PluginInstallerService extends Service {
 
 
         String packageName = pkgInfo.packageName;
+
+        if (PluginDebugLog.isDebug()) {
+            int nameStart = srcPathWithScheme.lastIndexOf("/");
+            int nameEnd = srcPathWithScheme.lastIndexOf(PluginInstaller.APK_SUFFIX);
+            String fileName = srcPathWithScheme.substring(nameStart + 1, nameEnd);
+            PluginDebugLog.log(TAG, "doInstall with: " + packageName + " and file: " + fileName);
+            if (!fileName.equals(packageName)) {
+                PluginDebugLog.log(TAG,
+                        "doInstall with wrong apk file as the packagme is not same");
+            }
+        }
 
         // 校验签名
         //插件内部不需要在进行校验
@@ -333,6 +350,8 @@ public class PluginInstallerService extends Service {
                 tempFile.delete();
 //                throw new RuntimeException(srcPathWithScheme + " must be named with it's package name : "
 //                        + packageName + PluginInstaller.APK_SUFFIX);
+                PluginDebugLog.log(TAG,
+                        "doInstall build plugin, package name is not same as in apk file, return!");
                 return null;
             }
         }
@@ -388,14 +407,18 @@ public class PluginInstallerService extends Service {
      * @param srcPathWithScheme 安装文件路径
      * @param failReason        失败原因
      */
-    private void setInstallFail(String srcPathWithScheme, int failReason, PluginPackageInfoExt info) {
+    private void setInstallFail(
+            String srcPathWithScheme, int failReason, PluginPackageInfoExt info) {
         Intent intent = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         intent.setPackage(getPackageName());
         intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
         intent.putExtra(ErrorType.ERROR_RESON, failReason);
         intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
         sendBroadcast(intent);
-        PluginDebugLog.log(TAG, "Send setInstallFail " + " PluginPackageInfoExt: " + info);
+        if (info != null) {
+            PluginDebugLog.log(TAG, "Send setInstallFail with reason: "
+                    + failReason + " PluginPackageInfoExt: " + info);
+        }
     }
 
     private void setInstallSuccess(String pkgName, String srcPathWithScheme, String destPath,
@@ -407,7 +430,9 @@ public class PluginInstallerService extends Service {
         intent.putExtra(CMPackageManager.EXTRA_DEST_FILE, destPath);// 同时返回安装前的安装文件目录。
         intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
         sendBroadcast(intent);
-        PluginDebugLog.log(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
+        if (info != null) {
+            PluginDebugLog.log(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
+        }
     }
 
 
