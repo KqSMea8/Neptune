@@ -230,12 +230,20 @@ public class PluginInstaller {
             return;
         }
 
-        Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
-        intent.setClass(context, PluginInstallerService.class);
-        intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, filePath);
-        intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) pluginInfo);
+        try {
+            Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
+            intent.setClass(context, PluginInstallerService.class);
+            intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, filePath);
+            intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) pluginInfo);
 
-        context.startService(intent);
+            context.startService(intent);
+        }catch (Exception e){
+            //QOS_JAVA_211
+            //Unable to launch app com.qiyi.video/10126 for service Intent
+            // { act=com.qiyi.plugin.installed cmp=com.qiyi.video/org.qiyi.pluginlibrary.install.PluginInstallerService }:
+            // user 0 is restricted
+            e.printStackTrace();
+        }
     }
 
     /**
