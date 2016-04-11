@@ -31,6 +31,8 @@ public class ActivityJumpUtil {
 
     public static final String PLUGIN_ACTIVITY_TRANSLUCENT = "Translucent";
 
+    public static final String PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE = "Handle_configuration_change";
+
     /**
      * Get proxy activity class name for all plugin activitys The proxy activity
      * should be register in the manifest.xml
@@ -44,7 +46,7 @@ public class ActivityJumpUtil {
      */
     @Deprecated
     public static String getProxyActivityClsName(String plunginInstallType, String processName) {
-        return getProxyActivityClsName(plunginInstallType, false, processName, false);
+        return getProxyActivityClsName(plunginInstallType, false, false, false, processName);
     }
 
     /**
@@ -60,28 +62,52 @@ public class ActivityJumpUtil {
      */
     public static String getProxyActivityClsName(String plunginInstallType, ActivityInfo actInfo,
                                                  String processName) {
-        String translucentCfg = "";
+        boolean isTranslucent = false;
+        boolean isHandleConfigChange = false;
+        boolean isLandscape = false;
         if (actInfo != null && actInfo.metaData != null) {
-            translucentCfg = actInfo.metaData.getString(META_KEY_ACTIVITY_SPECIAL);
+            String special_cfg = actInfo.metaData.getString(META_KEY_ACTIVITY_SPECIAL);
+            if (!TextUtils.isEmpty(special_cfg)) {
+                if (special_cfg.contains(PLUGIN_ACTIVITY_TRANSLUCENT)) {
+                    PluginDebugLog.log(TAG,
+                            "getProxyActivityClsName meta data contrains translucent flag");
+                    isTranslucent = true;
+                }
+
+                if (special_cfg.contains(PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE)) {
+                    PluginDebugLog.log(TAG,
+                            "getProxyActivityClsName meta data contrains handleConfigChange flag");
+                    isHandleConfigChange = true;
+                }
+            }
         }
 
-        boolean isLandscape = false;
-        if (actInfo != null &&
-                actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-            isLandscape = true;
+        if (actInfo != null) {
+            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+                PluginDebugLog.log(TAG, "getProxyActivityClsName activiy screenOrientation: " +
+                        actInfo.screenOrientation + " isHandleConfigChange = false");
+                isHandleConfigChange = false;
+            }
+
+            if (actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+                PluginDebugLog.log(TAG,
+                        "getProxyActivityClsName isLandscape = true");
+                isLandscape = true;
+            }
         }
+
         return getProxyActivityClsName(plunginInstallType,
-                TextUtils.equals(PLUGIN_ACTIVITY_TRANSLUCENT, translucentCfg),
-                processName, isLandscape);
+                isTranslucent, isLandscape, isHandleConfigChange, processName);
     }
 
-    static String getProxyActivityClsName(String plunginInstallType, boolean isTranslucent,
-                                          String processName, boolean isLandscape) {
+    static String getProxyActivityClsName(
+            String plunginInstallType, boolean isTranslucent, boolean isLandscape,
+            boolean handleConfigChange, String processName) {
         if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, plunginInstallType)) {
             return TARGET_CLASS_NAME;
         } else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, plunginInstallType)) {
             return ProxyComponentMappingByProcess.
-                    mappingActivity(isTranslucent, isLandscape, processName);
+                    mappingActivity(isTranslucent, isLandscape, handleConfigChange, processName);
 //			if (isTranslucent) {
 //				return InstrActivityProxyTranslucent.class.getName();
 //			} else {
@@ -90,7 +116,8 @@ public class ActivityJumpUtil {
         } else {
             // Default option
 //			return InstrActivityProxy.class.getName();
-            return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, isLandscape, processName);
+            return ProxyComponentMappingByProcess.mappingActivity(
+                    isTranslucent, isLandscape, handleConfigChange, processName);
         }
     }
 

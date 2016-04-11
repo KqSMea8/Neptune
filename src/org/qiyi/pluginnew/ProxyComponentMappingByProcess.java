@@ -1,6 +1,7 @@
 package org.qiyi.pluginnew;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
+import org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange;
 import org.qiyi.pluginlibrary.component.ServiceProxy1;
 import org.qiyi.pluginlibrary.component.ServiceProxy2;
 import org.qiyi.pluginlibrary.component.ServiceProxy3;
@@ -68,12 +69,15 @@ public class ProxyComponentMappingByProcess {
      * @param processName
      * @return
      */
-    public static String mappingActivity(boolean isTranslucent, boolean isLandscape, String processName) {
+    public static String mappingActivity(boolean isTranslucent, boolean isLandscape,
+                                         boolean handleConfigChange, String processName) {
         if (null == sProcessMapping) {
             if (isTranslucent) {
                 return InstrActivityProxyTranslucent.class.getName();
             } else if (isLandscape) {
                 return InstrActivityProxyLandscape.class.getName();
+            } if (handleConfigChange) {
+                return InstrActivityProxyHandleConfigChange.class.getName();
             } else {
                 return InstrActivityProxy.class.getName();
             }
@@ -88,6 +92,8 @@ public class ProxyComponentMappingByProcess {
             return InstrActivityProxyTranslucent.class.getName() + classSuffix;
         } else if (isLandscape) {
             return InstrActivityProxyLandscape.class.getName() + classSuffix;
+        } if (handleConfigChange) {
+            return InstrActivityProxyHandleConfigChange.class.getName() + classSuffix;
         } else {
             return InstrActivityProxy.class.getName() + classSuffix;
         }
