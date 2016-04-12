@@ -340,6 +340,11 @@ public class CMPackageManager {
                 pkgs.put(object);
             } catch (JSONException e) {
                 e.printStackTrace();
+                return;
+            } catch (Throwable e) {
+                //outofmemory QOS_java_7_3_1528
+                e.printStackTrace();
+                return;
             }
         }
         // Context.MODE_MULTI_PROCESS
