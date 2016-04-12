@@ -198,8 +198,10 @@ public class CMPackageManagerImpl {
                 // is not connected, so that the action can be added in action list.
                 canMeetCondition = true;
             }
-            PluginDebugLog.log(TAG, info.packageName +
-                    "PluginInstallAction check condition with result " + canMeetCondition);
+            if (info !=null) {
+                PluginDebugLog.log(TAG, info.packageName +
+                        "PluginInstallAction check condition with result " + canMeetCondition);
+            }
             return canMeetCondition;
         }
 
