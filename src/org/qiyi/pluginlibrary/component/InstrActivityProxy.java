@@ -23,7 +23,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.ActionMode;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
@@ -800,5 +799,16 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             return mPluginEnv.getTargetPackageName();
         }
         return this.getPackageName();
+    }
+
+    public String dump() {
+        String[] pkgCls = getPkgAndCls();
+        if (null != pkgCls && pkgCls.length == 2) {
+            return "Package&Cls is: " + this + " "
+                    + (pkgCls != null ? pkgCls[0] + " " + pkgCls[1] : "") + " flg=0x"
+                    + Integer.toHexString(getIntent().getFlags());
+        } else {
+            return "Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags());
+        }
     }
 }
