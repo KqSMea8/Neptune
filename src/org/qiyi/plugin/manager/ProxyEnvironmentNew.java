@@ -1088,7 +1088,6 @@ public class ProxyEnvironmentNew {
 
     @SuppressLint("NewApi")
     private void createTargetResource() {
-        android.util.Log.d("Batter", "createTargetResource begin with " + mPluginPakName);
         try {
             AssetManager am = AssetManager.class.newInstance();
             JavaCalls.callMethod(am, "addAssetPath", new Object[]{mApkFile.getAbsolutePath()});
@@ -1102,7 +1101,6 @@ public class ProxyEnvironmentNew {
         hostRes = mContext.getResources();
         Configuration config = new Configuration();
         config.setTo(hostRes.getConfiguration());
-        config.orientation = Configuration.ORIENTATION_UNDEFINED;
         targetResources = new ResourcesProxy(targetAssetManager, hostRes.getDisplayMetrics(),
                 config, hostRes, mPluginPakName);
         targetTheme = targetResources.newTheme();
