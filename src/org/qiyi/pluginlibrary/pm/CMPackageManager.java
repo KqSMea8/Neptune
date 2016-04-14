@@ -429,13 +429,19 @@ public class CMPackageManager {
      * 监听安装列表变化.
      */
     private void registerInstallderReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_PACKAGE_INSTALLED);
-        filter.addAction(ACTION_PACKAGE_INSTALLFAIL);
-        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(ACTION_PACKAGE_INSTALLED);
+            filter.addAction(ACTION_PACKAGE_INSTALLFAIL);
+            filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+            //注册一个安装广播
+            mContext.registerReceiver(pluginInstallerReceiver, filter);
 
-        //注册一个安装广播
-        mContext.registerReceiver(pluginInstallerReceiver, filter);
+        }catch (IllegalArgumentException e ){
+            //该广播被其他应用UID 抢先注册
+            //Receiver requested to register for uid 10100 was previously registered for uid  10105
+            e.printStackTrace();
+        }
     }
 
     /**
