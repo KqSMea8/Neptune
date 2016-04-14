@@ -423,15 +423,20 @@ public class PluginInstallerService extends Service {
 
     private void setInstallSuccess(String pkgName, String srcPathWithScheme, String destPath,
                                    PluginPackageInfoExt info) {
-        Intent intent = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLED);
-        intent.setPackage(getPackageName());
-        intent.putExtra(CMPackageManager.EXTRA_PKG_NAME, pkgName);
-        intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
-        intent.putExtra(CMPackageManager.EXTRA_DEST_FILE, destPath);// 同时返回安装前的安装文件目录。
-        intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
-        sendBroadcast(intent);
-        if (info != null) {
-            PluginDebugLog.log(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
+        try {
+            Intent intent = new Intent(CMPackageManager.ACTION_PACKAGE_INSTALLED);
+            intent.setPackage(getPackageName());
+            intent.putExtra(CMPackageManager.EXTRA_PKG_NAME, pkgName);
+            intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
+            intent.putExtra(CMPackageManager.EXTRA_DEST_FILE, destPath);// 同时返回安装前的安装文件目录。
+            intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
+            sendBroadcast(intent);
+            if (info != null) {
+                PluginDebugLog.log(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
+            }
+        }catch (Exception e){
+            //sendBoradCast nullException
+            e.printStackTrace();
         }
     }
 
