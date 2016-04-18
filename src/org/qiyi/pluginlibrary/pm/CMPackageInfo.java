@@ -10,11 +10,19 @@ import org.qiyi.pluginnew.ApkTargetMappingNew;
  *	插件一些信息
  */
 public class CMPackageInfo implements Parcelable {
+
+    /**
+     * 插件安装状态
+     **/
+    public static final String PLUGIN_INSTALLED = "installed";
+    public static final String PLUGIN_UNINSTALLED = "uninstall";
+    public static final String PLUGIN_UPGRADING = "upgrading";
+
     /**
      * 插件包名
      */
     public String packageName;
-    
+
     /**
      * 安装后的apk file path
      */
@@ -22,13 +30,13 @@ public class CMPackageInfo implements Parcelable {
 
     public String installStatus;
 //    public int versionCode;
-//    
+//
 //    public String versionName;
-    
+
     public PluginPackageInfoExt pluginInfo;
-    
+
     public ApkTargetMappingNew targetInfo;
-    
+
     /** 存储在安装列表中的key */
     final static String TAG_PKG_NAME = "pkgName";
     /** 存储在安装列表中的key */

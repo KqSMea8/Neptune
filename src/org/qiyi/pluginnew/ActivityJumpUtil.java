@@ -16,6 +16,8 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import java.util.List;
+
 /**
  * Help class for plugin activity jumping.
  */
@@ -228,11 +230,15 @@ public class ActivityJumpUtil {
                 }
             } else {
                 if (null != context) {
-                    for (CMPackageInfo pkgInfo : CMPackageManagerImpl.getInstance(context)
-                            .getInstalledApps()) {
-                        if (pkgInfo != null && pkgInfo.targetInfo != null) {
-                            targetActivity = pkgInfo.targetInfo.resolveActivity(intent);
-                            break;
+                    List<CMPackageInfo> packageList =
+                            CMPackageManagerImpl.getInstance(context).getInstalledApps();
+                    if (packageList != null) {
+                        for (CMPackageInfo pkgInfo : CMPackageManagerImpl.getInstance(context)
+                                .getInstalledApps()) {
+                            if (pkgInfo != null && pkgInfo.targetInfo != null) {
+                                targetActivity = pkgInfo.targetInfo.resolveActivity(intent);
+                                break;
+                            }
                         }
                     }
                 }

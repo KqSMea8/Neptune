@@ -12,7 +12,8 @@ import org.qiyi.pluginlibrary.install.IInstallCallBack;
 
 import java.util.List;
 
-/** 插件安装service管理，正常情况下此Service会持续存在，
+/**
+ * 插件安装service管理，正常情况下此Service会持续存在，
  * Created by xiepengchong on 15/10/29.
  */
 public class CMPackageManagerService extends Service {
@@ -22,7 +23,7 @@ public class CMPackageManagerService extends Service {
     private static CMPackageManager mManager;
 
     @Override
-    public void onCreate(){
+    public void onCreate() {
         mContext = this;
         mManager = CMPackageManager.getInstance(mContext);
     }
@@ -38,12 +39,12 @@ public class CMPackageManagerService extends Service {
         return initBinder();
     }
 
-    private ICMPackageManager.Stub initBinder(){
-        return new ICMPackageManager.Stub(){
+    private ICMPackageManager.Stub initBinder() {
+        return new ICMPackageManager.Stub() {
 
             @Override
             public List<CMPackageInfo> getInstalledApps() throws RemoteException {
-                if(mManager == null){
+                if (mManager == null) {
                     return null;
                 }
                 return mManager.getInstalledApps();
@@ -51,7 +52,7 @@ public class CMPackageManagerService extends Service {
 
             @Override
             public CMPackageInfo getPackageInfo(String pkg) throws RemoteException {
-                if(mManager == null || TextUtils.isEmpty(pkg)){
+                if (mManager == null || TextUtils.isEmpty(pkg)) {
                     return null;
                 }
                 return mManager.getPackageInfo(pkg);
@@ -59,31 +60,50 @@ public class CMPackageManagerService extends Service {
 
             @Override
             public boolean isPackageInstalled(String pkg) throws RemoteException {
-                if(mManager == null || TextUtils.isEmpty(pkg)){
+                if (mManager == null || TextUtils.isEmpty(pkg)) {
                     return false;
                 }
                 return mManager.isPackageInstalled(pkg);
             }
 
             @Override
-            public void installApkFile(String filePath, IInstallCallBack listener, PluginPackageInfoExt pluginInfo) throws RemoteException {
-                if(mManager == null || TextUtils.isEmpty(filePath)){
+            public boolean canInstallPackage(PluginPackageInfoExt info) throws RemoteException {
+                if (mManager != null && info != null) {
+                    return mManager.canInstallPackage(info);
+                }
+                return false;
+            }
+
+            @Override
+            public boolean canUninstallPackage(PluginPackageInfoExt info) throws RemoteException {
+                if (mManager != null && info != null) {
+                    return mManager.canUninstallPackage(info);
+                }
+                return false;
+            }
+
+            @Override
+            public void installApkFile(String filePath, IInstallCallBack listener,
+                                       PluginPackageInfoExt pluginInfo) throws RemoteException {
+                if (mManager == null || TextUtils.isEmpty(filePath)) {
                     return;
                 }
                 mManager.installApkFile(filePath, listener, pluginInfo);
             }
 
             @Override
-            public void installBuildinApps(String packageName, IInstallCallBack listener, PluginPackageInfoExt info) throws RemoteException {
-                if(mManager == null || TextUtils.isEmpty(packageName)){
+            public void installBuildinApps(
+                    String packageName, IInstallCallBack listener, PluginPackageInfoExt info) throws RemoteException {
+                if (mManager == null || TextUtils.isEmpty(packageName)) {
                     return;
                 }
                 mManager.installBuildinApps(packageName, listener, info);
             }
 
             @Override
-            public void deletePackage(String packageName, IPackageDeleteObserver observer) throws RemoteException {
-                if(mManager == null || TextUtils.isEmpty(packageName)){
+            public void deletePackage(
+                    String packageName, IPackageDeleteObserver observer) throws RemoteException {
+                if (mManager == null || TextUtils.isEmpty(packageName)) {
                     return;
                 }
                 mManager.deletePackage(packageName, observer);
@@ -91,22 +111,25 @@ public class CMPackageManagerService extends Service {
 
             @Override
             public boolean uninstall(String pkgName) throws RemoteException {
-                if(mManager == null || TextUtils.isEmpty(pkgName)){
+                if (mManager == null || TextUtils.isEmpty(pkgName)) {
                     return false;
                 }
                 return mManager.uninstall(pkgName);
             }
 
             @Override
-            public void packageAction(String packageName, IInstallCallBack callBack) throws RemoteException {
-                if(mManager == null || TextUtils.isEmpty(packageName)){
+            public void packageAction(
+                    CMPackageInfo packageInfo, IInstallCallBack callBack) throws RemoteException {
+                if (mManager == null ||
+                        packageInfo == null || TextUtils.isEmpty(packageInfo.packageName)) {
                     return;
                 }
-                mManager.packageAction(packageName, callBack);
+                mManager.packageAction(packageInfo, callBack);
             }
 
             @Override
-            public void setActionFinishCallback(IActionFinishCallback actionFinishCallback) throws RemoteException {
+            public void setActionFinishCallback(
+                    IActionFinishCallback actionFinishCallback) throws RemoteException {
                 if (mManager != null) {
                     mManager.setActionFinishCallback(actionFinishCallback);
                 }

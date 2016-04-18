@@ -452,17 +452,17 @@ public class ProxyEnvironmentNew {
             for (String pkgName : info.pluginInfo.getPluginResfs()) {
                 PluginDebugLog.log(TAG, "Start to check installation pkgName: " + pkgName);
                 CMPackageManagerImpl.getInstance(context.getApplicationContext())
-                .packageAction(pkgName, new IInstallCallBack.Stub() {
+                .packageAction(info, new IInstallCallBack.Stub() {
                     @Override
-                    public void onPacakgeInstalled(String pName) {
+                    public void onPacakgeInstalled(CMPackageInfo info) {
                         count.getAndDecrement();
                         PluginDebugLog.log(TAG,
-                                "Check installation success pkgName: " + pName);
+                                "Check installation success pkgName: " + info);
                         if (count.get() == 0) {
                             PluginDebugLog.log(TAG,
                                     "Start Check installation after check dependence packageName: "
                                             + packageName);
-                            checkPkgInstallationAndLaunch(context, packageName, processName,
+                            checkPkgInstallationAndLaunch(context, info, processName,
                                     conn, intent);
                         }
                     }
@@ -479,14 +479,14 @@ public class ProxyEnvironmentNew {
         } else {
             PluginDebugLog.log(TAG,
                     "Start Check installation without dependences packageName: " + packageName);
-            checkPkgInstallationAndLaunch(context, packageName, processName, conn, intent);
+            checkPkgInstallationAndLaunch(context, info, processName, conn, intent);
         }
     }
 
     private static void checkPkgInstallationAndLaunch(final Context context,
-            final String packageName, final String processName, final ServiceConnection conn,
+            final CMPackageInfo packageInfo, final String processName, final ServiceConnection conn,
             final Intent intent) {
-        CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(packageName,
+        CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(packageInfo,
                 new IInstallCallBack.Stub() {
 
                     @Override
@@ -498,8 +498,8 @@ public class ProxyEnvironmentNew {
                     }
 
                     @Override
-                    public void onPacakgeInstalled(String packageName) {
-                        initTarget(context.getApplicationContext(), packageName, processName,
+                    public void onPacakgeInstalled(CMPackageInfo info) {
+                        initTarget(context.getApplicationContext(), packageInfo.packageName, processName,
                                 new ITargetLoadListenner() {
                                     @Override
                                     public void onLoadFinished(String packageName) {
@@ -560,12 +560,17 @@ public class ProxyEnvironmentNew {
             if (context == null) {
                 return "";
             }
-            // Here, loop all installed packages to get pkgName.
-            for (CMPackageInfo info : CMPackageManagerImpl.getInstance(context)
-                    .getInstalledApps()) {
-                if (info != null && info.targetInfo != null) {
-                    if (info.targetInfo.resolveActivity(intent) != null) {
-                        return info.packageName;
+
+            List<CMPackageInfo> packageList =
+                    CMPackageManagerImpl.getInstance(context).getInstalledApps();
+            if (packageList != null) {
+                // Here, loop all installed packages to get pkgName.
+                for (CMPackageInfo info : CMPackageManagerImpl.getInstance(context)
+                        .getInstalledApps()) {
+                    if (info != null && info.targetInfo != null) {
+                        if (info.targetInfo.resolveActivity(intent) != null) {
+                            return info.packageName;
+                        }
                     }
                 }
             }

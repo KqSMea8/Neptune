@@ -13,6 +13,10 @@ interface ICMPackageManager {
 
     boolean isPackageInstalled(String pkg);
 
+    boolean canInstallPackage(in PluginPackageInfoExt info);
+
+    boolean canUninstallPackage(in PluginPackageInfoExt info);
+
     oneway void installApkFile(String filePath, IInstallCallBack listener,in PluginPackageInfoExt pluginInfo);
 
     oneway void installBuildinApps(String packageName, IInstallCallBack listener,in PluginPackageInfoExt info);
@@ -21,7 +25,7 @@ interface ICMPackageManager {
 
     boolean uninstall(String pkgName);
 
-    oneway void packageAction(String packageName, IInstallCallBack callBack);
+    oneway void packageAction(in CMPackageInfo packageInfo, IInstallCallBack callBack);
 
     oneway void setActionFinishCallback(IActionFinishCallback actionFinishCallback);
 }

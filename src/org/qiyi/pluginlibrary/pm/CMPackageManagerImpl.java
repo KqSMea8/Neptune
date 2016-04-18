@@ -5,18 +5,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
-import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginnew.ApkTargetMappingNew;
 
@@ -45,8 +41,11 @@ public class CMPackageManagerImpl {
 
     private interface Action {
         String getPackageName();
+
         boolean meetCondition();
+
         void doAction();
+
         int getStatus();
     }
 
@@ -137,6 +136,7 @@ public class CMPackageManagerImpl {
         public IInstallCallBack listener;
         public PluginPackageInfoExt info;
         public CMPackageManagerImpl callbackHost;
+        public ICMPackageInfoDelegate packageInfoDelegate;
 
         @Override
         public String toString() {
@@ -162,43 +162,18 @@ public class CMPackageManagerImpl {
         @Override
         public boolean meetCondition() {
             boolean canMeetCondition = false;
-            if (mService != null && info != null && !TextUtils.isEmpty(info.packageName)) {
-                boolean packageInstalled = false;
+            if (mService != null && info != null) {
                 try {
-                    packageInstalled = mService.isPackageInstalled(info.packageName);
+                    canMeetCondition = mService.canInstallPackage(info);
                 } catch (RemoteException e) {
                     e.printStackTrace();
-                }
-
-                PluginDebugLog.log(TAG, info.packageName + " PluginInstallAction " +
-                        "check condition, " + "packageInstalled: " + packageInstalled);
-
-                if (packageInstalled) {
-                    CMPackageInfo packageInfo = null;
-                    try {
-                        packageInfo = mService.getPackageInfo(info.packageName);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-
-                    if (packageInfo != null) {
-                        PluginPackageInfoExt packageInfoExt = packageInfo.pluginInfo;
-                        if (packageInfoExt != null) {
-                            if (versionCompare(info.plugin_ver, info.plugin_gray_ver,
-                                    packageInfoExt.plugin_ver, packageInfoExt.plugin_gray_ver) > 0) {
-                                canMeetCondition = true;
-                            }
-                        }
-                    }
-                } else {
-                    canMeetCondition = true;
                 }
             } else if (mService == null) {
                 // set canMeetCondition to true in case of CMPackageManagerService
                 // is not connected, so that the action can be added in action list.
                 canMeetCondition = true;
             }
-            if (info !=null) {
+            if (info != null) {
                 PluginDebugLog.log(TAG, info.packageName +
                         "PluginInstallAction check condition with result " + canMeetCondition);
             }
@@ -257,39 +232,11 @@ public class CMPackageManagerImpl {
         @Override
         public boolean meetCondition() {
             boolean canMeetCondition = false;
-            if (mService != null && info != null && !TextUtils.isEmpty(info.packageName)) {
-                boolean packageInstalled = false;
+            if (mService != null && info != null) {
                 try {
-                    packageInstalled = mService.isPackageInstalled(info.packageName);
+                    canMeetCondition = mService.canUninstallPackage(info);
                 } catch (RemoteException e) {
                     e.printStackTrace();
-                }
-
-                PluginDebugLog.log(TAG, info.packageName + " PluginDeleteAction " +
-                        "check condition, " + "packageInstalled: " + packageInstalled);
-
-                if (packageInstalled) {
-                    CMPackageInfo packageInfo = null;
-                    try {
-                        packageInfo = mService.getPackageInfo(info.packageName);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-
-                    if (packageInfo != null) {
-                        PluginPackageInfoExt packageInfoExt = packageInfo.pluginInfo;
-                        if (packageInfoExt != null) {
-                            if (TextUtils.equals(info.plugin_ver, packageInfoExt.plugin_ver) &&
-                                    TextUtils.equals(
-                                            info.plugin_gray_ver, packageInfoExt.plugin_gray_ver)) {
-                                PluginDebugLog.log(TAG, info.packageName + " PluginDeleteAction " +
-                                        info.plugin_ver + ":" + info.plugin_gray_ver + " " +
-                                        packageInfoExt.plugin_ver + ":" +
-                                        packageInfoExt.plugin_gray_ver);
-                                canMeetCondition = true;
-                            }
-                        }
-                    }
                 }
             } else if (mService == null) {
                 // set canMeetCondition to true in case of CMPackageManagerService
@@ -323,7 +270,8 @@ public class CMPackageManagerImpl {
         }
     }
 
-    private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> mActionMap = new ConcurrentHashMap();
+    private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> mActionMap =
+            new ConcurrentHashMap();
 
     private static final String TAG = CMPackageManagerImpl.class.getSimpleName();
 
@@ -349,9 +297,8 @@ public class CMPackageManagerImpl {
                 executePackageAction(mContext);
                 executePendingAction();
             }
-            if (mInstalledPkgs != null) {
-                mInstalledPkgs.clear();
-                mInstalledPkgs = null;
+            if (mTargetMappingCache != null) {
+                mTargetMappingCache.clear();
             }
         }
 
@@ -364,14 +311,17 @@ public class CMPackageManagerImpl {
     private static ICMPackageManager mService = null;
     private static CMPackageManagerImpl sInstance = null;
     private Context mContext;
-    private static ConcurrentMap<String, CMPackageInfo> mInstalledPkgs = null;
+    private static ConcurrentMap<String, ApkTargetMappingNew> mTargetMappingCache =
+            new ConcurrentHashMap<String, ApkTargetMappingNew>();
     private ServiceConnection mServiceConnection = null;
     private static String mProcessName = null;
+    private ICMPackageInfoDelegate mPackageInfoDelegate = null;
 
     /**
      * 安装包任务队列。
      */
-    private static ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions = new ConcurrentLinkedQueue<ExecutionPackageAction>();
+    private static ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions =
+            new ConcurrentLinkedQueue<ExecutionPackageAction>();
 
     public static CMPackageManagerImpl getInstance(Context context) {
         if (sInstance == null) {
@@ -391,6 +341,14 @@ public class CMPackageManagerImpl {
 
     public void init() {
         onBindService(mContext);
+    }
+
+    public void setPackageInfoDelegate(ICMPackageInfoDelegate packageInfoDelegate) {
+        mPackageInfoDelegate = packageInfoDelegate;
+    }
+
+    public void setPackageInfoManager(ICMPackageInfoManager packageInfoManager) {
+        CMPackageManager.setPackageInfoManager(packageInfoManager);
     }
 
     private void onBindService(Context context) {
@@ -459,7 +417,8 @@ public class CMPackageManagerImpl {
                 ActionType type = action.type;
                 switch (type) {
                     case PACKAGE_ACTION:
-                        CMPackageManagerImpl.getInstance(context).packageAction(action.packageName, action.callBack);
+                        CMPackageManagerImpl.getInstance(context).
+                                packageAction(action.packageInfo, action.callBack);
                         break;
                 }
                 iterator.remove();
@@ -468,7 +427,8 @@ public class CMPackageManagerImpl {
     }
 
     /**
-     * 获取已经安装的插件列表，通过aidl到CMPackageManagerService中获取值，如果service不存在，直接在sharedPreference中读取值，并且启动service
+     * 获取已经安装的插件列表，通过aidl到CMPackageManagerService中获取值，
+     * 如果service不存在，直接在sharedPreference中读取值，并且启动service
      *
      * @return 返回所有安装插件信息
      */
@@ -576,7 +536,8 @@ public class CMPackageManagerImpl {
         action.listener = listener;
         action.info = info;
         action.callbackHost = this;
-        if (action.meetCondition() && addAction(action) && actionIsReady(action) ) {
+        action.packageInfoDelegate = mPackageInfoDelegate;
+        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
             action.doAction();
         }
     }
@@ -607,7 +568,8 @@ public class CMPackageManagerImpl {
         action.listener = listener;
         action.info = info;
         action.callbackHost = this;
-        if (action.meetCondition() && addAction(action) && actionIsReady(action) ) {
+        action.packageInfoDelegate = mPackageInfoDelegate;
+        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
             action.doAction();
         }
     }
@@ -686,13 +648,13 @@ public class CMPackageManagerImpl {
     /**
      * 执行action操作，异步执行，如果service不存在，待连接之后执行。
      *
-     * @param packageName
+     * @param packageInfo
      * @param callBack
      */
-    public void packageAction(String packageName, IInstallCallBack callBack) {
+    public void packageAction(CMPackageInfo packageInfo, IInstallCallBack callBack) {
         if (mService != null) {
             try {
-                mService.packageAction(packageName, callBack);
+                mService.packageAction(packageInfo, callBack);
                 return;
             } catch (RemoteException e) {
                 e.printStackTrace();
@@ -701,7 +663,7 @@ public class CMPackageManagerImpl {
         ExecutionPackageAction action = new ExecutionPackageAction();
         action.type = ActionType.PACKAGE_ACTION;
         action.time = System.currentTimeMillis();
-        action.packageName = packageName;
+        action.packageInfo = packageInfo;
         action.callBack = callBack;
         packageActionModified(action);
         onBindService(mContext);
@@ -721,7 +683,7 @@ public class CMPackageManagerImpl {
                 if (currentTime - action.time >= 1 * 60 * 1000) {// 1分钟
                     if (action != null && action.callBack != null) {
                         try {
-                            action.callBack.onPackageInstallFail(action.packageName,
+                            action.callBack.onPackageInstallFail(action.packageInfo.packageName,
                                     ErrorType.ERROR_CLIENT_TIME_OUT);
                         } catch (RemoteException e) {
                             e.printStackTrace();
@@ -743,7 +705,7 @@ public class CMPackageManagerImpl {
         String filePath;
         IInstallCallBack callBack;//安装回调
         PluginPackageInfoExt pluginInfo;
-        String packageName;//包名
+        CMPackageInfo packageInfo;//包名
         IPackageDeleteObserver observer;
     }
 
@@ -761,16 +723,19 @@ public class CMPackageManagerImpl {
      * @return 已安装插件列表
      */
     private List<CMPackageInfo> getInstalledAppsDirectly() {
-        Iterator iterator = getInstalledPackageList().entrySet().iterator();
+        Map<String, CMPackageInfo> installedAppList = getInstalledPackageList();
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
-        while (iterator.hasNext()) {
-            Map.Entry entry = (Map.Entry)iterator.next();
-            CMPackageInfo pkg = (CMPackageInfo)entry.getValue();
-            if (pkg != null && TextUtils.equals(pkg.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
-                list.add(pkg);
+        if (installedAppList != null) {
+            Iterator iterator = installedAppList.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry entry = (Map.Entry) iterator.next();
+                CMPackageInfo pkg = (CMPackageInfo) entry.getValue();
+                if (pkg != null &&
+                        TextUtils.equals(pkg.installStatus, CMPackageInfo.PLUGIN_INSTALLED)) {
+                    list.add(pkg);
+                }
             }
         }
-
         return list;
     }
 
@@ -784,10 +749,13 @@ public class CMPackageManagerImpl {
         if (packageName == null || packageName.length() == 0) {
             return null;
         }
-
-        CMPackageInfo info = getInstalledPackageList().get(packageName);
-        if (null != info && TextUtils.equals(info.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
-            return info;
+        Map<String, CMPackageInfo> installedAppList = getInstalledPackageList();
+        if (installedAppList != null) {
+            CMPackageInfo info = installedAppList.get(packageName);
+            if (null != info && TextUtils.equals(
+                    info.installStatus, CMPackageInfo.PLUGIN_INSTALLED)) {
+                return info;
+            }
         }
         return null;
     }
@@ -799,29 +767,32 @@ public class CMPackageManagerImpl {
      * @return 判断是否已安装
      */
     public boolean isPackageInstalledDirectly(String packageName) {
-        CMPackageInfo info = getInstalledPackageList().get(packageName);
-        if (null == info || null == info.pluginInfo) {
-            return false;
-        }
-        List<String> refs = info.pluginInfo.getPluginResfs();
-        if (null != refs && refs.size() > 0) {
-            CMPackageInfo rInfo;
-            for (String rPkg : refs) {
-                rInfo = getInstalledPackageList().get(rPkg);
-                if (null == rInfo || !TextUtils
-                                .equals(rInfo.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
-                    PluginDebugLog.log(TAG, "isPackageInstalledDirectly refs not installed: "
-                            + rPkg);
-                    return false;
-                }
+        Map<String, CMPackageInfo> installedAppList = getInstalledPackageList();
+        if (installedAppList != null) {
+            CMPackageInfo info = installedAppList.get(packageName);
+            if (null == info || null == info.pluginInfo) {
+                return false;
             }
-            rInfo = null;
+            List<String> refs = info.pluginInfo.getPluginResfs();
+            if (null != refs && refs.size() > 0) {
+                CMPackageInfo rInfo;
+                for (String rPkg : refs) {
+                    rInfo = installedAppList.get(rPkg);
+                    if (null == rInfo || !TextUtils
+                            .equals(rInfo.installStatus, CMPackageInfo.PLUGIN_INSTALLED)) {
+                        PluginDebugLog.log(TAG,
+                                "isPackageInstalledDirectly refs not installed: " + rPkg);
+                        return false;
+                    }
+                }
+                rInfo = null;
+            }
+
+            if (TextUtils.equals(info.installStatus, CMPackageInfo.PLUGIN_INSTALLED)) {
+                return true;
+            }
         }
-        if (TextUtils.equals(info.installStatus, CMPackageManager.PLUGIN_INSTALLED)) {
-            return true;
-        } else {
-            return false;
-        }
+        return false;
     }
 
     /**
@@ -831,76 +802,31 @@ public class CMPackageManagerImpl {
      * @return 返回的是素有插件的信息，其中包括安装和未安装的插件
      */
     private ConcurrentMap<String, CMPackageInfo> getInstalledPackageList() {
-        ConcurrentMap<String, CMPackageInfo> installedPkgsTemp = null;
-        if (mInstalledPkgs == null) { //如果是正在读取，此时的mInstalledPkgs值是不对的，所以需要从新进入获取
-            installedPkgsTemp = new ConcurrentHashMap<String, CMPackageInfo>();
+        if (mPackageInfoDelegate != null) {
+            ConcurrentMap<String, CMPackageInfo> packageList =
+                    mPackageInfoDelegate.getInstalledPackageList();
 
-            SharedPreferences sp = CMPackageManager.getPreferences(mContext, PluginInstaller.SHARED_PREFERENCE_NAME);
-            String jsonPkgs = sp.getString(CMPackageManager.SP_APP_LIST, "");
+            if (packageList != null) {
+                for (Map.Entry<String, CMPackageInfo> entry : packageList.entrySet()) {
+                    if (entry != null) {
+                        CMPackageInfo packageInfo = entry.getValue();
+                        if (packageInfo != null && packageInfo.targetInfo == null) {
+                            packageInfo.targetInfo = mTargetMappingCache.get(entry.getKey());
 
-            if (jsonPkgs != null && jsonPkgs.length() > 0) {
-                try {
-                    JSONArray pkgs = new JSONArray(jsonPkgs);
-                    int count = pkgs.length();
-                    for (int i = 0; i < count; i++) {
-                        JSONObject pkg = (JSONObject) pkgs.get(i);
-                        CMPackageInfo pkgInfo = new CMPackageInfo();
-                        pkgInfo.packageName = pkg.optString(CMPackageInfo.TAG_PKG_NAME);
-                        pkgInfo.srcApkPath = pkg.optString(CMPackageInfo.TAG_APK_PATH);
-                        pkgInfo.installStatus = pkg.optString(CMPackageInfo.TAG_INSTALL_STATUS);
-                        JSONObject ext = pkg.optJSONObject(PluginPackageInfoExt.INFO_EXT);
-                        if (ext != null) {
-                            pkgInfo.pluginInfo = new PluginPackageInfoExt(ext);
-                        } else {
-                            // try to do migrate for old version
-                            SharedPreferences spf = CMPackageManager.getPreferences(mContext, pkgInfo.packageName);
-                            if (null != spf && spf.getInt("plugin_state", 0) == 7) {
-                                PluginPackageInfoExt extInfo = new PluginPackageInfoExt();
-                                extInfo.id = spf.getString("ID", "");
-                                extInfo.name = spf.getString("NAME", "");
-                                extInfo.ver = spf.getInt("VER", -1);
-                                extInfo.crc = spf.getString("CRC", "");
-                                extInfo.type = spf.getInt("TYPE", 0);
-                                extInfo.desc = spf.getString("DESC", "");
-                                // Old version don't have this item
-                                extInfo.icon_url = "";
-                                extInfo.isAllowUninstall = spf.getInt("uninstall_flag", 0);
-                                extInfo.pluginTotalSize = spf.getLong("plugin_total_size", 0);
-                                extInfo.local = spf.getInt("plugin_local", 0);
-                                extInfo.invisible = spf.getInt("plugin_visible", 0);
-                                extInfo.scrc = spf.getString("SCRC", "");
-                                extInfo.url = spf.getString("URL", "");
-                                extInfo.mPluginInstallMethod = spf.getString("INSTALL_METHOD",
-                                        CMPackageManager.PLUGIN_METHOD_DEFAULT);
-                                pkgInfo.pluginInfo = extInfo;
-                            } else {
-                                // 如果存在packageinfo package name信息但是没有详细的插件信息，认为不是合法的配置
-                                // TODO 需要考虑本地APK加载或者SO jar加载情况。
-                                continue;
+                            if (packageInfo.targetInfo == null &&
+                                    !TextUtils.isEmpty(packageInfo.srcApkPath)) {
+                                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(
+                                        mContext, new File(packageInfo.srcApkPath));
+                                mTargetMappingCache.put(packageInfo.packageName, targetInfo);
+                                packageInfo.targetInfo = targetInfo;
                             }
                         }
-                        if (!mContext.getPackageName().equals(mProcessName)) { //主进程不需要各个插件信息，
-                            ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext,
-                                    new File(pkgInfo.srcApkPath));
-                            pkgInfo.targetInfo = targetInfo;
-
-
-                            if (pkgInfo.pluginInfo != null
-                                    && TextUtils.isEmpty(pkgInfo.pluginInfo.plugin_ver)
-                                    && pkgInfo.targetInfo != null) {
-                                pkgInfo.pluginInfo.plugin_ver = pkgInfo.targetInfo.getVersionName();    //从配置文件中读取，正常不应该为null
-                            }
-                        }
-                        installedPkgsTemp.put(pkgInfo.packageName, pkgInfo);
                     }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
-            mInstalledPkgs = installedPkgsTemp;
+            return packageList;
         }
-        return mInstalledPkgs;
+        return null;
     }
 
     private String getCurrentProcessName(Context context) {
@@ -952,14 +878,14 @@ public class CMPackageManagerImpl {
         }
     }
 
-    public boolean isPackageAvailable(String packageName)  {
+    public boolean isPackageAvailable(String packageName) {
         if (mActionMap.contains(packageName) && !TextUtils.isEmpty(packageName)) {
             List<Action> actions = mActionMap.get(packageName);
             if (actions != null && actions.size() > 0) {
                 PluginDebugLog.log(TAG, actions.size() + " actions in action list for "
                         + packageName + " isPackageAvailable : true");
                 if (PluginDebugLog.isDebug()) {
-                    for (int index = 0; index < actions.size(); index ++) {
+                    for (int index = 0; index < actions.size(); index++) {
                         Action action = actions.get(index);
                         if (action != null) {
                             PluginDebugLog.log(TAG, index +
@@ -983,7 +909,7 @@ public class CMPackageManagerImpl {
                 PluginDebugLog.log(TAG, list.size() + " actions in action list for "
                         + packageName + " isPackageAvailable : true");
                 if (PluginDebugLog.isDebug()) {
-                    for (int index = 0; index < list.size(); index ++) {
+                    for (int index = 0; index < list.size(); index++) {
                         Action action = list.get(index);
                         if (action != null) {
                             PluginDebugLog.log(TAG, index +
@@ -1011,30 +937,5 @@ public class CMPackageManagerImpl {
         }
 
         return STATUS_PACKAGE_NOT_INSTALLED;
-    }
-
-    private static int versionCompare(String leftPluginVersion, String leftPluginGreyVersion,
-                                      String rightPluginVersion, String rightPluginGreyVersion) {
-
-        PluginDebugLog.log(TAG, "version compare :" + leftPluginVersion + ":" +
-                leftPluginGreyVersion + " " + rightPluginVersion + ":" + rightPluginGreyVersion);
-        int pluginVersionCompareResult =
-                PluginInstaller.comparePluginVersion(leftPluginVersion, rightPluginVersion);
-
-        if (pluginVersionCompareResult == 0) {
-            if (TextUtils.isEmpty(leftPluginGreyVersion) &&
-                    !TextUtils.isEmpty(rightPluginGreyVersion)) {
-                pluginVersionCompareResult = 1;
-            } else if (!TextUtils.isEmpty(leftPluginGreyVersion) &&
-                    TextUtils.isEmpty(rightPluginGreyVersion)) {
-                pluginVersionCompareResult = -1;
-            } else {
-                // 与基线灰度升级策略一致，同一个主版本号下如果灰度版本号不同不能升级，均认为已安装
-                pluginVersionCompareResult = 0;
-            }
-        }
-
-        PluginDebugLog.log(TAG, "version compare with result: " + pluginVersionCompareResult);
-        return pluginVersionCompareResult;
     }
 }

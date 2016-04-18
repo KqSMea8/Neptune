@@ -284,11 +284,12 @@ public class PluginInstaller {
         List<CMPackageInfo> pkgList = CMPackageManagerImpl.getInstance(context).getInstalledApps();
 
         ArrayList<File> result = new ArrayList<File>();
-        for (CMPackageInfo pkg : pkgList) {
-            String filePath = pkg.srcApkPath;
-            result.add(new File(filePath));
+        if (pkgList != null) {
+            for (CMPackageInfo pkg : pkgList) {
+                String filePath = pkg.srcApkPath;
+                result.add(new File(filePath));
+            }
         }
-
         return result;
     }
 
