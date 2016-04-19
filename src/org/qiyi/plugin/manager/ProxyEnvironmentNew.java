@@ -1087,6 +1087,7 @@ public class ProxyEnvironmentNew {
         if (targetMapping.getServiceInfo(targetService) == null) {
             return;
         }
+        intent.setExtrasClassLoader(getDexClassLoader());
         intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE, targetService);
         intent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME,
                 targetMapping.getPackageName());
@@ -1107,6 +1108,7 @@ public class ProxyEnvironmentNew {
     public void remapReceiverIntent(Intent originIntent) {
         if (originIntent.getComponent() != null) {
             String targetReceiver = originIntent.getComponent().getClassName();
+            originIntent.setExtrasClassLoader(getDexClassLoader());
             originIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_RECEIVER, targetReceiver);
             originIntent.putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME,
                     targetMapping.getPackageName());
