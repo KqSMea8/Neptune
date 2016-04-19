@@ -1,4 +1,4 @@
 package org.qiyi.pluginlibrary.component;
 
-public class InstrActivityProxyLandscape extends InstrActivityProxy{
+public class InstrActivityProxyLandscape extends InstrActivityProxy {
 }

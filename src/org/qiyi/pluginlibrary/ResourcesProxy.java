@@ -34,13 +34,12 @@ public class ResourcesProxy extends Resources {
     /**
      * 构造方法
      *
-     * @param assets  assetmanager
+     * @param assets assetmanager
      * @param metrics 资源Metrics
-     * @param config  资源配置
+     * @param config 资源配置
      * @param hostRes 宿主资源
      */
-    public ResourcesProxy(AssetManager assets, DisplayMetrics metrics,
-                          Configuration config, Resources hostRes, String pluginPackageName) {
+    public ResourcesProxy(AssetManager assets, DisplayMetrics metrics, Configuration config, Resources hostRes, String pluginPackageName) {
         super(assets, metrics, config);
         mHostResources = hostRes;
         mPluginPackageName = pluginPackageName;
@@ -83,8 +82,7 @@ public class ResourcesProxy extends Resources {
     }
 
     @Override
-    public String getQuantityString(int id, int quantity,
-                                    Object... formatArgs) throws NotFoundException {
+    public String getQuantityString(int id, int quantity, Object... formatArgs) throws NotFoundException {
         try {
             return super.getQuantityString(id, quantity, formatArgs);
         } catch (NotFoundException e) {
@@ -319,8 +317,7 @@ public class ResourcesProxy extends Resources {
 
     @SuppressLint("NewApi")
     @Override
-    public void getValueForDensity(int id, int density, TypedValue outValue, boolean resolveRefs)
-            throws NotFoundException {
+    public void getValueForDensity(int id, int density, TypedValue outValue, boolean resolveRefs) throws NotFoundException {
         try {
             super.getValueForDensity(id, density, outValue, resolveRefs);
         } catch (NotFoundException e) {
@@ -330,8 +327,7 @@ public class ResourcesProxy extends Resources {
     }
 
     @Override
-    public void getValue(String name, TypedValue outValue,
-                         boolean resolveRefs) throws NotFoundException {
+    public void getValue(String name, TypedValue outValue, boolean resolveRefs) throws NotFoundException {
         try {
             super.getValue(name, outValue, resolveRefs);
         } catch (NotFoundException e) {

@@ -16,9 +16,10 @@ public class SimpleDateTime {
     int mMinute;
     /** second */
     int mSecond;
-    
+
     /**
      * 设置date time
+     *
      * @param year year
      * @param month month
      * @param day day of month
@@ -34,14 +35,15 @@ public class SimpleDateTime {
         this.mMinute = minute;
         this.mSecond = second;
     }
-    
+
     @Override
     public String toString() {
         return mYear + "-" + mMonth + "-" + mDay + " " + mHourOfDay + ":" + mMinute + ":" + mSecond;
     }
-    
+
     /**
      * 比较两个的日期大小。
+     *
      * @param datetime 要比较的对象。
      * @return == 返回0， > 返回1， < 返回-1
      */
@@ -52,37 +54,37 @@ public class SimpleDateTime {
         } else if (mYear - datetime.mYear < 0) {
             return -1;
         }
-        
+
         if (mMonth - datetime.mMonth > 0) {
             return 1;
         } else if (mMonth - datetime.mMonth < 0) {
             return -1;
         }
-        
+
         if (mDay - datetime.mDay > 0) {
             return 1;
         } else if (mDay - datetime.mDay < 0) {
             return -1;
         }
-        
+
         if (mHourOfDay - datetime.mHourOfDay > 0) {
             return 1;
         } else if (mHourOfDay - datetime.mHourOfDay < 0) {
             return -1;
         }
-        
+
         if (mMinute - datetime.mMinute > 0) {
             return 1;
         } else if (mMinute - datetime.mMinute < 0) {
             return -1;
         }
-        
+
         if (mSecond - datetime.mSecond > 0) {
             return 1;
         } else if (mSecond - datetime.mSecond < 0) {
             return -1;
         }
-        
+
         return 0;
     }
 }

@@ -1,4 +1,4 @@
-package org.qiyi.pluginnew;
+package org.qiyi.pluginlibrary;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange;
@@ -13,7 +13,7 @@ import org.qiyi.pluginlibrary.component.ServiceProxy8;
 import org.qiyi.pluginlibrary.component.ServiceProxy9;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyLandscape;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
-import org.qiyi.pluginnew.service.ServiceProxyNew;
+import org.qiyi.pluginlibrary.component.ServiceProxy;
 
 public class ProxyComponentMappingByProcess {
     static final String PROXY_PROCESS = "com.qiyi.video:plugin";
@@ -69,14 +69,14 @@ public class ProxyComponentMappingByProcess {
      * @param processName
      * @return
      */
-    public static String mappingActivity(boolean isTranslucent, boolean isLandscape,
-                                         boolean handleConfigChange, String processName) {
+    public static String mappingActivity(boolean isTranslucent, boolean isLandscape, boolean handleConfigChange, String processName) {
         if (null == sProcessMapping) {
             if (isTranslucent) {
                 return InstrActivityProxyTranslucent.class.getName();
             } else if (isLandscape) {
                 return InstrActivityProxyLandscape.class.getName();
-            } if (handleConfigChange) {
+            }
+            if (handleConfigChange) {
                 return InstrActivityProxyHandleConfigChange.class.getName();
             } else {
                 return InstrActivityProxy.class.getName();
@@ -92,7 +92,8 @@ public class ProxyComponentMappingByProcess {
             return InstrActivityProxyTranslucent.class.getName() + classSuffix;
         } else if (isLandscape) {
             return InstrActivityProxyLandscape.class.getName() + classSuffix;
-        } if (handleConfigChange) {
+        }
+        if (handleConfigChange) {
             return InstrActivityProxyHandleConfigChange.class.getName() + classSuffix;
         } else {
             return InstrActivityProxy.class.getName() + classSuffix;
@@ -107,31 +108,31 @@ public class ProxyComponentMappingByProcess {
      */
     public static String mappingService(String processName) {
         if (null == sProcessMapping) {
-            return ServiceProxyNew.class.getName();
+            return ServiceProxy.class.getName();
         }
         switch (sProcessMapping.getProcessIndex(processName)) {
-            case 0:
-                return ServiceProxyNew.class.getName();
-            case 1:
-                return ServiceProxy1.class.getName();
-            case 2:
-                return ServiceProxy2.class.getName();
-            case 3:
-                return ServiceProxy3.class.getName();
-            case 4:
-                return ServiceProxy4.class.getName();
-            case 5:
-                return ServiceProxy5.class.getName();
-            case 6:
-                return ServiceProxy6.class.getName();
-            case 7:
-                return ServiceProxy7.class.getName();
-            case 8:
-                return ServiceProxy8.class.getName();
-            case 9:
-                return ServiceProxy9.class.getName();
-            default:
-                return ServiceProxyNew.class.getName();
+        case 0:
+            return ServiceProxy.class.getName();
+        case 1:
+            return ServiceProxy1.class.getName();
+        case 2:
+            return ServiceProxy2.class.getName();
+        case 3:
+            return ServiceProxy3.class.getName();
+        case 4:
+            return ServiceProxy4.class.getName();
+        case 5:
+            return ServiceProxy5.class.getName();
+        case 6:
+            return ServiceProxy6.class.getName();
+        case 7:
+            return ServiceProxy7.class.getName();
+        case 8:
+            return ServiceProxy8.class.getName();
+        case 9:
+            return ServiceProxy9.class.getName();
+        default:
+            return ServiceProxy.class.getName();
         }
     }
 }

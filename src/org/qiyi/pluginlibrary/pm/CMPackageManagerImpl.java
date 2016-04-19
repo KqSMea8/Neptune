@@ -10,11 +10,11 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginnew.ApkTargetMappingNew;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -59,8 +59,7 @@ public class CMPackageManagerImpl {
 
         @Override
         public void onActionComplete(String packageName, int errorCode) throws RemoteException {
-            PluginDebugLog.log(TAG,
-                    "onActionComplete with " + packageName + " errorcode " + errorCode);
+            PluginDebugLog.log(TAG, "onActionComplete with " + packageName + " errorcode " + errorCode);
             if (mActionMap.containsKey(packageName)) {
                 CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
                 PluginDebugLog.log(TAG, packageName + " has " + list.size() + " in action list");
@@ -69,32 +68,23 @@ public class CMPackageManagerImpl {
                         for (int index = 0; index < list.size(); index++) {
                             Action action = list.get(index);
                             if (action != null) {
-                                PluginDebugLog.log(TAG, index +
-                                        " action in action list: " + action.toString());
+                                PluginDebugLog.log(TAG, index + " action in action list: " + action.toString());
                             }
                         }
                     }
 
                     Action finishedAction = list.remove(0);
                     if (finishedAction != null) {
-                        PluginDebugLog.log(TAG,
-                                "remove done action from action list for " +
-                                        finishedAction.toString());
+                        PluginDebugLog.log(TAG, "remove done action from action list for " + finishedAction.toString());
                     }
 
                     if (finishedAction != null && finishedAction instanceof PluginUninstallAction) {
-                        PluginDebugLog.log(TAG,
-                                "PluginUninstallAction onActionComplete for " + packageName);
-                        PluginUninstallAction uninstallAction =
-                                (PluginUninstallAction) finishedAction;
-                        if (uninstallAction != null &&
-                                uninstallAction.observer != null &&
-                                uninstallAction.info != null &&
-                                !TextUtils.isEmpty(uninstallAction.info.packageName)) {
-                            PluginDebugLog.log(TAG,
-                                    "PluginUninstallAction packageDeleted for " + packageName);
-                            uninstallAction.observer.packageDeleted(
-                                    uninstallAction.info.packageName, errorCode);
+                        PluginDebugLog.log(TAG, "PluginUninstallAction onActionComplete for " + packageName);
+                        PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
+                        if (uninstallAction != null && uninstallAction.observer != null && uninstallAction.info != null
+                                && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
+                            PluginDebugLog.log(TAG, "PluginUninstallAction packageDeleted for " + packageName);
+                            uninstallAction.observer.packageDeleted(uninstallAction.info.packageName, errorCode);
                         }
                     }
 
@@ -103,14 +93,11 @@ public class CMPackageManagerImpl {
                         Action action = list.get(index);
                         if (action != null) {
                             if (action.meetCondition()) {
-                                PluginDebugLog.log(TAG,
-                                        "start doAction for " + action.toString());
+                                PluginDebugLog.log(TAG, "start doAction for " + action.toString());
                                 action.doAction();
                                 break;
                             } else {
-                                PluginDebugLog.log(TAG,
-                                        "remove deprecate action from action list for "
-                                                + action.toString());
+                                PluginDebugLog.log(TAG, "remove deprecate action from action list for " + action.toString());
                                 list.remove(index);
                             }
                         }
@@ -169,13 +156,14 @@ public class CMPackageManagerImpl {
                     e.printStackTrace();
                 }
             } else if (mService == null) {
-                // set canMeetCondition to true in case of CMPackageManagerService
-                // is not connected, so that the action can be added in action list.
+                // set canMeetCondition to true in case of
+                // CMPackageManagerService
+                // is not connected, so that the action can be added in action
+                // list.
                 canMeetCondition = true;
             }
             if (info != null) {
-                PluginDebugLog.log(TAG, info.packageName +
-                        "PluginInstallAction check condition with result " + canMeetCondition);
+                PluginDebugLog.log(TAG, info.packageName + "PluginInstallAction check condition with result " + canMeetCondition);
             }
             return canMeetCondition;
         }
@@ -217,8 +205,7 @@ public class CMPackageManagerImpl {
         public String toString() {
             StringBuilder infoBuider = new StringBuilder();
             infoBuider.append("PluginDeleteAction: ");
-            infoBuider.append(
-                    " has IPackageDeleteObserver: ").append(observer != null ? true : false);
+            infoBuider.append(" has IPackageDeleteObserver: ").append(observer != null ? true : false);
             if (info != null) {
                 infoBuider.append(" packagename: ").append(info.packageName);
                 infoBuider.append(" plugin_ver: ").append(info.plugin_ver);
@@ -239,12 +226,13 @@ public class CMPackageManagerImpl {
                     e.printStackTrace();
                 }
             } else if (mService == null) {
-                // set canMeetCondition to true in case of CMPackageManagerService
-                // is not connected, so that the action can be added in action list.
+                // set canMeetCondition to true in case of
+                // CMPackageManagerService
+                // is not connected, so that the action can be added in action
+                // list.
                 canMeetCondition = true;
             }
-            PluginDebugLog.log(TAG, info.packageName +
-                    " PluginDeleteAction check condition with result " + canMeetCondition);
+            PluginDebugLog.log(TAG, info.packageName + " PluginDeleteAction check condition with result " + canMeetCondition);
             return canMeetCondition;
         }
 
@@ -360,18 +348,22 @@ public class CMPackageManagerImpl {
         Intent intent = new Intent(context.getApplicationContext(), CMPackageManagerService.class);
         try {
             Context appContext = context.getApplicationContext();
-            appContext.bindService(intent,
-                    getConnection(appContext), Context.BIND_AUTO_CREATE);
+            appContext.bindService(intent, getConnection(appContext), Context.BIND_AUTO_CREATE);
         } catch (Exception e) {
             // 灰度时出现binder，从系统代码查不可能出现这个异常，添加保护
             // Caused by: java.lang.NullPointerException
             // at android.os.Parcel.readException(Parcel.java:1437)
             // at android.os.Parcel.readException(Parcel.java:1385)
-            // at android.app.ActivityManagerProxy.bindService(ActivityManagerNative.java:2801)
-            // at android.app.ContextImpl.bindServiceAsUser(ContextImpl.java:1489)
+            // at
+            // android.app.ActivityManagerProxy.bindService(ActivityManagerNative.java:2801)
+            // at
+            // android.app.ContextImpl.bindServiceAsUser(ContextImpl.java:1489)
             // at android.app.ContextImpl.bindService(ContextImpl.java:1464)
-            // at android.content.ContextWrapper.bindService(ContextWrapper.java:496)
-            // at org.qiyi.pluginlibrary.pm.CMPackageManagerImpl.onBindService(Unknown Source)
+            // at
+            // android.content.ContextWrapper.bindService(ContextWrapper.java:496)
+            // at
+            // org.qiyi.pluginlibrary.pm.CMPackageManagerImpl.onBindService(Unknown
+            // Source)
             e.printStackTrace();
         }
     }
@@ -380,22 +372,18 @@ public class CMPackageManagerImpl {
         for (Map.Entry<String, CopyOnWriteArrayList<Action>> entry : mActionMap.entrySet()) {
             if (entry != null) {
                 CopyOnWriteArrayList<Action> actions = entry.getValue();
-                PluginDebugLog.log(TAG, "execute " +
-                        actions.size() + " Pending Actions");
+                PluginDebugLog.log(TAG, "execute " + actions.size() + " Pending Actions");
                 if (actions != null) {
                     int index = 0;
                     while (index < actions.size()) {
                         Action action = actions.get(index);
                         if (action != null) {
                             if (action.meetCondition()) {
-                                PluginDebugLog.log(TAG,
-                                        "start doAction for pending action " + action.toString());
+                                PluginDebugLog.log(TAG, "start doAction for pending action " + action.toString());
                                 action.doAction();
                                 break;
                             } else {
-                                PluginDebugLog.log(TAG,
-                                        "remove deprecate pending action " +
-                                                "from action list for " + action.toString());
+                                PluginDebugLog.log(TAG, "remove deprecate pending action " + "from action list for " + action.toString());
                                 actions.remove(index);
                             }
                         }
@@ -404,7 +392,6 @@ public class CMPackageManagerImpl {
             }
         }
     }
-
 
     /**
      * 执行之前为执行的操做
@@ -416,10 +403,10 @@ public class CMPackageManagerImpl {
                 ExecutionPackageAction action = iterator.next();
                 ActionType type = action.type;
                 switch (type) {
-                    case PACKAGE_ACTION:
+                case PACKAGE_ACTION:
                         CMPackageManagerImpl.getInstance(context).
                                 packageAction(action.packageInfo, action.callBack);
-                        break;
+                    break;
                 }
                 iterator.remove();
             }
@@ -441,13 +428,15 @@ public class CMPackageManagerImpl {
             }
         }
         List<CMPackageInfo> installedList = getInstalledAppsDirectly();
-        //to read the sharedPreference directly，this is a protect,not always happened
+        // to read the sharedPreference directly，this is a protect,not always
+        // happened
         onBindService(mContext);
         return installedList;
     }
 
     /**
-     * 根据应用包名，获取插件信息，通过aidl到CMPackageManagerService中获取值，如果service不存在，直接在sharedPreference中读取值，并且启动service
+     * 根据应用包名，获取插件信息，通过aidl到CMPackageManagerService中获取值，如果service不存在，
+     * 直接在sharedPreference中读取值，并且启动service
      *
      * @param pkg 插件包名
      * @return 返回插件信息
@@ -468,7 +457,8 @@ public class CMPackageManagerImpl {
     }
 
     /**
-     * 判断某个插件是否已经安装，通过aidl到CMPackageManagerService中获取值，如果service不存在，直接在sharedPreference中读取值，并且启动service
+     * 判断某个插件是否已经安装，通过aidl到CMPackageManagerService中获取值，如果service不存在，
+     * 直接在sharedPreference中读取值，并且启动service
      *
      * @param pkg 插件包名
      * @return 返回是否安装
@@ -529,8 +519,7 @@ public class CMPackageManagerImpl {
      * @param listener
      * @param info
      */
-    public void installApkFile(String filePath,
-                               IInstallCallBack listener, PluginPackageInfoExt info) {
+    public void installApkFile(String filePath, IInstallCallBack listener, PluginPackageInfoExt info) {
         PluginInstallAction action = new PluginInstallAction();
         action.filePath = filePath;
         action.listener = listener;
@@ -562,8 +551,7 @@ public class CMPackageManagerImpl {
      * @param listener
      * @param info
      */
-    public void installBuildinApps(
-            String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
+    public void installBuildinApps(String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
         BuildinPluginInstallAction action = new BuildinPluginInstallAction();
         action.listener = listener;
         action.info = info;
@@ -574,8 +562,7 @@ public class CMPackageManagerImpl {
         }
     }
 
-    private void installBuildinAppsInternal(
-            String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
+    private void installBuildinAppsInternal(String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
         if (mService != null) {
             try {
                 mService.installBuildinApps(packageName, listener, info);
@@ -592,7 +579,7 @@ public class CMPackageManagerImpl {
      * 删除某个插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
      *
      * @param packageName 删除的插件包名
-     * @param observer    删除成功回调监听
+     * @param observer 删除成功回调监听
      */
     public void deletePackage(PluginPackageInfoExt info, IPackageDeleteObserver observer) {
         PluginDeleteAction action = new PluginDeleteAction();
@@ -627,7 +614,8 @@ public class CMPackageManagerImpl {
     }
 
     /**
-     * 卸载插件，如果service不存在，则判断apk是否存在，如果存在，我们假设删除apk成功，暂时未考虑因内存不足或文件占用等原因导致的删除失败（此case概率较小）
+     * 卸载插件，如果service不存在，则判断apk是否存在，如果存在，我们假设删除apk成功，暂时未考虑因内存不足或文件占用等原因导致的删除失败（
+     * 此case概率较小）
      *
      * @param pkgName
      * @return
@@ -700,21 +688,21 @@ public class CMPackageManagerImpl {
      */
     private class ExecutionPackageAction {
 
-        ActionType type;//类型：
-        long time;//时间；
+        ActionType type;// 类型：
+        long time;// 时间；
         String filePath;
-        IInstallCallBack callBack;//安装回调
+        IInstallCallBack callBack;// 安装回调
         PluginPackageInfoExt pluginInfo;
         CMPackageInfo packageInfo;//包名
         IPackageDeleteObserver observer;
     }
 
     enum ActionType {
-        INSTALL_APK_FILE,//installApkFile
-        INSTALL_BUILD_IN_APPS,//installBuildinApps
-        DELETE_PACKAGE,//deletePackage
-        PACKAGE_ACTION,//packageAction
-        UNINSTALL_ACTION,//uninstall
+        INSTALL_APK_FILE, // installApkFile
+        INSTALL_BUILD_IN_APPS, // installBuildinApps
+        DELETE_PACKAGE, // deletePackage
+        PACKAGE_ACTION, // packageAction
+        UNINSTALL_ACTION,// uninstall
     }
 
     /**
@@ -796,8 +784,8 @@ public class CMPackageManagerImpl {
     }
 
     /**
-     * 从sharedPreference直接读取，此case只有当service不存在时会发生，概率较小。
-     * 经测试此文件耗时：主进程 120ms   插件进程：1s   所以尽量放到非主线程使用
+     * 从sharedPreference直接读取，此case只有当service不存在时会发生，概率较小。 经测试此文件耗时：主进程 120ms
+     * 插件进程：1s 所以尽量放到非主线程使用
      *
      * @return 返回的是素有插件的信息，其中包括安装和未安装的插件
      */
@@ -831,19 +819,18 @@ public class CMPackageManagerImpl {
 
     private String getCurrentProcessName(Context context) {
         int pid = android.os.Process.myPid();
-        ActivityManager manager = (ActivityManager) context
-                .getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
             if (process.pid == pid) {
                 return process.processName;
             }
         }
 
-        //try to read process name in /proc/pid/cmdline if no result from activity manager
+        // try to read process name in /proc/pid/cmdline if no result from
+        // activity manager
         String cmdline = null;
         try {
-            BufferedReader processFileReader = new BufferedReader(
-                    new FileReader(String.format("/proc/%d/cmdline", Process.myPid())));
+            BufferedReader processFileReader = new BufferedReader(new FileReader(String.format("/proc/%d/cmdline", Process.myPid())));
             cmdline = processFileReader.readLine().trim();
             processFileReader.close();
         } catch (Exception ex) {
@@ -882,14 +869,12 @@ public class CMPackageManagerImpl {
         if (mActionMap.contains(packageName) && !TextUtils.isEmpty(packageName)) {
             List<Action> actions = mActionMap.get(packageName);
             if (actions != null && actions.size() > 0) {
-                PluginDebugLog.log(TAG, actions.size() + " actions in action list for "
-                        + packageName + " isPackageAvailable : true");
+                PluginDebugLog.log(TAG, actions.size() + " actions in action list for " + packageName + " isPackageAvailable : true");
                 if (PluginDebugLog.isDebug()) {
                     for (int index = 0; index < actions.size(); index++) {
                         Action action = actions.get(index);
                         if (action != null) {
-                            PluginDebugLog.log(TAG, index +
-                                    " action in action list: " + action.toString());
+                            PluginDebugLog.log(TAG, index + " action in action list: " + action.toString());
                         }
                     }
                 }
@@ -906,14 +891,12 @@ public class CMPackageManagerImpl {
         if (mActionMap.contains(packageName)) {
             List<Action> list = mActionMap.get(packageName);
             if (list != null && list.size() > 0) {
-                PluginDebugLog.log(TAG, list.size() + " actions in action list for "
-                        + packageName + " isPackageAvailable : true");
+                PluginDebugLog.log(TAG, list.size() + " actions in action list for " + packageName + " isPackageAvailable : true");
                 if (PluginDebugLog.isDebug()) {
                     for (int index = 0; index < list.size(); index++) {
                         Action action = list.get(index);
                         if (action != null) {
-                            PluginDebugLog.log(TAG, index +
-                                    " action in action list: " + action.toString());
+                            PluginDebugLog.log(TAG, index + " action in action list: " + action.toString());
                         }
                     }
                 }

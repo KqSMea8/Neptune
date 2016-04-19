@@ -10,12 +10,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.plugin.manager.TargetActivatorNew;
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginnew.ApkTargetMappingNew;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -30,9 +30,7 @@ import android.os.RemoteException;
 import android.text.TextUtils;
 
 /**
- * 负责安装卸载app，获取安装列表等工作.<br>
- * 负责安装插件的一些方法
- * 功能类似系统中的PackageManager
+ * 负责安装卸载app，获取安装列表等工作.<br> 负责安装插件的一些方法 功能类似系统中的PackageManager
  */
 public class CMPackageManager {
 
@@ -78,8 +76,8 @@ public class CMPackageManager {
      */
     public static final String EXTRA_PKG_NAME = "package_name";
     /**
-     * 支持 assets:// 和 file:// 两种，对应内置和外部apk安装。
-     * 比如  assets://megapp/xxxx.apk , 或者 file:///data/data/com.qiyi.xxx/files/xxx.apk
+     * 支持 assets:// 和 file:// 两种，对应内置和外部apk安装。 比如 assets://megapp/xxxx.apk , 或者
+     * file:///data/data/com.qiyi.xxx/files/xxx.apk
      */
     public static final String EXTRA_SRC_FILE = "install_src_file";
     /**
@@ -87,10 +85,10 @@ public class CMPackageManager {
      */
     public static final String EXTRA_DEST_FILE = "install_dest_file";
 
-//    /** 安装完的pkg的 version code */
-//    public static final String EXTRA_VERSION_CODE = "version_code";
-//    /** 安装完的pkg的 version name */
-//    public static final String EXTRA_VERSION_NAME = "version_name";
+    // /** 安装完的pkg的 version code */
+    // public static final String EXTRA_VERSION_CODE = "version_code";
+    // /** 安装完的pkg的 version name */
+    // public static final String EXTRA_VERSION_NAME = "version_name";
     /**
      * 安装完的pkg的 plugin info
      */
@@ -106,15 +104,14 @@ public class CMPackageManager {
      */
     private Context mContext;
 
-    private static CMPackageManager sInstance;//安装对象
+    private static CMPackageManager sInstance;// 安装对象
 
     private ConcurrentHashMap<String, IActionFinishCallback> mActionFinishCallbacks =
             new ConcurrentHashMap<String, IActionFinishCallback>();
 
     /**
-     * 已安装列表。
-     * !!!!!!! 不要直接引用该变量。 因为该变量是 lazy init 方式，不需要的时不进行初始化。
-     * 使用 {@link #getInstalledPkgsInstance()} 获取该实例
+     * 已安装列表。 !!!!!!! 不要直接引用该变量。 因为该变量是 lazy init 方式，不需要的时不进行初始化。 使用
+     * {@link #getInstalledPkgsInstance()} 获取该实例
      */
     private ConcurrentHashMap<String, ApkTargetMappingNew> mTargetMappingCache =
             new ConcurrentHashMap<String, ApkTargetMappingNew>();
@@ -211,8 +208,7 @@ public class CMPackageManager {
             if (ACTION_PACKAGE_INSTALLED.equals(action)) {
                 String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
                 String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
-                PluginPackageInfoExt infoExt = intent
-                        .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
+                PluginPackageInfoExt infoExt = intent.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
                 PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
                 CMPackageInfo pkgInfo = new CMPackageInfo();
                 pkgInfo.packageName = pkgName;
@@ -221,8 +217,7 @@ public class CMPackageManager {
                 pkgInfo.pluginInfo = infoExt;
 
                 // 此处耗时操作，先保存再更新ApkTarget
-                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(
-                        pkgInfo.srcApkPath));
+                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(pkgInfo.srcApkPath));
                 mTargetMappingCache.put(pkgName, targetInfo);
                 pkgInfo.targetInfo = targetInfo;
                 if (listenerMap.get(pkgName) != null) {
@@ -250,11 +245,10 @@ public class CMPackageManager {
                         end = assetsPath.lastIndexOf(PluginInstaller.SO_SUFFIX);
                     }
                     String mapPackagename = assetsPath.substring(start + 1, end);
-                    //失败原因
+                    // 失败原因
                     int failReason = intent.getIntExtra(ErrorType.ERROR_RESON, ErrorType.SUCCESS);
-                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLFAIL mapPackagename: "
-                            + mapPackagename + " failReason: " + failReason + " assetsPath: "
-                            + assetsPath);
+                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLFAIL mapPackagename: " + mapPackagename + " failReason: " + failReason
+                            + " assetsPath: " + assetsPath);
                     if (listenerMap.get(mapPackagename) != null) {
                         try {
                             listenerMap.get(mapPackagename).
@@ -287,12 +281,13 @@ public class CMPackageManager {
             filter.addAction(ACTION_PACKAGE_INSTALLED);
             filter.addAction(ACTION_PACKAGE_INSTALLFAIL);
             filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-            //注册一个安装广播
+            // 注册一个安装广播
             mContext.registerReceiver(pluginInstallerReceiver, filter);
 
-        }catch (IllegalArgumentException e ){
-            //该广播被其他应用UID 抢先注册
-            //Receiver requested to register for uid 10100 was previously registered for uid  10105
+        } catch (IllegalArgumentException e) {
+            // 该广播被其他应用UID 抢先注册
+            // Receiver requested to register for uid 10100 was previously
+            // registered for uid 10105
             e.printStackTrace();
         }
     }
@@ -301,9 +296,9 @@ public class CMPackageManager {
      * 包依赖任务队列对象。
      */
     private class PackageAction {
-        long timestamp;//时间
-        IInstallCallBack callBack;//安装回调
-        String packageName;//包名
+        long timestamp;// 时间
+        IInstallCallBack callBack;// 安装回调
+        String packageName;// 包名
     }
 
     /**
@@ -402,8 +397,7 @@ public class CMPackageManager {
                 mPackageActions.remove(action);
                 try {
                     if (action != null && action.callBack != null) {
-                        action.callBack.onPackageInstallFail(action.packageName,
-                                ErrorType.ERROR_CLIENT_TIME_OUT);
+                        action.callBack.onPackageInstallFail(action.packageName, ErrorType.ERROR_CLIENT_TIME_OUT);
                     }
 
                 } catch (RemoteException e) {
@@ -412,7 +406,6 @@ public class CMPackageManager {
             }
         }
     }
-
 
     /**
      * 判断一个package是否安装
@@ -470,14 +463,12 @@ public class CMPackageManager {
 
     /**
      * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
-     * 启动service进行安装操作。
-     * 安装完会有 {@link #ACTION_PACKAGE_INSTALLED} broadcast。
+     * 启动service进行安装操作。 安装完会有 {@link #ACTION_PACKAGE_INSTALLED} broadcast。
      *
-     * @param filePath   apk 文件目录 比如  /sdcard/xxxx.apk
+     * @param filePath apk 文件目录 比如 /sdcard/xxxx.apk
      * @param pluginInfo 插件信息
      */
-    public void installApkFile(final String filePath, IInstallCallBack listener,
-                               PluginPackageInfoExt pluginInfo) {
+    public void installApkFile(final String filePath, IInstallCallBack listener, PluginPackageInfoExt pluginInfo) {
         int start = filePath.lastIndexOf("/");
         int end = start + 1;
         if (filePath.endsWith(PluginInstaller.SO_SUFFIX)) {
@@ -490,26 +481,22 @@ public class CMPackageManager {
         String mapPackagename = filePath.substring(start + 1, end);
         listenerMap.put(mapPackagename, listener);
         PluginDebugLog.log(TAG, "installApkFile:" + mapPackagename);
-        if (pluginInfo != null
-                && !TextUtils.equals(pluginInfo.mFileSourceType,
-                CMPackageManager.PLUGIN_SOURCE_SDCARD)) {
-            PluginDebugLog.log(TAG,
-                    "installApkFile: change mFileSourceType to PLUGIN_SOURCE_SDCARD");
+        if (pluginInfo != null && !TextUtils.equals(pluginInfo.mFileSourceType, CMPackageManager.PLUGIN_SOURCE_SDCARD)) {
+            PluginDebugLog.log(TAG, "installApkFile: change mFileSourceType to PLUGIN_SOURCE_SDCARD");
             pluginInfo.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_NETWORK;
         }
         PluginInstaller.installApkFile(mContext, filePath, pluginInfo);
     }
 
     /**
-     * 安装内置在 assets/puginapp 目录下的 apk。
-     * 内置app必须以 packageName 命名，比如 com.qiyi.xx.apk
+     * 安装内置在 assets/puginapp 目录下的 apk。 内置app必须以 packageName 命名，比如
+     * com.qiyi.xx.apk
      *
      * @param packageName
      * @param listener
-     * @param info        插件信息
+     * @param info 插件信息
      */
-    public void installBuildinApps(String packageName, IInstallCallBack listener,
-                                   PluginPackageInfoExt info) {
+    public void installBuildinApps(String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
         listenerMap.put(packageName, listener);
         PluginInstaller.installBuildinApps(packageName, mContext, info);
     }
@@ -523,26 +510,23 @@ public class CMPackageManager {
         }
 
         Bundle metaData = null;
-        File apkFile = new File(context.
-                getDir("qiyi_plugin", Context.MODE_PRIVATE), packageName + ".apk");
+        File apkFile = new File(context.getDir("qiyi_plugin", Context.MODE_PRIVATE), packageName + ".apk");
         if (!apkFile.exists()) {
             return result;
         }
 
         try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageArchiveInfo(
-                    apkFile.getAbsolutePath(),
-                    PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS
-                            | PackageManager.GET_META_DATA | PackageManager.GET_SERVICES
-                            | PackageManager.GET_CONFIGURATIONS);
+            PackageInfo packageInfo = context.getPackageManager().getPackageArchiveInfo(apkFile.getAbsolutePath(),
+                    PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS | PackageManager.GET_META_DATA
+                            | PackageManager.GET_SERVICES | PackageManager.GET_CONFIGURATIONS);
 
-            //如果PackageManager解析apk文件失败，packageInfo为null
+            // 如果PackageManager解析apk文件失败，packageInfo为null
             if (packageInfo == null) {
                 return result;
             }
 
-            if (packageInfo != null && packageInfo.activities != null &&
-                    packageInfo.activities.length > 0 && packageInfo.activities[0] != null) {
+            if (packageInfo != null && packageInfo.activities != null && packageInfo.activities.length > 0
+                    && packageInfo.activities[0] != null) {
                 metaData = packageInfo.activities[0].metaData;
             }
             if (metaData == null && packageInfo != null && packageInfo.applicationInfo != null) {
@@ -560,29 +544,25 @@ public class CMPackageManager {
     }
 
     /**
-     * 删除安装包。
-     * 卸载插件应用程序,目前只有在升级时调用次方法，把插件状态改成upgrading状态
+     * 删除安装包。 卸载插件应用程序,目前只有在升级时调用次方法，把插件状态改成upgrading状态
      *
      * @param packageName 需要删除的package 的 packageName
-     * @param observer    卸载结果回调
+     * @param observer 卸载结果回调
      */
     public void deletePackage(final String packageName, IPackageDeleteObserver observer) {
         deletePackage(packageName, observer, false, true);
     }
 
     /**
-     * 删除安装包。
-     * 卸载插件应用程序
+     * 删除安装包。 卸载插件应用程序
      *
      * @param packageName 需要删除的package 的 packageName
-     * @param observer    卸载结果回调
-     * @param deleteData  是否删除生成的data
-     * @param upgrading   是否是升级之前的操作
+     * @param observer 卸载结果回调
+     * @param deleteData 是否删除生成的data
+     * @param upgrading 是否是升级之前的操作
      */
-    private void deletePackage(final String packageName, IPackageDeleteObserver observer,
-                               boolean deleteData, boolean upgrading) {
-        PluginDebugLog.log(TAG, "deletePackage with " + packageName +
-                " deleteData: " + deleteData + " upgrading: " + upgrading);
+    private void deletePackage(final String packageName, IPackageDeleteObserver observer, boolean deleteData, boolean upgrading) {
+        PluginDebugLog.log(TAG, "deletePackage with " + packageName + " deleteData: " + deleteData + " upgrading: " + upgrading);
         try {
             // 先停止运行插件
             TargetActivatorNew.unLoadTarget(packageName);
@@ -597,7 +577,7 @@ public class CMPackageManager {
                 PluginInstaller.deletePluginData(mContext, packageName);
             }
 
-            //删除安装文件，apk，dex，so
+            // 删除安装文件，apk，dex，so
             PluginInstaller.deleteInstallerPackage(mContext, packageName);
             mTargetMappingCache.remove(packageName);
 
@@ -669,8 +649,7 @@ public class CMPackageManager {
             try {
                 String processName = callback.getProcessName();
                 if (!TextUtils.isEmpty(processName)) {
-                    PluginDebugLog.log(TAG,
-                            "setActionFinishCallback with process name: " + processName);
+                    PluginDebugLog.log(TAG, "setActionFinishCallback with process name: " + processName);
                     mActionFinishCallbacks.put(processName, callback);
                 }
             } catch (RemoteException e) {

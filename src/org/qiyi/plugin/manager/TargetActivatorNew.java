@@ -2,7 +2,6 @@ package org.qiyi.plugin.manager;
 
 import org.qiyi.pluginlibrary.api.IGetClassLoaderCallback;
 import org.qiyi.pluginlibrary.api.ITargetLoadedCallBack;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
@@ -31,12 +30,12 @@ public class TargetActivatorNew {
     /**
      * 静默加载插件，异步加载，可以设置callback
      *
-     * @param context     application Context
+     * @param context application Context
      * @param packageName 插件包名
-     * @param callback    加载成功的回调
+     * @param callback 加载成功的回调
      */
-    public static void loadTarget(final Context context, final String packageName,
-                                  final String processName, final ITargetLoadedCallBack callback) {
+    public static void loadTarget(final Context context, final String packageName, final String processName,
+            final ITargetLoadedCallBack callback) {
 
         // 插件已经加载
         if (ProxyEnvironmentNew.isEnterProxy(packageName)) {
@@ -51,8 +50,7 @@ public class TargetActivatorNew {
         BroadcastReceiver recv = new BroadcastReceiver() {
             public void onReceive(Context ctx, Intent intent) {
                 String curPkg = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
-                if (ProxyEnvironmentNew.ACTION_TARGET_LOADED.equals(intent.getAction())
-                        && TextUtils.equals(packageName, curPkg)) {
+                if (ProxyEnvironmentNew.ACTION_TARGET_LOADED.equals(intent.getAction()) && TextUtils.equals(packageName, curPkg)) {
                     PluginDebugLog.log("plugin", "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
                     callback.onTargetLoaded(packageName);
                     context.getApplicationContext().unregisterReceiver(this);
@@ -76,24 +74,21 @@ public class TargetActivatorNew {
      * <p/>
      * 插件已全部改为运行在独立进城，先注释掉没有使用的方法
      *
-     * @param context     application Context
+     * @param context application Context
      * @param packageName 插件包名
-     * @param callback    回调，classloader 通过此异步回调返回给hostapp
+     * @param callback 回调，classloader 通过此异步回调返回给hostapp
      */
-    public static void loadAndGetClassLoader(final Context context, final String packageName,
-                                             final String processName, final IGetClassLoaderCallback callback) {
+    public static void loadAndGetClassLoader(final Context context, final String packageName, final String processName,
+            final IGetClassLoaderCallback callback) {
 
         loadTarget(context, packageName, processName, new ITargetLoadedCallBack() {
 
             @Override
             public void onTargetLoaded(String packageName) {
                 try {
-                    ProxyEnvironmentNew
-                            .initProxyEnvironment(
-                                    context,
-                                    packageName,
-                                    CMPackageManagerImpl.getInstance(context).getPackageInfo(
-                                            packageName).pluginInfo.mPluginInstallMethod, processName);
+                    ProxyEnvironmentNew.initProxyEnvironment(context, packageName,
+                            CMPackageManagerImpl.getInstance(context).getPackageInfo(packageName).pluginInfo.mPluginInstallMethod,
+                            processName);
                     ProxyEnvironmentNew targetEnv = ProxyEnvironmentNew.getInstance(packageName);
                     ClassLoader classLoader = targetEnv.getDexClassLoader();
 

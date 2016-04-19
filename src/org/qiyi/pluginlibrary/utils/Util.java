@@ -30,22 +30,25 @@ public final class Util {
     private static final String TAG = PluginDebugLog.TAG;
     /** apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so */
     private static final String APK_LIB_DIR_PREFIX = "lib/";
-    /** lib中so后缀*/
+    /** lib中so后缀 */
     private static final String APK_LIB_SUFFIX = ".so";
-    /** utility class private constructor*/
-    private Util() { }
+
+    /** utility class private constructor */
+    private Util() {
+    }
+
     /**
      * 6.2扩展了几个方法
      */
     public static final String pluginSDKVersion = "6.2";
 
-    public static String getPluginSDKVersion(){
+    public static String getPluginSDKVersion() {
         return pluginSDKVersion;
     }
 
     /**
-     * 读取 apk 文件的最后修改时间（生成时间），通过编译命令编译出来的apk第一个 entry 为
-     * META-INF/MANIFEST.MF  所以我们只读取此文件的修改时间可以。
+     * 读取 apk 文件的最后修改时间（生成时间），通过编译命令编译出来的apk第一个 entry 为 META-INF/MANIFEST.MF
+     * 所以我们只读取此文件的修改时间可以。
      *
      * 对于 eclipse 插件打包的 apk 不适用。文件 entry顺序不确定。
      *
@@ -55,9 +58,10 @@ public final class Util {
      */
     public static SimpleDateTime readApkModifyTime(InputStream fis) throws IOException {
 
-        int LOCHDR = 30; //header 部分信息截止字节 // SUPPRESS CHECKSTYLE
-        int LOCVER = 4; //排除掉magic number 后的第四个字节，version部分 // SUPPRESS CHECKSTYLE
-        int LOCTIM = 10; //最后修改时间 第10个字节。 // SUPPRESS CHECKSTYLE
+        int LOCHDR = 30; // header 部分信息截止字节 // SUPPRESS CHECKSTYLE
+        int LOCVER = 4; // 排除掉magic number 后的第四个字节，version部分 // SUPPRESS
+                        // CHECKSTYLE
+        int LOCTIM = 10; // 最后修改时间 第10个字节。 // SUPPRESS CHECKSTYLE
 
         byte[] hdrBuf = new byte[LOCHDR - LOCVER];
 
@@ -73,9 +77,15 @@ public final class Util {
         /*
          * zip中的日期格式为 dos 格式，从 1980年开始计时。
          */
-        cal.set(1980 + ((modDate >> 9) & 0x7f), ((modDate >> 5) & 0xf), // SUPPRESS CHECKSTYLE magic number
-                modDate & 0x1f, (time >> 11) & 0x1f, (time >> 5) & 0x3f, // SUPPRESS CHECKSTYLE magic number
-                (time & 0x1f) << 1);  // SUPPRESS CHECKSTYLE magic number
+        cal.set(1980 + ((modDate >> 9) & 0x7f), ((modDate >> 5) & 0xf), // SUPPRESS
+                                                                        // CHECKSTYLE
+                                                                        // magic
+                                                                        // number
+                modDate & 0x1f, (time >> 11) & 0x1f, (time >> 5) & 0x3f, // SUPPRESS
+                                                                         // CHECKSTYLE
+                                                                         // magic
+                                                                         // number
+                (time & 0x1f) << 1); // SUPPRESS CHECKSTYLE magic number
 
         fis.skip(0);
 
@@ -84,21 +94,23 @@ public final class Util {
 
     /**
      * 从buffer数组中读取一个 short。
+     *
      * @param buffer buffer数组
      * @param offset 偏移量，从这个位置读取一个short。
      * @return short值
      */
     private static int peekShort(byte[] buffer, int offset) {
-        short result = (short) ((buffer[offset + 1] << 8) | (buffer[offset] & 0xff)); // SUPPRESS CHECKSTYLE magic number
+        short result = (short) ((buffer[offset + 1] << 8) | (buffer[offset] & 0xff)); // SUPPRESS
+                                                                                      // CHECKSTYLE
+                                                                                      // magic
+                                                                                      // number
 
         return result & 0xffff; // SUPPRESS CHECKSTYLE magic number
     }
 
-
-
     /**
-     * Copy data from a source stream to destFile.
-     * Return true if succeed, return false if failed.
+     * Copy data from a source stream to destFile. Return true if succeed,
+     * return false if failed.
      *
      * @param inputStream source file inputstream
      * @param destFile destFile
@@ -141,8 +153,8 @@ public final class Util {
     }
 
     /**
-     * Copy data from a source stream to destFile.
-     * Return true if succeed, return false if failed.
+     * Copy data from a source stream to destFile. Return true if succeed,
+     * return false if failed.
      *
      * @param srcFile source file
      * @param destFile destFile
@@ -178,8 +190,7 @@ public final class Util {
      * 安装 apk 中的 so 库。
      *
      * @param apkFilePath
-     * @param libDir
-     *            lib目录。
+     * @param libDir lib目录。
      */
     @SuppressWarnings("resource")
     @SuppressLint("NewApi")
@@ -198,8 +209,7 @@ public final class Util {
             return false;
         }
 
-        if (installNativeLibrary(zipFile, libDir, Build.CPU_ABI)
-                || installNativeLibrary(zipFile, libDir, Build.CPU_ABI2)) {
+        if (installNativeLibrary(zipFile, libDir, Build.CPU_ABI) || installNativeLibrary(zipFile, libDir, Build.CPU_ABI2)) {
             installResult = true;
         } else {
             PluginDebugLog.log("plugin", "can't install native lib of " + apkFilePath + "as no matched ABI");
@@ -313,7 +323,7 @@ public final class Util {
     /**
      * Deletes a directory recursively.
      *
-     * @param directory  directory to delete
+     * @param directory directory to delete
      * @throws IOException in case deletion is unsuccessful
      */
     public static void deleteDirectory(File directory) throws IOException {
@@ -328,8 +338,7 @@ public final class Util {
 
         cleanDirectory(directory);
         if (!directory.delete()) {
-            String message =
-                "Unable to delete directory " + directory + ".";
+            String message = "Unable to delete directory " + directory + ".";
             throw new IOException(message);
         }
     }
@@ -352,7 +361,7 @@ public final class Util {
         }
 
         File[] files = directory.listFiles();
-        if (files == null) {  // null if security restricted
+        if (files == null) { // null if security restricted
             throw new IOException("Failed to list contents of " + directory);
         }
 
@@ -372,16 +381,13 @@ public final class Util {
     }
 
     /**
-     * Deletes a file. If file is a directory, delete it and all sub-directories.
-     * <p>
-     * The difference between File.delete() and this method are:
-     * <ul>
-     * <li>A directory to be deleted does not have to be empty.</li>
+     * Deletes a file. If file is a directory, delete it and all
+     * sub-directories. <p> The difference between File.delete() and this method
+     * are: <ul> <li>A directory to be deleted does not have to be empty.</li>
      * <li>You get exceptions when a file or directory cannot be deleted.
-     *      (java.io.File methods returns a boolean)</li>
-     * </ul>
+     * (java.io.File methods returns a boolean)</li> </ul>
      *
-     * @param file  file or directory to delete, must not be <code>null</code>
+     * @param file file or directory to delete, must not be <code>null</code>
      * @throws NullPointerException if the directory is <code>null</code>
      * @throws FileNotFoundException if the file was not found
      * @throws IOException in case deletion is unsuccessful
@@ -392,11 +398,10 @@ public final class Util {
         } else {
             boolean filePresent = file.exists();
             if (!file.delete()) {
-                if (!filePresent){
+                if (!filePresent) {
                     throw new FileNotFoundException("File does not exist: " + file);
                 }
-                String message =
-                    "Unable to delete file: " + file;
+                String message = "Unable to delete file: " + file;
                 throw new IOException(message);
             }
         }

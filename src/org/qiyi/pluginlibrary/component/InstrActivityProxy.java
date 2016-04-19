@@ -31,15 +31,15 @@ import android.view.View;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.ActivityJumpUtil;
+import org.qiyi.pluginlibrary.ActivityOverider;
 import org.qiyi.pluginlibrary.PluginActivityControl;
+import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-import org.qiyi.pluginnew.ActivityJumpUtil;
-import org.qiyi.pluginnew.ActivityOverider;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
-import org.qiyi.pluginnew.service.PluginServiceWrapper;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -63,8 +63,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
      */
     private Activity fillPluginActivity(ProxyEnvironmentNew env, String actClsName) {
         try {
-            Activity myPlugin = (Activity) env.getDexClassLoader().loadClass(actClsName)
-                    .newInstance();
+            Activity myPlugin = (Activity) env.getDexClassLoader().loadClass(actClsName).newInstance();
             return myPlugin;
         } catch (Exception e) {
             e.printStackTrace();
@@ -95,22 +94,27 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
      */
     private boolean tryToInitEnvironment(String pkgName) {
         if (!TextUtils.isEmpty(pkgName) && null == mPluginEnv) {
-            // in multiple process environment plugin doesn't know which process to
+            // in multiple process environment plugin doesn't know which process
+            // to
             // launch environment, so one plugin cann't start other plugin.
-//            if (!ProxyEnvironmentNew.hasInstance(pkgName)) {
-//                String installMethod = "";
-//                CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(this).getPackageInfo(pkgName);
-//                if (null != pkgInfo && pkgInfo.pluginInfo != null) {
-//                    installMethod = pkgInfo.pluginInfo.mPluginInstallMethod;
-//                } else {
-//                    ProxyEnvironmentNew.deliverPlug(false, pkgName, ErrorType.ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL);
-//                    Log.e(TAG, "Cann't get pkginfo for: " + pkgName);
-//                    return false;
-//                }
-//                PluginDebugLog.log("plugin", "doInBackground:" + pkgName + ", installMethod: "
-//                        + installMethod);
-//				ProxyEnvironmentNew.initProxyEnvironment(InstrActivityProxy.this, pkgName, installMethod);
-//            }
+            // if (!ProxyEnvironmentNew.hasInstance(pkgName)) {
+            // String installMethod = "";
+            // CMPackageInfo pkgInfo =
+            // CMPackageManagerImpl.getInstance(this).getPackageInfo(pkgName);
+            // if (null != pkgInfo && pkgInfo.pluginInfo != null) {
+            // installMethod = pkgInfo.pluginInfo.mPluginInstallMethod;
+            // } else {
+            // ProxyEnvironmentNew.deliverPlug(false, pkgName,
+            // ErrorType.ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL);
+            // Log.e(TAG, "Cann't get pkginfo for: " + pkgName);
+            // return false;
+            // }
+            // PluginDebugLog.log("plugin", "doInBackground:" + pkgName + ",
+            // installMethod: "
+            // + installMethod);
+            // ProxyEnvironmentNew.initProxyEnvironment(InstrActivityProxy.this,
+            // pkgName, installMethod);
+            // }
             mPluginEnv = ProxyEnvironmentNew.getInstance(pkgName);
         }
         if (null != mPluginEnv) {
@@ -119,7 +123,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         return false;
     }
 
-//	private boolean mNeedUpdateConfiguration = true;
+    // private boolean mNeedUpdateConfiguration = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,8 +150,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         }
         if (!ProxyEnvironmentNew.isEnterProxy(pluginPkgName)) {
             Intent i = new Intent();
-            i.setComponent(new ComponentName(pluginPkgName,
-                    ProxyEnvironmentNew.EXTRA_VALUE_LOADTARGET_STUB));
+            i.setComponent(new ComponentName(pluginPkgName, ProxyEnvironmentNew.EXTRA_VALUE_LOADTARGET_STUB));
             ProxyEnvironmentNew.launchIntent(InstrActivityProxy.this, null, i);
         }
         Activity plugin = fillPluginActivity(mPluginEnv, pluginActivityName);
@@ -158,8 +161,8 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             return;
         }
         try {
-            mPluginContrl = new PluginActivityControl(InstrActivityProxy.this, plugin,
-                    mPluginEnv.getApplication(), mPluginEnv.mPluginInstrument);
+            mPluginContrl = new PluginActivityControl(InstrActivityProxy.this, plugin, mPluginEnv.getApplication(),
+                    mPluginEnv.mPluginInstrument);
         } catch (Exception e1) {
             ProxyEnvironmentNew.deliverPlug(this, false, pluginPkgName, ErrorType.ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL);
             e1.printStackTrace();
@@ -167,8 +170,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             return;
         }
         if (null != mPluginContrl) {
-            mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this.getBaseContext(),
-                    pluginPkgName);
+            mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this.getBaseContext(), pluginPkgName);
             ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
             if (actInfo != null) {
                 ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
@@ -206,29 +208,30 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (mPluginEnv == null) {
             return super.getResources();
         }
-        return mPluginEnv.getTargetResources() == null ? super.getResources() : mPluginEnv
-                .getTargetResources();
+        return mPluginEnv.getTargetResources() == null ? super.getResources() : mPluginEnv.getTargetResources();
     }
 
     @Override
     public void setTheme(int resid) {
-//		String[] temp = getPkgAndCls();
-//		if (mNeedUpdateConfiguration && (temp != null || mPluginEnv != null)) {
-//			tryToInitEnvironment(temp[0]);
-//			if (mPluginEnv != null) {
-//				ActivityInfo actInfo = mPluginEnv.findActivityByClassName(temp[1]);
-//				if (actInfo != null) {
-//					int resTheme = actInfo.getThemeResource();
-//					if (mNeedUpdateConfiguration) {
-//						ActivityOverider.changeActivityInfo(InstrActivityProxy.this, temp[0], temp[1]);
-//						super.setTheme(resTheme);
-//						mNeedUpdateConfiguration = false;
-//						return;
-//					}
-//				}
-//			}
-//		}
-//		super.setTheme(resid);
+        // String[] temp = getPkgAndCls();
+        // if (mNeedUpdateConfiguration && (temp != null || mPluginEnv != null))
+        // {
+        // tryToInitEnvironment(temp[0]);
+        // if (mPluginEnv != null) {
+        // ActivityInfo actInfo = mPluginEnv.findActivityByClassName(temp[1]);
+        // if (actInfo != null) {
+        // int resTheme = actInfo.getThemeResource();
+        // if (mNeedUpdateConfiguration) {
+        // ActivityOverider.changeActivityInfo(InstrActivityProxy.this, temp[0],
+        // temp[1]);
+        // super.setTheme(resTheme);
+        // mNeedUpdateConfiguration = false;
+        // return;
+        // }
+        // }
+        // }
+        // }
+        // super.setTheme(resid);
         getTheme().applyStyle(resid, true);
     }
 
@@ -244,9 +247,8 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     }
 
     /**
-     * Override Oppo method in Context
-     * Resolve cann't start plugin on oppo devices,
-     * true or false both OK, false as the temporary result
+     * Override Oppo method in Context Resolve cann't start plugin on oppo
+     * devices, true or false both OK, false as the temporary result
      *
      * @return
      */
@@ -259,8 +261,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (mPluginEnv == null) {
             return super.getAssets();
         }
-        return mPluginEnv.getTargetAssetManager() == null ? super.getAssets() : mPluginEnv
-                .getTargetAssetManager();
+        return mPluginEnv.getTargetAssetManager() == null ? super.getAssets() : mPluginEnv.getTargetAssetManager();
     }
 
     @Override
@@ -313,8 +314,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     }
 
     @Override
-    public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory,
-                                               DatabaseErrorHandler errorHandler) {
+    public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory, DatabaseErrorHandler errorHandler) {
         return mPluginContextWrapper.openOrCreateDatabase(name, mode, factory, errorHandler);
     }
 
@@ -477,8 +477,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (mPluginEnv != null) {
             String actServiceClsName = name.getComponent().getClassName();
             PluginServiceWrapper plugin = ProxyEnvironmentNew.sAliveServices
-                    .get(PluginServiceWrapper.getIndeitfy(mPluginEnv.getTargetPackageName(),
-                            actServiceClsName));
+                    .get(PluginServiceWrapper.getIndeitfy(mPluginEnv.getTargetPackageName(), actServiceClsName));
             if (plugin != null) {
                 plugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
                 plugin.tryToDestroyService(name);
@@ -498,8 +497,9 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     public void startActivityForResult(Intent intent, int requestCode) {
         if (mPluginEnv != null) {
-            super.startActivityForResult(ActivityJumpUtil.handleStartActivityIntent(
-                    mPluginEnv.getTargetPackageName(), intent, requestCode, null, this), requestCode);
+            super.startActivityForResult(
+                    ActivityJumpUtil.handleStartActivityIntent(mPluginEnv.getTargetPackageName(), intent, requestCode, null, this),
+                    requestCode);
         } else {
             super.startActivityForResult(intent, requestCode);
         }
@@ -508,25 +508,27 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @SuppressLint("NewApi")
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         if (mPluginEnv != null) {
-            super.startActivityForResult(ActivityJumpUtil.handleStartActivityIntent(
-                            mPluginEnv.getTargetPackageName(), intent, requestCode, options, this), requestCode,
-                    options);
+            super.startActivityForResult(
+                    ActivityJumpUtil.handleStartActivityIntent(mPluginEnv.getTargetPackageName(), intent, requestCode, options, this),
+                    requestCode, options);
         } else {
             super.startActivityForResult(intent, requestCode, options);
         }
     }
 
-//	public void startActivityFromFragment(Fragment fragment, Intent intent, int requestCode) {
-//		// TODO Auto-generated method stub
-//		super.startActivityFromFragment(fragment, intent, requestCode);
-//	}
-//
-//	@Override
-//	public void startActivityFromFragment(Fragment fragment, Intent intent, int requestCode,
-//			Bundle options) {
-//		// TODO Auto-generated method stub
-//		super.startActivityFromFragment(fragment, intent, requestCode, options);
-//	}
+    // public void startActivityFromFragment(Fragment fragment, Intent intent,
+    // int requestCode) {
+    // // TODO Auto-generated method stub
+    // super.startActivityFromFragment(fragment, intent, requestCode);
+    // }
+    //
+    // @Override
+    // public void startActivityFromFragment(Fragment fragment, Intent intent,
+    // int requestCode,
+    // Bundle options) {
+    // // TODO Auto-generated method stub
+    // super.startActivityFromFragment(fragment, intent, requestCode, options);
+    // }
 
     @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {
@@ -544,7 +546,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-//		mNeedUpdateConfiguration = true;
+        // mNeedUpdateConfiguration = true;
         if (getController() != null) {
             getController().callOnConfigurationChanged(newConfig);
         }
@@ -706,9 +708,10 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (getController() != null) {
             ReflectionUtils pluginRef = getController().getPluginRef();
             if (pluginRef != null) {
-                //6.0.1用mHasCurrentPermissionsRequest保证分发permission result完成，根据现有
-                //的逻辑，第一次权限请求onRequestPermissionsResult一直是true，会影响之后的申请权限的
-                //dialog弹出
+                // 6.0.1用mHasCurrentPermissionsRequest保证分发permission
+                // result完成，根据现有
+                // 的逻辑，第一次权限请求onRequestPermissionsResult一直是true，会影响之后的申请权限的
+                // dialog弹出
                 try {
                     pluginRef.set("mHasCurrentPermissionsRequest", false);
                 } catch (Exception e) {
@@ -774,17 +777,17 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         return null;
     }
 
-//	/**
-//	 * Get the real package name for this plugin
-//	 *
-//	 * @return
-//	 */
-//	public String getPluginPackageName() {
-//		if (null != mPluginEnv) {
-//			return mPluginEnv.getTargetPackageName();
-//		}
-//		return this.getPackageName();
-//	}
+    // /**
+    // * Get the real package name for this plugin
+    // *
+    // * @return
+    // */
+    // public String getPluginPackageName() {
+    // if (null != mPluginEnv) {
+    // return mPluginEnv.getTargetPackageName();
+    // }
+    // return this.getPackageName();
+    // }
 
     @Override
     public void exitApp() {
@@ -804,8 +807,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     public String dump() {
         String[] pkgCls = getPkgAndCls();
         if (null != pkgCls && pkgCls.length == 2) {
-            return "Package&Cls is: " + this + " "
-                    + (pkgCls != null ? pkgCls[0] + " " + pkgCls[1] : "") + " flg=0x"
+            return "Package&Cls is: " + this + " " + (pkgCls != null ? pkgCls[0] + " " + pkgCls[1] : "") + " flg=0x"
                     + Integer.toHexString(getIntent().getFlags());
         } else {
             return "Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags());

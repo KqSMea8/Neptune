@@ -18,7 +18,6 @@ import java.util.List;
  */
 public class CMPackageManagerService extends Service {
 
-
     private static Context mContext;
     private static CMPackageManager mManager;
 
@@ -92,8 +91,8 @@ public class CMPackageManagerService extends Service {
             }
 
             @Override
-            public void installBuildinApps(
-                    String packageName, IInstallCallBack listener, PluginPackageInfoExt info) throws RemoteException {
+            public void installBuildinApps(String packageName, IInstallCallBack listener, PluginPackageInfoExt info)
+                    throws RemoteException {
                 if (mManager == null || TextUtils.isEmpty(packageName)) {
                     return;
                 }

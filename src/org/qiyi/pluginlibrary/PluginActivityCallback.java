@@ -13,43 +13,43 @@ import java.io.PrintWriter;
 
 public interface PluginActivityCallback {
 
-	void callOnCreate(Bundle saveInstance);
+    void callOnCreate(Bundle saveInstance);
 
-	void callOnPostCreate(Bundle savedInstanceState);
+    void callOnPostCreate(Bundle savedInstanceState);
 
-	void callOnStart();
+    void callOnStart();
 
-	void callOnResume();
+    void callOnResume();
 
-	void callOnDestroy();
+    void callOnDestroy();
 
-	void callOnStop();
+    void callOnStop();
 
-	void callOnRestart();
+    void callOnRestart();
 
-	void callOnSaveInstanceState(Bundle outState);
+    void callOnSaveInstanceState(Bundle outState);
 
-	void callOnRestoreInstanceState(Bundle savedInstanceState);
+    void callOnRestoreInstanceState(Bundle savedInstanceState);
 
-	void callOnPause();
+    void callOnPause();
 
-	void callOnBackPressed();
+    void callOnBackPressed();
 
-	boolean callOnKeyDown(int keyCode, KeyEvent event);
+    boolean callOnKeyDown(int keyCode, KeyEvent event);
 
-	void callDump(String prefix, FileDescriptor fd, PrintWriter writer, String[] args);
+    void callDump(String prefix, FileDescriptor fd, PrintWriter writer, String[] args);
 
-	void callOnPostResume();
+    void callOnPostResume();
 
-	void callOnDetachedFromWindow();
+    void callOnDetachedFromWindow();
 
-	View callOnCreateView(String name, Context context, AttributeSet attrs);
+    View callOnCreateView(String name, Context context, AttributeSet attrs);
 
-	View callOnCreateView(View parent, String name, Context context, AttributeSet attrs);
+    View callOnCreateView(View parent, String name, Context context, AttributeSet attrs);
 
-	void callOnNewIntent(Intent intent);
+    void callOnNewIntent(Intent intent);
 
-	void callOnConfigurationChanged(Configuration newConfig);
+    void callOnConfigurationChanged(Configuration newConfig);
 
-	void callOnActivityResult(int requestCode, int resultCode, Intent data);
+    void callOnActivityResult(int requestCode, int resultCode, Intent data);
 }

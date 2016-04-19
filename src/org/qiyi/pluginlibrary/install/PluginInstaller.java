@@ -27,12 +27,13 @@ import java.util.List;
 //import org.qiyi.pluginnew.ActivityClassGenerator;
 
 /**
- * app 安装接口。实际安装采用 {@link PluginInstallerService} 独立进程异步安装。<br>
- * <p/>
- * 插件支持的后缀名为 {@value #APK_SUFFIX}, 内置在 assets/pluginapp 目录下，以{@value #APK_SUFFIX}后缀命名，安装完后缀名也是 {@value #APK_SUFFIX}。<br>
- * <p/>
- * 由于android 2.2 以及一下对 asset文件的大小有1M限制。所以我们需要在编译脚本中对 aapt 增加一个 -0 {@value #APK_SUFFIX}参数，告诉aapt不要对{@value #APK_SUFFIX} 进行压缩处理。
- * 对于此问题的解释:http://ponystyle.com/blog/2010/03/26/dealing-with-asset-compression-in-android-apps/
+ * app 安装接口。实际安装采用 {@link PluginInstallerService} 独立进程异步安装。<br> <p/> 插件支持的后缀名为
+ * {@value #APK_SUFFIX}, 内置在 assets/pluginapp 目录下，以{@value #APK_SUFFIX}
+ * 后缀命名，安装完后缀名也是 {@value #APK_SUFFIX}。<br> <p/> 由于android 2.2 以及一下对
+ * asset文件的大小有1M限制。所以我们需要在编译脚本中对 aapt 增加一个 -0 {@value #APK_SUFFIX}参数，告诉aapt不要对
+ * {@value #APK_SUFFIX} 进行压缩处理。
+ * 对于此问题的解释:http://ponystyle.com/blog/2010/03/26/dealing-with-asset-compression-
+ * in-android-apps/
  */
 public class PluginInstaller {
 
@@ -61,7 +62,7 @@ public class PluginInstaller {
     public static final String SHARED_PREFERENCE_NAME = "pluginapp";
 
     /** {@link #installBuildinApps(Context) 只能调用一次，再次调用，直接返回} */
-//    private static boolean sInstallBuildinAppsCalled = false;
+    // private static boolean sInstallBuildinAppsCalled = false;
     /**
      * receiver 只注册一次。
      */
@@ -93,33 +94,33 @@ public class PluginInstaller {
         return repoDir;
     }
 
-//    /**
-//     * Help to generate folder for single dex file for dexmaker
-//     * 
-//     * @param parentFolder parent folder name
-//     * @param componentName component name like activity etc...
-//     * @return file represent xxx.dex
-//     */
-//	public static File getProxyComponentDexPath(File parentFolder, String componentName) {
-//		File folder = new File(parentFolder.getAbsolutePath() + "/component/");
-//		folder.mkdirs();
-//		String suffix = ".dex";
-//		if (android.os.Build.VERSION.SDK_INT < 11) {
-//			suffix = ".jar";
-//		}
-//		File savePath = new File(folder, String.format("%s-%d%s", componentName,
-//				ActivityClassGenerator.VERSION_CODE, suffix));
-//		return savePath;
-//	}
+    // /**
+    // * Help to generate folder for single dex file for dexmaker
+    // *
+    // * @param parentFolder parent folder name
+    // * @param componentName component name like activity etc...
+    // * @return file represent xxx.dex
+    // */
+    // public static File getProxyComponentDexPath(File parentFolder, String
+    // componentName) {
+    // File folder = new File(parentFolder.getAbsolutePath() + "/component/");
+    // folder.mkdirs();
+    // String suffix = ".dex";
+    // if (android.os.Build.VERSION.SDK_INT < 11) {
+    // suffix = ".jar";
+    // }
+    // File savePath = new File(folder, String.format("%s-%d%s", componentName,
+    // ActivityClassGenerator.VERSION_CODE, suffix));
+    // return savePath;
+    // }
 
     /**
      * 安装内置在 assets/pluginapp 目录下的 apk
      *
      * @param context
-     * @param info    插件方案版本号
+     * @param info 插件方案版本号
      */
-    public synchronized static void installBuildinApps(
-            final String packageName, final Context context, final PluginPackageInfoExt info) {
+    public synchronized static void installBuildinApps(final String packageName, final Context context, final PluginPackageInfoExt info) {
         registerInstallderReceiver(context);
         new AsyncTask<Void, Void, Void>() {
 
@@ -133,8 +134,7 @@ public class PluginInstaller {
                         temp_file = packageName + APK_SUFFIX;
                     }
                     for (String file : files) {
-                        if (!file.endsWith(APK_SUFFIX)
-                                || (!TextUtils.isEmpty(packageName) && !TextUtils.equals(file, temp_file))) {
+                        if (!file.endsWith(APK_SUFFIX) || (!TextUtils.isEmpty(packageName) && !TextUtils.equals(file, temp_file))) {
                             // 如果外面传递的packagename 为空则全部安装
                             continue;
                         }
@@ -154,11 +154,10 @@ public class PluginInstaller {
     /**
      * @param context
      * @param assetsPath
-     * @param info       插件信息
+     * @param info 插件信息
      * @return 需要安装 返回 true，不需要安装 返回 false.
      */
-    private static boolean installBuildinApp(
-            Context context, String assetsPath, PluginPackageInfoExt info) {
+    private static boolean installBuildinApp(Context context, String assetsPath, PluginPackageInfoExt info) {
         int start = assetsPath.lastIndexOf("/");
         int end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         String mapPackagename = assetsPath.substring(start + 1, end);
@@ -185,13 +184,13 @@ public class PluginInstaller {
      * 调用 {@link PluginInstallerService} 进行实际的安装过程。采用独立进程异步操作。
      *
      * @param context
-     * @param filePath   支持两种scheme {@link CMPackageManager#SCHEME_ASSETS} 和 {@link CMPackageManager#SCHEME_FILE}
+     * @param filePath 支持两种scheme {@link CMPackageManager#SCHEME_ASSETS} 和
+     * {@link CMPackageManager#SCHEME_FILE}
      * @param pluginInfo 插件信息
      */
     private static void startInstall(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
         /*
-         * 获取packagename
-         * 1、内置app，要求必须以 packagename.apk 命名，处于效率考虑。
+         * 获取packagename 1、内置app，要求必须以 packagename.apk 命名，处于效率考虑。
          * 2、外部文件的安装，直接从file中获取packagename, 消耗100ms级别，可以容忍。
          */
         String packageName = null;
@@ -199,8 +198,7 @@ public class PluginInstaller {
         boolean isBuildin = false;
 
         if (pluginInfo != null) {
-            PluginDebugLog.log(TAG, "startInstall with file path: " + filePath
-                    + " and plugin info: " + pluginInfo.toString());
+            PluginDebugLog.log(TAG, "startInstall with file path: " + filePath + " and plugin info: " + pluginInfo.toString());
         }
 
         if (filePath.startsWith(CMPackageManager.SCHEME_ASSETS)) {
@@ -237,25 +235,26 @@ public class PluginInstaller {
             intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) pluginInfo);
 
             context.startService(intent);
-        }catch (Exception e){
-            //QOS_JAVA_211
-            //Unable to launch app com.qiyi.video/10126 for service Intent
-            // { act=com.qiyi.plugin.installed cmp=com.qiyi.video/org.qiyi.pluginlibrary.install.PluginInstallerService }:
+        } catch (Exception e) {
+            // QOS_JAVA_211
+            // Unable to launch app com.qiyi.video/10126 for service Intent
+            // { act=com.qiyi.plugin.installed
+            // cmp=com.qiyi.video/org.qiyi.pluginlibrary.install.PluginInstallerService
+            // }:
             // user 0 is restricted
             e.printStackTrace();
         }
     }
 
     /**
-     * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
-     * 安装完会有 {@link CMPackageManager＃ACTION_PACKAGE_INSTALLED} broadcast。
+     * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。 安装完会有
+     * {@link CMPackageManager＃ACTION_PACKAGE_INSTALLED} broadcast。
      *
      * @param context
-     * @param filePath   apk 文件目录 比如  /sdcard/xxxx.apk
+     * @param filePath apk 文件目录 比如 /sdcard/xxxx.apk
      * @param pluginInfo 插件信息
      */
-    public static void installApkFile(Context context, String filePath,
-                                      PluginPackageInfoExt pluginInfo) {
+    public static void installApkFile(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
         if (TextUtils.isEmpty(filePath)) {
             PluginDebugLog.log(TAG, "filePath is empty and installApkFile return!");
             return;
@@ -272,8 +271,7 @@ public class PluginInstaller {
     }
 
     /**
-     * 返回已安装的应用列表。临时函数。可能为空，安装内置app还没有执行完毕。需要监听安装broadcast来更新安装列表。
-     * <p/>
+     * 返回已安装的应用列表。临时函数。可能为空，安装内置app还没有执行完毕。需要监听安装broadcast来更新安装列表。 <p/>
      * Deprecated, use {@link CMPackageManager#getInstalledApps()}
      *
      * @param context
@@ -296,7 +294,7 @@ public class PluginInstaller {
     /**
      * 获取安装插件的apk文件目录
      *
-     * @param context     host的application context
+     * @param context host的application context
      * @param packageName 包名
      * @return File
      */
@@ -336,7 +334,6 @@ public class PluginInstaller {
         }
     };
 
-
     private static void registerInstallderReceiver(Context context) {
         if (sInstallerReceiverRegistered) {
             // 已经注册过就不再注册
@@ -367,54 +364,58 @@ public class PluginInstaller {
         sInstallList.add(packagename);
     }
 
-
     private synchronized static void handleApkInstalled(Context context, String packageName) {
 
         sInstallList.remove(packageName); // 从安装列表中删除
 
         // 检查内置app是否安装完成
-//        if (!sInstallBuildinAppsFinished) {
-//            if (sInstallList.isEmpty()) {
-//                setInstallBuildinAppsFinished(context, true);
-//            } else {
-//                boolean hasAssetsFileInstalling = false;
-//                for (String pkg : sInstallList) {
-//                    if (sBuildinAppList.contains(pkg)) {
-//                        hasAssetsFileInstalling = true;
-//                        break;
-//                    }
-//                }
-//                if (!hasAssetsFileInstalling) {
-//                    setInstallBuildinAppsFinished(context, true);
-//                }
-//            }
-//        }
+        // if (!sInstallBuildinAppsFinished) {
+        // if (sInstallList.isEmpty()) {
+        // setInstallBuildinAppsFinished(context, true);
+        // } else {
+        // boolean hasAssetsFileInstalling = false;
+        // for (String pkg : sInstallList) {
+        // if (sBuildinAppList.contains(pkg)) {
+        // hasAssetsFileInstalling = true;
+        // break;
+        // }
+        // }
+        // if (!hasAssetsFileInstalling) {
+        // setInstallBuildinAppsFinished(context, true);
+        // }
+        // }
+        // }
     }
-
 
     /**
      * 内置app安装处理逻辑完成，有可能是检查不需要安装，有可能是实际安装完成。
+     *
      * @param context
      * @param writeVersionCode 是否是真的发生了实际安装，而不是检查完毕不需要安装，如果版本号不一致，也需要记录。
      */
-//    private static void setInstallBuildinAppsFinished(Context context, boolean writeVersionCode) {
-//        sInstallBuildinAppsFinished =  true;
-//        
-//        if (writeVersionCode) {
-//            // 获取 hostapp verison code
-//            int hostVersionCode = -1;
-//            try {
-//                hostVersionCode = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionCode;
-//            } catch (NameNotFoundException e1) {
-//                e1.printStackTrace();
-//            }
-//            // 保存当前的 hostapp verisoncode // 使用hostapp 默认 sharedpref，减少初始化开销。
-//            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);//context.getSharedPreferences(SHARED_PREFERENCE_NAME, Context.MODE_PRIVATE);
-//            Editor editor = sp.edit();
-//            editor.putInt(SP_HOSTAPP_VERSIONCODE_FOR_INSTALL, hostVersionCode);
-//            editor.commit();
-//        }
-//    }
+    // private static void setInstallBuildinAppsFinished(Context context,
+    // boolean writeVersionCode) {
+    // sInstallBuildinAppsFinished = true;
+    //
+    // if (writeVersionCode) {
+    // // 获取 hostapp verison code
+    // int hostVersionCode = -1;
+    // try {
+    // hostVersionCode =
+    // context.getPackageManager().getPackageInfo(context.getPackageName(),
+    // 0).versionCode;
+    // } catch (NameNotFoundException e1) {
+    // e1.printStackTrace();
+    // }
+    // // 保存当前的 hostapp verisoncode // 使用hostapp 默认 sharedpref，减少初始化开销。
+    // SharedPreferences sp =
+    // PreferenceManager.getDefaultSharedPreferences(context);//context.getSharedPreferences(SHARED_PREFERENCE_NAME,
+    // Context.MODE_PRIVATE);
+    // Editor editor = sp.edit();
+    // editor.putInt(SP_HOSTAPP_VERSIONCODE_FOR_INSTALL, hostVersionCode);
+    // editor.commit();
+    // }
+    // }
 
     /**
      * delete the apk,so.dex
@@ -494,7 +495,6 @@ public class PluginInstaller {
         }
     }
 
-
     /**
      * 查看某个app是否正在安装
      *
@@ -509,8 +509,8 @@ public class PluginInstaller {
      *
      * @param leftVersionName
      * @param rightVersionName
-     * @return return positive if left > right, 0 for left equals right and negative for left <
-     * right
+     * @return return positive if left > right, 0 for left equals right and
+     * negative for left < right
      */
     public static int comparePluginVersion(String leftVersionName, String rightVersionName) {
         if (TextUtils.equals(leftVersionName, rightVersionName)) {

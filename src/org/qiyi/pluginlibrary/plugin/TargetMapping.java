@@ -24,9 +24,9 @@ public interface TargetMapping {
     int getThemeResource(String activity);
 
     ActivityInfo getActivityInfo(String activity);
-    
+
     ServiceInfo getServiceInfo(String service);
-    
+
     String getApplicationClassName();
 
     String getDefaultActivityName();
@@ -38,10 +38,10 @@ public interface TargetMapping {
     ActivityInfo resolveActivity(Intent intent);
 
     ServiceInfo resolveService(Intent intent);
-    
+
     String getDataDir();
 
     String getnativeLibraryDir();
-    
+
     boolean isDataNeedPrefix();
 }

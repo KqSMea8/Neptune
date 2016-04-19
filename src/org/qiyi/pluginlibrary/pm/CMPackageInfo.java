@@ -1,13 +1,12 @@
 package org.qiyi.pluginlibrary.pm;
 
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import org.qiyi.pluginnew.ApkTargetMappingNew;
-
 /**
- * @author zhuchengjin
- *	插件一些信息
+ * @author zhuchengjin 插件一些信息
  */
 public class CMPackageInfo implements Parcelable {
 
@@ -29,9 +28,9 @@ public class CMPackageInfo implements Parcelable {
     public String srcApkPath;
 
     public String installStatus;
-//    public int versionCode;
-//
-//    public String versionName;
+    // public int versionCode;
+
+    // public String versionName;
 
     public PluginPackageInfoExt pluginInfo;
 
@@ -79,9 +78,7 @@ public class CMPackageInfo implements Parcelable {
         parcel.writeString(srcApkPath);
         parcel.writeString(installStatus);
         parcel.writeParcelable(pluginInfo, i);
-        parcel.writeParcelable(targetInfo,i);
+        parcel.writeParcelable(targetInfo, i);
     }
-
-
 
 }

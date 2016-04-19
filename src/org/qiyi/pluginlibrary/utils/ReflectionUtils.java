@@ -12,126 +12,113 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-
 public class ReflectionUtils {
 
-	public static <T> T getFieldValue(Object obj, String fieldName)
-			throws IllegalAccessException, IllegalArgumentException,
-			NoSuchFieldException {
-		return getFieldValue(obj, fieldName, true);
-	}
+    public static <T> T getFieldValue(Object obj, String fieldName)
+            throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
+        return getFieldValue(obj, fieldName, true);
+    }
 
-	@SuppressWarnings("unchecked")
-	public static <T> T getFieldValue(Object obj, String fieldName,
-			boolean resolveParent) throws IllegalAccessException,
-			IllegalArgumentException, NoSuchFieldException {
-		Object[] rs = getField(obj, fieldName, resolveParent);
-		if (rs == null) {
-			throw new NoSuchFieldException("field:" + fieldName);
-		}
-		Field field = (Field) rs[0];
-		Object targetObj = rs[1];
-		return (T) field.get(targetObj);
-	}
+    @SuppressWarnings("unchecked")
+    public static <T> T getFieldValue(Object obj, String fieldName, boolean resolveParent)
+            throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
+        Object[] rs = getField(obj, fieldName, resolveParent);
+        if (rs == null) {
+            throw new NoSuchFieldException("field:" + fieldName);
+        }
+        Field field = (Field) rs[0];
+        Object targetObj = rs[1];
+        return (T) field.get(targetObj);
+    }
 
-	public static void setFieldValue(Object obj, String fieldName, Object val)
-			throws IllegalAccessException, IllegalArgumentException,
-			NoSuchFieldException {
-		setFieldValue(obj, fieldName, val, true);
-	}
+    public static void setFieldValue(Object obj, String fieldName, Object val)
+            throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
+        setFieldValue(obj, fieldName, val, true);
+    }
 
-	public static void setFieldValue(Object obj, String fieldName, Object val,
-			boolean resolveParent) throws IllegalAccessException,
-			IllegalArgumentException, NoSuchFieldException {
-		Object[] rs = getField(obj, fieldName, resolveParent);
-		if (rs == null) {
-			throw new NoSuchFieldException("field:" + fieldName);
-		}
-		Field field = (Field) rs[0];
-		Object targetObj = rs[1];
-		field.set(targetObj, val);
-	}
+    public static void setFieldValue(Object obj, String fieldName, Object val, boolean resolveParent)
+            throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
+        Object[] rs = getField(obj, fieldName, resolveParent);
+        if (rs == null) {
+            throw new NoSuchFieldException("field:" + fieldName);
+        }
+        Field field = (Field) rs[0];
+        Object targetObj = rs[1];
+        field.set(targetObj, val);
+    }
 
-	private static Object[] getField(Object obj, String elFieldName,
-			boolean resolveParent) throws IllegalAccessException,
-			IllegalArgumentException, NoSuchFieldException {
-		if (obj == null) {
-			return null;
-		}
-		String[] fieldNames = elFieldName.split("[.]");
-		Object targetObj = obj;
-		Class<?> targetClass = targetObj.getClass();
-		Object val = null;
-		int i = 0;
-		Field field = null;
-		Object[] rs = new Object[2];
-		for (String fName : fieldNames) {
-			i++;
-			field = getField_(targetClass, fName, resolveParent);
-			field.setAccessible(true);
-			rs[0] = field;
-			rs[1] = targetObj;
-			val = field.get(targetObj);
-			if (val == null) {
-				if (i < fieldNames.length) {
-					throw new IllegalAccessException(
-							"can not getFieldValue as field '" + fName
-									+ "' value is null in '"
-									+ targetClass.getName() + "'");
-				}
-				break;
-			}
-			targetObj = val;
-			targetClass = targetObj.getClass();
-		}
-		return rs;
-	}
+    private static Object[] getField(Object obj, String elFieldName, boolean resolveParent)
+            throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
+        if (obj == null) {
+            return null;
+        }
+        String[] fieldNames = elFieldName.split("[.]");
+        Object targetObj = obj;
+        Class<?> targetClass = targetObj.getClass();
+        Object val = null;
+        int i = 0;
+        Field field = null;
+        Object[] rs = new Object[2];
+        for (String fName : fieldNames) {
+            i++;
+            field = getField_(targetClass, fName, resolveParent);
+            field.setAccessible(true);
+            rs[0] = field;
+            rs[1] = targetObj;
+            val = field.get(targetObj);
+            if (val == null) {
+                if (i < fieldNames.length) {
+                    throw new IllegalAccessException(
+                            "can not getFieldValue as field '" + fName + "' value is null in '" + targetClass.getName() + "'");
+                }
+                break;
+            }
+            targetObj = val;
+            targetClass = targetObj.getClass();
+        }
+        return rs;
+    }
 
-	public static Field getField_(Class<?> targetClass, String fieldName,
-			boolean resolveParent) throws IllegalAccessException,
-			IllegalArgumentException, NoSuchFieldException {
-		NoSuchFieldException noSuchFieldExceptionOccor = null;
-		Field rsField = null;
-		try {
-			Field field = targetClass.getDeclaredField(fieldName);
-			rsField = field;
-			if (!resolveParent) {
-				field.setAccessible(true);
-				return field;
-			}
-		} catch (NoSuchFieldException e) {
-			noSuchFieldExceptionOccor = e;
-		}
-		if (noSuchFieldExceptionOccor != null) {
-			if (resolveParent) {
-				while (true) {
-					targetClass = targetClass.getSuperclass();
-					if (targetClass == null) {
-						break;
-					}
-					try {
-						Field field = targetClass.getDeclaredField(fieldName);
-						field.setAccessible(true);
-						return rsField = field;
-					} catch (NoSuchFieldException e) {
-						if (targetClass.getSuperclass() == null) {
-							throw e;
-						}
-					}
-				}
-			} else {
-				throw noSuchFieldExceptionOccor;
-			}
-		}
-		return rsField;
-	}
+    public static Field getField_(Class<?> targetClass, String fieldName, boolean resolveParent)
+            throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
+        NoSuchFieldException noSuchFieldExceptionOccor = null;
+        Field rsField = null;
+        try {
+            Field field = targetClass.getDeclaredField(fieldName);
+            rsField = field;
+            if (!resolveParent) {
+                field.setAccessible(true);
+                return field;
+            }
+        } catch (NoSuchFieldException e) {
+            noSuchFieldExceptionOccor = e;
+        }
+        if (noSuchFieldExceptionOccor != null) {
+            if (resolveParent) {
+                while (true) {
+                    targetClass = targetClass.getSuperclass();
+                    if (targetClass == null) {
+                        break;
+                    }
+                    try {
+                        Field field = targetClass.getDeclaredField(fieldName);
+                        field.setAccessible(true);
+                        return rsField = field;
+                    } catch (NoSuchFieldException e) {
+                        if (targetClass.getSuperclass() == null) {
+                            throw e;
+                        }
+                    }
+                }
+            } else {
+                throw noSuchFieldExceptionOccor;
+            }
+        }
+        return rsField;
+    }
 
     /**
-     * 封装Class.forName(name)
-     * <p/>
-     * 可以这样调用: <code>on(Class.forName(name))</code>
+     * 封装Class.forName(name) <p/> 可以这样调用: <code>on(Class.forName(name))</code>
      *
      * @param name 完整类名
      * @return 工具类自身
@@ -143,9 +130,7 @@ public class ReflectionUtils {
     }
 
     /**
-     * 封装Class.forName(name)
-     * <p/>
-     * 可以这样调用: <code>on(Xxx.class)</code>
+     * 封装Class.forName(name) <p/> 可以这样调用: <code>on(Xxx.class)</code>
      *
      * @param clazz 类
      * @return 工具类自身
@@ -157,10 +142,7 @@ public class ReflectionUtils {
     }
 
     /**
-     * 包装起一个对象
-     * <p/>
-     * 当你需要访问实例的字段和方法时可以使用此方法
-     * {@link Object}
+     * 包装起一个对象 <p/> 当你需要访问实例的字段和方法时可以使用此方法 {@link Object}
      *
      * @param object 需要被包装的对象
      * @return 工具类自身
@@ -170,12 +152,8 @@ public class ReflectionUtils {
     }
 
     /**
-     * 使受访问权限限制的对象转为不受限制。
-     * 一般情况下，
-     * 一个类的私有字段和方法是无法获取和调用的，
-     * 原因在于调用前Java会检查是否具有可访问权限，
-     * 当调用此方法后，
-     * 访问权限检查机制将被关闭。
+     * 使受访问权限限制的对象转为不受限制。 一般情况下， 一个类的私有字段和方法是无法获取和调用的， 原因在于调用前Java会检查是否具有可访问权限，
+     * 当调用此方法后， 访问权限检查机制将被关闭。
      *
      * @param accessible 受访问限制的对象
      * @return 不受访问限制的对象
@@ -188,8 +166,7 @@ public class ReflectionUtils {
         if (accessible instanceof Member) {
             Member member = (Member) accessible;
 
-            if (Modifier.isPublic(member.getModifiers()) &&
-                    Modifier.isPublic(member.getDeclaringClass().getModifiers())) {
+            if (Modifier.isPublic(member.getModifiers()) && Modifier.isPublic(member.getDeclaringClass().getModifiers())) {
 
                 return accessible;
             }
@@ -240,18 +217,16 @@ public class ReflectionUtils {
      * 得到当前包装的对象
      */
     public <T> T get() {
-        //泛型的好处瞬间就体现出来了
+        // 泛型的好处瞬间就体现出来了
         return (T) object;
     }
 
     /**
-     * 修改一个字段的值
-     * <p/>
-     * 等价于 {@link java.lang.ReflectionUtils.Field#set(Object, Object)}. 如果包装的对象是一个
-     * {@link Class}, 那么修改的将是一个静态字段，
-     * 如果包装的对象是一个{@link Object}, 那么修改的就是一个实例字段。
+     * 修改一个字段的值 <p/> 等价于
+     * {@link java.lang.ReflectionUtils.Field#set(Object, Object)}. 如果包装的对象是一个
+     * {@link Class}, 那么修改的将是一个静态字段， 如果包装的对象是一个{@link Object}, 那么修改的就是一个实例字段。
      *
-     * @param name  字段名
+     * @param name 字段名
      * @param value 字段的值
      * @return 完事后的工具类
      * @throws ReflectException
@@ -275,7 +250,7 @@ public class ReflectionUtils {
      * @see #field(String)
      */
     public <T> T get(String name) throws ReflectException {
-        return field(name).<T>get();
+        return field(name).<T> get();
     }
 
     /**
@@ -311,8 +286,7 @@ public class ReflectionUtils {
                 }
 
                 type = type.getSuperclass();
-            }
-            while (type != null);
+            } while (type != null);
 
             throw new ReflectException(e);
         }
@@ -338,16 +312,13 @@ public class ReflectionUtils {
             }
 
             type = type.getSuperclass();
-        }
-        while (type != null);
+        } while (type != null);
 
         return result;
     }
 
     /**
-     * 给定方法名称，调用无参方法
-     * <p/>
-     * 等价于 <code>call(name, new Object[0])</code>
+     * 给定方法名称，调用无参方法 <p/> 等价于 <code>call(name, new Object[0])</code>
      *
      * @param name 方法名
      * @return 工具类自身
@@ -359,9 +330,9 @@ public class ReflectionUtils {
     }
 
     /**
-     * 给定方法名和参数，调用一个方法。
-     * <p/>
-     * 封装自 {@link java.lang.ReflectionUtils.Method#invoke(Object, Object...)}, 可以接受基本类型
+     * 给定方法名和参数，调用一个方法。 <p/> 封装自
+     * {@link java.lang.ReflectionUtils.Method#invoke(Object, Object...)},
+     * 可以接受基本类型
      *
      * @param name 方法名
      * @param args 方法参数
@@ -377,8 +348,8 @@ public class ReflectionUtils {
             return on(method, object, args);
         }
 
-        //如果没有符合参数的方法，
-        //则匹配一个与方法名最接近的方法。
+        // 如果没有符合参数的方法，
+        // 则匹配一个与方法名最接近的方法。
         catch (NoSuchMethodException e) {
             try {
                 Method method = similarMethod(name, types);
@@ -400,7 +371,7 @@ public class ReflectionUtils {
             return type.getMethod(name, types);
         }
 
-        //也许这是一个私有方法
+        // 也许这是一个私有方法
         catch (NoSuchMethodException e) {
             do {
                 try {
@@ -409,8 +380,7 @@ public class ReflectionUtils {
                 }
 
                 type = type.getSuperclass();
-            }
-            while (type != null);
+            } while (type != null);
 
             throw new NoSuchMethodException();
         }
@@ -422,14 +392,14 @@ public class ReflectionUtils {
     private Method similarMethod(String name, Class<?>[] types) throws NoSuchMethodException {
         Class<?> type = type();
 
-        //对于公有方法:
+        // 对于公有方法:
         for (Method method : type.getMethods()) {
             if (isSimilarSignature(method, name, types)) {
                 return method;
             }
         }
 
-        //对于私有方法：
+        // 对于私有方法：
         do {
             for (Method method : type.getDeclaredMethods()) {
                 if (isSimilarSignature(method, name, types)) {
@@ -438,25 +408,22 @@ public class ReflectionUtils {
             }
 
             type = type.getSuperclass();
-        }
-        while (type != null);
+        } while (type != null);
 
-        throw new NoSuchMethodException("No similar method " + name + " with params " + Arrays.toString(types) + " could be found on type " + type() + ".");
+        throw new NoSuchMethodException(
+                "No similar method " + name + " with params " + Arrays.toString(types) + " could be found on type " + type() + ".");
     }
 
     /**
-     * 再次确认方法签名与实际是否匹配，
-     * 将基本类型转换成对应的对象类型，
-     * 如int转换成Int
+     * 再次确认方法签名与实际是否匹配， 将基本类型转换成对应的对象类型， 如int转换成Int
      */
     private boolean isSimilarSignature(Method possiblyMatchingMethod, String desiredMethodName, Class<?>[] desiredParamTypes) {
-        return possiblyMatchingMethod.getName().equals(desiredMethodName) && match(possiblyMatchingMethod.getParameterTypes(), desiredParamTypes);
+        return possiblyMatchingMethod.getName().equals(desiredMethodName)
+                && match(possiblyMatchingMethod.getParameterTypes(), desiredParamTypes);
     }
 
     /**
-     * 调用一个无参构造器
-     * <p/>
-     * 等价于 <code>create(new Object[0])</code>
+     * 调用一个无参构造器 <p/> 等价于 <code>create(new Object[0])</code>
      *
      * @return 工具类自身
      * @throws ReflectException
@@ -476,15 +443,14 @@ public class ReflectionUtils {
     public ReflectionUtils create(Object... args) throws ReflectException {
         Class<?>[] types = types(args);
 
-
         try {
             Constructor<?> constructor = type().getDeclaredConstructor(types);
             return on(constructor, args);
         }
 
-        //这种情况下，构造器往往是私有的，多用于工厂方法，刻意的隐藏了构造器。
+        // 这种情况下，构造器往往是私有的，多用于工厂方法，刻意的隐藏了构造器。
         catch (NoSuchMethodException e) {
-            //private阻止不了反射的脚步:)
+            // private阻止不了反射的脚步:)
             for (Constructor<?> constructor : type().getDeclaredConstructors()) {
                 if (match(constructor.getParameterTypes(), types)) {
                     return on(constructor, args);
@@ -532,9 +498,8 @@ public class ReflectionUtils {
             }
         };
 
-        return (P) Proxy.newProxyInstance(proxyType.getClassLoader(), new Class[]{proxyType}, handler);
+        return (P) Proxy.newProxyInstance(proxyType.getClassLoader(), new Class[] { proxyType }, handler);
     }
-
 
     private static String property(String string) {
         int length = string.length();
@@ -551,7 +516,6 @@ public class ReflectionUtils {
     // ---------------------------------------------------------------------
     // 对象API
     // ---------------------------------------------------------------------
-
 
     private boolean match(Class<?>[] declaredTypes, Class<?>[] actualTypes) {
         if (declaredTypes.length == actualTypes.length) {
@@ -571,12 +535,10 @@ public class ReflectionUtils {
         }
     }
 
-
     @Override
     public int hashCode() {
         return object.hashCode();
     }
-
 
     @Override
     public boolean equals(Object obj) {
@@ -587,7 +549,6 @@ public class ReflectionUtils {
         return false;
     }
 
-
     @Override
     public String toString() {
         return object.toString();
@@ -597,7 +558,6 @@ public class ReflectionUtils {
     // 内部工具方法
     // ---------------------------------------------------------------------
 
-
     private static ReflectionUtils on(Constructor<?> constructor, Object... args) throws ReflectException {
         try {
             return on(accessible(constructor).newInstance(args));
@@ -605,7 +565,6 @@ public class ReflectionUtils {
             throw new ReflectException(e);
         }
     }
-
 
     private static ReflectionUtils on(Method method, Object object, Object... args) throws ReflectException {
         try {
@@ -618,7 +577,7 @@ public class ReflectionUtils {
                 return on(method.invoke(object, args));
             }
         } catch (Exception e) {
-           throw new ReflectException(e);
+            throw new ReflectException(e);
         }
     }
 
@@ -640,7 +599,7 @@ public class ReflectionUtils {
      */
     private static Class<?>[] types(Object... values) {
         if (values == null) {
-            //空
+            // 空
             return new Class[0];
         }
 
@@ -681,9 +640,7 @@ public class ReflectionUtils {
     }
 
     /**
-     * 得到包装的对象的类型，
-     * 如果是基本类型,像int,float,boolean这种,
-     * 那么将被转换成相应的对象类型。
+     * 得到包装的对象的类型， 如果是基本类型,像int,float,boolean这种, 那么将被转换成相应的对象类型。
      */
     public static Class<?> wrapper(Class<?> type) {
         if (type == null) {

@@ -49,12 +49,11 @@ public class ResourcesToolForPlugin {
 
     /**
      * Create resource tool
-     * 
+     *
      * @param resource
      * @param packageName
-     * @param clsLoader
-     *            corresponding classloader for resource/view.java, can be null,
-     *            if null will use Class.forName(xx)
+     * @param clsLoader corresponding classloader for resource/view.java, can be
+     * null, if null will use Class.forName(xx)
      */
     public ResourcesToolForPlugin(Resources resource, String packageName, ClassLoader clsLoader) {
         if (resource != null && !TextUtils.isEmpty(packageName)) {
@@ -66,15 +65,13 @@ public class ResourcesToolForPlugin {
 
     /**
      * Create resource tool
-     * 
+     *
      * @param resource
      * @param packageName
-     * @param clsLoader
-     *            corresponding classloader for resource/view.java, can be null,
-     *            if null will use Class.forName(xx)
+     * @param clsLoader corresponding classloader for resource/view.java, can be
+     * null, if null will use Class.forName(xx)
      */
-    public ResourcesToolForPlugin(Resources resource, String packageName, ClassLoader clsLoader,
-            boolean resolveByReflect) {
+    public ResourcesToolForPlugin(Resources resource, String packageName, ClassLoader clsLoader, boolean resolveByReflect) {
         if (resource != null && !TextUtils.isEmpty(packageName)) {
             mPackageName = packageName;
             mResources = resource;
@@ -87,7 +84,7 @@ public class ResourcesToolForPlugin {
      * Set resolve type for resolve resource id, set true will resolve resource
      * id by reflection to packagename.R.java, otherwise will use
      * Resource.getIdentifier(resName).
-     * 
+     *
      * @param resolveByReflect
      */
     public void setResolveType(boolean resolveByReflect) {
@@ -96,7 +93,7 @@ public class ResourcesToolForPlugin {
 
     /**
      * 获取主包资源id
-     * 
+     *
      * @param sourceName
      * @param sourceType
      * @return
@@ -245,20 +242,16 @@ public class ResourcesToolForPlugin {
 
     /**
      * Get int id from packagename.R.java result will by int
-     * 
-     * @param resourceName
-     *            resource name
-     * @param resourceType
-     *            resource type
+     *
+     * @param resourceName resource name
+     * @param resourceType resource type
      * @return
      */
     private int optValue(String resourceName, String resourceType) {
         int result = 0;
-        if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType)
-                || TextUtils.isEmpty(mPackageName)) {
-            PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(),
-                    "optValue resourceName: " + resourceName + " resourceType: " + resourceType
-                            + " mPackageName: " + mPackageName + ", just return 0!");
+        if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType) || TextUtils.isEmpty(mPackageName)) {
+            PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(), "optValue resourceName: " + resourceName + " resourceType: "
+                    + resourceType + " mPackageName: " + mPackageName + ", just return 0!");
             return result;
         }
         try {
@@ -287,20 +280,16 @@ public class ResourcesToolForPlugin {
 
     /**
      * Get int ids from packagename.R.java result will by int[]
-     * 
-     * @param resourceName
-     *            resource name
-     * @param resourceType
-     *            resource type
+     *
+     * @param resourceName resource name
+     * @param resourceType resource type
      * @return
      */
     private int[] optValueArray(String resourceName, String resourceType) {
         int[] result = null;
-        if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType)
-                || TextUtils.isEmpty(mPackageName)) {
-            PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(),
-                    "optValueArray resourceName: " + resourceName + " resourceType: "
-                            + resourceType + " mPackageName: " + mPackageName + ", just return 0!");
+        if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType) || TextUtils.isEmpty(mPackageName)) {
+            PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(), "optValueArray resourceName: " + resourceName
+                    + " resourceType: " + resourceType + " mPackageName: " + mPackageName + ", just return 0!");
             return result;
         }
         try {
