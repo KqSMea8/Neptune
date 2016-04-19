@@ -45,7 +45,7 @@ import org.qiyi.pluginnew.context.CMContextWrapperNew;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
-//import android.app.Application.ActivityLifecycleCallbacks;
+import android.app.Application.ActivityLifecycleCallbacks;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -60,7 +60,7 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
-//import android.os.Bundle;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -110,46 +110,43 @@ public class ProxyEnvironmentNew {
      **/
     private static List<PluginPackageInfoExt> sPluginDependences = new ArrayList<PluginPackageInfoExt>();
     /** 插件调试日志 **/
-    // private static ActivityLifecycleCallbacks sActivityLifecycleCallback =
-    // new ActivityLifecycleCallbacks() {
-    //
-    // @Override
-    // public void onActivityCreated(Activity activity, Bundle
-    // savedInstanceState) {
-    // PluginDebugLog.log(TAG, "onActivityCreated: " + activity);
-    // }
-    //
-    // @Override
-    // public void onActivityStarted(Activity activity) {
-    // PluginDebugLog.log(TAG, "onActivityStarted: " + activity);
-    // }
-    //
-    // @Override
-    // public void onActivityResumed(Activity activity) {
-    // PluginDebugLog.log(TAG, "onActivityResumed: " + activity);
-    // }
-    //
-    // @Override
-    // public void onActivityPaused(Activity activity) {
-    // PluginDebugLog.log(TAG, "onActivityPaused: " + activity);
-    // }
-    //
-    // @Override
-    // public void onActivityStopped(Activity activity) {
-    // PluginDebugLog.log(TAG, "onActivityStopped: " + activity);
-    // }
-    //
-    // @Override
-    // public void onActivitySaveInstanceState(Activity activity, Bundle
-    // outState) {
-    // PluginDebugLog.log(TAG, "onActivitySaveInstanceState: " + activity);
-    // }
-    //
-    // @Override
-    // public void onActivityDestroyed(Activity activity) {
-    // PluginDebugLog.log(TAG, "onActivityDestroyed: " + activity);
-    // }
-    // };
+    private static ActivityLifecycleCallbacks sActivityLifecycleCallback = new ActivityLifecycleCallbacks() {
+
+        @Override
+        public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+            PluginDebugLog.log(TAG, "onActivityCreated: " + activity);
+        }
+
+        @Override
+        public void onActivityStarted(Activity activity) {
+            PluginDebugLog.log(TAG, "onActivityStarted: " + activity);
+        }
+
+        @Override
+        public void onActivityResumed(Activity activity) {
+            PluginDebugLog.log(TAG, "onActivityResumed: " + activity);
+        }
+
+        @Override
+        public void onActivityPaused(Activity activity) {
+            PluginDebugLog.log(TAG, "onActivityPaused: " + activity);
+        }
+
+        @Override
+        public void onActivityStopped(Activity activity) {
+            PluginDebugLog.log(TAG, "onActivityStopped: " + activity);
+        }
+
+        @Override
+        public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+            PluginDebugLog.log(TAG, "onActivitySaveInstanceState: " + activity);
+        }
+
+        @Override
+        public void onActivityDestroyed(Activity activity) {
+            PluginDebugLog.log(TAG, "onActivityDestroyed: " + activity);
+        }
+    };
 
     /**
      * 记录正在运行的service
@@ -628,7 +625,7 @@ public class ProxyEnvironmentNew {
             env.changeInstrumentation(context, packageName);
             env.mIsApplicationInit = true;
             deliverPlug(context, true, packageName, ErrorType.SUCCESS);
-            // env.mApplication.registerActivityLifecycleCallbacks(sActivityLifecycleCallback);
+            env.mApplication.registerActivityLifecycleCallbacks(sActivityLifecycleCallback);
             env.mIsLaunchActivity = false;
         }
         cacheIntents = sIntentCacheMap.get(packageName);
@@ -923,12 +920,14 @@ public class ProxyEnvironmentNew {
         }
         PluginDebugLog.log(TAG, "dealLaunchMode target activity: " + intent + " source: "
                 + intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY));
-        if (null != mActivityStack && mActivityStack.size() > 0) {
-            for (Activity ac : mActivityStack) {
-                PluginDebugLog.log(TAG, "dealLaunchMode stack: " + ac + " source: " + ((InstrActivityProxy) ac).dump());
+        if (PluginDebugLog.isDebug()) {
+            if (null != mActivityStack && mActivityStack.size() > 0) {
+                for (Activity ac : mActivityStack) {
+                    PluginDebugLog.log(TAG, "dealLaunchMode stack: " + ac + " source: " + ((InstrActivityProxy) ac).dump());
+                }
+            } else {
+                PluginDebugLog.log(TAG, "dealLaunchMode stack is empty");
             }
-        } else {
-            PluginDebugLog.log(TAG, "dealLaunchMode stack is empty");
         }
         String targetActivity = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY);
         if (TextUtils.isEmpty(targetActivity)) {
@@ -1054,7 +1053,9 @@ public class ProxyEnvironmentNew {
 
     private static String getActivityStackKey(Activity activity, String pluginInstallType) {
         String key = "";
-        if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, pluginInstallType) || TextUtils.isEmpty(pluginInstallType)) {
+        if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, pluginInstallType)
+                || TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEFAULT, pluginInstallType)
+                || TextUtils.isEmpty(pluginInstallType)) {
             InstrActivityProxy lActivityProxy = null;
             try {
                 lActivityProxy = (InstrActivityProxy) activity;

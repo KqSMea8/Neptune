@@ -80,7 +80,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
     // plugin download url
     public String url = "";
     // 插件安装方式
-    public String mPluginInstallMethod = CMPackageManager.PLUGIN_METHOD_DEFAULT;
+    public String mPluginInstallMethod = CMPackageManager.PLUGIN_METHOD_INSTR;
     // 插件的文件后缀类型 APK、SO、JAR
     public String mSuffixType = "";
     // 插件文件来源 type(内置、网络下载)
