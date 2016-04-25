@@ -186,7 +186,7 @@ public class CMPackageManager {
      * @param context
      * @return
      */
-    public synchronized static CMPackageManager getInstance(Context context) {
+    synchronized static CMPackageManager getInstance(Context context) {
         if (sInstance == null) {
             sInstance = new CMPackageManager(context);
         }

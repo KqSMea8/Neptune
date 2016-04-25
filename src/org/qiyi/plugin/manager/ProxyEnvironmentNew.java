@@ -164,7 +164,7 @@ public class ProxyEnvironmentNew {
     // 插件APP退出时要处理的事情
     private static IAppExitStuff sExitStuff;
     private static Resources sHostRes;
-    private static IPluginEnvironmentStatusListener sPluginEnvSatusListener;
+    private static IPluginEnvironmentStatusListener sPluginEnvStatusListener;
 
     static Handler sHandler = new Handler(Looper.getMainLooper());
 
@@ -504,8 +504,8 @@ public class ProxyEnvironmentNew {
                                     public void onLoadFinished(String packageName) {
                                         try {
                                             launchIntent(context, conn, intent, false);
-                                            if (sPluginEnvSatusListener != null) {
-                                                sPluginEnvSatusListener
+                                            if (sPluginEnvStatusListener != null) {
+                                                sPluginEnvStatusListener
                                                         .onPluginEnvironmentIsReady(packageName);
                                             }
                                         } catch (Exception e) {
@@ -1368,11 +1368,25 @@ public class ProxyEnvironmentNew {
             sAliveServices.clear();
             service = null;
         }
-        if (notifyHost && (force || (mActivityStack.isEmpty() && sAliveServices.isEmpty()))) {
+        if (notifyHost && (force || (isActivityStackEmpty() && sAliveServices.isEmpty()))) {
+
             if (null != sExitStuff) {
+                PluginDebugLog.log(TAG, "do exit stuff with " + mPluginPakName);
                 sExitStuff.doExitStuff(getTargetPackageName());
             }
         }
+    }
+
+    private static boolean isActivityStackEmpty() {
+        Iterator<Entry<String, ProxyEnvironmentNew>> iter = sPluginsMap.entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<String, ProxyEnvironmentNew> entry = iter.next();
+            ProxyEnvironmentNew environmentNew = entry.getValue();
+            if (environmentNew != null && environmentNew.mActivityStack.size() > 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -1526,6 +1540,6 @@ public class ProxyEnvironmentNew {
 
     public static void setPluginEnvironmentStatusListener(
             IPluginEnvironmentStatusListener listener) {
-        sPluginEnvSatusListener = listener;
+        sPluginEnvStatusListener = listener;
     }
 }

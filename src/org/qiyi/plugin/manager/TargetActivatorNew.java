@@ -3,6 +3,7 @@ package org.qiyi.plugin.manager;
 import org.qiyi.pluginlibrary.api.IGetClassLoaderCallback;
 import org.qiyi.pluginlibrary.api.ITargetLoadedCallBack;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.BroadcastReceiver;
@@ -97,7 +98,7 @@ public class TargetActivatorNew {
 							.initProxyEnvironment(
 									context,
 									packageName,
-									CMPackageManager.getInstance(context).getPackageInfo(
+									CMPackageManagerImpl.getInstance(context).getPackageInfo(
 											packageName).pluginInfo.mPluginInstallMethod, processName);
             		ProxyEnvironmentNew targetEnv = ProxyEnvironmentNew.getInstance(packageName);
             		ClassLoader classLoader = targetEnv.getDexClassLoader();

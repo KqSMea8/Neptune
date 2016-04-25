@@ -459,7 +459,7 @@ public class CMPackageManagerImpl {
                 ActionType type = action.type;
                 switch (type) {
                     case PACKAGE_ACTION:
-                        CMPackageManager.getInstance(context).packageAction(action.packageName, action.callBack);
+                        CMPackageManagerImpl.getInstance(context).packageAction(action.packageName, action.callBack);
                         break;
                 }
                 iterator.remove();
