@@ -453,12 +453,17 @@ public final class Util {
         input.close();
     }
 
-    public static void moveFile(File sourceFile, File targetFile){
+    public static void moveFile(File sourceFile, File targetFile) {
+        moveFile(sourceFile, targetFile, true);
+    }
+
+    public static void moveFile(File sourceFile, File targetFile, boolean needDeleteSource) {
         try {
-            copyFile(sourceFile,targetFile);
-            sourceFile.delete();
+            copyFile(sourceFile, targetFile);
+            if (needDeleteSource) {
+                sourceFile.delete();
+            }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

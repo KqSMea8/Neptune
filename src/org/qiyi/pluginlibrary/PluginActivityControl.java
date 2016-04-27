@@ -175,7 +175,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 			ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", mPlugin);
 
 		} catch (ReflectException e) {
-		    ProxyEnvironmentNew.deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
+		    ProxyEnvironmentNew.deliverPlug(mProxy, false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
 			e.printStackTrace();
 		}
 

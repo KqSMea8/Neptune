@@ -33,6 +33,7 @@ import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.proxy.BroadcastReceiverProxy;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper.InjectResult;
 import org.qiyi.pluginlibrary.utils.JavaCalls;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -229,7 +230,7 @@ public class ProxyEnvironmentNew {
         // 加载classloader
         boolean clsLoader = createClassLoader();
         if (!clsLoader) {
-            deliverPlug(false, pluginPakName, ErrorType.ERROR_CLIENT_CREATE_CLSlOADER);
+            deliverPlug(context, false, pluginPakName, ErrorType.ERROR_CLIENT_CREATE_CLSlOADER);
             throw new Exception("ProxyEnvironmentNew init failed for createClassLoader failed: "
                     + context + " apkFile: " + apkFile + " pluginPakName: " + pluginPakName
                     + " installType: " + installType);
@@ -407,7 +408,7 @@ public class ProxyEnvironmentNew {
         PluginDebugLog.log(TAG, "enterProxy: " + intent);
         final String packageName = tryParsePkgName(context, intent);
         if (TextUtils.isEmpty(packageName)) {
-            deliverPlug(false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);
+            deliverPlug(context, false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);
             PluginDebugLog.log(TAG,
                     "enterProxy packageName is null return! packageName: " + packageName);
             return;
@@ -493,7 +494,7 @@ public class ProxyEnvironmentNew {
                         PluginDebugLog.log(TAG, "checkPkgInstallationAndLaunch failed packageName: "
                                 + packageName + " failReason: " + failReason);
                         clearLoadingIntent(packageName);
-                        ProxyEnvironmentNew.deliverPlug(false, packageName, failReason);
+                        ProxyEnvironmentNew.deliverPlug(context, false, packageName, failReason);
                     }
 
                     @Override
@@ -535,9 +536,13 @@ public class ProxyEnvironmentNew {
      * @param pakName
      * @param errorCode 用于插件qos 投递
      */
-    public static void deliverPlug(boolean success, String pakName, int errorCode) {
-        if (iDeliverPlug != null) {
-            iDeliverPlug.deliverPlug(success, pakName, errorCode);
+    public static void deliverPlug(Context context, boolean success, String pakName, int errorCode) {
+        if (null != context && iDeliverPlug != null && !TextUtils.isEmpty(pakName)) {
+            CMPackageInfo info = CMPackageManagerImpl.getInstance(
+                    ContextUtils.getOriginalContext(context)).getPackageInfo(pakName);
+            if (info != null && info.pluginInfo != null) {
+                iDeliverPlug.deliverPlug(success, info.pluginInfo, errorCode);
+            }
         }
     }
 
@@ -594,7 +599,7 @@ public class ProxyEnvironmentNew {
         String packageName = tryParsePkgName(context, intent);
         ProxyEnvironmentNew env = sPluginsMap.get(packageName);
         if (env == null) {
-            deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);
+            deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);
             PluginDebugLog.log(TAG, "launchIntent env is null! Just return!");
             sIntentCacheMap.remove(packageName);
             return false;
@@ -613,7 +618,7 @@ public class ProxyEnvironmentNew {
                     env.mApplication = ((Application) env.dexClassLoader.loadClass(className)
                             .asSubclass(Application.class).newInstance());
                 } catch (Exception e) {
-                    deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
+                    deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
                     e.printStackTrace();
                     return false;
                 }
@@ -632,7 +637,7 @@ public class ProxyEnvironmentNew {
             }
             env.changeInstrumentation(context, packageName);
             env.mIsApplicationInit = true;
-            deliverPlug(true, packageName, ErrorType.SUCCESS);
+            deliverPlug(context, true, packageName, ErrorType.SUCCESS);
 //            env.mApplication.registerActivityLifecycleCallbacks(sActivityLifecycleCallback);
             env.mIsLaunchActivity = false;
         }
@@ -720,7 +725,7 @@ public class ProxyEnvironmentNew {
             try {
                 targetClass = env.dexClassLoader.loadClass(targetClassName);
             } catch (Exception e) {
-                deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_START);
+                deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_START);
                 PluginDebugLog.log(TAG,
                         "launchIntent loadClass failed for targetClassName: " + targetClassName);
                 executeNext(env, packageName, conn, context);
@@ -802,7 +807,7 @@ public class ProxyEnvironmentNew {
             attachMethod.setAccessible(true);
             attachMethod.invoke(application, ctxWrapper);
         } catch (Exception e) {
-            ProxyEnvironmentNew.deliverPlug(false, packageName,
+            ProxyEnvironmentNew.deliverPlug(mContext, false, packageName,
                     ErrorType.ERROR_CLIENT_SET_APPLICATION_BASE_FAIL);
             e.printStackTrace();
         }
@@ -830,7 +835,7 @@ public class ProxyEnvironmentNew {
         } catch (Exception e) {
             clearLoadingIntent(packageName);
             e.printStackTrace();
-            deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
+            deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
         }
         if (newEnv != null) {
             sPluginsMap.put(packageName, newEnv);
@@ -1127,7 +1132,7 @@ public class ProxyEnvironmentNew {
         File file = null;
         try {
             if (TextUtils.isEmpty(packageName)) {
-                deliverPlug(false, context.getPackageName(),
+                deliverPlug(context, false, context.getPackageName(),
                         ErrorType.ERROR_CLIENT_LOAD_CREATE_FILE_NULL);
                 return null;
             }
@@ -1232,7 +1237,7 @@ public class ProxyEnvironmentNew {
             JavaCalls.callMethod(am, "addAssetPath", new Object[] { mApkFile.getAbsolutePath() });
             targetAssetManager = am;
         } catch (Exception e) {
-            deliverPlug(false, mPluginPakName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
+            deliverPlug(mContext, false, mPluginPakName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
             e.printStackTrace();
         }
 
@@ -1403,7 +1408,7 @@ public class ProxyEnvironmentNew {
             new InitProxyEnvireonment(context, packageName, processName, listenner).start();
         } catch (Exception e) {
             clearLoadingIntent(packageName);
-            deliverPlug(false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_TARGET);
+            deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_TARGET);
             e.printStackTrace();
         }
     }
@@ -1450,7 +1455,7 @@ public class ProxyEnvironmentNew {
             }
             instrumentationF.setAccessible(false);
         } catch (Exception e) {
-            ProxyEnvironmentNew.deliverPlug(false, pkgName,
+            ProxyEnvironmentNew.deliverPlug(context, false, pkgName,
                     ErrorType.ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL);
             e.printStackTrace();
         }
@@ -1484,9 +1489,9 @@ public class ProxyEnvironmentNew {
             } catch (Exception e) {
                 if (e instanceof PluginStartupException) {
                     PluginStartupException ex = (PluginStartupException) e;
-                    deliverPlug(false, pakName, ex.getCode());
+                    deliverPlug(pContext, false, pakName, ex.getCode());
                 } else {
-                    deliverPlug(false, pakName, ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
+                    deliverPlug(pContext, false, pakName, ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
                 }
             }
         }
@@ -1523,7 +1528,7 @@ public class ProxyEnvironmentNew {
     }
 
     public interface IDeliverPlug {
-        void deliverPlug(boolean success, String pakName, int errorCode);
+        void deliverPlug(boolean success, PluginPackageInfoExt pkgInfo, int errorCode);
     }
 
     public static void setPluginAppExitStuff(IAppExitStuff stuff) {

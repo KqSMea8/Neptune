@@ -131,7 +131,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             pluginPkgName = pkgAndCls[0];
             pluginActivityName = pkgAndCls[1];
         } else {
-            ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
+            ProxyEnvironmentNew.deliverPlug(this, false, pluginPkgName, ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
             Log.e(TAG, "Pkg or activity is null in LActivityProxy, just return!");
             this.finish();
             return;
@@ -152,7 +152,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         }
         Activity plugin = fillPluginActivity(mPluginEnv, pluginActivityName);
         if (null == plugin) {
-            ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL);
+            ProxyEnvironmentNew.deliverPlug(this, false, pluginPkgName, ErrorType.ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL);
             Log.e(TAG, "Cann't get pluginActivityName class finish!");
             this.finish();
             return;
@@ -161,7 +161,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             mPluginContrl = new PluginActivityControl(InstrActivityProxy.this, plugin,
                     mPluginEnv.getApplication(), mPluginEnv.mPluginInstrument);
         } catch (Exception e1) {
-            ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL);
+            ProxyEnvironmentNew.deliverPlug(this, false, pluginPkgName, ErrorType.ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL);
             e1.printStackTrace();
             this.finish();
             return;
@@ -185,7 +185,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
                 mPluginContrl.callOnCreate(savedInstanceState);
                 mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
             } catch (Exception e) {
-                ProxyEnvironmentNew.deliverPlug(false, pluginPkgName, ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
+                ProxyEnvironmentNew.deliverPlug(this, false, pluginPkgName, ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
                 processError(e);
                 this.finish();
                 return;

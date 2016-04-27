@@ -88,21 +88,21 @@ public class ServiceProxyNew extends Service {
 			} catch (InstantiationException e) {
 				currentPlugin = null;
 				e.printStackTrace();
-				ProxyEnvironmentNew.deliverPlug(false, targetPackageName,
+				ProxyEnvironmentNew.deliverPlug(this, false, targetPackageName,
 						ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_INSTANTIATION);
 			} catch (IllegalAccessException e) {
 				currentPlugin = null;
 				e.printStackTrace();
-				ProxyEnvironmentNew.deliverPlug(false, targetPackageName,
+				ProxyEnvironmentNew.deliverPlug(this, false, targetPackageName,
 						ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_ILLEGALACCESS);
 			} catch (ClassNotFoundException e) {
 				currentPlugin = null;
 				e.printStackTrace();
-				ProxyEnvironmentNew.deliverPlug(false, targetPackageName,
+				ProxyEnvironmentNew.deliverPlug(this, false, targetPackageName,
 						ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_CLASSNOTFOUND);
 			} catch (Exception e) {
 				e.printStackTrace();
-				ProxyEnvironmentNew.deliverPlug(false, targetPackageName,
+				ProxyEnvironmentNew.deliverPlug(this, false, targetPackageName,
 						ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION);
 				currentPlugin = null;
 				PluginDebugLog.log("plugin", "初始化target失败");

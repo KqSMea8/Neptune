@@ -384,8 +384,6 @@ public class ReflectionUtils {
                 Method method = similarMethod(name, types);
                 return on(method, object, args);
             } catch (NoSuchMethodException e1) {
-
-                ProxyEnvironmentNew.deliverPlug(false, null, ErrorType.ERROR_CLIENT_REFLECTIONUTILS_CALL);
                 throw new ReflectException(e1);
             }
         }

@@ -138,12 +138,12 @@ public class ApkTargetMappingNew implements TargetMapping,Parcelable {
 			}
 			ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
 		} catch (RuntimeException e) {
-			ProxyEnvironmentNew.deliverPlug(false, packageName,
+			ProxyEnvironmentNew.deliverPlug(context, false, packageName,
 					ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
 			e.printStackTrace();
 			return;
 		} catch (Exception e) {
-			ProxyEnvironmentNew.deliverPlug(false, packageName,
+			ProxyEnvironmentNew.deliverPlug(context, false, packageName,
 					ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
 			e.printStackTrace();
 		}

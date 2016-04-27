@@ -272,31 +272,36 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		return super.openOrCreateDatabase(databaseDir.getAbsolutePath()+"/"+name, mode, factory);
 	}
 
-	/**
-	 *  this is move DB from /data/data/packageName/database to /data/data/package/app_pluginapp/pluginpackage/databases
-	 *  if the app is upgrade,we need backup and recover the db for user,
-	 * @param name db name
-	 */
-	private void checkBackupDB(String name){
+    /**
+     * this is move DB from /data/data/packageName/database to
+     * /data/data/package/app_pluginapp/pluginpackage/databases if the app is
+     * upgrade,we need backup and recover the db for user,
+     *
+     * @param name db name
+     */
+    private void checkBackupDB(String name) {
 
-		if(name.lastIndexOf(".") == -1) {
-			return;             //if migrate file is not db file,ignore it.
-		}
+        if (name.lastIndexOf(".") == -1) {
+            return; // if migrate file is not db file,ignore it.
+        }
 
-		String dbName = name.substring(0, name.lastIndexOf("."));
+        String dbName = name.substring(0, name.lastIndexOf("."));
 
-		String dbPath = "/data/data/"+this.getPackageName()+"/databases/";
-		File file = new File(dbPath,name);
-		if(file.exists()){
-			File targetFile = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/"+name);
-			Util.moveFile(file, targetFile);
-			File bakFile = new File(dbPath,dbName+".db-journal");
-			File targetBakFile = new File(getEnvironment().getTargetMapping().getDataDir()+"/databases/"+dbName+".db-journal");
-			if(bakFile.exists()){
-				Util.moveFile(bakFile, targetBakFile);
-			}
-		}
-	}
+        String dbPath = "/data/data/" + this.getPackageName() + "/databases/";
+        File file = new File(dbPath, name);
+        if (file.exists()) {
+            File targetFile = new File(getEnvironment().getTargetMapping().getDataDir() + "/databases/" + name);
+            if (!targetFile.exists()) {
+                Util.moveFile(file, targetFile);
+            }
+            File bakFile = new File(dbPath, dbName + ".db-journal");
+            File targetBakFile = new File(
+                    getEnvironment().getTargetMapping().getDataDir() + "/databases/" + dbName + ".db-journal");
+            if (bakFile.exists() && !targetBakFile.exists()) {
+                Util.moveFile(bakFile, targetBakFile);
+            }
+        }
+    }
 
 	@Override
 	public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory,
@@ -493,22 +498,23 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 		return super.getSharedPreferences(name, mode);
 	}
 
-	private void backupSharedPreference(String name){
-
-		String sharePath = "/data/data/"+this.getPackageName()+"/shared_prefs/";
-		File sFile = new File(sharePath);
-		String[] fileList = sFile.list();
-		if (fileList == null)
-			return;
-		for(int i=0;i<fileList.length;i++){
-			String file = fileList[i];
-			if(file != null && (file.equals(name+".xml") || file.contains("_"+name+".xml"))){
-				File oriFile = new File(sharePath+file);
-				File tarFile = getSharedPrefsFile(name);
-				Util.moveFile(oriFile, tarFile);
-			}
-		}
-	}
+    private void backupSharedPreference(String name) {
+        String sharePath = "/data/data/" + this.getPackageName() + "/shared_prefs/";
+        File sFile = new File(sharePath);
+        String[] fileList = sFile.list();
+        if (fileList == null)
+            return;
+        for (int i = 0; i < fileList.length; i++) {
+            String file = fileList[i];
+            if (file != null && (file.equals(name + ".xml") || file.contains("_" + name + ".xml"))) {
+                File oriFile = new File(sharePath + file);
+                File tarFile = getSharedPrefsFile(name);
+                if (oriFile.exists() && !tarFile.exists()) {
+                    Util.moveFile(oriFile, tarFile, false);
+                }
+            }
+        }
+    }
 
 
 	/**
