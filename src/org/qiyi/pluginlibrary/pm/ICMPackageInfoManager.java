@@ -7,5 +7,5 @@ public interface ICMPackageInfoManager {
     CMPackageInfo getPackageInfo(String packageName);
     boolean isPackageInstalled(String packageName);
     boolean canInstallPackage(PluginPackageInfoExt info);
-    boolean canUninstallPackage(PluginPackageInfoExt info);
+    boolean canUninstallPackage(CMPackageInfo info);
 }

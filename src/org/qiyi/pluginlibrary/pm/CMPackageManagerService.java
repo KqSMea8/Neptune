@@ -74,7 +74,7 @@ public class CMPackageManagerService extends Service {
             }
 
             @Override
-            public boolean canUninstallPackage(PluginPackageInfoExt info) throws RemoteException {
+            public boolean canUninstallPackage(CMPackageInfo info) throws RemoteException {
                 if (mManager != null && info != null) {
                     return mManager.canUninstallPackage(info);
                 }
@@ -101,19 +101,19 @@ public class CMPackageManagerService extends Service {
 
             @Override
             public void deletePackage(
-                    String packageName, IPackageDeleteObserver observer) throws RemoteException {
-                if (mManager == null || TextUtils.isEmpty(packageName)) {
+                    CMPackageInfo packageInfo, IPackageDeleteObserver observer) throws RemoteException {
+                if (mManager == null) {
                     return;
                 }
-                mManager.deletePackage(packageName, observer);
+                mManager.deletePackage(packageInfo, observer);
             }
 
             @Override
-            public boolean uninstall(String pkgName) throws RemoteException {
-                if (mManager == null || TextUtils.isEmpty(pkgName)) {
+            public boolean uninstall(CMPackageInfo packageInfo) throws RemoteException {
+                if (mManager == null) {
                     return false;
                 }
-                return mManager.uninstall(pkgName);
+                return mManager.uninstall(packageInfo);
             }
 
             @Override

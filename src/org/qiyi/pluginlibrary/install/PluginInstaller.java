@@ -423,17 +423,20 @@ public class PluginInstaller {
      * @param context
      * @param packageName
      */
-    public static void deleteInstallerPackage(Context context, String packageName) {
-
-        File dataDir = null;
-        dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
-        File apkPath = getInstalledApkFile(context, packageName);
-        File dexPath = getInstalledDexFile(context, packageName);
-        if (apkPath != null) {
-            apkPath.delete();
+    public static void deleteInstallerPackage(
+            Context context, String apkPath, String packageName) {
+        if (context == null || TextUtils.isEmpty(apkPath) || TextUtils.isEmpty(packageName)) {
+            return;
         }
 
-        if (dexPath != null) {
+        File dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
+        File apk = new File(apkPath);
+        File dexPath = getInstalledDexFile(context, packageName);
+        if (apk.exists()) {
+            apk.delete();
+        }
+
+        if (dexPath.exists()) {
             dexPath.delete();
         }
 

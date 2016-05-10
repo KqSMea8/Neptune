@@ -546,86 +546,104 @@ public class CMPackageManager {
     /**
      * 删除安装包。 卸载插件应用程序,目前只有在升级时调用次方法，把插件状态改成upgrading状态
      *
-     * @param packageName 需要删除的package 的 packageName
+     * @param packageInfo 需要删除的package 的 CMPackageInfo
      * @param observer 卸载结果回调
      */
-    public void deletePackage(final String packageName, IPackageDeleteObserver observer) {
-        deletePackage(packageName, observer, false, true);
+    public void deletePackage(final CMPackageInfo packageInfo, IPackageDeleteObserver observer) {
+        deletePackage(packageInfo, observer, false, true);
     }
 
     /**
      * 删除安装包。 卸载插件应用程序
      *
-     * @param packageName 需要删除的package 的 packageName
+     * @param packageInfo 需要删除的package 的 CMPackageInfo
      * @param observer 卸载结果回调
      * @param deleteData 是否删除生成的data
      * @param upgrading 是否是升级之前的操作
      */
-    private void deletePackage(final String packageName, IPackageDeleteObserver observer, boolean deleteData, boolean upgrading) {
-        PluginDebugLog.log(TAG, "deletePackage with " + packageName + " deleteData: " + deleteData + " upgrading: " + upgrading);
-        try {
-            // 先停止运行插件
-            TargetActivatorNew.unLoadTarget(packageName);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private void deletePackage(final CMPackageInfo packageInfo, IPackageDeleteObserver observer,
+                               boolean deleteData, boolean upgrading) {
 
-        try {
-            if (deleteData) {
-                // 删除生成的data数据文件
-                // 清除environment中相关的数据:按前缀匹配
-                PluginInstaller.deletePluginData(mContext, packageName);
+        if (packageInfo != null) {
+            String packageName = packageInfo.packageName;
+            PluginDebugLog.log(TAG, "deletePackage with " + packageName +
+                    " deleteData: " + deleteData + " upgrading: " + upgrading);
+
+            try {
+                // 先停止运行插件
+                TargetActivatorNew.unLoadTarget(packageName);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
-            // 删除安装文件，apk，dex，so
-            PluginInstaller.deleteInstallerPackage(mContext, packageName);
-            mTargetMappingCache.remove(packageName);
+            try {
+                if (deleteData) {
+                    // 删除生成的data数据文件
+                    // 清除environment中相关的数据:按前缀匹配
+                    PluginInstaller.deletePluginData(mContext, packageName);
+                }
 
-            // 回调
-            if (observer != null) {
-                observer.packageDeleted(packageName, DELETE_SUCCEEDED);
+                //删除安装文件，apk，dex，so
+                PluginInstaller.deleteInstallerPackage(
+                        mContext, packageInfo.srcApkPath, packageName);
+                mTargetMappingCache.remove(packageName);
+
+                // 回调
+                if (observer != null) {
+                    observer.packageDeleted(packageName, DELETE_SUCCEEDED);
+                }
+            } catch (Exception e) {
+                // TODO: handle exception
+                e.printStackTrace();
+            } finally {
+                onActionFinish(packageName, DELETE_SUCCEEDED);
             }
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-        } finally {
-            onActionFinish(packageName, DELETE_SUCCEEDED);
         }
     }
 
     /**
      * 卸载，删除文件
      *
-     * @param pkgName 插件包名
+     * @param packageInfo CMPackageInfo
      * @return
      */
-    public boolean uninstall(String pkgName) {
-        PluginDebugLog.log(TAG, "CMPackageManager::uninstall: " + pkgName);
+    public boolean uninstall(CMPackageInfo packageInfo) {
+
         boolean uninstallFlag = false;
-        try {
-            if (TextUtils.isEmpty(pkgName)) {
-                PluginDebugLog.log(TAG, "CMPackageManager::uninstall pkgName is empty return");
-                return false;
-            }
-            File apk = PluginInstaller.getInstalledApkFile(mContext, pkgName);
-            if (apk != null && apk.exists()) {
-                uninstallFlag = apk.delete();
-            }
-            // 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
-            // 1，卸载语音插件之后会出现，找不到库文件
-            // 2.卸载了啪啪奇插件之后，会出现 .so库 已经被打开，无法被另一个打开
-            // CMPackageManager.getInstance(pluginContext).deletePackage(pluginData.mPlugin.packageName,
-            // observer);
-        } catch (Exception e) {
-            e.printStackTrace();
-            uninstallFlag = false;
-        }
 
-        if (uninstallFlag) {
-            mTargetMappingCache.remove(pkgName);
-        }
+        if (packageInfo != null) {
+            String packageName = packageInfo.packageName;
+            PluginDebugLog.log(TAG, "CMPackageManager::uninstall: " + packageName);
+            try {
+                if (TextUtils.isEmpty(packageName)) {
+                    PluginDebugLog.log(TAG, "CMPackageManager::uninstall pkgName is empty return");
+                    return false;
+                }
 
-        onActionFinish(pkgName, uninstallFlag ? UNINSTALL_SUCCESS : UNINSTALL_FAILED);
+                String apkPath = packageInfo.srcApkPath;
+                if (!TextUtils.isEmpty(apkPath)) {
+                    File apk = new File(apkPath);
+                    if (apk != null && apk.exists()) {
+                        uninstallFlag = apk.delete();
+                    }
+                }
+
+                // 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
+                // 1，卸载语音插件之后会出现，找不到库文件
+                // 2.卸载了啪啪奇插件之后，会出现 .so库 已经被打开，无法被另一个打开
+                // CMPackageManager.getInstance(pluginContext).deletePackage(pluginData.mPlugin.packageName,
+                // observer);
+            } catch (Exception e) {
+                e.printStackTrace();
+                uninstallFlag = false;
+            }
+
+            if (uninstallFlag) {
+                mTargetMappingCache.remove(packageName);
+            }
+
+            onActionFinish(packageName, uninstallFlag ? UNINSTALL_SUCCESS : UNINSTALL_FAILED);
+        }
 
         return uninstallFlag;
     }
@@ -678,7 +696,7 @@ public class CMPackageManager {
         return false;
     }
 
-    public boolean canUninstallPackage(PluginPackageInfoExt info) {
+    public boolean canUninstallPackage(CMPackageInfo info) {
         if (sCMPackageInfoManager != null) {
             return sCMPackageInfoManager.canUninstallPackage(info);
         }

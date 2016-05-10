@@ -193,7 +193,7 @@ public class CMPackageManagerImpl {
     private static class PluginDeleteAction implements Action {
 
         IPackageDeleteObserver observer;
-        public PluginPackageInfoExt info;
+        public CMPackageInfo info;
         public CMPackageManagerImpl callbackHost;
 
         @Override
@@ -203,17 +203,21 @@ public class CMPackageManagerImpl {
 
         @Override
         public String toString() {
-            StringBuilder infoBuider = new StringBuilder();
-            infoBuider.append("PluginDeleteAction: ");
-            infoBuider.append(" has IPackageDeleteObserver: ").append(observer != null ? true : false);
+            StringBuilder infoBuilder = new StringBuilder();
+            infoBuilder.append("PluginDeleteAction: ");
+            infoBuilder.append(
+                    " has IPackageDeleteObserver: ").append(observer != null ? true : false);
             if (info != null) {
-                infoBuider.append(" packagename: ").append(info.packageName);
-                infoBuider.append(" plugin_ver: ").append(info.plugin_ver);
-                infoBuider.append(" plugin_gray_ver: ").append(info.plugin_gray_ver);
-                infoBuider.append(" file_source_type: ").append(info.mFileSourceType);
+                infoBuilder.append(" packagename: ").append(info.packageName);
+                PluginPackageInfoExt infoExt = info.pluginInfo;
+                if (infoExt != null) {
+                    infoBuilder.append(" plugin_ver: ").append(infoExt.plugin_ver);
+                    infoBuilder.append(" plugin_gray_ver: ").append(infoExt.plugin_gray_ver);
+                    infoBuilder.append(" file_source_type: ").append(infoExt.mFileSourceType);
+                }
             }
 
-            return infoBuider.toString();
+            return infoBuilder.toString();
         }
 
         @Override
@@ -581,7 +585,7 @@ public class CMPackageManagerImpl {
      * @param packageName 删除的插件包名
      * @param observer 删除成功回调监听
      */
-    public void deletePackage(PluginPackageInfoExt info, IPackageDeleteObserver observer) {
+    public void deletePackage(CMPackageInfo info, IPackageDeleteObserver observer) {
         PluginDeleteAction action = new PluginDeleteAction();
         action.info = info;
         action.callbackHost = this;
@@ -591,10 +595,10 @@ public class CMPackageManagerImpl {
         }
     }
 
-    private void deletePackageInternal(PluginPackageInfoExt info, IPackageDeleteObserver observer) {
+    private void deletePackageInternal(CMPackageInfo info, IPackageDeleteObserver observer) {
         if (mService != null) {
             try {
-                mService.deletePackage(info.packageName, observer);
+                mService.deletePackage(info, observer);
                 return;
             } catch (RemoteException e) {
                 e.printStackTrace();
@@ -603,7 +607,7 @@ public class CMPackageManagerImpl {
         onBindService(mContext);
     }
 
-    public void uninstall(PluginPackageInfoExt info, IPackageDeleteObserver observer) {
+    public void uninstall(CMPackageInfo info, IPackageDeleteObserver observer) {
         PluginUninstallAction action = new PluginUninstallAction();
         action.info = info;
         action.callbackHost = this;
@@ -617,13 +621,13 @@ public class CMPackageManagerImpl {
      * 卸载插件，如果service不存在，则判断apk是否存在，如果存在，我们假设删除apk成功，暂时未考虑因内存不足或文件占用等原因导致的删除失败（
      * 此case概率较小）
      *
-     * @param pkgName
+     * @param info CMPackageInfo
      * @return
      */
-    public void uninstallInternal(PluginPackageInfoExt info) {
+    public void uninstallInternal(CMPackageInfo info) {
         if (mService != null) {
             try {
-                mService.uninstall(info.packageName);
+                mService.uninstall(info);
                 return;
             } catch (RemoteException e) {
                 e.printStackTrace();
