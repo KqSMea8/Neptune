@@ -30,9 +30,9 @@ import android.view.SearchEvent;
 import android.view.View;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.ActivityOverrider;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
-import org.qiyi.pluginlibrary.ActivityOverider;
 import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
@@ -173,7 +173,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             mPluginContextWrapper = new CMContextWrapperNew(InstrActivityProxy.this.getBaseContext(), pluginPkgName);
             ActivityInfo actInfo = mPluginEnv.findActivityByClassName(pluginActivityName);
             if (actInfo != null) {
-                ActivityOverider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
+                ActivityOverrider.changeActivityInfo(this, pluginPkgName, pluginActivityName);
             }
             mPluginContrl.dispatchProxyToPlugin(mPluginEnv.mPluginInstrument, mPluginContextWrapper, pluginPkgName);
             int resTheme = mPluginEnv.getTargetActivityThemeResource(pluginActivityName);
@@ -222,7 +222,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         // if (actInfo != null) {
         // int resTheme = actInfo.getThemeResource();
         // if (mNeedUpdateConfiguration) {
-        // ActivityOverider.changeActivityInfo(InstrActivityProxy.this, temp[0],
+        // ActivityOverrider.changeActivityInfo(InstrActivityProxy.this, temp[0],
         // temp[1]);
         // super.setTheme(resTheme);
         // mNeedUpdateConfiguration = false;

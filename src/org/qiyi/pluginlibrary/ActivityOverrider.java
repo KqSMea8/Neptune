@@ -12,8 +12,8 @@ import android.util.Log;
 /**
  * 提供公共方法供自动生成的Activity调用
  */
-public class ActivityOverider {
-    private static final String tag = "ActivityOverider";
+public class ActivityOverrider {
+    private static final String tag = ActivityOverrider.class.getSimpleName();
 
     public static void changeActivityInfo(Activity activity, String pkgName, String actName) {
         Log.d(tag, "changeActivityInfo: activity = " + activity + ", class = " + actName);

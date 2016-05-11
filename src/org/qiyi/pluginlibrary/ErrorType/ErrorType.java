@@ -138,7 +138,7 @@ public class ErrorType {
      */
     public static final int ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL = ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL + 1;
     /**
-     * 3.0 Instrumentation or 2.0插件方案，ActivityOverider changeActivityInfo 发生异常
+     * 3.0 Instrumentation or 2.0插件方案，ActivityOverrider changeActivityInfo 发生异常
      */
     public static final int ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL = ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL + 1;
     /** 3.0 Instrumentation，PluginActivityControl callOnCreate 发生异常 */
