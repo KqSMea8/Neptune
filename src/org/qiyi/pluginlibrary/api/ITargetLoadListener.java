@@ -6,7 +6,7 @@ package org.qiyi.pluginlibrary.api;
  * @author chenyangkun
  * @since 2014-4-24
  */
-public interface ITargetLoadListenner {
+public interface ITargetLoadListener {
 
     /**
      * 加载成功的回调，主线程回调

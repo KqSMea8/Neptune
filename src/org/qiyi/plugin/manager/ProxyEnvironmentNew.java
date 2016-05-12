@@ -24,12 +24,11 @@ import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
 import org.qiyi.pluginlibrary.ResourcesProxy;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.api.ITargetLoadListenner;
+import org.qiyi.pluginlibrary.api.ITargetLoadListener;
 import org.qiyi.pluginlibrary.component.BroadcastReceiverProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.exception.PluginStartupException;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
-import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
@@ -436,7 +435,7 @@ public class ProxyEnvironmentNew {
         }
 
         // Handle plugin dependences
-        CMPackageInfo info = CMPackageManagerImpl.getInstance(context.getApplicationContext()).getPackageInfo(packageName);
+        final CMPackageInfo info = CMPackageManagerImpl.getInstance(context.getApplicationContext()).getPackageInfo(packageName);
         if (info != null && info.pluginInfo != null && info.pluginInfo.getPluginResfs() != null
                 && info.pluginInfo.getPluginResfs().size() > 0) {
             PluginDebugLog.log(TAG, "Start to check dependence installation size: " + info.pluginInfo.getPluginResfs().size());
@@ -448,9 +447,9 @@ public class ProxyEnvironmentNew {
                 CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(refInfo,
                         new IInstallCallBack.Stub() {
                             @Override
-                            public void onPacakgeInstalled(CMPackageInfo info) {
+                            public void onPacakgeInstalled(CMPackageInfo packageInfo) {
                                 count.getAndDecrement();
-                                PluginDebugLog.log(TAG, "Check installation success pkgName: " + refInfo);
+                                PluginDebugLog.log(TAG, "Check installation success pkgName: " + refInfo.packageName);
                                 if (count.get() == 0) {
                                     PluginDebugLog.log(TAG,
                                             "Start Check installation after check dependence packageName: "
@@ -489,7 +488,7 @@ public class ProxyEnvironmentNew {
                     @Override
                     public void onPacakgeInstalled(CMPackageInfo info) {
                         initTarget(context.getApplicationContext(), packageInfo.packageName, processName,
-                                new ITargetLoadListenner() {
+                                new ITargetLoadListener() {
                                     @Override
                                     public void onLoadFinished(String packageName) {
                                         try {
@@ -592,7 +591,7 @@ public class ProxyEnvironmentNew {
         ProxyEnvironmentNew env = sPluginsMap.get(packageName);
         if (env == null) {
             deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);
-            PluginDebugLog.log(TAG, "launchIntent env is null! Just return!");
+            PluginDebugLog.log(TAG, packageName + " launchIntent env is null! Just return!");
             sIntentCacheMap.remove(packageName);
             return false;
             // throw new IllegalArgumentException(packageName
@@ -800,25 +799,38 @@ public class ProxyEnvironmentNew {
      * 初始化插件的运行环境，如果已经初始化，则什么也不做
      *
      * @param context application context
-     * @param packageName 插件包名
+     * @param packageInfo CMPackageInfo
      * @param pluginInstallMethod 插件安装方式
      */
-    public static void initProxyEnvironment(Context context, String packageName, String pluginInstallMethod, String processName) {
-        PluginDebugLog.log(TAG, "sPluginsMap.containsKey(packageName):" + sPluginsMap.containsKey(packageName));
-        if (sPluginsMap.containsKey(packageName)) {
-            return;
-        }
-        ProxyEnvironmentNew newEnv = null;
-        try {
-            newEnv = new ProxyEnvironmentNew(context, PluginInstaller.getInstalledApkFile(context, packageName), packageName,
-                    pluginInstallMethod, processName);
-        } catch (Exception e) {
-            clearLoadingIntent(packageName);
-            e.printStackTrace();
-            deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
-        }
-        if (newEnv != null) {
-            sPluginsMap.put(packageName, newEnv);
+    public static void initProxyEnvironment(Context context, CMPackageInfo packageInfo,
+                                            String pluginInstallMethod, String processName) {
+
+        if (packageInfo != null) {
+            String packageName = packageInfo.packageName;
+            if (!TextUtils.isEmpty(packageName)) {
+                PluginDebugLog.log(TAG, "sPluginsMap.containsKey(" + packageName + "):" +
+                        sPluginsMap.containsKey(packageName));
+                if (sPluginsMap.containsKey(packageName)) {
+                    return;
+                }
+                ProxyEnvironmentNew newEnv = null;
+                String apkPath = packageInfo.srcApkPath;
+                if (!TextUtils.isEmpty(apkPath)) {
+                    File apkFile = new File(apkPath);
+                    try {
+                        newEnv = new ProxyEnvironmentNew(context, apkFile, packageName,
+                                pluginInstallMethod, processName);
+                    } catch (Exception e) {
+                        clearLoadingIntent(packageName);
+                        e.printStackTrace();
+                        deliverPlug(context, false, packageName,
+                                ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
+                    }
+                    if (newEnv != null) {
+                        sPluginsMap.put(packageName, newEnv);
+                    }
+                }
+            }
         }
     }
 
@@ -1356,10 +1368,10 @@ public class ProxyEnvironmentNew {
      * @param packageName 插件包名
      * @param listenner 插件加载后的回调
      */
-    public static void initTarget(final Context context, String packageName, String processName, final ITargetLoadListenner listenner) {
+    public static void initTarget(final Context context, String packageName, String processName, final ITargetLoadListener listenner) {
         PluginDebugLog.log("plugin", "initTarget");
         try {
-            new InitProxyEnvireonment(context, packageName, processName, listenner).start();
+            new InitProxyEnvironment(context, packageName, processName, listenner).start();
         } catch (Exception e) {
             clearLoadingIntent(packageName);
             deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_TARGET);
@@ -1413,46 +1425,55 @@ public class ProxyEnvironmentNew {
         }
     }
 
-    static class InitProxyEnvireonment extends Thread {
+    static class InitProxyEnvironment extends Thread {
         public String pakName;
         public Context pContext;
-        ITargetLoadListenner listenner;
-        String mProcName;
+        ITargetLoadListener listener;
+        String mProcessName;
 
-        public InitProxyEnvireonment(Context context, String pakName, String processName, ITargetLoadListenner listenner) {
+        public InitProxyEnvironment(Context context, String pakName, String processName, ITargetLoadListener listener) {
             this.pakName = pakName;
             this.pContext = context;
-            this.listenner = listenner;
-            mProcName = processName;
+            this.listener = listener;
+            mProcessName = processName;
         }
 
         @Override
         public void run() {
             super.run();
             try {
-                String installMethod = CMPackageManagerImpl.getInstance(pContext).getPackageInfo(pakName).pluginInfo.mPluginInstallMethod;
-                PluginDebugLog.log("plugin",
-                        "doInBackground:" + pakName + ", installMethod: " + installMethod + " mProcName: " + mProcName);
-                ProxyEnvironmentNew.initProxyEnvironment(pContext, pakName, installMethod, mProcName);
-                new InitHandler(listenner, pakName, Looper.getMainLooper()).sendEmptyMessage(1);
+                CMPackageInfo packageInfo =
+                        CMPackageManagerImpl.getInstance(pContext).getPackageInfo(pakName);
+                if (packageInfo != null && packageInfo.pluginInfo != null) {
+                    String installMethod = packageInfo.pluginInfo.mPluginInstallMethod;
+                    PluginDebugLog.log("plugin",
+                            "doInBackground:" + pakName + ", installMethod: " +
+                                    installMethod + " ProcessName: " + mProcessName);
+                    ProxyEnvironmentNew.initProxyEnvironment(
+                            pContext, packageInfo, installMethod, mProcessName);
+                    new InitHandler(listener, pakName, Looper.getMainLooper()).sendEmptyMessage(1);
+                } else {
+                    PluginDebugLog.log("plugin", "packageInfo is null before initProxyEnvironment");
+                }
             } catch (Exception e) {
                 if (e instanceof PluginStartupException) {
                     PluginStartupException ex = (PluginStartupException) e;
                     deliverPlug(pContext, false, pakName, ex.getCode());
                 } else {
-                    deliverPlug(pContext, false, pakName, ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
+                    deliverPlug(pContext, false, pakName,
+                            ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
                 }
             }
         }
     }
 
     static class InitHandler extends Handler {
-        ITargetLoadListenner listenner;
+        ITargetLoadListener listener;
         String pakName;
 
-        public InitHandler(ITargetLoadListenner listenner, String pakName, Looper looper) {
+        public InitHandler(ITargetLoadListener listenner, String pakName, Looper looper) {
             super(looper);
-            this.listenner = listenner;
+            this.listener = listenner;
             this.pakName = pakName;
         }
 
@@ -1460,7 +1481,7 @@ public class ProxyEnvironmentNew {
         public void handleMessage(Message msg) {
             switch (msg.what) {
             case 1:
-                listenner.onLoadFinished(pakName);
+                listener.onLoadFinished(pakName);
                 break;
 
             default:

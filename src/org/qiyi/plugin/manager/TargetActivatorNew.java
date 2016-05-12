@@ -2,6 +2,7 @@ package org.qiyi.plugin.manager;
 
 import org.qiyi.pluginlibrary.api.IGetClassLoaderCallback;
 import org.qiyi.pluginlibrary.api.ITargetLoadedCallBack;
+import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
@@ -78,28 +79,35 @@ public class TargetActivatorNew {
      * @param packageName 插件包名
      * @param callback 回调，classloader 通过此异步回调返回给hostapp
      */
-    public static void loadAndGetClassLoader(final Context context, final String packageName, final String processName,
-            final IGetClassLoaderCallback callback) {
+    public static void loadAndGetClassLoader(final Context context,
+                                             final String packageName,
+                                             final String processName,
+                                             final IGetClassLoaderCallback callback) {
 
         loadTarget(context, packageName, processName, new ITargetLoadedCallBack() {
 
             @Override
             public void onTargetLoaded(String packageName) {
-                try {
-                    ProxyEnvironmentNew.initProxyEnvironment(context, packageName,
-                            CMPackageManagerImpl.getInstance(context).getPackageInfo(packageName).pluginInfo.mPluginInstallMethod,
-                            processName);
-                    ProxyEnvironmentNew targetEnv = ProxyEnvironmentNew.getInstance(packageName);
-                    ClassLoader classLoader = targetEnv.getDexClassLoader();
+                if (!TextUtils.isEmpty(packageName)) {
+                    CMPackageInfo packageInfo =
+                            CMPackageManagerImpl.getInstance(context).getPackageInfo(packageName);
+                    if (packageInfo != null && packageInfo.pluginInfo != null) {
+                        try {
+                            ProxyEnvironmentNew.initProxyEnvironment(context, packageInfo,
+                                    packageInfo.pluginInfo.mPluginInstallMethod,
+                                    processName);
+                            ProxyEnvironmentNew targetEnv =
+                                    ProxyEnvironmentNew.getInstance(packageName);
+                            ClassLoader classLoader = targetEnv.getDexClassLoader();
 
-                    callback.getClassLoaderCallback(classLoader);
-                } catch (Exception e) {
-                    // TODO: handle exception
+                            callback.getClassLoaderCallback(classLoader);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
-
             }
         });
-
     }
 
     /**
