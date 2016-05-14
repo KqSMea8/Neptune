@@ -217,9 +217,12 @@ public class ActivityJumpUtil {
                     if (packageList != null) {
                         for (CMPackageInfo pkgInfo : CMPackageManagerImpl.getInstance(context)
                                 .getInstalledApps()) {
-                            if (pkgInfo != null && pkgInfo.targetInfo != null) {
-                                targetActivity = pkgInfo.targetInfo.resolveActivity(intent);
-                                break;
+                            if (pkgInfo != null) {
+                                ApkTargetMappingNew target = pkgInfo.getTargetMapping(context);
+                                if (null != target) {
+                                    targetActivity = target.resolveActivity(intent);
+                                    break;
+                                }
                             }
                         }
                     }

@@ -5,6 +5,8 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.pm.IPackageDeleteObserver;
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+
 interface ICMPackageManager {
 
     List<CMPackageInfo> getInstalledApps();
@@ -28,4 +30,6 @@ interface ICMPackageManager {
     oneway void packageAction(in CMPackageInfo packageInfo, IInstallCallBack callBack);
 
     oneway void setActionFinishCallback(IActionFinishCallback actionFinishCallback);
+
+    ApkTargetMappingNew getApkTargetMapping(in String pkgName);
 }

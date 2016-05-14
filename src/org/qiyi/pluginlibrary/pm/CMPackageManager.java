@@ -15,6 +15,7 @@ import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.BroadcastReceiver;
@@ -177,20 +178,6 @@ public class CMPackageManager {
     public List<CMPackageInfo> getInstalledApps() {
         if (sCMPackageInfoManager != null) {
             List<CMPackageInfo> packageInfoList = sCMPackageInfoManager.getInstalledPackages();
-            if (packageInfoList != null) {
-                for (CMPackageInfo packageInfo : packageInfoList) {
-                    if (packageInfo != null && packageInfo.targetInfo == null) {
-                        packageInfo.targetInfo = mTargetMappingCache.get(packageInfo.packageName);
-                        if (packageInfo.targetInfo == null &&
-                                !TextUtils.isEmpty(packageInfo.srcApkPath)) {
-                            ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(
-                                    mContext, new File(packageInfo.srcApkPath));
-                            mTargetMappingCache.put(packageInfo.packageName, targetInfo);
-                            packageInfo.targetInfo = targetInfo;
-                        }
-                    }
-                }
-            }
             return packageInfoList;
         }
         return null;
@@ -216,10 +203,6 @@ public class CMPackageManager {
                 pkgInfo.installStatus = CMPackageInfo.PLUGIN_INSTALLED;
                 pkgInfo.pluginInfo = infoExt;
 
-                // 此处耗时操作，先保存再更新ApkTarget
-                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(mContext, new File(pkgInfo.srcApkPath));
-                mTargetMappingCache.put(pkgName, targetInfo);
-                pkgInfo.targetInfo = targetInfo;
                 if (listenerMap.get(pkgName) != null) {
                     try {
                         listenerMap.get(pkgName).onPacakgeInstalled(pkgInfo);
@@ -433,17 +416,6 @@ public class CMPackageManager {
             if (sCMPackageInfoManager.isPackageInstalled(packageName)) {
                 CMPackageInfo info = sCMPackageInfoManager.getPackageInfo(packageName);
                 if (null != info) {
-                    if (info.targetInfo == null) {
-                        info.targetInfo = mTargetMappingCache.get(info.packageName);
-
-                        if (info.targetInfo == null &&
-                                !TextUtils.isEmpty(info.srcApkPath)) {
-                            ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(
-                                    mContext, new File(info.srcApkPath));
-                            mTargetMappingCache.put(info.packageName, targetInfo);
-                            info.targetInfo = targetInfo;
-                        }
-                    }
                     return info;
                 } else {
                     PluginDebugLog.log(TAG, "getPackageInfo " +
@@ -701,5 +673,14 @@ public class CMPackageManager {
             return sCMPackageInfoManager.canUninstallPackage(info);
         }
         return false;
+    }
+
+    public ApkTargetMappingNew getApkTargetMapping(String pkgName) {
+        CMPackageInfo packageInfo = getPackageInfo(pkgName);
+        ApkTargetMappingNew result = null;
+        if (null != packageInfo) {
+            result = packageInfo.getTargetMapping(mContext, pkgName, packageInfo.srcApkPath, mTargetMappingCache);
+        }
+        return result;
     }
 }

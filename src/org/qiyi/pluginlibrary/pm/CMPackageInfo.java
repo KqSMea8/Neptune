@@ -1,9 +1,16 @@
 package org.qiyi.pluginlibrary.pm;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import java.io.File;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
+
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.TextUtils;
 
 /**
  * @author zhuchengjin 插件一些信息
@@ -34,7 +41,7 @@ public class CMPackageInfo implements Parcelable {
 
     public PluginPackageInfoExt pluginInfo;
 
-    public ApkTargetMappingNew targetInfo;
+    private ApkTargetMappingNew targetInfo;
 
     /** 存储在安装列表中的key */
     final static String TAG_PKG_NAME = "pkgName";
@@ -45,6 +52,44 @@ public class CMPackageInfo implements Parcelable {
 
     public CMPackageInfo() {
 
+    }
+
+    public ApkTargetMappingNew getTargetMapping(Context context) {
+        if (null == targetInfo) {
+            context = ContextUtils.getOriginalContext(context);
+            targetInfo = CMPackageManagerImpl.getInstance(context).getApkTargetMapping(context, packageName,
+                    srcApkPath);
+        }
+        return targetInfo;
+    }
+
+    /**
+     * This method should only be called by CMPackageManager to keep only one
+     * cache in all processes, other requirement should invoke
+     * {@link CMPackageInfo#getTargetMapping(Context)}}
+     *
+     * @param context
+     * @param pkgName
+     * @param apkFilePath
+     * @param cache
+     * @return
+     */
+    ApkTargetMappingNew getTargetMapping(Context context, String pkgName, String apkFilePath,
+            Map<String, ApkTargetMappingNew> cache) {
+        if (null != targetInfo) {
+            return targetInfo;
+        } else if (cache != null && cache.containsKey(pkgName)) {
+            targetInfo = cache.get(pkgName);
+            return targetInfo;
+        } else if (null != context && !TextUtils.isEmpty(apkFilePath)) {
+            File file = new File(apkFilePath);
+            if (file.exists()) {
+                targetInfo = new ApkTargetMappingNew(ContextUtils.getOriginalContext(context), file);
+                cache.put(pkgName, targetInfo);
+                return targetInfo;
+            }
+        }
+        return targetInfo;
     }
 
     protected CMPackageInfo(Parcel in) {

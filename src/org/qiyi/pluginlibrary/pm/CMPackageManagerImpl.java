@@ -14,6 +14,7 @@ import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.io.BufferedReader;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -263,7 +265,7 @@ public class CMPackageManagerImpl {
     }
 
     private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> mActionMap =
-            new ConcurrentHashMap();
+            new ConcurrentHashMap<String, CopyOnWriteArrayList<Action>>();
 
     private static final String TAG = CMPackageManagerImpl.class.getSimpleName();
 
@@ -410,6 +412,8 @@ public class CMPackageManagerImpl {
                 case PACKAGE_ACTION:
                         CMPackageManagerImpl.getInstance(context).
                                 packageAction(action.packageInfo, action.callBack);
+                    break;
+                default:
                     break;
                 }
                 iterator.remove();
@@ -718,9 +722,9 @@ public class CMPackageManagerImpl {
         Map<String, CMPackageInfo> installedAppList = getInstalledPackageList();
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
         if (installedAppList != null) {
-            Iterator iterator = installedAppList.entrySet().iterator();
+            Iterator<Entry<String, CMPackageInfo>> iterator = installedAppList.entrySet().iterator();
             while (iterator.hasNext()) {
-                Map.Entry entry = (Map.Entry) iterator.next();
+                Map.Entry<String, CMPackageInfo> entry = iterator.next();
                 CMPackageInfo pkg = (CMPackageInfo) entry.getValue();
                 if (pkg != null &&
                         TextUtils.equals(pkg.installStatus, CMPackageInfo.PLUGIN_INSTALLED)) {
@@ -795,28 +799,7 @@ public class CMPackageManagerImpl {
      */
     private ConcurrentMap<String, CMPackageInfo> getInstalledPackageList() {
         if (mPackageInfoDelegate != null) {
-            ConcurrentMap<String, CMPackageInfo> packageList =
-                    mPackageInfoDelegate.getInstalledPackageList();
-
-            if (packageList != null) {
-                for (Map.Entry<String, CMPackageInfo> entry : packageList.entrySet()) {
-                    if (entry != null) {
-                        CMPackageInfo packageInfo = entry.getValue();
-                        if (packageInfo != null && packageInfo.targetInfo == null) {
-                            packageInfo.targetInfo = mTargetMappingCache.get(entry.getKey());
-
-                            if (packageInfo.targetInfo == null &&
-                                    !TextUtils.isEmpty(packageInfo.srcApkPath)) {
-                                ApkTargetMappingNew targetInfo = new ApkTargetMappingNew(
-                                        mContext, new File(packageInfo.srcApkPath));
-                                mTargetMappingCache.put(packageInfo.packageName, targetInfo);
-                                packageInfo.targetInfo = targetInfo;
-                            }
-                        }
-                    }
-                }
-            }
-            return packageList;
+            return mPackageInfoDelegate.getInstalledPackageList();
         }
         return null;
     }
@@ -924,5 +907,26 @@ public class CMPackageManagerImpl {
         }
 
         return STATUS_PACKAGE_NOT_INSTALLED;
+    }
+
+    public ApkTargetMappingNew getApkTargetMapping(Context context, String pkgName, String apkFilePath) {
+        ApkTargetMappingNew target = null;
+        if (!TextUtils.isEmpty(pkgName)) {
+            if (mService != null) {
+                try {
+                    target = mService.getApkTargetMapping(pkgName);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                if (null != context && !TextUtils.isEmpty(apkFilePath)) {
+                    File file = new File(apkFilePath);
+                    if (file.exists()) {
+                        target = new ApkTargetMappingNew(ContextUtils.getOriginalContext(context), file);
+                    }
+                }
+            }
+        }
+        return target;
     }
 }

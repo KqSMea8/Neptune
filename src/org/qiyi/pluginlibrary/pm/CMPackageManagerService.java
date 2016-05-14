@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 
@@ -132,6 +133,14 @@ public class CMPackageManagerService extends Service {
                 if (mManager != null) {
                     mManager.setActionFinishCallback(actionFinishCallback);
                 }
+            }
+
+            @Override
+            public ApkTargetMappingNew getApkTargetMapping(String pkgName) throws RemoteException {
+                if (mManager != null) {
+                    return mManager.getApkTargetMapping(pkgName);
+                }
+                return null;
             }
         };
     }

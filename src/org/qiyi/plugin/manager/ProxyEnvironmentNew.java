@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.qiyi.pluginlibrary.PluginInstrument;
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
@@ -549,9 +550,12 @@ public class ProxyEnvironmentNew {
                 // Here, loop all installed packages to get pkgName.
                 for (CMPackageInfo info : CMPackageManagerImpl.getInstance(context)
                         .getInstalledApps()) {
-                    if (info != null && info.targetInfo != null) {
-                        if (info.targetInfo.resolveActivity(intent) != null) {
-                            return info.packageName;
+                    if (info != null) {
+                        ApkTargetMappingNew target = info.getTargetMapping(context);
+                        if (null != target) {
+                            if (target.resolveActivity(intent) != null) {
+                                return info.packageName;
+                            }
                         }
                     }
                 }
@@ -1231,7 +1235,7 @@ public class ProxyEnvironmentNew {
     private void createTargetMapping(String pkgName) throws Exception {
         CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(mContext).getPackageInfo(pkgName);
         if (pkgInfo != null) {
-            targetMapping = pkgInfo.targetInfo;
+            targetMapping = pkgInfo.getTargetMapping(mContext);
         } else {
             throw new Exception("Havn't install pkgName");
         }
