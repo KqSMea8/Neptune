@@ -2,7 +2,6 @@ package org.qiyi.pluginlibrary.pm;
 
 import java.io.File;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
@@ -125,5 +124,4 @@ public class CMPackageInfo implements Parcelable {
         parcel.writeParcelable(pluginInfo, i);
         parcel.writeParcelable(targetInfo, i);
     }
-
 }

@@ -36,8 +36,8 @@ import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper.InjectResult;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
@@ -109,7 +109,8 @@ public class ProxyEnvironmentNew {
     /**
      * 运行在当前进程内所有插件依赖库
      **/
-    private static List<PluginPackageInfoExt> sPluginDependences = new ArrayList<PluginPackageInfoExt>();
+    private static ConcurrentMap<String, PluginPackageInfoExt> sPluginDependences =
+            new ConcurrentHashMap<String, PluginPackageInfoExt>();
     /** 插件调试日志 **/
     private static ActivityLifecycleCallbacks sActivityLifecycleCallback = new ActivityLifecycleCallbacks() {
 
@@ -1142,16 +1143,18 @@ public class ProxyEnvironmentNew {
             InjectResult injectResult;
             for (int i = 0; i < dependencies.size(); i++) {
                 libraryInfo = CMPackageManagerImpl.getInstance(mContext).getPackageInfo(dependencies.get(i));
-                if (null != libraryInfo) {
-                    if (!sPluginDependences.contains(libraryInfo)
+                if (null != libraryInfo && !TextUtils.isEmpty(libraryInfo.packageName)) {
+                    if (!sPluginDependences.containsKey(libraryInfo.packageName)
                             && !TextUtils.equals(libraryInfo.pluginInfo.mSuffixType, CMPackageManager.PLUGIN_FILE_SO)) {
                         PluginDebugLog.log(TAG, "handleDependences inject " + libraryInfo.pluginInfo);
                         injectResult = ClassLoaderInjectHelper.inject(mContext, libraryInfo.srcApkPath, null, null);
                         if (null != injectResult && injectResult.mIsSuccessful) {
-                            PluginDebugLog.log(TAG, "handleDependences injectResult success for " + libraryInfo.pluginInfo);
-                            sPluginDependences.add(libraryInfo.pluginInfo);
+                            PluginDebugLog.log(TAG,
+                                    "handleDependences injectResult success for " + libraryInfo.pluginInfo);
+                            sPluginDependences.put(libraryInfo.packageName, libraryInfo.pluginInfo);
                         } else {
-                            PluginDebugLog.log(TAG, "handleDependences injectResult faild for " + libraryInfo.pluginInfo);
+                            PluginDebugLog.log(TAG,
+                                    "handleDependences injectResult faild for " + libraryInfo.pluginInfo);
                             return false;
                         }
                     } else {
@@ -1181,15 +1184,23 @@ public class ProxyEnvironmentNew {
                     getTargetMapping().getnativeLibraryDir(), mContext.getClassLoader());
 
             // 把插件 classloader 注入到host程序中，方便host app 能够找到 插件 中的class
-            if (targetMapping.getMetaData() != null && targetMapping.getMetaData().getBoolean(ProxyEnvironmentNew.META_KEY_CLASSINJECT)) {
-                ClassLoaderInjectHelper.inject(mContext.getClassLoader(), dexClassLoader, targetMapping.getPackageName() + ".R");
-                PluginDebugLog.log(TAG, "--- Class injecting @ " + targetMapping.getPackageName());
+            if (targetMapping.getMetaData() != null
+                    && targetMapping.getMetaData().getBoolean(ProxyEnvironmentNew.META_KEY_CLASSINJECT)) {
+                if (!sPluginDependences.containsKey(mPluginPakName)) {
+                    ClassLoaderInjectHelper.inject(mContext.getClassLoader(), dexClassLoader,
+                            targetMapping.getPackageName() + ".R");
+                    PluginDebugLog.log(TAG, "--- Class injecting @ " + targetMapping.getPackageName());
+                } else {
+                    PluginDebugLog.log(TAG,
+                            "--- Class injecting @ " + targetMapping.getPackageName() + " already injected!");
+                }
             }
             return true;
         } else {
             PluginDebugLog.log(TAG,
-                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: " + optimizedDirectory.exists()
-                            + " can read: " + optimizedDirectory.canRead() + " can write: " + optimizedDirectory.canWrite());
+                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
+                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
+                            + " can write: " + optimizedDirectory.canWrite());
             return false;
         }
     }

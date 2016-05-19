@@ -37,7 +37,7 @@ public class ClassLoaderInjectHelper {
             Class.forName("dalvik.system.LexClassLoader");
             return injectInAliyunOs(context, dexPath, soPath);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         boolean hasBaseDexClassLoader = true;
         try {
