@@ -13,6 +13,7 @@ import android.app.Application;
 import android.app.Service;
 import android.content.Context;
 import android.content.pm.PackageInfo;
+import android.os.Build;
 import android.text.TextUtils;
 
 public class ContextUtils {
@@ -207,5 +208,16 @@ public class ContextUtils {
         }
         PackageInfo pkgInfo = proxyNew.getTargetPackageInfo();
         return pkgInfo;
+    }
+
+    public static boolean isAndroidN() {
+        if (Build.VERSION.SDK_INT > 23) {
+            return true;
+        }
+        if (TextUtils.equals(Build.VERSION.CODENAME, "N") || TextUtils.equals(Build.VERSION.RELEASE, "N")) {
+            return true;
+        }
+        PluginDebugLog.log(TAG, "isAndroidN return false!");
+        return false;
     }
 }

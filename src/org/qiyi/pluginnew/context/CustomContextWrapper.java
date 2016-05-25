@@ -15,6 +15,7 @@ import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginlibrary.utils.Util;
@@ -36,6 +37,9 @@ import android.util.ArrayMap;
 import android.util.Log;
 
 public abstract class CustomContextWrapper extends ContextWrapper implements InterfaceToGetHost {
+
+    private static final String S_SHARED_PREFS =
+            ContextUtils.isAndroidN() ? "sSharedPrefsCache" : "sSharedPrefs";
 
     public CustomContextWrapper(Context base) {
         super(base);
@@ -344,7 +348,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
                 constructor.setAccessible(true);
                 Class<?> clazz = Class.forName("android.app.ContextImpl");
-                Field sSharedPrefs = clazz.getDeclaredField("sSharedPrefs");
+                Field sSharedPrefs = clazz.getDeclaredField(S_SHARED_PREFS);
                 File prefsFile;
                 sSharedPrefs.setAccessible(true);
                 boolean needInitialLoad = false;
@@ -408,7 +412,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
                 constructor.setAccessible(true);
                 HashMap<String, Object> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
-                        .<HashMap<String, Object>> get("sSharedPrefs");
+                        .<HashMap<String, Object>> get(S_SHARED_PREFS);
                 // HashMap<String, Object> oSharedPrefs = ()
                 // JavaCalls.getField(this.getBaseContext(), "sSharedPrefs");
 
@@ -435,7 +439,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 // (ArrayMap<String, ArrayMap<String, Object>>)
                 // JavaCalls.getField(this.getBaseContext(), "sSharedPrefs");
                 ArrayMap<String, ArrayMap<String, Object>> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
-                        .<ArrayMap<String, ArrayMap<String, Object>>> get("sSharedPrefs");
+                        .<ArrayMap<String, ArrayMap<String, Object>>> get(S_SHARED_PREFS);
                 synchronized (clazz) {
                     if (oSharedPrefs == null) {
                         oSharedPrefs = new ArrayMap<String, ArrayMap<String, Object>>();

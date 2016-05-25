@@ -123,7 +123,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         return false;
     }
 
-    // private boolean mNeedUpdateConfiguration = true;
+    private boolean mNeedUpdateConfiguration = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -213,26 +213,24 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     public void setTheme(int resid) {
-        // String[] temp = getPkgAndCls();
-        // if (mNeedUpdateConfiguration && (temp != null || mPluginEnv != null))
-        // {
-        // tryToInitEnvironment(temp[0]);
-        // if (mPluginEnv != null) {
-        // ActivityInfo actInfo = mPluginEnv.findActivityByClassName(temp[1]);
-        // if (actInfo != null) {
-        // int resTheme = actInfo.getThemeResource();
-        // if (mNeedUpdateConfiguration) {
-        // ActivityOverrider.changeActivityInfo(InstrActivityProxy.this, temp[0],
-        // temp[1]);
-        // super.setTheme(resTheme);
-        // mNeedUpdateConfiguration = false;
-        // return;
-        // }
-        // }
-        // }
-        // }
-        // super.setTheme(resid);
-        getTheme().applyStyle(resid, true);
+        String[] temp = getPkgAndCls();
+        if (mNeedUpdateConfiguration && (temp != null || mPluginEnv != null)) {
+            tryToInitEnvironment(temp[0]);
+            if (mPluginEnv != null) {
+                ActivityInfo actInfo = mPluginEnv.findActivityByClassName(temp[1]);
+                if (actInfo != null) {
+                    int resTheme = actInfo.getThemeResource();
+                    if (mNeedUpdateConfiguration) {
+                        ActivityOverrider.changeActivityInfo(InstrActivityProxy.this, temp[0], temp[1]);
+                        super.setTheme(resTheme);
+                        mNeedUpdateConfiguration = false;
+                        return;
+                    }
+                }
+            }
+        }
+        super.setTheme(resid);
+//        getTheme().applyStyle(resid, true);
     }
 
     @Override
@@ -546,7 +544,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        // mNeedUpdateConfiguration = true;
+         mNeedUpdateConfiguration = true;
         if (getController() != null) {
             getController().callOnConfigurationChanged(newConfig);
         }

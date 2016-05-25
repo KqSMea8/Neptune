@@ -18,6 +18,7 @@ import java.io.PrintWriter;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ReflectException;
 
 /**
@@ -60,7 +61,44 @@ public class PluginActivityControl implements PluginActivityCallback {
             return;
         }
         try {
-            if (android.os.Build.VERSION.SDK_INT > 21) {
+            if (ContextUtils.isAndroidN()) {
+                mPluginRef.call(
+                        // 方法名
+                        "attach",
+                        // Context context
+                        // contextWrapper,
+                        mProxy,
+                        // ActivityThread aThread
+                        mProxyRef.get("mMainThread"),
+                        // Instrumentation instr
+                        pluginInstr,
+                        // IBinder token
+                        mProxyRef.get("mToken"),
+                        // int ident
+                        mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
+                        // Application application
+                        mApplication == null ? mProxy.getApplication() : mApplication,
+                        // Intent intent
+                        mProxy.getIntent(),
+                        // ActivityInfo info
+                        mProxyRef.get("mActivityInfo"),
+                        // CharSequence title
+                        mProxy.getTitle(),
+                        // Activity parent
+                        mProxy.getParent(),
+                        // String id
+                        mProxyRef.get("mEmbeddedID"),
+                        // NonConfigurationInstances
+                        // lastNonConfigurationInstances
+                        mProxy.getLastNonConfigurationInstance(),
+                        // Configuration config
+                        mProxyRef.get("mCurrentConfig"),
+                        // String mReferrer
+                        mProxyRef.get("mReferrer"),
+                        // IVoiceInteractor mVoiceInteractor
+                        mProxyRef.get("mVoiceInteractor"),
+                        mProxy.getWindow());
+            } else if (android.os.Build.VERSION.SDK_INT > 21) {
                 // android.os.Build.VERSION_CODES.LOLLIPOP
                 mPluginRef.call(
                         // 方法名
