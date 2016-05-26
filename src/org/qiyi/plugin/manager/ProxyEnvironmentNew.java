@@ -85,6 +85,7 @@ public class ProxyEnvironmentNew {
     public static final String EXTRA_TARGET_ISBASE = "pluginapp_extra_target_isbase";
     public static final String EXTRA_TARGET_REDIRECT_ACTIVITY = "pluginapp_extra_target_redirect_activity";
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "pluginapp_loadtarget_stub";
+    public static final String EXTRA_SHOW_LOADING = "plugin_show_loading";
 
     public static final String BIND_SERVICE_FLAGS = "bind_service_flags";
 

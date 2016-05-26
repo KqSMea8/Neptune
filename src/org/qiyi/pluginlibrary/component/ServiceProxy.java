@@ -6,6 +6,7 @@ import java.util.List;
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
@@ -188,6 +189,7 @@ public class ServiceProxy extends Service {
                 return START_NOT_STICKY;
             }
         }
+        ContextUtils.notifyHostPluginStarted(this, paramIntent);
         String targetClassName = paramIntent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE);
         String targetPackageName = paramIntent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);

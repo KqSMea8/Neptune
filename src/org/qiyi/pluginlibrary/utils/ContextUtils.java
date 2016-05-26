@@ -12,6 +12,7 @@ import android.app.ActivityManager;
 import android.app.Application;
 import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.TextUtils;
@@ -219,5 +220,18 @@ public class ContextUtils {
         }
         PluginDebugLog.log(TAG, "isAndroidN return false!");
         return false;
+    }
+
+    /**
+     * 通知调用方可以取消loading progress dialog
+     *
+     * @param context
+     * @param intent
+     */
+    public static void notifyHostPluginStarted(Context context, Intent intent) {
+        if (null != context && null != intent && !TextUtils.isEmpty(intent.getStringExtra(
+                ProxyEnvironmentNew.EXTRA_SHOW_LOADING))) {
+            context.sendBroadcast(new Intent(ProxyEnvironmentNew.EXTRA_SHOW_LOADING));
+        }
     }
 }

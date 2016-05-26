@@ -37,6 +37,7 @@ import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginnew.context.CMContextWrapperNew;
@@ -153,6 +154,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             i.setComponent(new ComponentName(pluginPkgName, ProxyEnvironmentNew.EXTRA_VALUE_LOADTARGET_STUB));
             ProxyEnvironmentNew.launchIntent(InstrActivityProxy.this, null, i);
         }
+        ContextUtils.notifyHostPluginStarted(this, getIntent());
         Activity plugin = fillPluginActivity(mPluginEnv, pluginActivityName);
         if (null == plugin) {
             ProxyEnvironmentNew.deliverPlug(this, false, pluginPkgName, ErrorType.ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL);
