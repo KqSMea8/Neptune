@@ -52,8 +52,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
     public static final String PLUGIN_VER = "plugin_ver"; // 插件显示版本号
     public static final String PLUGIN_REFS = "refs"; // 插件的依赖
     public static final String IS_BASE = "is_base"; // 标示是否是lib
-    private static final String SUPPORT_MIN_VERSION = "support_min_version";//云控插件支持最低版本
-    private static final String IS_DELIEVE_STARTUP = "is_delieve_statrup";//云控插件启动是否投递pingback,默认0使用本地过滤列表,云控：1表示投递，2表示不投递
+    private static final String SUPPORT_MIN_VERSION = "l_ver";//云控插件支持最低版本
+    private static final String IS_DELIEVE_STARTUP = "s_pingback";//云控插件启动是否投递pingback,默认0使用本地过滤列表,云控：1表示投递，2表示不投递
 
     //启动是否投递pingback
     public int is_deliver_startup = 0;
