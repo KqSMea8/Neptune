@@ -137,7 +137,11 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
             ProxyEnvironmentNew.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
             return;
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // java.lang.VerifyError: android/content/pm/PackageParser
+            // java.lang.NoSuchMethodError: android.content.pm.PackageParser
+            // java.lang.NoSuchFieldError: com.android.internal.R$styleable.AndroidManifest
+            // java.lang.NoSuchMethodError: android.graphics.PixelXorXfermode
             ProxyEnvironmentNew.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
         }
