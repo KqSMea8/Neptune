@@ -1,48 +1,5 @@
 package org.qiyi.plugin.manager;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.qiyi.pluginlibrary.PluginInstrument;
-import org.qiyi.pluginlibrary.ActivityJumpUtil;
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
-import org.qiyi.pluginlibrary.PluginActivityControl;
-import org.qiyi.pluginlibrary.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
-import org.qiyi.pluginlibrary.ResourcesProxy;
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.api.ITargetLoadListener;
-import org.qiyi.pluginlibrary.component.BroadcastReceiverProxy;
-import org.qiyi.pluginlibrary.component.InstrActivityProxy;
-import org.qiyi.pluginlibrary.exception.PluginStartupException;
-import org.qiyi.pluginlibrary.install.IInstallCallBack;
-import org.qiyi.pluginlibrary.plugin.TargetMapping;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
-import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
-import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
-import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper.InjectResult;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-import org.qiyi.pluginnew.context.CMContextWrapperNew;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
@@ -67,6 +24,49 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.ActivityJumpUtil;
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.PluginActivityControl;
+import org.qiyi.pluginlibrary.PluginInstrument;
+import org.qiyi.pluginlibrary.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
+import org.qiyi.pluginlibrary.ResourcesProxy;
+import org.qiyi.pluginlibrary.api.ITargetLoadListener;
+import org.qiyi.pluginlibrary.component.BroadcastReceiverProxy;
+import org.qiyi.pluginlibrary.component.InstrActivityProxy;
+import org.qiyi.pluginlibrary.exception.PluginStartupException;
+import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.plugin.TargetMapping;
+import org.qiyi.pluginlibrary.pm.CMPackageInfo;
+import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
+import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
+import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper.InjectResult;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
+import org.qiyi.pluginnew.context.CMContextWrapperNew;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import dalvik.system.DexClassLoader;
 
@@ -1440,6 +1440,15 @@ public class ProxyEnvironmentNew {
                     ErrorType.ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL);
             e.printStackTrace();
         }
+    }
+
+    /**
+     * @param packageName
+     * @return 某个插件是否正在运行
+     *
+     */
+    public static boolean isPluginRunning(String packageName) {
+        return sPluginsMap.get(packageName) != null;
     }
 
     static class InitProxyEnvironment extends Thread {
