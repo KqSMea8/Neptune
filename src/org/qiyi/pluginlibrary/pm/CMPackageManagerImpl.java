@@ -542,6 +542,7 @@ public class CMPackageManagerImpl {
     void installApkFileInternal(String filePath, IInstallCallBack listener, PluginPackageInfoExt info) {
         if (mService != null) {
             try {
+                mService.deletePackage(getPackageInfo(info.packageName), null);
                 mService.installApkFile(filePath, listener, info);
                 return;
             } catch (RemoteException e) {
@@ -573,6 +574,7 @@ public class CMPackageManagerImpl {
     private void installBuildinAppsInternal(String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
         if (mService != null) {
             try {
+                mService.deletePackage(getPackageInfo(info.packageName), null);
                 mService.installBuildinApps(packageName, listener, info);
                 return;
             } catch (RemoteException e) {
