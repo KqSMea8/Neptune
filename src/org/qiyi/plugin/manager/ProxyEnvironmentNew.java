@@ -951,6 +951,21 @@ public class ProxyEnvironmentNew {
         boolean isClearTop = (intent.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TOP) != 0;
         PluginDebugLog.log(TAG,
                 "dealLaunchMode isSingleTop " + isSingleTop + " isSingleTask " + isSingleTask + " isClearTop " + isClearTop);
+        if (TextUtils.equals("com.iqiyi.imall", mPluginPakName)) {
+            // 电商反馈在插件里设置了single_top和clear_top时，这时假如栈里没有需要清理的Activity
+            // 由于没有重置插件设置的flag，就会把之前所有的InstrActivityProx都清理了，现在先添加电商，下版本放开所有的充分测试。
+            int flag = intent.getFlags();
+            PluginDebugLog.log(TAG, "before flag: " + Integer.toHexString(intent.getFlags()));
+            if ((isSingleTop || isSingleTask) && (flag & Intent.FLAG_ACTIVITY_SINGLE_TOP) != 0) {
+                flag = flag ^ Intent.FLAG_ACTIVITY_SINGLE_TOP;
+            }
+            if ((isSingleTask || isClearTop) && (flag & Intent.FLAG_ACTIVITY_CLEAR_TOP) != 0) {
+                flag = flag ^ Intent.FLAG_ACTIVITY_CLEAR_TOP;
+            }
+            intent.setFlags(flag);
+            PluginDebugLog.log(TAG, "after flag: " + Integer.toHexString(intent.getFlags()));
+        }
+
         if (isSingleTop && !isClearTop) {
             // 判断栈顶是否为需要启动的Activity
             Activity activity = null;
