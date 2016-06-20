@@ -75,7 +75,13 @@ public class CMPackageManagerImpl {
                         }
                     }
 
-                    Action finishedAction = list.remove(0);
+                    Action finishedAction = null;
+
+                    //fix java.lang.ArrayIndexOutOfBoundsException: length=0; index=0
+                    if (list.size() > 0) {
+                        finishedAction = list.remove(0);
+                    }
+
                     if (finishedAction != null) {
                         PluginDebugLog.log(TAG, "remove done action from action list for " + finishedAction.toString());
                     }
