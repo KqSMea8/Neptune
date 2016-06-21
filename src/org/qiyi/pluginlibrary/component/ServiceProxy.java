@@ -1,7 +1,10 @@
 package org.qiyi.pluginlibrary.component;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
@@ -23,6 +26,8 @@ import android.text.TextUtils;
  */
 public class ServiceProxy extends Service {
     private static final String TAG = ServiceProxy.class.getSimpleName();
+
+    private static ConcurrentMap<String, Method> sMethods = new ConcurrentHashMap<String, Method>(2);
 
     private boolean mKillProcessOnDestroy = false;
 
@@ -69,7 +74,7 @@ public class ServiceProxy extends Service {
                 Service pluginService = ((Service) env.getDexClassLoader().loadClass(targetClassName).newInstance());
                 CMContextWrapperNew actWrapper = new CMContextWrapperNew(ServiceProxy.this.getBaseContext(),
                         targetPackageName);
-                ReflectionUtils.on(pluginService).call("attach", actWrapper,
+                ReflectionUtils.on(pluginService).call("attach", sMethods, actWrapper,
                         ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,
                         ReflectionUtils.getFieldValue(this, "mToken"), env.getApplication(),
                         ReflectionUtils.getFieldValue(this, "mActivityManager"));

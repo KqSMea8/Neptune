@@ -599,7 +599,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (getController() != null) {
-            getController().getPluginRef().call("onActivityResult", requestCode, resultCode, data);
+            getController().getPluginRef().call("onActivityResult", PluginActivityControl.sMethods, requestCode, resultCode, data);
         }
     }
 
@@ -721,7 +721,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
                     e.printStackTrace();
                 }
 
-                pluginRef.call("onRequestPermissionsResult", requestCode, permissions, grantResults);
+                pluginRef.call("onRequestPermissionsResult", PluginActivityControl.sMethods, requestCode, permissions, grantResults);
             }
         }
     }
@@ -729,7 +729,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     public void onStateNotSaved() {
         super.onStateNotSaved();
         if (getController() != null) {
-            getController().getPluginRef().call("onStateNotSaved");
+            getController().getPluginRef().call("onStateNotSaved", PluginActivityControl.sMethods);
         }
     }
 

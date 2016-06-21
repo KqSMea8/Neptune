@@ -1,5 +1,9 @@
 package org.qiyi.pluginlibrary;
 
+import java.lang.reflect.Method;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
 import android.app.Activity;
@@ -16,6 +20,7 @@ import android.os.IBinder;
  * @see android.app.Activity#startActivity(android.content.Intent)
  */
 public class PluginInstrument extends Instrumentation {
+    private static ConcurrentMap<String, Method> sMethods = new ConcurrentHashMap<String, Method>(5);
 
     private String mPkgName;
     Instrumentation mHostInstr;
@@ -32,7 +37,7 @@ public class PluginInstrument extends Instrumentation {
             int requestCode, Bundle options) {
 
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, options, who);
-        return mInstrumentRef.call("execStartActivity", who, contextThread, token, target, intent, requestCode, options).get();
+        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
 
     }
 
@@ -40,7 +45,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
             int requestCode) {
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
-        return mInstrumentRef.call("execStartActivity", who, contextThread, token, target, intent, requestCode).get();
+        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode).get();
 
     }
 
@@ -50,7 +55,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
             int requestCode, Bundle options, int userId) {
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
-        return mInstrumentRef.call("execStartActivityAsCaller", who, contextThread, token, target, intent, requestCode, options, userId)
+        return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options, userId)
                 .get();
     }
 
@@ -60,7 +65,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
             int requestCode, Bundle options, boolean ignoreTargetSecurity, int userId) {
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
-        return mInstrumentRef.call("execStartActivityAsCaller", who, contextThread, token, target, intent, requestCode, options,
+        return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options,
                 ignoreTargetSecurity, userId).get();
     }
 
@@ -70,7 +75,7 @@ public class PluginInstrument extends Instrumentation {
         for (Intent intent : intents) {
             ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, 0, options, who);
         }
-        mInstrumentRef.call("execStartActivitiesAsUser", who, contextThread, token, target, intents, options, userId);
+        mInstrumentRef.call("execStartActivitiesAsUser", sMethods, who, contextThread, token, target, intents, options, userId);
     }
 
     /**
@@ -79,7 +84,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Fragment target, Intent intent,
             int requestCode, Bundle options) {
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
-        return mInstrumentRef.call("execStartActivity", who, contextThread, token, target, intent, requestCode, options).get();
+        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
     }
 
     /**
@@ -88,6 +93,6 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, String target, Intent intent,
             int requestCode, Bundle options) {
         ActivityJumpUtil.handleStartActivityIntent(mPkgName, intent, requestCode, null, who);
-        return mInstrumentRef.call("execStartActivity", who, contextThread, token, target, intent, requestCode, options).get();
+        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
     }
 }

@@ -12,8 +12,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class ReflectionUtils {
+import android.text.TextUtils;
 
+public class ReflectionUtils {
     public static <T> T getFieldValue(Object obj, String fieldName)
             throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
         return getFieldValue(obj, fieldName, true);
@@ -340,24 +341,50 @@ public class ReflectionUtils {
      * @throws ReflectException
      */
     public ReflectionUtils call(String name, Object... args) throws ReflectException {
+        return call(name, null, args);
+    }
+
+    public ReflectionUtils call(String name, Map<String, Method> methodCache, Object... args) throws ReflectException {
         Class<?>[] types = types(args);
 
         // 尝试调用方法
         try {
+            if (null != methodCache) {
+                ReflectionUtils res = callInner(name, methodCache, types, args);
+                if (null != res) {
+                    return res;
+                }
+            }
             Method method = exactMethod(name, types);
+            if (null != methodCache && null != method) {
+                methodCache.put(name, method);
+            }
             return on(method, object, args);
         }
-
         // 如果没有符合参数的方法，
         // 则匹配一个与方法名最接近的方法。
         catch (NoSuchMethodException e) {
             try {
                 Method method = similarMethod(name, types);
+                if (null != methodCache && null != method) {
+                    methodCache.put(name, method);
+                }
                 return on(method, object, args);
             } catch (NoSuchMethodException e1) {
                 throw new ReflectException(e1);
             }
         }
+    }
+
+    // 提高反射复用率
+    private ReflectionUtils callInner(String name, Map<String, Method> methodCache, Class<?>[] types, Object... args)
+            throws ReflectException {
+        Method temp = methodCache.get(name);
+        if (null != temp && isSimilarSignature(temp, name, types)) {
+            return on(temp, object, args);
+        }
+
+        return null;
     }
 
     /**
@@ -525,6 +552,26 @@ public class ReflectionUtils {
 
                 if (wrapper(declaredTypes[i]).isAssignableFrom(wrapper(actualTypes[i])))
                     continue;
+
+                return false;
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean same(Class<?>[] declaredTypes, Class<?>[] actualTypes) {
+        if (declaredTypes.length == actualTypes.length) {
+            for (int i = 0; i < actualTypes.length; i++) {
+                if (actualTypes[i] == NULL.class) {
+                    continue;
+                }
+
+                if (TextUtils.equals(wrapper(declaredTypes[i]).getName(), wrapper(actualTypes[i]).getName())) {
+                    continue;
+                }
 
                 return false;
             }

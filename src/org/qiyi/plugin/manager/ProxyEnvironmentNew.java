@@ -18,6 +18,7 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -521,10 +522,26 @@ public class ProxyEnvironmentNew {
      * @param pakName
      * @param errorCode 用于插件qos 投递
      */
-    public static void deliverPlug(Context context, boolean success, String pakName, int errorCode) {
+    public static void deliverPlug(final Context context, final boolean success, final String pakName,
+            final int errorCode) {
+        if (Looper.myLooper() != null && Looper.myLooper() == Looper.getMainLooper()) {
+            new AsyncTask<Void, Void, Void>() {
+                @Override
+                protected Void doInBackground(Void... params) {
+                    deliverPlugInner(context, success, pakName, errorCode);
+                    return null;
+                }
+
+            }.execute();
+        } else {
+            deliverPlugInner(context, success, pakName, errorCode);
+        }
+    }
+
+    private static void deliverPlugInner(Context context, boolean success, String pakName, int errorCode) {
         if (null != context && iDeliverPlug != null && !TextUtils.isEmpty(pakName)) {
-            CMPackageInfo info = CMPackageManagerImpl.getInstance(
-                    ContextUtils.getOriginalContext(context)).getPackageInfo(pakName);
+            CMPackageInfo info = CMPackageManagerImpl.getInstance(ContextUtils.getOriginalContext(context))
+                    .getPackageInfo(pakName);
             if (info != null && info.pluginInfo != null) {
                 iDeliverPlug.deliverPlug(success, info.pluginInfo, errorCode);
             }
@@ -550,8 +567,7 @@ public class ProxyEnvironmentNew {
                     CMPackageManagerImpl.getInstance(context).getInstalledApps();
             if (packageList != null) {
                 // Here, loop all installed packages to get pkgName.
-                for (CMPackageInfo info : CMPackageManagerImpl.getInstance(context)
-                        .getInstalledApps()) {
+                for (CMPackageInfo info : packageList) {
                     if (info != null) {
                         ApkTargetMappingNew target = info.getTargetMapping(context);
                         if (null != target) {
@@ -1235,7 +1251,7 @@ public class ProxyEnvironmentNew {
     private void createTargetResource() {
         try {
             AssetManager am = AssetManager.class.newInstance();
-            ReflectionUtils.on(am).call("addAssetPath", mApkFile.getAbsolutePath());
+            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mApkFile.getAbsolutePath());
             targetAssetManager = am;
         } catch (Exception e) {
             deliverPlug(mContext, false, mPluginPakName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);

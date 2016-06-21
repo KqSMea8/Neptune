@@ -10,6 +10,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
@@ -40,6 +42,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     private static final String S_SHARED_PREFS =
             ContextUtils.isAndroidN() ? "sSharedPrefsCache" : "sSharedPrefs";
+
+    protected static ConcurrentMap<String, Method> sMethods = new ConcurrentHashMap<String, Method>(2);
 
     public CustomContextWrapper(Context base) {
         super(base);
@@ -426,7 +430,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 }
                 if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getEnvironment().getTargetMapping()
                         .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                    ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly");
+                    ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
                     // JavaCalls.invokeMethod(sp,
                     // "startReloadIfChangedUnexpectedly", null, null);
                 }
@@ -461,7 +465,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                     }
                     if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getEnvironment().getTargetMapping()
                             .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                        ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly");
+                        ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
                         // JavaCalls.invokeMethod(sp,
                         // "startReloadIfChangedUnexpectedly", null, null);
                     }
