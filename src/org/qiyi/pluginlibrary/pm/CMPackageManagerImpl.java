@@ -64,56 +64,55 @@ public class CMPackageManagerImpl {
             PluginDebugLog.log(TAG, "onActionComplete with " + packageName + " errorcode " + errorCode);
             if (mActionMap.containsKey(packageName)) {
                 CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
-                PluginDebugLog.log(TAG, packageName + " has " + list.size() + " in action list");
-                if (list.size() > 0) {
-                    if (PluginDebugLog.isDebug()) {
-                        for (int index = 0; index < list.size(); index++) {
+                if (null == list) {
+                    return;
+                }
+                synchronized (list) {
+                    PluginDebugLog.log(TAG, packageName + " has " + list.size() + " in action list");
+                    if (list.size() > 0) {
+                        if (PluginDebugLog.isDebug()) {
+                            for (int index = 0; index < list.size(); index++) {
+                                Action action = list.get(index);
+                                if (action != null) {
+                                    PluginDebugLog.log(TAG, index + " action in action list: " + action.toString());
+                                }
+                            }
+                        }
+
+                        Action finishedAction = list.remove(0);
+                        if (finishedAction != null) {
+                            PluginDebugLog.log(TAG, "remove done action from action list for " + finishedAction.toString());
+                        }
+
+                        if (finishedAction != null && finishedAction instanceof PluginUninstallAction) {
+                            PluginDebugLog.log(TAG, "PluginUninstallAction onActionComplete for " + packageName);
+                            PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
+                            if (uninstallAction != null && uninstallAction.observer != null && uninstallAction.info != null
+                                    && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
+                                PluginDebugLog.log(TAG, "PluginUninstallAction packageDeleted for " + packageName);
+                                uninstallAction.observer.packageDeleted(uninstallAction.info.packageName, errorCode);
+                            }
+                        }
+
+                        int index = 0;
+                        while (index < list.size()) {
                             Action action = list.get(index);
                             if (action != null) {
-                                PluginDebugLog.log(TAG, index + " action in action list: " + action.toString());
+                                if (action.meetCondition()) {
+                                    PluginDebugLog.log(TAG, "start doAction for " + action.toString());
+                                    action.doAction();
+                                    break;
+                                } else {
+                                    PluginDebugLog.log(TAG, "remove deprecate action from action list for " + action.toString());
+                                    list.remove(index);
+                                }
                             }
                         }
-                    }
 
-                    Action finishedAction = null;
-
-                    //fix java.lang.ArrayIndexOutOfBoundsException: length=0; index=0
-                    if (list.size() > 0) {
-                        finishedAction = list.remove(0);
-                    }
-
-                    if (finishedAction != null) {
-                        PluginDebugLog.log(TAG, "remove done action from action list for " + finishedAction.toString());
-                    }
-
-                    if (finishedAction != null && finishedAction instanceof PluginUninstallAction) {
-                        PluginDebugLog.log(TAG, "PluginUninstallAction onActionComplete for " + packageName);
-                        PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
-                        if (uninstallAction != null && uninstallAction.observer != null && uninstallAction.info != null
-                                && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
-                            PluginDebugLog.log(TAG, "PluginUninstallAction packageDeleted for " + packageName);
-                            uninstallAction.observer.packageDeleted(uninstallAction.info.packageName, errorCode);
+                        if (list.size() == 0) {
+                            PluginDebugLog.log(TAG, "remove empty action list");
+                            mActionMap.remove(packageName);
                         }
-                    }
-
-                    int index = 0;
-                    while (index < list.size()) {
-                        Action action = list.get(index);
-                        if (action != null) {
-                            if (action.meetCondition()) {
-                                PluginDebugLog.log(TAG, "start doAction for " + action.toString());
-                                action.doAction();
-                                break;
-                            } else {
-                                PluginDebugLog.log(TAG, "remove deprecate action from action list for " + action.toString());
-                                list.remove(index);
-                            }
-                        }
-                    }
-
-                    if (list.size() == 0) {
-                        PluginDebugLog.log(TAG, "remove empty action list");
-                        mActionMap.remove(packageName);
                     }
                 }
             }
@@ -386,17 +385,19 @@ public class CMPackageManagerImpl {
                 CopyOnWriteArrayList<Action> actions = entry.getValue();
                 PluginDebugLog.log(TAG, "execute " + actions.size() + " Pending Actions");
                 if (actions != null) {
-                    int index = 0;
-                    while (index < actions.size()) {
-                        Action action = actions.get(index);
-                        if (action != null) {
-                            if (action.meetCondition()) {
-                                PluginDebugLog.log(TAG, "start doAction for pending action " + action.toString());
-                                action.doAction();
-                                break;
-                            } else {
-                                PluginDebugLog.log(TAG, "remove deprecate pending action " + "from action list for " + action.toString());
-                                actions.remove(index);
+                    synchronized (actions) {
+                        int index = 0;
+                        while (index < actions.size()) {
+                            Action action = actions.get(index);
+                            if (action != null) {
+                                if (action.meetCondition()) {
+                                    PluginDebugLog.log(TAG, "start doAction for pending action " + action.toString());
+                                    action.doAction();
+                                    break;
+                                } else {
+                                    PluginDebugLog.log(TAG, "remove deprecate pending action " + "from action list for " + action.toString());
+                                    actions.remove(index);
+                                }
                             }
                         }
                     }
