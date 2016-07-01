@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -43,7 +44,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     private static final String S_SHARED_PREFS =
             ContextUtils.isAndroidN() ? "sSharedPrefsCache" : "sSharedPrefs";
 
-    protected static ConcurrentMap<String, Method> sMethods = new ConcurrentHashMap<String, Method>(2);
+    protected static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(2);
 
     public CustomContextWrapper(Context base) {
         super(base);

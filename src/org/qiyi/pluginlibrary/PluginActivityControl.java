@@ -15,6 +15,7 @@ import android.view.View;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -28,7 +29,7 @@ import org.qiyi.pluginlibrary.utils.ReflectException;
  * 插件的控制器<br> 派发插件事件和控制插件生命周期
  */
 public class PluginActivityControl implements PluginActivityCallback {
-    public static ConcurrentMap<String, Method> sMethods = new ConcurrentHashMap<String, Method>();
+    public static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>();
     Activity mProxy;// 代理Activity
     Activity mPlugin;// 插件Activity
     ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类

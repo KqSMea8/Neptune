@@ -1,6 +1,7 @@
 package org.qiyi.pluginlibrary;
 
 import java.lang.reflect.Method;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -20,7 +21,7 @@ import android.os.IBinder;
  * @see android.app.Activity#startActivity(android.content.Intent)
  */
 public class PluginInstrument extends Instrumentation {
-    private static ConcurrentMap<String, Method> sMethods = new ConcurrentHashMap<String, Method>(5);
+    private static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(5);
 
     private String mPkgName;
     Instrumentation mHostInstr;

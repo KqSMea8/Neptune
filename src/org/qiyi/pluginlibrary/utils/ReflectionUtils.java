@@ -11,6 +11,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Vector;
 
 import android.text.TextUtils;
 
@@ -344,7 +345,7 @@ public class ReflectionUtils {
         return call(name, null, args);
     }
 
-    public ReflectionUtils call(String name, Map<String, Method> methodCache, Object... args) throws ReflectException {
+    public ReflectionUtils call(String name, Map<String, Vector<Method>> methodCache, Object... args) throws ReflectException {
         Class<?>[] types = types(args);
 
         // 尝试调用方法
@@ -357,7 +358,12 @@ public class ReflectionUtils {
             }
             Method method = exactMethod(name, types);
             if (null != methodCache && null != method) {
-                methodCache.put(name, method);
+                Vector<Method> methods = methodCache.get(name);
+                if (methods == null) {
+                    methods = new Vector<Method>(4);
+                    methodCache.put(name, methods);
+                }
+                methods.add(method);
             }
             return on(method, object, args);
         }
@@ -367,7 +373,12 @@ public class ReflectionUtils {
             try {
                 Method method = similarMethod(name, types);
                 if (null != methodCache && null != method) {
-                    methodCache.put(name, method);
+                    Vector<Method> methods = methodCache.get(name);
+                    if (methods == null) {
+                        methods = new Vector<Method>(4);
+                        methodCache.put(name, methods);
+                    }
+                    methods.add(method);
                 }
                 return on(method, object, args);
             } catch (NoSuchMethodException e1) {
@@ -377,11 +388,16 @@ public class ReflectionUtils {
     }
 
     // 提高反射复用率
-    private ReflectionUtils callInner(String name, Map<String, Method> methodCache, Class<?>[] types, Object... args)
-            throws ReflectException {
-        Method temp = methodCache.get(name);
-        if (null != temp && isSimilarSignature(temp, name, types)) {
-            return on(temp, object, args);
+    private ReflectionUtils callInner(String name, Map<String, Vector<Method>> methodCache, Class<?>[] types,
+            Object... args) throws ReflectException {
+        Vector<Method> temp = methodCache.get(name);
+        if (null != temp) {
+            for (Method method : temp) {
+                if (null != method && method.getDeclaringClass().isAssignableFrom(type())
+                        && isSimilarSignature(method, name, types)) {
+                    return on(method, object, args);
+                }
+            }
         }
 
         return null;
