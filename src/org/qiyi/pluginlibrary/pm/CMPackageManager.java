@@ -15,7 +15,6 @@ import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.BroadcastReceiver;
@@ -50,6 +49,11 @@ public class CMPackageManager {
      * 卸载插件，发送广播
      */
     public static final String ACTION_PACKAGE_UNINSTALL = "com.qiyi.plugin.uninstall";
+
+    /**
+     * 如果发现某个插件异常，通知上层检查
+     */
+    public static final String ACTION_HANDLE_PLUGIN_EXCEPTION = "handle_plugin_exception";
 
     /**
      * 安装插件方案的版本
@@ -211,13 +215,11 @@ public class CMPackageManager {
                     } finally {
                         listenerMap.remove(pkgName);
                     }
-
                 }
                 // 执行等待执行的action
                 executePackageAction(pkgInfo, true, 0);
                 onActionFinish(pkgName, INSTALL_SUCCESS);
             } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
-
                 String assetsPath = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
                 if (!TextUtils.isEmpty(assetsPath)) {
                     int start = assetsPath.lastIndexOf("/");
@@ -230,8 +232,8 @@ public class CMPackageManager {
                     String mapPackagename = assetsPath.substring(start + 1, end);
                     // 失败原因
                     int failReason = intent.getIntExtra(ErrorType.ERROR_RESON, ErrorType.SUCCESS);
-                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLFAIL mapPackagename: " + mapPackagename + " failReason: " + failReason
-                            + " assetsPath: " + assetsPath);
+                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLFAIL mapPackagename: " + mapPackagename
+                            + " failReason: " + failReason + " assetsPath: " + assetsPath);
                     if (listenerMap.get(mapPackagename) != null) {
                         try {
                             listenerMap.get(mapPackagename).
@@ -251,6 +253,12 @@ public class CMPackageManager {
                     executePackageAction(pkgInfo, false, failReason);
                     onActionFinish(mapPackagename, INSTALL_FAILED);
                 }
+            } else if (TextUtils.equals(ACTION_HANDLE_PLUGIN_EXCEPTION, action)) {
+                String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
+                String exception = intent.getStringExtra(ErrorType.ERROR_RESON);
+                if (null != sCMPackageInfoManager && !TextUtils.isEmpty(pkgName)) {
+                    sCMPackageInfoManager.handlePluginException(pkgName, exception);
+                }
             }
         }
     };
@@ -263,6 +271,7 @@ public class CMPackageManager {
             IntentFilter filter = new IntentFilter();
             filter.addAction(ACTION_PACKAGE_INSTALLED);
             filter.addAction(ACTION_PACKAGE_INSTALLFAIL);
+            filter.addAction(ACTION_HANDLE_PLUGIN_EXCEPTION);
             filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
             // 注册一个安装广播
             mContext.registerReceiver(pluginInstallerReceiver, filter);
@@ -677,10 +686,25 @@ public class CMPackageManager {
 
     public ApkTargetMappingNew getApkTargetMapping(String pkgName) {
         CMPackageInfo packageInfo = getPackageInfo(pkgName);
+        CMPackageInfo.updateSrcApkPath(mContext, packageInfo);
         ApkTargetMappingNew result = null;
         if (null != packageInfo) {
             result = packageInfo.getTargetMapping(mContext, pkgName, packageInfo.srcApkPath, mTargetMappingCache);
         }
         return result;
+    }
+
+    public static void notifyClientPluginException(Context context, String pkgName, String exceptionMsg) {
+        try {
+            Intent intent = new Intent(CMPackageManager.ACTION_HANDLE_PLUGIN_EXCEPTION);
+            intent.setPackage(context.getPackageName());
+            intent.putExtra(EXTRA_PKG_NAME, pkgName);
+            intent.putExtra(ErrorType.ERROR_RESON, exceptionMsg);
+            context.sendBroadcast(intent);
+            PluginDebugLog.log(TAG,
+                    "notifyClientPluginException Success " + " pkgName: " + pkgName + " exceptionMsg: " + exceptionMsg);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

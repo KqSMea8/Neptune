@@ -8,4 +8,5 @@ public interface ICMPackageInfoManager {
     boolean isPackageInstalled(String packageName);
     boolean canInstallPackage(PluginPackageInfoExt info);
     boolean canUninstallPackage(CMPackageInfo info);
+    void handlePluginException(String pkgName, String exceptionStr);
 }

@@ -833,9 +833,15 @@ public class ProxyEnvironmentNew {
                     return;
                 }
                 ProxyEnvironmentNew newEnv = null;
-                String apkPath = packageInfo.srcApkPath;
-                if (!TextUtils.isEmpty(apkPath)) {
-                    File apkFile = new File(apkPath);
+                CMPackageInfo.updateSrcApkPath(context, packageInfo);
+                if (!TextUtils.isEmpty(packageInfo.srcApkPath)) {
+                    File apkFile = new File(packageInfo.srcApkPath);
+                    if (!apkFile.exists()) {
+                        PluginDebugLog.log(TAG,
+                                "Special case apkFile not exist, notify client! packageName: " + packageName);
+                        CMPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist!");
+                        return;
+                    }
                     try {
                         newEnv = new ProxyEnvironmentNew(context, apkFile, packageName,
                                 pluginInstallMethod, processName);
@@ -1179,6 +1185,7 @@ public class ProxyEnvironmentNew {
                     if (!sPluginDependences.containsKey(libraryInfo.packageName)
                             && !TextUtils.equals(libraryInfo.pluginInfo.mSuffixType, CMPackageManager.PLUGIN_FILE_SO)) {
                         PluginDebugLog.log(TAG, "handleDependences inject " + libraryInfo.pluginInfo);
+                        CMPackageInfo.updateSrcApkPath(mContext, libraryInfo);
                         injectResult = ClassLoaderInjectHelper.inject(mContext, libraryInfo.srcApkPath, null, null);
                         if (null != injectResult && injectResult.mIsSuccessful) {
                             PluginDebugLog.log(TAG,
@@ -1279,6 +1286,9 @@ public class ProxyEnvironmentNew {
         CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(mContext).getPackageInfo(pkgName);
         if (pkgInfo != null) {
             targetMapping = pkgInfo.getTargetMapping(mContext);
+            if (null == targetMapping) {
+                throw new Exception("Exception case targetMapping init failed!");
+            }
         } else {
             throw new Exception("Havn't install pkgName");
         }
