@@ -552,7 +552,7 @@ public class CMPackageManagerImpl {
                 mService.deletePackage(getPackageInfo(info.packageName), null);
                 mService.installApkFile(filePath, listener, info);
                 return;
-            } catch (RemoteException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 // TODO: 15/10/29 catch should do something
             }
@@ -584,7 +584,7 @@ public class CMPackageManagerImpl {
                 mService.deletePackage(getPackageInfo(info.packageName), null);
                 mService.installBuildinApps(packageName, listener, info);
                 return;
-            } catch (RemoteException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 // TODO: 15/10/29 catch should do something
             }
@@ -613,7 +613,7 @@ public class CMPackageManagerImpl {
             try {
                 mService.deletePackage(info, observer);
                 return;
-            } catch (RemoteException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -642,7 +642,7 @@ public class CMPackageManagerImpl {
             try {
                 mService.uninstall(info);
                 return;
-            } catch (RemoteException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

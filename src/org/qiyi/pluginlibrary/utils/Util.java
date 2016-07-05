@@ -135,13 +135,15 @@ public final class Util {
                     out.write(buffer, 0, bytesRead);
                 }
             } finally {
-                out.flush();
-                try {
-                    out.getFD().sync();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (null != out) {
+                    try {
+                        out.flush();
+                        out.getFD().sync();
+                        out.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
-                out.close();
             }
             PluginDebugLog.log(TAG, "拷贝成功");
             return true;

@@ -264,6 +264,7 @@ public class PluginInstallerService extends Service {
         } catch (FileNotFoundException e) {
             setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_FILE_NOTFOUND, info);
             e.printStackTrace();
+            return;
         }
         PluginDebugLog.log(TAG, is == null ? "判断流是否为空:true" : "判断流是否为空:false");
         doInstall(is, apkFilePathWithScheme, info);
@@ -272,8 +273,7 @@ public class PluginInstallerService extends Service {
             if (is != null) {
                 is.close();
             }
-        } catch (IOException e) {
-            setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_CLOSE_IOEXCEPTION, info);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

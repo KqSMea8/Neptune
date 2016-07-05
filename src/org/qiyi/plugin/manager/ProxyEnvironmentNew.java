@@ -1186,6 +1186,14 @@ public class ProxyEnvironmentNew {
                             && !TextUtils.equals(libraryInfo.pluginInfo.mSuffixType, CMPackageManager.PLUGIN_FILE_SO)) {
                         PluginDebugLog.log(TAG, "handleDependences inject " + libraryInfo.pluginInfo);
                         CMPackageInfo.updateSrcApkPath(mContext, libraryInfo);
+                        File apkFile = new File(libraryInfo.srcApkPath);
+                        if (!apkFile.exists()) {
+                            PluginDebugLog.log(TAG, "Special case apkFile not exist, notify client! packageName: "
+                                    + libraryInfo.packageName);
+                            CMPackageManager.notifyClientPluginException(mContext, libraryInfo.packageName,
+                                    "Apk file not exist!");
+                            return false;
+                        }
                         injectResult = ClassLoaderInjectHelper.inject(mContext, libraryInfo.srcApkPath, null, null);
                         if (null != injectResult && injectResult.mIsSuccessful) {
                             PluginDebugLog.log(TAG,
