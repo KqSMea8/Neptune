@@ -207,9 +207,10 @@ public class CMPackageManager {
                 pkgInfo.installStatus = CMPackageInfo.PLUGIN_INSTALLED;
                 pkgInfo.pluginInfo = infoExt;
 
-                if (listenerMap.get(pkgName) != null) {
+                IInstallCallBack callback = listenerMap.get(pkgName);
+                if (callback != null) {
                     try {
-                        listenerMap.get(pkgName).onPacakgeInstalled(pkgInfo);
+                        callback.onPacakgeInstalled(pkgInfo);
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     } finally {
@@ -276,7 +277,7 @@ public class CMPackageManager {
             // 注册一个安装广播
             mContext.registerReceiver(pluginInstallerReceiver, filter);
 
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             // 该广播被其他应用UID 抢先注册
             // Receiver requested to register for uid 10100 was previously
             // registered for uid 10105
