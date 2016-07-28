@@ -1344,6 +1344,8 @@ public class ProxyEnvironmentNew {
                 plugin.quitApp(true, false);
             }
         }
+        sAliveServiceConnection.clear();
+        //sAliveServices will be cleared, when on ServiceProxy destroy.
 
         if (context != null) {
             Intent intent = new Intent();
@@ -1377,7 +1379,7 @@ public class ProxyEnvironmentNew {
 
     private void quitApp(boolean force, boolean notifyHost) {
         if (force) {
-            PluginDebugLog.log(TAG, "quitApp !");
+            PluginDebugLog.log(TAG, "quitapp with " + mPluginPakName);
             while (!mActivityStack.isEmpty()) {
                 mActivityStack.poll().finish();
             }
@@ -1385,26 +1387,32 @@ public class ProxyEnvironmentNew {
             sIntentCacheMap.remove(mPluginPakName);
             sIntentLoadingMap.remove(mPluginPakName);
 
-            for (Entry<String, ServiceConnection> entry : sAliveServiceConnection.entrySet()) {
-                if (entry != null && mContext != null) {
-                    try {
-                        mContext.unbindService(entry.getValue());
-                    } catch (Exception e) {
-                        e.printStackTrace();
+            for (Entry<String, PluginServiceWrapper> entry : sAliveServices.entrySet()) {
+                PluginServiceWrapper serviceWrapper = entry.getValue();
+                if (serviceWrapper != null) {
+                    if (!TextUtils.isEmpty(mPluginPakName) &&
+                            TextUtils.equals(mPluginPakName, serviceWrapper.getPkgName())) {
+                        String identity = PluginServiceWrapper.
+                                getIndeitfy(mPluginPakName, serviceWrapper.getServiceClassName());
+                        if (!TextUtils.isEmpty(identity)) {
+                            PluginDebugLog.log(TAG, mPluginPakName + " quitapp with service: " + identity);
+                            ServiceConnection connection = sAliveServiceConnection.get(identity);
+                            if (connection != null && mAppWrapper != null) {
+                                try {
+                                    PluginDebugLog.log(TAG, "quitapp unbindService" + connection);
+                                    mAppWrapper.unbindService(connection);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        Service service = entry.getValue().getCurrentService();
+                        if (service != null) {
+                            service.stopSelf();
+                        }
                     }
                 }
             }
-            sAliveServiceConnection.clear();
-
-            Service service;
-            for (Entry<String, PluginServiceWrapper> entry : sAliveServices.entrySet()) {
-                service = entry.getValue().getCurrentService();
-                if (service != null) {
-                    service.stopSelf();
-                }
-            }
-            sAliveServices.clear();
-            service = null;
         }
         if (notifyHost && (force || (isActivityStackEmpty() && sAliveServices.isEmpty()))) {
 
