@@ -18,7 +18,9 @@ import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginlibrary.utils.Util;
@@ -29,6 +31,7 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.database.DatabaseErrorHandler;
@@ -41,10 +44,14 @@ import android.util.Log;
 
 public abstract class CustomContextWrapper extends ContextWrapper implements InterfaceToGetHost {
 
+    private static final String TAG = "CustomContextWrapper";
+
     private static final String S_SHARED_PREFS =
             ContextUtils.isAndroidN() ? "sSharedPrefsCache" : "sSharedPrefs";
 
     protected static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(2);
+
+    protected ApplicationInfo mApplicationInfo = null;
 
     public CustomContextWrapper(Context base) {
         super(base);
@@ -58,6 +65,25 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     @Override
     public Context getApplicationContext() {
         return getEnvironment().getApplication();
+    }
+
+    @Override
+    public ApplicationInfo getApplicationInfo() {
+        if (mApplicationInfo == null) {
+            mApplicationInfo = super.getApplicationInfo();
+            ProxyEnvironmentNew env = getEnvironment();
+            if (env != null && env.getTargetMapping() != null) {
+                TargetMapping targetMapping = env.getTargetMapping();
+                if (targetMapping.usePluginApplicationInfo()) {
+                    mApplicationInfo.dataDir = targetMapping.getDataDir();
+                    PluginDebugLog.log(TAG, "change data dir: " + mApplicationInfo.dataDir);
+                    mApplicationInfo.nativeLibraryDir = targetMapping.getnativeLibraryDir();
+                    PluginDebugLog.log(TAG, "change native lib path: " +
+                            mApplicationInfo.nativeLibraryDir);
+                }
+            }
+        }
+        return mApplicationInfo;
     }
 
     @Override
@@ -169,11 +195,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         if (getEnvironment() == null) {
             return super.getFilesDir();
         }
-        File fileDir = new File(getEnvironment().getTargetMapping().getDataDir() + "/files/" + name);
-        if (!fileDir.exists()) {
-            fileDir.mkdir();
-        }
-        return getEnvironment().getTargetAssetManager() == null ? super.getFileStreamPath(name) : fileDir;
+        File file = new File(getEnvironment().getTargetMapping().getDataDir() + "/files/" + name);
+        return getEnvironment().getTargetAssetManager() == null ? super.getFileStreamPath(name) : file;
     }
 
     @Override

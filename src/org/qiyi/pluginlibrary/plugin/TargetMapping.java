@@ -44,4 +44,6 @@ public interface TargetMapping {
     String getnativeLibraryDir();
 
     boolean isDataNeedPrefix();
+
+    boolean usePluginApplicationInfo();
 }

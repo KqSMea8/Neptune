@@ -31,6 +31,10 @@ import android.text.TextUtils;
  */
 public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
+    public static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
+
+    public static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
+
     private String versionName;
     private int versionCode;
     private String packageName;
@@ -45,6 +49,11 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
     private String nativeLibraryDir;
 
     private boolean isDataNeedPrefix = false;
+    /*
+     * should use plugin application info instead of host's
+     */
+    private boolean mUsePluginAppInfo = false;
+
     /** Save all activity's resolve info */
     private Map<String, ActivityIntentInfo> mActivitiyIntentInfos = new HashMap<String, ActivityIntentInfo>(0);
 
@@ -132,6 +141,15 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
             if (metaData != null) {
                 isDataNeedPrefix = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
             }
+
+            Bundle appMetaData = packageInfo.applicationInfo.metaData;
+            if (appMetaData != null &&
+                    TextUtils.equals(
+                            appMetaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL),
+                            PLUGIN_APPLICATION_INFO)) {
+                mUsePluginAppInfo = true;
+            }
+
             ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
         } catch (RuntimeException e) {
             ProxyEnvironmentNew.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
@@ -157,6 +175,11 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
     public boolean isDataNeedPrefix() {
         return isDataNeedPrefix;
+    }
+
+    @Override
+    public boolean usePluginApplicationInfo() {
+        return mUsePluginAppInfo;
     }
 
     public ActivityInfo findActivityByClassName(String activityClsName) {
