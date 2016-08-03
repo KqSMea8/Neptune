@@ -79,6 +79,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         dataDir = in.readString();
         nativeLibraryDir = in.readString();
         isDataNeedPrefix = in.readByte() != 0;
+        mUsePluginAppInfo = in.readByte() != 0;
 
         final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
 
@@ -415,6 +416,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         parcel.writeString(dataDir);
         parcel.writeString(nativeLibraryDir);
         parcel.writeByte((byte) (isDataNeedPrefix ? 1 : 0));
+        parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
 
         final Bundle activityStates = new Bundle();
         for (String uri : mActivitiyIntentInfos.keySet()) {
