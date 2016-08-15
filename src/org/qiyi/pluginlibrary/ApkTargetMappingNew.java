@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
 
@@ -31,9 +31,12 @@ import android.text.TextUtils;
  */
 public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
-    public static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
+    static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
 
-    public static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
+    static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
+
+    // 插件class注入进入父classloader标志
+    static final String META_KEY_CLASSINJECT = "pluginapp_class_inject";
 
     private String versionName;
     private int versionCode;
@@ -48,7 +51,8 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
     private String dataDir;
     private String nativeLibraryDir;
 
-    private boolean isDataNeedPrefix = false;
+    // 是否需要把插件class注入进入父classloader
+    private boolean mIsClassInject = false;
     /*
      * should use plugin application info instead of host's
      */
@@ -78,7 +82,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         metaData = in.readBundle();
         dataDir = in.readString();
         nativeLibraryDir = in.readString();
-        isDataNeedPrefix = in.readByte() != 0;
+        mIsClassInject = in.readByte() != 0;
         mUsePluginAppInfo = in.readByte() != 0;
 
         final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
@@ -128,40 +132,30 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
             versionCode = packageInfo.versionCode;
             versionName = packageInfo.versionName;
 
-            // 2.2 上获取不到application的meta-data，所以取默认activity里的meta作为开关
-            if (packageInfo.activities != null && packageInfo.activities.length > 0) {
-                defaultActivityName = packageInfo.activities[0].name;
-                metaData = packageInfo.activities[0].metaData;
-            }
-            if (metaData == null) {
-                metaData = packageInfo.applicationInfo.metaData;
-            }
+            metaData = packageInfo.applicationInfo.metaData;
             packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
             dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName).getAbsolutePath();
             nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
             if (metaData != null) {
-                isDataNeedPrefix = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
-            }
-
-            Bundle appMetaData = packageInfo.applicationInfo.metaData;
-            if (appMetaData != null &&
-                    TextUtils.equals(
-                            appMetaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL),
-                            PLUGIN_APPLICATION_INFO)) {
-                mUsePluginAppInfo = true;
+                mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
+                if (TextUtils.equals(metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL),
+                        PLUGIN_APPLICATION_INFO)) {
+                    mUsePluginAppInfo = true;
+                }
             }
 
             ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
         } catch (RuntimeException e) {
-            ProxyEnvironmentNew.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
+            ProxyEnvironmentManager.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
             return;
         } catch (Throwable e) {
             // java.lang.VerifyError: android/content/pm/PackageParser
             // java.lang.NoSuchMethodError: android.content.pm.PackageParser
-            // java.lang.NoSuchFieldError: com.android.internal.R$styleable.AndroidManifest
+            // java.lang.NoSuchFieldError:
+            // com.android.internal.R$styleable.AndroidManifest
             // java.lang.NoSuchMethodError: android.graphics.PixelXorXfermode
-            ProxyEnvironmentNew.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
+            ProxyEnvironmentManager.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
         }
     }
@@ -172,10 +166,6 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
     public String getnativeLibraryDir() {
         return nativeLibraryDir;
-    }
-
-    public boolean isDataNeedPrefix() {
-        return isDataNeedPrefix;
     }
 
     @Override
@@ -220,8 +210,8 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
                 for (ActivityIntentInfo info : mActivitiyIntentInfos.values()) {
                     if (info != null && info.mFilter != null) {
                         for (IntentFilter filter : info.mFilter) {
-                            if (filter.match(intent.getAction(), null, intent.getScheme(), intent.getData(), intent.getCategories(),
-                                    "TAG") > 0) {
+                            if (filter.match(intent.getAction(), null, intent.getScheme(), intent.getData(),
+                                    intent.getCategories(), "TAG") > 0) {
                                 return info.mInfo;
                             }
                         }
@@ -273,8 +263,8 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
                 for (ServiceIntentInfo info : mServiceIntentInfos.values()) {
                     if (info != null && info.mFilter != null) {
                         for (IntentFilter filter : info.mFilter) {
-                            if (filter.match(intent.getAction(), null, intent.getScheme(), intent.getData(), intent.getCategories(),
-                                    "TAG") > 0) {
+                            if (filter.match(intent.getAction(), null, intent.getScheme(), intent.getData(),
+                                    intent.getCategories(), "TAG") > 0) {
                                 return info.mInfo;
                             }
                         }
@@ -283,6 +273,11 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
             }
         }
         return null;
+    }
+
+    @Override
+    public boolean isClassNeedInject() {
+        return mIsClassInject;
     }
 
     @Override
@@ -415,7 +410,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         parcel.writeBundle(metaData);
         parcel.writeString(dataDir);
         parcel.writeString(nativeLibraryDir);
-        parcel.writeByte((byte) (isDataNeedPrefix ? 1 : 0));
+        parcel.writeByte((byte) (mIsClassInject ? 1 : 0));
         parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
 
         final Bundle activityStates = new Bundle();

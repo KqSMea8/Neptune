@@ -1,7 +1,5 @@
 package org.qiyi.pluginlibrary;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-
 import android.app.Service;
 import android.content.Intent;
 
@@ -87,8 +85,8 @@ public class PluginServiceWrapper {
                 e.printStackTrace();
             }
             // remove service record.
-            ProxyEnvironmentNew.sAliveServices.remove(getIndeitfy(mPkgName, mServiceClassName));
-            if (ProxyEnvironmentNew.sAliveServices.size() == 0 && mParentService != null) {
+            PServiceSupervisor.removeServiceByIdentifer(getIndeitfy(mPkgName, mServiceClassName));
+            if (PServiceSupervisor.getAliveServices().size() == 0 && mParentService != null) {
                 mParentService.stopSelf();
             }
         }

@@ -43,7 +43,7 @@ public interface TargetMapping {
 
     String getnativeLibraryDir();
 
-    boolean isDataNeedPrefix();
+    boolean isClassNeedInject();
 
     boolean usePluginApplicationInfo();
 }

@@ -1,6 +1,7 @@
 package org.qiyi.pluginlibrary.component;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,12 +12,12 @@ public class BroadcastReceiverProxy extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent != null) {
-            String targetReceiver = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_RECEIVER);
-            String targetPkgName = intent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME);
+            String targetReceiver = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_RECEIVER);
+            String targetPkgName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
             try {
-                BroadcastReceiver target = ((BroadcastReceiver) ProxyEnvironmentNew.getInstance(targetPkgName).getDexClassLoader()
+                BroadcastReceiver target = ((BroadcastReceiver) ProxyEnvironmentManager.getEnvByPkgName(targetPkgName).getDexClassLoader()
                         .loadClass(targetReceiver).asSubclass(BroadcastReceiver.class).newInstance());
-                target.onReceive(ProxyEnvironmentNew.getInstance(targetPkgName).getApplication(), intent);
+                target.onReceive(ProxyEnvironmentManager.getEnvByPkgName(targetPkgName).getApplication(), intent);
             } catch (InstantiationException e) {
                 e.printStackTrace();
             } catch (IllegalAccessException e) {

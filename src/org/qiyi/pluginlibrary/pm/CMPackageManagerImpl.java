@@ -327,6 +327,7 @@ public class CMPackageManagerImpl {
             synchronized (CMPackageManagerImpl.class) {
                 if (sInstance == null) {
                     sInstance = new CMPackageManagerImpl(context);
+                    sInstance.init();
                 }
             }
         }
@@ -334,11 +335,11 @@ public class CMPackageManagerImpl {
     }
 
     private CMPackageManagerImpl(Context context) {
-        mContext = context;
+        mContext = context.getApplicationContext();
         mProcessName = getCurrentProcessName(mContext);
     }
 
-    public void init() {
+    private void init() {
         onBindService(mContext);
     }
 
@@ -351,15 +352,14 @@ public class CMPackageManagerImpl {
     }
 
     private void onBindService(Context context) {
-        if (null == context || context.getApplicationContext() == null) {
+        if (null == context) {
             PluginDebugLog.log(TAG, "onBindService context is null return!");
             return;
         }
 
-        Intent intent = new Intent(context.getApplicationContext(), CMPackageManagerService.class);
+        Intent intent = new Intent(context, CMPackageManagerService.class);
         try {
-            Context appContext = context.getApplicationContext();
-            appContext.bindService(intent, getConnection(appContext), Context.BIND_AUTO_CREATE);
+            context.bindService(intent, getConnection(context), Context.BIND_AUTO_CREATE);
         } catch (Exception e) {
             // 灰度时出现binder，从系统代码查不可能出现这个异常，添加保护
             // Caused by: java.lang.NullPointerException

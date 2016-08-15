@@ -1,8 +1,9 @@
 package org.qiyi.pluginlibrary;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
@@ -26,6 +27,8 @@ public class ActivityJumpUtil {
 
     public static final String TARGET_CLASS_NAME = "org.qiyi.PluginActivity";
 
+    public static final String EXTRA_TARGET_ACTIVITY = "pluginapp_extra_target_activity";
+
     /**
      * pluginapp开关:表示activity的特殊处理，例如Translucent Theme 等
      */
@@ -34,22 +37,6 @@ public class ActivityJumpUtil {
     public static final String PLUGIN_ACTIVITY_TRANSLUCENT = "Translucent";
 
     public static final String PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE = "Handle_configuration_change";
-
-    /**
-     * Get proxy activity class name for all plugin activitys The proxy activity
-     * should be register in the manifest.xml
-     *
-     * @param plunginInstallType plugin install type
-     * {@link CMPackageManager#PLUGIN_METHOD_DEFAULT}
-     * {@link CMPackageManager#PLUGIN_METHOD_DEXMAKER}
-     * {@link CMPackageManager#PLUGIN_METHOD_INSTR}
-     * @param processName process name which the activity will running
-     * @return proxy activity's fully class name
-     */
-    @Deprecated
-    public static String getProxyActivityClsName(String plunginInstallType, String processName) {
-        return getProxyActivityClsName(plunginInstallType, false, false, false, processName);
-    }
 
     /**
      * Get proxy activity class name for all plugin activitys The proxy activity
@@ -83,8 +70,8 @@ public class ActivityJumpUtil {
 
         if (actInfo != null) {
             if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                PluginDebugLog.log(TAG, "getProxyActivityClsName activiy screenOrientation: " + actInfo.screenOrientation
-                        + " isHandleConfigChange = false");
+                PluginDebugLog.log(TAG, "getProxyActivityClsName activiy screenOrientation: "
+                        + actInfo.screenOrientation + " isHandleConfigChange = false");
                 isHandleConfigChange = false;
             }
 
@@ -94,33 +81,31 @@ public class ActivityJumpUtil {
             }
         }
 
-        return getProxyActivityClsName(plunginInstallType, isTranslucent, isLandscape, isHandleConfigChange, processName);
+        return getProxyActivityClsName(plunginInstallType, isTranslucent, isLandscape, isHandleConfigChange,
+                processName);
     }
 
-    static String getProxyActivityClsName(String plunginInstallType, boolean isTranslucent, boolean isLandscape, boolean handleConfigChange,
-            String processName) {
+    static String getProxyActivityClsName(String plunginInstallType, boolean isTranslucent, boolean isLandscape,
+            boolean handleConfigChange, String processName) {
         if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, plunginInstallType)) {
             return TARGET_CLASS_NAME;
         } else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, plunginInstallType)) {
-            return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, isLandscape, handleConfigChange, processName);
-            // if (isTranslucent) {
-            // return InstrActivityProxyTranslucent.class.getName();
-            // } else {
-            // return InstrActivityProxy.class.getName();
-            // }
+            return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, isLandscape, handleConfigChange,
+                    processName);
         } else {
             // Default option
-            // return InstrActivityProxy.class.getName();
-            return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, isLandscape, handleConfigChange, processName);
+            return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, isLandscape, handleConfigChange,
+                    processName);
         }
     }
 
     static boolean isChangedIntent(Intent originalIntent) {
         if (originalIntent != null && originalIntent.getComponent() != null
-                && !TextUtils.isEmpty(originalIntent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY))
-                && !TextUtils.isEmpty(originalIntent.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME))) {
+                && !TextUtils.isEmpty(originalIntent.getStringExtra(EXTRA_TARGET_ACTIVITY))
+                && !TextUtils.isEmpty(originalIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME))) {
             if (originalIntent.getComponent().getClassName().startsWith(InstrActivityProxy.class.getName())
-                    || originalIntent.getComponent().getClassName().startsWith(InstrActivityProxyTranslucent.class.getName())) {
+                    || originalIntent.getComponent().getClassName()
+                            .startsWith(InstrActivityProxyTranslucent.class.getName())) {
                 return true;
             }
         }
@@ -128,35 +113,39 @@ public class ActivityJumpUtil {
     }
 
     public static void setPluginIntent(Intent intent, String pluginId, String actName) {
-        ProxyEnvironmentNew env = ProxyEnvironmentNew.getInstance(pluginId);
+        ProxyEnvironment env = ProxyEnvironmentManager.getEnvByPkgName(pluginId);
         if (null == env) {
-            PluginDebugLog.log(TAG, "ActivityJumpUtil setPluginIntent failed, " + pluginId + " ProxyEnvironmentNew is null");
+            PluginDebugLog.log(TAG,
+                    "ActivityJumpUtil setPluginIntent failed, " + pluginId + " ProxyEnvironmentNew is null");
             return;
         }
         ActivityInfo info = env.getTargetMapping().getActivityInfo(actName);
         if (null == info) {
-            PluginDebugLog.log(TAG, "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: " + actName);
+            PluginDebugLog.log(TAG,
+                    "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: " + actName);
             return;
         }
         ComponentName compname = new ComponentName(env.getParentPackagename(),
                 getProxyActivityClsName(env.getInstallType(), info, env.getRunningProcessName()));
-        intent.setComponent(compname).putExtra(ProxyEnvironmentNew.EXTRA_TARGET_PACKAGNAME, pluginId)
-                .putExtra(ProxyEnvironmentNew.EXTRA_TARGET_ACTIVITY, actName);
+        intent.setComponent(compname).putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, pluginId)
+                .putExtra(EXTRA_TARGET_ACTIVITY, actName);
     }
 
-    public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode, Bundle options, Context context) {
+    public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode, Bundle options,
+            Context context) {
         if (intent == null) {
             PluginDebugLog.log(TAG, "handleStartActivityIntent intent is null!");
             return intent;
         }
-        PluginDebugLog.log(TAG,
-                "handleStartActivityIntent: pluginId: " + pluginId + ", intent: " + intent + ", requestCode: " + requestCode);
+        PluginDebugLog.log(TAG, "handleStartActivityIntent: pluginId: " + pluginId + ", intent: " + intent
+                + ", requestCode: " + requestCode);
         if (isChangedIntent(intent)) {
-            PluginDebugLog.log(TAG, "handleStartActivityIntent has change the intent just return the original intent! " + intent);
+            PluginDebugLog.log(TAG,
+                    "handleStartActivityIntent has change the intent just return the original intent! " + intent);
             return intent;
         }
         ActivityInfo targetActivity = null;
-        ProxyEnvironmentNew mgr = null;
+        ProxyEnvironment mgr = null;
         // 主要做以下工作：
         // 1 、修改Intent的跳转目标
         // 2 、帮助插件类加载器决定使用哪个activity类加载器
@@ -166,7 +155,7 @@ public class ActivityJumpUtil {
             ComponentName compname = intent.getComponent();
             String pkg = compname.getPackageName();
             String toActName = compname.getClassName();
-            mgr = ProxyEnvironmentNew.getInstance(pluginId);
+            mgr = ProxyEnvironmentManager.getEnvByPkgName(pluginId);
             // First find in the current apk
             if (mgr != null) {
                 if (TextUtils.equals(pkg, pluginId) || TextUtils.equals(pkg, mgr.getParentPackagename())) {
@@ -176,7 +165,7 @@ public class ActivityJumpUtil {
             }
             // Second find from other init plugin apk
             if (targetActivity == null) {
-                mgr = ProxyEnvironmentNew.getInstance(pkg);
+                mgr = ProxyEnvironmentManager.getEnvByPkgName(pkg);
                 // Check in pkg's apk
                 if (!TextUtils.isEmpty(pkg) && mgr != null) {
                     TargetMapping otherPlug = mgr.getTargetMapping();
@@ -204,7 +193,7 @@ public class ActivityJumpUtil {
                 // }
             }
         } else {
-            mgr = ProxyEnvironmentNew.getInstance(pluginId);
+            mgr = ProxyEnvironmentManager.getEnvByPkgName(pluginId);
             if (mgr != null) {
                 TargetMapping mapping = mgr.getTargetMapping();
                 if (mapping != null) {
@@ -212,11 +201,9 @@ public class ActivityJumpUtil {
                 }
             } else {
                 if (null != context) {
-                    List<CMPackageInfo> packageList =
-                            CMPackageManagerImpl.getInstance(context).getInstalledApps();
+                    List<CMPackageInfo> packageList = CMPackageManagerImpl.getInstance(context).getInstalledApps();
                     if (packageList != null) {
-                        for (CMPackageInfo pkgInfo : CMPackageManagerImpl.getInstance(context)
-                                .getInstalledApps()) {
+                        for (CMPackageInfo pkgInfo : CMPackageManagerImpl.getInstance(context).getInstalledApps()) {
                             if (pkgInfo != null) {
                                 ApkTargetMappingNew target = pkgInfo.getTargetMapping(context);
                                 if (null != target) {
@@ -229,13 +216,13 @@ public class ActivityJumpUtil {
                 }
             }
         }
-        PluginDebugLog.log(TAG, "handleStartActivityIntent pluginId: " + pluginId + " intent: "
-                + intent.toString() + " targetActivity: " + targetActivity);
+        PluginDebugLog.log(TAG, "handleStartActivityIntent pluginId: " + pluginId + " intent: " + intent.toString()
+                + " targetActivity: " + targetActivity);
         if (targetActivity != null) {
             setPluginIntent(intent, targetActivity.packageName, targetActivity.name);
         }
         if (mgr != null) {
-            mgr.dealLaunchMode(intent);
+            mgr.getActivityStackSupervisor().dealLaunchMode(intent);
         }
         return intent;
     }

@@ -8,13 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
-import org.qiyi.plugin.manager.TargetActivatorNew;
 import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.manager.TargetActivator;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.BroadcastReceiver;
@@ -22,10 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
@@ -483,48 +479,6 @@ public class CMPackageManager {
         PluginInstaller.installBuildinApps(packageName, mContext, info);
     }
 
-    private boolean isDataNeedPrefix(Context context, String packageName) {
-
-        boolean result = false;
-
-        if (context == null || TextUtils.isEmpty(packageName)) {
-            return result;
-        }
-
-        Bundle metaData = null;
-        File apkFile = new File(context.getDir("qiyi_plugin", Context.MODE_PRIVATE), packageName + ".apk");
-        if (!apkFile.exists()) {
-            return result;
-        }
-
-        try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageArchiveInfo(apkFile.getAbsolutePath(),
-                    PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS | PackageManager.GET_META_DATA
-                            | PackageManager.GET_SERVICES | PackageManager.GET_CONFIGURATIONS);
-
-            // 如果PackageManager解析apk文件失败，packageInfo为null
-            if (packageInfo == null) {
-                return result;
-            }
-
-            if (packageInfo != null && packageInfo.activities != null && packageInfo.activities.length > 0
-                    && packageInfo.activities[0] != null) {
-                metaData = packageInfo.activities[0].metaData;
-            }
-            if (metaData == null && packageInfo != null && packageInfo.applicationInfo != null) {
-                metaData = packageInfo.applicationInfo.metaData;
-            }
-
-            if (metaData != null) {
-                result = metaData.getBoolean(ProxyEnvironmentNew.META_KEY_DATA_WITH_PREFIX);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-        return result;
-    }
-
     /**
      * 删除安装包。 卸载插件应用程序,目前只有在升级时调用次方法，把插件状态改成upgrading状态
      *
@@ -553,7 +507,7 @@ public class CMPackageManager {
 
             try {
                 // 先停止运行插件
-                TargetActivatorNew.unLoadTarget(packageName);
+                TargetActivator.unLoadTarget(packageName);
             } catch (Exception e) {
                 e.printStackTrace();
             }

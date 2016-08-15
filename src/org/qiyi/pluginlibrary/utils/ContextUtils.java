@@ -1,10 +1,13 @@
 package org.qiyi.pluginlibrary.utils;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 
 import android.app.Activity;
@@ -62,7 +65,7 @@ public class ContextUtils {
         if (!TextUtils.isEmpty(topActivity)) {
             if (topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent")
                     || topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxy")) {
-                return "plugin:" + ProxyEnvironmentNew.getTopActivity();
+                return "plugin:" + getTopActivity();
             } else {
                 return topActivity;
             }
@@ -77,6 +80,22 @@ public class ContextUtils {
             return runningTaskInfos.get(0).topActivity.getClassName();
         else
             return null;
+    }
+
+    public static String getTopActivity() {
+        String topPackage = null;
+        Iterator<Entry<String, ProxyEnvironment>> iter = ProxyEnvironmentManager.getAllEnv().entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<String, ProxyEnvironment> entry = iter.next();
+            String packageName = (String) entry.getKey();
+            ProxyEnvironment env = (ProxyEnvironment) entry.getValue();
+            if (env.getActivityStackSupervisor().getActivityStack().size() == 0) {
+                continue;
+            } else if (Util.isResumed(env.getActivityStackSupervisor().getActivityStack().getFirst())) {
+                topPackage = packageName;
+            }
+        }
+        return topPackage;
     }
 
     /**
@@ -202,7 +221,7 @@ public class ContextUtils {
             return null;
         }
 
-        ProxyEnvironmentNew proxyNew = ProxyEnvironmentNew.getInstance(pkg);
+        ProxyEnvironment proxyNew = ProxyEnvironmentManager.getEnvByPkgName(pkg);
 
         if (proxyNew == null) {
             return null;
@@ -230,8 +249,8 @@ public class ContextUtils {
      */
     public static void notifyHostPluginStarted(Context context, Intent intent) {
         if (null != context && null != intent && !TextUtils.isEmpty(intent.getStringExtra(
-                ProxyEnvironmentNew.EXTRA_SHOW_LOADING))) {
-            context.sendBroadcast(new Intent(ProxyEnvironmentNew.EXTRA_SHOW_LOADING));
+                ProxyEnvironmentManager.EXTRA_SHOW_LOADING))) {
+            context.sendBroadcast(new Intent(ProxyEnvironmentManager.EXTRA_SHOW_LOADING));
         }
     }
 }

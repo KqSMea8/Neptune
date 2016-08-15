@@ -1,4 +1,4 @@
-package org.qiyi.pluginnew.context;
+package org.qiyi.pluginlibrary.context;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,9 +14,11 @@ import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
+import org.qiyi.pluginlibrary.PServiceSupervisor;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.ServiceJumpUtil;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
@@ -40,7 +42,6 @@ import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.ArrayMap;
-import android.util.Log;
 
 public abstract class CustomContextWrapper extends ContextWrapper implements InterfaceToGetHost {
 
@@ -71,7 +72,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     public ApplicationInfo getApplicationInfo() {
         if (mApplicationInfo == null) {
             mApplicationInfo = super.getApplicationInfo();
-            ProxyEnvironmentNew env = getEnvironment();
+            ProxyEnvironment env = getEnvironment();
             if (env != null && env.getTargetMapping() != null) {
                 TargetMapping targetMapping = env.getTargetMapping();
                 if (targetMapping.usePluginApplicationInfo()) {
@@ -98,22 +99,22 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public ComponentName startService(Intent service) {
-        Log.d(getLogTag(), "startService: " + service);
-        ProxyEnvironmentNew env = getEnvironment();
+        PluginDebugLog.log(getLogTag(), "startService: " + service);
+        ProxyEnvironment env = getEnvironment();
         if (env != null) {
-            env.remapStartServiceIntent(service);
+            ServiceJumpUtil.remapStartServiceIntent(env, service);
         }
         return super.startService(service);
     }
 
     @Override
     public boolean stopService(Intent name) {
-        Log.d(getLogTag(), "stopService: " + name);
-        ProxyEnvironmentNew env = getEnvironment();
+        PluginDebugLog.log(getLogTag(), "stopService: " + name);
+        ProxyEnvironment env = getEnvironment();
         if (env != null) {
             String actServiceClsName = name.getComponent().getClassName();
-            PluginServiceWrapper plugin = ProxyEnvironmentNew.sAliveServices
-                    .get(PluginServiceWrapper.getIndeitfy(getPluginPackageName(), actServiceClsName));
+            PluginServiceWrapper plugin = PServiceSupervisor
+                    .getServiceByIdentifer(PluginServiceWrapper.getIndeitfy(getPluginPackageName(), actServiceClsName));
             if (plugin != null) {
                 plugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
                 plugin.tryToDestroyService(name);
@@ -125,17 +126,17 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public boolean bindService(Intent service, ServiceConnection conn, int flags) {
-        Log.d(getLogTag(), "bindService: " + service);
-        ProxyEnvironmentNew env = getEnvironment();
+        PluginDebugLog.log(getLogTag(), "bindService: " + service);
+        ProxyEnvironment env = getEnvironment();
         if (env != null) {
-            env.remapStartServiceIntent(service);
+            ServiceJumpUtil.remapStartServiceIntent(env, service);
         }
         if (conn != null) {
             if (env != null && service != null && service.getComponent() != null) {
-                String serviceClass = service.getStringExtra(ProxyEnvironmentNew.EXTRA_TARGET_SERVICE);
+                String serviceClass = service.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
                 String packageName = env.getTargetPackageName();
                 if (!TextUtils.isEmpty(serviceClass) && !TextUtils.isEmpty(packageName)) {
-                    ProxyEnvironmentNew.sAliveServiceConnection.put(packageName + "." + serviceClass, conn);
+                    PServiceSupervisor.addServiceConnectionByIdentifer(packageName + "." + serviceClass, conn);
                 }
             }
         }
@@ -145,10 +146,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     @Override
     public void unbindService(ServiceConnection conn) {
         super.unbindService(conn);
-        if (ProxyEnvironmentNew.sAliveServiceConnection.keySet().contains(conn)) {
-            ProxyEnvironmentNew.sAliveServiceConnection.remove(conn);
-        }
-        Log.d(getLogTag(), "unbindService: " + conn);
+        PServiceSupervisor.removeServiceConnection(conn);
+        PluginDebugLog.log(getLogTag(), "unbindService: " + conn);
     }
 
     @Override
@@ -593,7 +592,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      *
      * @return plugin's environment
      */
-    protected abstract ProxyEnvironmentNew getEnvironment();
+    protected abstract ProxyEnvironment getEnvironment();
 
     /**
      * Get log tag

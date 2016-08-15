@@ -1,6 +1,8 @@
-package org.qiyi.pluginnew.context;
+package org.qiyi.pluginlibrary.context;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
+
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
@@ -20,8 +22,8 @@ public class CMContextWrapperNew extends CustomContextWrapper {
     @Override
     public Theme getTheme() {
         if (mTargetTheme == null) {
-            mTargetTheme = ProxyEnvironmentNew.getInstance(mPackagename).getTargetResources().newTheme();
-            mTargetTheme.setTo(ProxyEnvironmentNew.getInstance(mPackagename).getTargetTheme());
+            mTargetTheme = ProxyEnvironmentManager.getEnvByPkgName(mPackagename).getTargetResources().newTheme();
+            mTargetTheme.setTo(ProxyEnvironmentManager.getEnvByPkgName(mPackagename).getTargetTheme());
         }
         return mTargetTheme;
     }
@@ -37,8 +39,8 @@ public class CMContextWrapperNew extends CustomContextWrapper {
     }
 
     @Override
-    protected ProxyEnvironmentNew getEnvironment() {
-        return ProxyEnvironmentNew.getInstance(mPackagename);
+    protected ProxyEnvironment getEnvironment() {
+        return ProxyEnvironmentManager.getEnvByPkgName(mPackagename);
     }
 
     @Override

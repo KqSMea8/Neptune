@@ -19,13 +19,11 @@ import java.util.List;
  */
 public class CMPackageManagerService extends Service {
 
-    private static Context mContext;
     private static CMPackageManager mManager;
 
     @Override
     public void onCreate() {
-        mContext = this;
-        mManager = CMPackageManager.getInstance(mContext);
+        mManager = CMPackageManager.getInstance(this);
     }
 
     @Override

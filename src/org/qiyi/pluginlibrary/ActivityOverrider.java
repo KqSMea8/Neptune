@@ -2,8 +2,9 @@ package org.qiyi.pluginlibrary;
 
 import java.lang.reflect.Field;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
@@ -23,11 +24,11 @@ public class ActivityOverrider {
             field_mActivityInfo.setAccessible(true);
             origActInfo = (ActivityInfo) field_mActivityInfo.get(activity);
         } catch (Exception e) {
-            ProxyEnvironmentNew.deliverPlug(activity, false, pkgName, ErrorType.ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL);
+            ProxyEnvironmentManager.deliverPlug(activity, false, pkgName, ErrorType.ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL);
             Log.e(tag, Log.getStackTraceString(e));
             return;
         }
-        ProxyEnvironmentNew con = ProxyEnvironmentNew.getInstance(pkgName);
+        ProxyEnvironment con = ProxyEnvironmentManager.getEnvByPkgName(pkgName);
 
         ActivityInfo actInfo = con.findActivityByClassName(actName);
         if (null != actInfo) {

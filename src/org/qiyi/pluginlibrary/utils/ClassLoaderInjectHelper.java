@@ -20,9 +20,6 @@ import dalvik.system.PathClassLoader;
  * 这种方案也有不好的地方，安全性等。
  * 
  * 但是 插件中通过Intent .put serialize extra 无法找到对应的类。只能通过此方法。
- * 
- * TODO :
- * 
  */
 public class ClassLoaderInjectHelper {
     /**

@@ -19,8 +19,8 @@ import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.qiyi.plugin.manager.ProxyEnvironmentNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ReflectException;
@@ -218,7 +218,7 @@ public class PluginActivityControl implements PluginActivityCallback {
             ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", sMethods, mPlugin);
 
         } catch (ReflectException e) {
-            ProxyEnvironmentNew.deliverPlug(mProxy, false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
+            ProxyEnvironmentManager.deliverPlug(mProxy, false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
             e.printStackTrace();
         }
 

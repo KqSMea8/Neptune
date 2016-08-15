@@ -9,6 +9,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -18,6 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.os.Build;
@@ -473,5 +476,41 @@ public final class Util {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Judge activity is resume or not by reflection
+     *
+     * @param activity
+     * @return
+     */
+    public static boolean isResumed(Activity activity) {
+        boolean result = true;
+        try {
+            Class<?> clazz = Class.forName("android.app.Activity");
+            Method isResumed = clazz.getDeclaredMethod("isResumed");
+            result = (Boolean) isResumed.invoke(activity);
+        } catch (ClassNotFoundException e) {
+            if (PluginDebugLog.isDebug()) {
+                e.printStackTrace();
+            }
+        } catch (NoSuchMethodException e) {
+            if (PluginDebugLog.isDebug()) {
+                e.printStackTrace();
+            }
+        } catch (IllegalAccessException e) {
+            if (PluginDebugLog.isDebug()) {
+                e.printStackTrace();
+            }
+        } catch (IllegalArgumentException e) {
+            if (PluginDebugLog.isDebug()) {
+                e.printStackTrace();
+            }
+        } catch (InvocationTargetException e) {
+            if (PluginDebugLog.isDebug()) {
+                e.printStackTrace();
+            }
+        }
+        return result;
     }
 }
