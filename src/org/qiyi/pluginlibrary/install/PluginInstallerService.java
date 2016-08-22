@@ -262,7 +262,10 @@ public class PluginInstallerService extends Service {
         try {
             is = new FileInputStream(source);
         } catch (FileNotFoundException e) {
-            setInstallFail(apkFilePathWithScheme, ErrorType.ERROR_CLIENT_FILE_NOTFOUND, info);
+            if (info != null && !TextUtils.isEmpty(info.packageName)) {
+                CMPackageManager.notifyClientPluginException(
+                        this, info.packageName, "download Apk file not exist!");
+            }
             e.printStackTrace();
             return;
         }
