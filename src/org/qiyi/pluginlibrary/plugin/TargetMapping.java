@@ -46,4 +46,6 @@ public interface TargetMapping {
     boolean isClassNeedInject();
 
     boolean usePluginApplicationInfo();
+
+    boolean usePluginCodePath();
 }

@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -814,5 +815,22 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         } else {
             return "Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags());
         }
+    }
+
+
+    @Override
+    public ApplicationInfo getApplicationInfo() {
+        if (mPluginContextWrapper != null) {
+            return mPluginContextWrapper.getApplicationInfo();
+        }
+        return super.getApplicationInfo();
+    }
+
+    @Override
+    public String getPackageCodePath() {
+        if (mPluginContextWrapper != null) {
+            return mPluginContextWrapper.getPackageCodePath();
+        }
+        return super.getPackageCodePath();
     }
 }

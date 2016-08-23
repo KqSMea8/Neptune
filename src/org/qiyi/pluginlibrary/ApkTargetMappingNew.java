@@ -34,6 +34,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
     static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
 
     static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
+    static final String PLUGIN_APPLICATION_CODE_PATH = "Hanlde_plugin_code_path";
 
     // 插件class注入进入父classloader标志
     static final String META_KEY_CLASSINJECT = "pluginapp_class_inject";
@@ -57,6 +58,11 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
      * should use plugin application info instead of host's
      */
     private boolean mUsePluginAppInfo = false;
+
+    /*
+     * should use plugin code path instead of host's
+     */
+    private boolean mUsePluginCodePath = false;
 
     /** Save all activity's resolve info */
     private Map<String, ActivityIntentInfo> mActivitiyIntentInfos = new HashMap<String, ActivityIntentInfo>(0);
@@ -84,6 +90,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         nativeLibraryDir = in.readString();
         mIsClassInject = in.readByte() != 0;
         mUsePluginAppInfo = in.readByte() != 0;
+        mUsePluginCodePath = in.readByte() != 0;
 
         final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
 
@@ -134,13 +141,20 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
             metaData = packageInfo.applicationInfo.metaData;
             packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
+            packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
             dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName).getAbsolutePath();
             nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
             if (metaData != null) {
                 mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
-                if (TextUtils.equals(metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL),
-                        PLUGIN_APPLICATION_INFO)) {
-                    mUsePluginAppInfo = true;
+                String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
+                if (!TextUtils.isEmpty(applicationMetaData)) {
+                    if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
+                        mUsePluginAppInfo = true;
+                    }
+
+                    if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
+                        mUsePluginCodePath = true;
+                    }
                 }
             }
 
@@ -171,6 +185,11 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
     @Override
     public boolean usePluginApplicationInfo() {
         return mUsePluginAppInfo;
+    }
+
+    @Override
+    public boolean usePluginCodePath() {
+        return mUsePluginCodePath;
     }
 
     public ActivityInfo findActivityByClassName(String activityClsName) {
@@ -412,6 +431,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         parcel.writeString(nativeLibraryDir);
         parcel.writeByte((byte) (mIsClassInject ? 1 : 0));
         parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
+        parcel.writeByte((byte) (mUsePluginCodePath ? 1 : 0));
 
         final Bundle activityStates = new Bundle();
         for (String uri : mActivitiyIntentInfos.keySet()) {

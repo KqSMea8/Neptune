@@ -34,6 +34,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.database.DatabaseErrorHandler;
@@ -565,6 +566,23 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             return getEnvironment().getHostContext();
         }
         return null;
+    }
+
+    @Override
+    public String getPackageCodePath() {
+        if (getEnvironment() != null) {
+            TargetMapping targetMapping = getEnvironment().getTargetMapping();
+            if (targetMapping != null && targetMapping.usePluginCodePath()) {
+                PackageInfo packageInfo = targetMapping.getPackageInfo();
+                if (packageInfo != null && packageInfo.applicationInfo != null) {
+                    String sourceDir = packageInfo.applicationInfo.sourceDir;
+                    if (!TextUtils.isEmpty(sourceDir)) {
+                        return sourceDir;
+                    }
+                }
+            }
+        }
+        return super.getPackageCodePath();
     }
 
     /**
