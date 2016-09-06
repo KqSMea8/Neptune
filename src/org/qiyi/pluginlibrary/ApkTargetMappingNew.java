@@ -9,6 +9,7 @@ import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
 
 import android.content.ComponentName;
@@ -141,7 +142,6 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
             metaData = packageInfo.applicationInfo.metaData;
             packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
-            packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
             dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName).getAbsolutePath();
             nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
             if (metaData != null) {
@@ -153,6 +153,9 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
                     }
 
                     if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
+                        packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
+                        PluginDebugLog.log("ApkTargetMappingNew",
+                                "change sourceDir dir: " + packageInfo.applicationInfo.sourceDir);
                         mUsePluginCodePath = true;
                     }
                 }
