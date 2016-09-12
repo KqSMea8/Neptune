@@ -40,7 +40,7 @@ public class TargetActivator {
      */
     public static void loadTargetAndRun(final Context context, final ServiceConnection conn,
             final Intent intent, final String processName) {
-        ProxyEnvironmentManager.enterProxy(context, null, intent, processName);
+        ProxyEnvironmentManager.enterProxy(context, conn, intent, processName);
     }
 
     /**
