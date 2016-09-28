@@ -115,9 +115,10 @@ public class PActivityStackSupervisor {
             }
             if (hasSameActivity) {
                 handleOtherPluginActivityStack(activity);
-            } else {
-                handleOtherPluginActivityStack(null);
             }
+            /*else {
+                handleOtherPluginActivityStack(null);
+            }*/
         } else if (isSingleTask || isClearTop) {
 
             Activity found = null;
@@ -217,7 +218,7 @@ public class PActivityStackSupervisor {
                         }
                     }
                 }
-                handleOtherPluginActivityStack(null);
+//                handleOtherPluginActivityStack(null);
             }
         }
         PluginDebugLog.log(TAG, "dealLaunchMode end: " + intent + " "
@@ -228,33 +229,33 @@ public class PActivityStackSupervisor {
         // 假如栈中存在之前的Activity，并且在该Activity之上存在其他插件的activity，则finish掉其之上的activity
         // 例如场景桌面有多个插件的图标，点击一个业务的进入，然后home键，然后再点击另外一个循环。
         if (null == act) {
-            for (ProxyEnvironment env : ProxyEnvironmentManager.getAllEnv().values()) {
-                synchronized (env.getActivityStackSupervisor().getActivityStack()) {
-                    LinkedList<Activity> activityStack = env.getActivityStackSupervisor()
-                            .getActivityStack();
-                    if (!TextUtils.equals(mEnv.getTargetPackageName(), env.getTargetPackageName())
-                            && null != activityStack && activityStack.size() > 0) {
-                        Iterator<Activity> it = activityStack.iterator();
-                        while (it.hasNext()) {
-                            Activity activity = it.next();
-                            if (null != activity) {
-                                PluginDebugLog.log(TAG,
-                                        "dealLaunchMode clear other plugin's stack " + activity
-                                                + " source: "
-                                                + ((InstrActivityProxy) activity).dump());
-                                try {
-                                    PluginDebugLog.log(TAG,
-                                            "finish: " + ((InstrActivityProxy) activity).dump());
-                                    activity.finish();
-                                } catch (Exception ex) {
-                                    ex.printStackTrace();
-                                }
-                            }
-                        }
-                        activityStack.clear();
-                    }
-                }
-            }
+//            for (ProxyEnvironment env : ProxyEnvironmentManager.getAllEnv().values()) {
+//                synchronized (env.getActivityStackSupervisor().getActivityStack()) {
+//                    LinkedList<Activity> activityStack = env.getActivityStackSupervisor()
+//                            .getActivityStack();
+//                    if (!TextUtils.equals(mEnv.getTargetPackageName(), env.getTargetPackageName())
+//                            && null != activityStack && activityStack.size() > 0) {
+//                        Iterator<Activity> it = activityStack.iterator();
+//                        while (it.hasNext()) {
+//                            Activity activity = it.next();
+//                            if (null != activity) {
+//                                PluginDebugLog.log(TAG,
+//                                        "dealLaunchMode clear other plugin's stack " + activity
+//                                                + " source: "
+//                                                + ((InstrActivityProxy) activity).dump());
+//                                try {
+//                                    PluginDebugLog.log(TAG,
+//                                            "finish: " + ((InstrActivityProxy) activity).dump());
+//                                    activity.finish();
+//                                } catch (Exception ex) {
+//                                    ex.printStackTrace();
+//                                }
+//                            }
+//                        }
+//                        activityStack.clear();
+//                    }
+//                }
+//            }
         } else {
             Activity temp = null;
             List<Activity> needRemove = new ArrayList<Activity>();
