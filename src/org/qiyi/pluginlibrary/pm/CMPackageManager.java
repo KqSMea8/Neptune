@@ -31,6 +31,9 @@ import android.text.TextUtils;
 public class CMPackageManager {
 
     private static final String TAG = PluginDebugLog.TAG;
+
+    // broadcast 权限
+    public static final String ACTION_PACKAE_PERMISSION = "com.qiyi.plugin.send";
     /**
      * 安装成功，发送广播
      */
@@ -190,72 +193,81 @@ public class CMPackageManager {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + action + " intent: " + intent);
-            if (ACTION_PACKAGE_INSTALLED.equals(action)) {
-                String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
-                String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
-                PluginPackageInfoExt infoExt = intent.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-                PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
-                CMPackageInfo pkgInfo = new CMPackageInfo();
-                pkgInfo.packageName = pkgName;
-                pkgInfo.srcApkPath = destApkPath;
-                pkgInfo.installStatus = CMPackageInfo.PLUGIN_INSTALLED;
-                pkgInfo.pluginInfo = infoExt;
+            try {
+                String action = intent.getAction();
+                PluginDebugLog.log(TAG,
+                        "ACTION_PACKAGE_INSTALLED " + action + " intent: " + intent);
+                if (ACTION_PACKAGE_INSTALLED.equals(action)) {
+                    String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
+                    String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
+                    PluginPackageInfoExt infoExt = intent
+                            .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
+                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
+                    CMPackageInfo pkgInfo = new CMPackageInfo();
+                    pkgInfo.packageName = pkgName;
+                    pkgInfo.srcApkPath = destApkPath;
+                    pkgInfo.installStatus = CMPackageInfo.PLUGIN_INSTALLED;
+                    pkgInfo.pluginInfo = infoExt;
 
-                IInstallCallBack callback = listenerMap.get(pkgName);
-                if (callback != null) {
-                    try {
-                        callback.onPacakgeInstalled(pkgInfo);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    } finally {
-                        listenerMap.remove(pkgName);
-                    }
-                }
-                // 执行等待执行的action
-                executePackageAction(pkgInfo, true, 0);
-                onActionFinish(pkgName, INSTALL_SUCCESS);
-            } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
-                String assetsPath = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
-                if (!TextUtils.isEmpty(assetsPath)) {
-                    int start = assetsPath.lastIndexOf("/");
-                    int end = start + 1;
-                    if (assetsPath.endsWith(PluginInstaller.APK_SUFFIX)) {
-                        end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
-                    } else if (assetsPath.endsWith(PluginInstaller.SO_SUFFIX)) {
-                        end = assetsPath.lastIndexOf(PluginInstaller.SO_SUFFIX);
-                    }
-                    String mapPackagename = assetsPath.substring(start + 1, end);
-                    // 失败原因
-                    int failReason = intent.getIntExtra(ErrorType.ERROR_RESON, ErrorType.SUCCESS);
-                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLFAIL mapPackagename: " + mapPackagename
-                            + " failReason: " + failReason + " assetsPath: " + assetsPath);
-                    if (listenerMap.get(mapPackagename) != null) {
+                    IInstallCallBack callback = listenerMap.get(pkgName);
+                    if (callback != null) {
                         try {
-                            listenerMap.get(mapPackagename).
-                                    onPackageInstallFail(mapPackagename, failReason);
+                            callback.onPacakgeInstalled(pkgInfo);
                         } catch (RemoteException e) {
                             e.printStackTrace();
                         } finally {
-                            listenerMap.remove(mapPackagename);
+                            listenerMap.remove(pkgName);
                         }
                     }
-                    PluginPackageInfoExt infoExt = intent
-                            .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-                    CMPackageInfo pkgInfo = new CMPackageInfo();
-                    pkgInfo.packageName = mapPackagename;
-                    pkgInfo.installStatus = CMPackageInfo.PLUGIN_UNINSTALLED;
-                    pkgInfo.pluginInfo = infoExt;
-                    executePackageAction(pkgInfo, false, failReason);
-                    onActionFinish(mapPackagename, INSTALL_FAILED);
+                    // 执行等待执行的action
+                    executePackageAction(pkgInfo, true, 0);
+                    onActionFinish(pkgName, INSTALL_SUCCESS);
+                } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
+                    String assetsPath = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
+                    if (!TextUtils.isEmpty(assetsPath)) {
+                        int start = assetsPath.lastIndexOf("/");
+                        int end = start + 1;
+                        if (assetsPath.endsWith(PluginInstaller.APK_SUFFIX)) {
+                            end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
+                        } else if (assetsPath.endsWith(PluginInstaller.SO_SUFFIX)) {
+                            end = assetsPath.lastIndexOf(PluginInstaller.SO_SUFFIX);
+                        }
+                        String mapPackagename = assetsPath.substring(start + 1, end);
+                        // 失败原因
+                        int failReason = intent.getIntExtra(ErrorType.ERROR_RESON,
+                                ErrorType.SUCCESS);
+                        PluginDebugLog.log(TAG,
+                                "ACTION_PACKAGE_INSTALLFAIL mapPackagename: " + mapPackagename
+                                        + " failReason: " + failReason + " assetsPath: "
+                                        + assetsPath);
+                        if (listenerMap.get(mapPackagename) != null) {
+                            try {
+                                listenerMap.get(mapPackagename).onPackageInstallFail(mapPackagename,
+                                        failReason);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            } finally {
+                                listenerMap.remove(mapPackagename);
+                            }
+                        }
+                        PluginPackageInfoExt infoExt = intent
+                                .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
+                        CMPackageInfo pkgInfo = new CMPackageInfo();
+                        pkgInfo.packageName = mapPackagename;
+                        pkgInfo.installStatus = CMPackageInfo.PLUGIN_UNINSTALLED;
+                        pkgInfo.pluginInfo = infoExt;
+                        executePackageAction(pkgInfo, false, failReason);
+                        onActionFinish(mapPackagename, INSTALL_FAILED);
+                    }
+                } else if (TextUtils.equals(ACTION_HANDLE_PLUGIN_EXCEPTION, action)) {
+                    String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
+                    String exception = intent.getStringExtra(ErrorType.ERROR_RESON);
+                    if (null != sCMPackageInfoManager && !TextUtils.isEmpty(pkgName)) {
+                        sCMPackageInfoManager.handlePluginException(pkgName, exception);
+                    }
                 }
-            } else if (TextUtils.equals(ACTION_HANDLE_PLUGIN_EXCEPTION, action)) {
-                String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
-                String exception = intent.getStringExtra(ErrorType.ERROR_RESON);
-                if (null != sCMPackageInfoManager && !TextUtils.isEmpty(pkgName)) {
-                    sCMPackageInfoManager.handlePluginException(pkgName, exception);
-                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     };
@@ -271,7 +283,8 @@ public class CMPackageManager {
             filter.addAction(ACTION_HANDLE_PLUGIN_EXCEPTION);
             filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
             // 注册一个安装广播
-            mContext.registerReceiver(pluginInstallerReceiver, filter);
+            mContext.registerReceiver(pluginInstallerReceiver, filter,
+                    CMPackageManager.ACTION_PACKAE_PERMISSION, null);
 
         } catch (Exception e) {
             // 该广播被其他应用UID 抢先注册
@@ -651,11 +664,11 @@ public class CMPackageManager {
 
     public static void notifyClientPluginException(Context context, String pkgName, String exceptionMsg) {
         try {
-            Intent intent = new Intent(CMPackageManager.ACTION_HANDLE_PLUGIN_EXCEPTION);
+            Intent intent = new Intent(ACTION_HANDLE_PLUGIN_EXCEPTION);
             intent.setPackage(context.getPackageName());
             intent.putExtra(EXTRA_PKG_NAME, pkgName);
             intent.putExtra(ErrorType.ERROR_RESON, exceptionMsg);
-            context.sendBroadcast(intent);
+            context.sendBroadcast(intent, ACTION_PACKAE_PERMISSION);
             PluginDebugLog.log(TAG,
                     "notifyClientPluginException Success " + " pkgName: " + pkgName + " exceptionMsg: " + exceptionMsg);
         } catch (Exception e) {

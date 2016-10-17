@@ -320,16 +320,18 @@ public class PluginInstaller {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (CMPackageManager.ACTION_PACKAGE_INSTALLED.equals(action)) {
+            try {
+                String action = intent.getAction();
                 String pkgName = intent.getStringExtra(CMPackageManager.EXTRA_PKG_NAME);
-
-                handleApkInstalled(context, pkgName);
-            } else if (CMPackageManager.ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
-                String pkgName = intent.getStringExtra(CMPackageManager.EXTRA_PKG_NAME);
-                if (!TextUtils.isEmpty(pkgName)) {
-                    sInstallList.remove(pkgName);
+                if (CMPackageManager.ACTION_PACKAGE_INSTALLED.equals(action)) {
+                    handleApkInstalled(context, pkgName);
+                } else if (CMPackageManager.ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
+                    if (!TextUtils.isEmpty(pkgName)) {
+                        sInstallList.remove(pkgName);
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     };
@@ -347,7 +349,8 @@ public class PluginInstaller {
         filter.addAction(CMPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
 
-        appcontext.registerReceiver(sApkInstallerReceiver, filter);
+        appcontext.registerReceiver(sApkInstallerReceiver, filter,
+                CMPackageManager.ACTION_PACKAE_PERMISSION, null);
     }
 
     /**

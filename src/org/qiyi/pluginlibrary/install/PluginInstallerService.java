@@ -420,7 +420,7 @@ public class PluginInstallerService extends Service {
             intent.putExtra(CMPackageManager.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
             intent.putExtra(CMPackageManager.EXTRA_DEST_FILE, destPath);// 同时返回安装前的安装文件目录。
             intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
-            sendBroadcast(intent);
+            sendBroadcast(intent, CMPackageManager.ACTION_PACKAE_PERMISSION);
             if (info != null) {
                 PluginDebugLog.log(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
             }

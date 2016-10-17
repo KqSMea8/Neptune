@@ -412,6 +412,8 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             }
         }
         super.onDestroy();
+        mPluginContrl = null;
+        mPluginContextWrapper = null;
     }
 
     @Override
