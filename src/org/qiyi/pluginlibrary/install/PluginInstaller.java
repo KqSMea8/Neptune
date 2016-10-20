@@ -349,8 +349,7 @@ public class PluginInstaller {
         filter.addAction(CMPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
 
-        appcontext.registerReceiver(sApkInstallerReceiver, filter,
-                CMPackageManager.ACTION_PACKAE_PERMISSION, null);
+        appcontext.registerReceiver(sApkInstallerReceiver, filter);
     }
 
     /**

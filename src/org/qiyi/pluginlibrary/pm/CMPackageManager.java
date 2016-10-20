@@ -32,8 +32,6 @@ public class CMPackageManager {
 
     private static final String TAG = PluginDebugLog.TAG;
 
-    // broadcast 权限
-    public static final String ACTION_PACKAE_PERMISSION = "com.qiyi.plugin.send";
     /**
      * 安装成功，发送广播
      */
@@ -283,8 +281,7 @@ public class CMPackageManager {
             filter.addAction(ACTION_HANDLE_PLUGIN_EXCEPTION);
             filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
             // 注册一个安装广播
-            mContext.registerReceiver(pluginInstallerReceiver, filter,
-                    CMPackageManager.ACTION_PACKAE_PERMISSION, null);
+            mContext.registerReceiver(pluginInstallerReceiver, filter);
 
         } catch (Exception e) {
             // 该广播被其他应用UID 抢先注册
@@ -668,7 +665,7 @@ public class CMPackageManager {
             intent.setPackage(context.getPackageName());
             intent.putExtra(EXTRA_PKG_NAME, pkgName);
             intent.putExtra(ErrorType.ERROR_RESON, exceptionMsg);
-            context.sendBroadcast(intent, ACTION_PACKAE_PERMISSION);
+            context.sendBroadcast(intent);
             PluginDebugLog.log(TAG,
                     "notifyClientPluginException Success " + " pkgName: " + pkgName + " exceptionMsg: " + exceptionMsg);
         } catch (Exception e) {
