@@ -114,6 +114,14 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
     }
 
+    /**
+     * private function to check validation
+     * @return
+     */
+    public boolean isValidate() {
+        return !TextUtils.isEmpty(packageName) && packageInfo != null;
+    }
+
     public static final Creator<ApkTargetMappingNew> CREATOR = new Creator<ApkTargetMappingNew>() {
         @Override
         public ApkTargetMappingNew createFromParcel(Parcel in) {

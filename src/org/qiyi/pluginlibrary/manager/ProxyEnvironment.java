@@ -662,7 +662,7 @@ public class ProxyEnvironment {
         CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(mContext).getPackageInfo(pkgName);
         if (pkgInfo != null) {
             mTargetMapping = pkgInfo.getTargetMapping(mContext);
-            if (null == mTargetMapping) {
+            if (null == mTargetMapping || null == mTargetMapping.getPackageInfo()) {
                 throw new Exception("Exception case targetMapping init failed!");
             }
         } else {

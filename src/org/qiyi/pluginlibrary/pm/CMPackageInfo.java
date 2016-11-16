@@ -88,7 +88,9 @@ public class CMPackageInfo implements Parcelable {
             File file = new File(apkFilePath);
             if (file.exists()) {
                 targetInfo = new ApkTargetMappingNew(ContextUtils.getOriginalContext(context), file);
-                cache.put(pkgName, targetInfo);
+                if (targetInfo.isValidate()) {
+                    cache.put(pkgName, targetInfo);
+                }
                 return targetInfo;
             }
         }

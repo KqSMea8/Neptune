@@ -339,7 +339,12 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnStop() {
         if (null != getPluginRef()) {
-            getPluginRef().call("performStop", sMethods);
+            if (ContextUtils.isAndroidN()) {
+                // 此处强制写false可能带来一些风险，暂时没有其他的方法处理
+                getPluginRef().call("performStop", sMethods, false);
+            } else {
+                getPluginRef().call("performStop", sMethods);
+            }
         }
     }
 
