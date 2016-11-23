@@ -159,7 +159,7 @@ public class CMPackageManagerImpl {
             if (mService != null && info != null) {
                 try {
                     canMeetCondition = mService.canInstallPackage(info);
-                } catch (RemoteException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             } else if (mService == null) {
