@@ -369,7 +369,18 @@ public class ProxyEnvironment {
         } else {
             ActivityJumpUtil.handleStartActivityIntent(env.mPluginPakName, curIntent, -1, null, context);
             PActivityStackSupervisor.addLoadingIntent(packageName, curIntent);
-            context.startActivity(curIntent);
+            Context lastActivity = null;
+            if (env.mActivityStackSupervisor != null && !env.mActivityStackSupervisor.getActivityStack().isEmpty()) {
+                lastActivity = env.mActivityStackSupervisor.getActivityStack().getLast();
+            }
+            if (!(context instanceof Activity) && null != lastActivity) {
+                int flag = curIntent.getFlags();
+                flag = flag ^ Intent.FLAG_ACTIVITY_NEW_TASK;
+                curIntent.setFlags(flag);
+                lastActivity.startActivity(curIntent);
+            } else {
+                context.startActivity(curIntent);
+            }
         }
         executeNext(env, packageName, conn, context);
     }
