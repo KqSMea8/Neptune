@@ -1,9 +1,9 @@
 package org.qiyi.pluginlibrary.manager;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -51,7 +51,8 @@ public class ProxyEnvironmentManager {
     private static IPluginEnvironmentStatusListener sPluginEnvStatusListener;
 
     // 插件包名对应Environment的Hash
-    private static HashMap<String, ProxyEnvironment> sPluginsMap = new HashMap<String, ProxyEnvironment>();
+    private static ConcurrentHashMap<String, ProxyEnvironment> sPluginsMap =
+            new ConcurrentHashMap<String, ProxyEnvironment>();
 
     /**
      * 获取插件运行环境实例
@@ -196,7 +197,7 @@ public class ProxyEnvironmentManager {
         return false;
     }
 
-    public static HashMap<String, ProxyEnvironment> getAllEnv() {
+    public static Map<String, ProxyEnvironment> getAllEnv() {
         return sPluginsMap;
     }
 
