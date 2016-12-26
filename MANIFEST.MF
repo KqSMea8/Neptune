@@ -1,3 +1,0 @@
-Manifest-Version: 1.0
-SHA1-ID: 2d1a9505f57955b338c67aaadbd567b20fb56fd1
-Change-Date: 201605181020
