@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary;
 
+import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 
 import android.content.Intent;
@@ -36,6 +37,16 @@ public class ServiceJumpUtil {
         try {
             intent.setClass(env.getHostContext(),
                     Class.forName(ProxyComponentMappingByProcess.mappingService(env.getRunningProcessName())));
+            String intentInfo = "";
+            if (null != intent) {
+                intentInfo = intent.toString();
+                if (null != intent.getExtras()) {
+                    intentInfo = intentInfo + intent.getExtras().toString();
+                }
+            }
+            PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
+                    PluginCenterDebugHelper.getInstance().getCurrentSystemTime(),
+                    intentInfo);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }

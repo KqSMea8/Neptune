@@ -14,6 +14,15 @@ public class PluginDebugLog {
     // 插件统一调试TAG
     public static final String TAG = "plugin";
 
+    /** 插件中心下载Log TAG*/
+    private static final String DOWNLOAD_TAG = "download_plugin";
+    /** 插件中心安装Log TAG*/
+    private static final String INSTALL_TAG = "install_plugin";
+    /** 插件中心运行时Log TAG*/
+    private static final String RUNTIME_TAG = "runtime_plugin";
+
+    private static final String GENERAL_TAG = "general_plugin";
+
     private static boolean sIsDebug = false;
 
     public static void setIsDebug(boolean b) {
@@ -30,7 +39,7 @@ public class PluginDebugLog {
         return sIsDebug || android.util.Log.isLoggable(TAG, android.util.Log.VERBOSE);
     }
 
-    public static void log(String tag, Object msg) {
+    private static void logInternal(String tag, Object msg) {
         if (isDebug()) {
             if (!TextUtils.isEmpty(tag) && null != msg) {
                 Log.i(tag, String.valueOf(msg));
@@ -45,4 +54,46 @@ public class PluginDebugLog {
             }
         }
     }
+
+    /**
+     * 插件中心下载过程log
+     *
+     * @param tag subtag
+     * @param msg log信息
+     */
+    public static void downloadLog(String tag, Object msg) {
+        logInternal(DOWNLOAD_TAG, "[ " + tag + " ] : " + msg);
+    }
+
+    /**
+     * 插件中心插件安装log
+     *
+     * @param tag subtag
+     * @param msg log信息
+     */
+
+    public static void installLog(String tag, Object msg) {
+        logInternal(INSTALL_TAG, "[ " + tag + " ] : " + msg);
+    }
+
+    /**
+     *  插件中心运行时Log
+     *
+     * @param tag subtag
+     * @param msg log信息
+     */
+    public static void runtimeLog(String tag, Object msg) {
+        logInternal(RUNTIME_TAG, "[ " + tag + " ] : " + msg);
+    }
+
+    /**
+     *  插件中心Log
+     *
+     * @param tag subtag
+     * @param msg log信息
+     */
+    public static void log(String tag, Object msg) {
+        logInternal(GENERAL_TAG, "[ " + tag + " ] : " + msg);
+    }
+
 }

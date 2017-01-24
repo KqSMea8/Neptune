@@ -2,6 +2,7 @@ package org.qiyi.pluginlibrary;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
+import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
@@ -224,6 +225,15 @@ public class ActivityJumpUtil {
         if (mgr != null) {
             mgr.getActivityStackSupervisor().dealLaunchMode(intent);
         }
+        String intentInfo = "";
+        if (null != intent) {
+            intentInfo = intent.toString();
+            if (null != intent.getExtras()) {
+                intentInfo = intentInfo + intent.getExtras().toString();
+            }
+        }
+        PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
+                PluginCenterDebugHelper.getInstance().getCurrentSystemTime(),intentInfo);
         return intent;
     }
 }
