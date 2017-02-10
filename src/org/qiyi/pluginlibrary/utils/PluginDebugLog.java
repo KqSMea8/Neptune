@@ -3,6 +3,8 @@ package org.qiyi.pluginlibrary.utils;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.util.Locale;
+
 /**
  * Debug configuration for plugin model you can enable debug by following
  * method<br> 1. Change code sIsDebug = false to true<br> 2. Invoke
@@ -66,6 +68,21 @@ public class PluginDebugLog {
     }
 
     /**
+     * 插件中心下载过程log,格式化输出log，主要避免大量使用+连接String的情况
+     * @param tag
+     * @param format
+     * @param args
+     */
+    public static void downloadFormatLog(String tag,String format,Object... args){
+        try{
+            String msg = (args == null) ? format : String.format(Locale.US, format, args);
+            downloadLog(tag,msg);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * 插件中心插件安装log
      *
      * @param tag subtag
@@ -74,6 +91,22 @@ public class PluginDebugLog {
 
     public static void installLog(String tag, Object msg) {
         logInternal(INSTALL_TAG, "[ " + tag + " ] : " + msg);
+    }
+
+    /**
+     * 插件中心插件安装log,格式化输出log，主要避免大量使用+连接String的情况
+     * @param tag
+     * @param format
+     * @param args
+     */
+    public static void installFormatLog(String tag,String format,Object... args){
+        try{
+            String msg = (args == null) ? format : String.format(Locale.US, format, args);
+            installLog(tag,msg);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -87,6 +120,22 @@ public class PluginDebugLog {
     }
 
     /**
+     * 插件中心运行时Log,格式化输出log，主要避免大量使用+连接String的情况
+     * @param tag
+     * @param format
+     * @param args
+     */
+    public static void runtimeFormatLog(String tag,String format,Object... args){
+        try{
+            String msg = (args == null) ? format : String.format(Locale.US, format, args);
+            runtimeLog(tag,msg);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
      *  插件中心Log
      *
      * @param tag subtag
@@ -94,6 +143,21 @@ public class PluginDebugLog {
      */
     public static void log(String tag, Object msg) {
         logInternal(GENERAL_TAG, "[ " + tag + " ] : " + msg);
+    }
+
+    /**
+     * 格式化输出log，主要避免大量使用+连接String的情况
+     * @param tag
+     * @param format
+     * @param args
+     */
+    public static void formatLog(String tag,String format,Object... args){
+        try{
+            String msg = (args == null) ? format : String.format(Locale.US, format, args);
+            log(tag,msg);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
 }
