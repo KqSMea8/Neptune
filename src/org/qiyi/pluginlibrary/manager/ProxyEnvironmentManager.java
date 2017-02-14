@@ -57,7 +57,7 @@ public class ProxyEnvironmentManager {
     /**
      * 获取插件运行环境实例
      *
-     * @param packageName 插件包名
+     * @param pkgName 插件包名
      * @return 插件环境对象
      */
     public static ProxyEnvironment getEnvByPkgName(String pkgName) {
@@ -106,11 +106,11 @@ public class ProxyEnvironmentManager {
 
     static void enterProxy(final Context context, final ServiceConnection conn, final Intent intent,
             final String processName) {
-        PluginDebugLog.log(TAG, "enterProxy: " + intent);
+        PluginDebugLog.runtimeLog(TAG, "enterProxy: " + intent);
         final String packageName = tryParsePkgName(context, intent);
         if (TextUtils.isEmpty(packageName)) {
             deliverPlug(context, false, context.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);
-            PluginDebugLog.log(TAG, "enterProxy packageName is null return! packageName: " + packageName);
+            PluginDebugLog.runtimeLog(TAG, "enterProxy packageName is null return! packageName: " + packageName);
             return;
         }
 
@@ -119,7 +119,7 @@ public class ProxyEnvironmentManager {
             // 说明插件正在loading,正在loading，直接返回吧，等着loading完调起
             // 把intent都缓存起来
             cacheIntents.add(intent);
-            PluginDebugLog.log(TAG, "LoadingMap is not empty, Cache current intent, intent: " + intent);
+            PluginDebugLog.runtimeLog(TAG, "LoadingMap is not empty, Cache current intent, intent: " + intent);
             return;
         }
 
@@ -132,7 +132,7 @@ public class ProxyEnvironmentManager {
             }
             // 正在加载的插件队列
             cacheIntents.add(intent);
-            PluginDebugLog.log(TAG, "Environment is loading cache current intent, intent: " + intent);
+            PluginDebugLog.runtimeLog(TAG, "Environment is loading cache current intent, intent: " + intent);
         } else {
             // 已经初始化，直接起Intent
             ProxyEnvironment.launchIntent(context, conn, intent);
@@ -144,11 +144,11 @@ public class ProxyEnvironmentManager {
                 .getPackageInfo(packageName);
         if (info != null && info.pluginInfo != null && info.pluginInfo.getPluginResfs() != null
                 && info.pluginInfo.getPluginResfs().size() > 0) {
-            PluginDebugLog.log(TAG,
+            PluginDebugLog.runtimeLog(TAG,
                     "Start to check dependence installation size: " + info.pluginInfo.getPluginResfs().size());
             final AtomicInteger count = new AtomicInteger(info.pluginInfo.getPluginResfs().size());
             for (String pkgName : info.pluginInfo.getPluginResfs()) {
-                PluginDebugLog.log(TAG, "Start to check installation pkgName: " + pkgName);
+                PluginDebugLog.runtimeLog(TAG, "Start to check installation pkgName: " + pkgName);
                 final CMPackageInfo refInfo = CMPackageManagerImpl.getInstance(context.getApplicationContext())
                         .getPackageInfo(pkgName);
                 CMPackageManagerImpl.getInstance(context.getApplicationContext()).packageAction(refInfo,
@@ -156,9 +156,9 @@ public class ProxyEnvironmentManager {
                             @Override
                             public void onPacakgeInstalled(CMPackageInfo packageInfo) {
                                 count.getAndDecrement();
-                                PluginDebugLog.log(TAG, "Check installation success pkgName: " + refInfo.packageName);
+                                PluginDebugLog.runtimeLog(TAG, "Check installation success pkgName: " + refInfo.packageName);
                                 if (count.get() == 0) {
-                                    PluginDebugLog.log(TAG,
+                                    PluginDebugLog.runtimeLog(TAG,
                                             "Start Check installation after check dependence packageName: "
                                                     + packageName);
                                     checkPkgInstallationAndLaunch(context, info, processName, conn, intent);
@@ -167,14 +167,14 @@ public class ProxyEnvironmentManager {
 
                             @Override
                             public void onPackageInstallFail(String pName, int failReason) throws RemoteException {
-                                PluginDebugLog.log(TAG,
+                                PluginDebugLog.runtimeLog(TAG,
                                         "Check installation failed pkgName: " + pName + " failReason: " + failReason);
                                 count.set(-1);
                             }
                         });
             }
         } else {
-            PluginDebugLog.log(TAG, "Start Check installation without dependences packageName: " + packageName);
+            PluginDebugLog.runtimeLog(TAG, "Start Check installation without dependences packageName: " + packageName);
             checkPkgInstallationAndLaunch(context, info, processName, conn, intent);
         }
     }
@@ -208,7 +208,7 @@ public class ProxyEnvironmentManager {
 
                     @Override
                     public void onPackageInstallFail(String packageName, int failReason) {
-                        PluginDebugLog.log(TAG, "checkPkgInstallationAndLaunch failed packageName: " + packageName
+                        PluginDebugLog.runtimeLog(TAG, "checkPkgInstallationAndLaunch failed packageName: " + packageName
                                 + " failReason: " + failReason);
                         PActivityStackSupervisor.clearLoadingIntent(packageName);
                         deliverPlug(context, false, packageName, failReason);
@@ -248,7 +248,7 @@ public class ProxyEnvironmentManager {
      */
     static void initTarget(final Context context, String packageName, String processName,
             final ITargetLoadListener listenner) {
-        PluginDebugLog.log("plugin", "initTarget");
+        PluginDebugLog.runtimeLog(TAG, "initTarget");
         try {
             new InitProxyEnvironment(context, packageName, processName, listenner).start();
         } catch (Exception e) {
@@ -309,7 +309,7 @@ public class ProxyEnvironmentManager {
             }
 
             if (proxyServiceNameClass != null) {
-                PluginDebugLog.log(TAG, "try to stop service " + proxyServiceName);
+                PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
                 intent.setClass(context, proxyServiceNameClass);
                 intent.setAction(ACTION_QUIT);
                 context.startService(intent);
@@ -420,14 +420,14 @@ public class ProxyEnvironmentManager {
                         CMPackageManagerImpl.getInstance(pContext).getPackageInfo(pakName);
                 if (packageInfo != null && packageInfo.pluginInfo != null) {
                     String installMethod = packageInfo.pluginInfo.mPluginInstallMethod;
-                    PluginDebugLog.log("plugin",
+                    PluginDebugLog.runtimeLog("plugin",
                             "doInBackground:" + pakName + ", installMethod: " +
                                     installMethod + " ProcessName: " + mProcessName);
                     ProxyEnvironment.initProxyEnvironment(
                             pContext, packageInfo, installMethod, mProcessName);
                     new InitHandler(listener, pakName, Looper.getMainLooper()).sendEmptyMessage(1);
                 } else {
-                    PluginDebugLog.log("plugin", "packageInfo is null before initProxyEnvironment");
+                    PluginDebugLog.runtimeLog("plugin", "packageInfo is null before initProxyEnvironment");
                 }
             } catch (Exception e) {
                 if (e instanceof PluginStartupException) {

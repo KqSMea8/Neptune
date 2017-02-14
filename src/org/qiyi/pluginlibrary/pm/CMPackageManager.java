@@ -193,14 +193,14 @@ public class CMPackageManager {
         public void onReceive(Context context, Intent intent) {
             try {
                 String action = intent.getAction();
-                PluginDebugLog.log(TAG,
+                PluginDebugLog.installLog(TAG,
                         "ACTION_PACKAGE_INSTALLED " + action + " intent: " + intent);
                 if (ACTION_PACKAGE_INSTALLED.equals(action)) {
                     String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
                     String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
                     PluginPackageInfoExt infoExt = intent
                             .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-                    PluginDebugLog.log(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
+                    PluginDebugLog.installLog(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
                     CMPackageInfo pkgInfo = new CMPackageInfo();
                     pkgInfo.packageName = pkgName;
                     pkgInfo.srcApkPath = destApkPath;
@@ -234,7 +234,7 @@ public class CMPackageManager {
                         // 失败原因
                         int failReason = intent.getIntExtra(ErrorType.ERROR_RESON,
                                 ErrorType.SUCCESS);
-                        PluginDebugLog.log(TAG,
+                        PluginDebugLog.installLog(TAG,
                                 "ACTION_PACKAGE_INSTALLFAIL mapPackagename: " + mapPackagename
                                         + " failReason: " + failReason + " assetsPath: "
                                         + assetsPath);
@@ -310,7 +310,7 @@ public class CMPackageManager {
     public void packageAction(CMPackageInfo packageInfo, IInstallCallBack callBack) {
         boolean packageInstalled = isPackageInstalled(packageInfo.packageName);
         boolean installing = PluginInstaller.isInstalling(packageInfo.packageName);
-        PluginDebugLog.log(TAG, "packageAction , " + packageInfo.packageName + " installed : "
+        PluginDebugLog.installLog(TAG, "packageAction , " + packageInfo.packageName + " installed : "
                 + packageInstalled + " installing: " + installing);
 
         if (packageInstalled && (!installing)) { // 安装了，并且没有更新操作
@@ -468,9 +468,9 @@ public class CMPackageManager {
         }
         String mapPackagename = filePath.substring(start + 1, end);
         listenerMap.put(mapPackagename, listener);
-        PluginDebugLog.log(TAG, "installApkFile:" + mapPackagename);
+        PluginDebugLog.installLog(TAG, "installApkFile:" + mapPackagename);
         if (pluginInfo != null && !TextUtils.equals(pluginInfo.mFileSourceType, CMPackageManager.PLUGIN_SOURCE_SDCARD)) {
-            PluginDebugLog.log(TAG, "installApkFile: change mFileSourceType to PLUGIN_SOURCE_SDCARD");
+            PluginDebugLog.installLog(TAG, "installApkFile: change mFileSourceType to PLUGIN_SOURCE_SDCARD");
             pluginInfo.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_NETWORK;
         }
         PluginInstaller.installApkFile(mContext, filePath, pluginInfo);
@@ -559,10 +559,10 @@ public class CMPackageManager {
 
         if (packageInfo != null) {
             String packageName = packageInfo.packageName;
-            PluginDebugLog.log(TAG, "CMPackageManager::uninstall: " + packageName);
+            PluginDebugLog.installLog(TAG, "CMPackageManager::uninstall: " + packageName);
             try {
                 if (TextUtils.isEmpty(packageName)) {
-                    PluginDebugLog.log(TAG, "CMPackageManager::uninstall pkgName is empty return");
+                    PluginDebugLog.installLog(TAG, "CMPackageManager::uninstall pkgName is empty return");
                     return false;
                 }
 

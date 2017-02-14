@@ -116,14 +116,14 @@ public class ActivityJumpUtil {
     public static void setPluginIntent(Intent intent, String pluginId, String actName) {
         ProxyEnvironment env = ProxyEnvironmentManager.getEnvByPkgName(pluginId);
         if (null == env) {
-            PluginDebugLog.log(TAG,
-                    "ActivityJumpUtil setPluginIntent failed, " + pluginId + " ProxyEnvironmentNew is null");
+            PluginDebugLog.formatLog(TAG,
+                    "ActivityJumpUtil setPluginIntent failed, %s, ProxyEnvironmentNew is null", pluginId);
             return;
         }
         ActivityInfo info = env.getTargetMapping().getActivityInfo(actName);
         if (null == info) {
-            PluginDebugLog.log(TAG,
-                    "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: " + actName);
+            PluginDebugLog.formatLog(TAG,
+                    "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: %s", actName);
             return;
         }
         ComponentName compname = new ComponentName(env.getParentPackagename(),

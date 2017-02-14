@@ -40,7 +40,7 @@ public class PluginInstallerService extends Service {
     /**
      * TAG
      */
-    public static final String TAG = PluginDebugLog.TAG;
+    public static final String TAG = "PluginInstallerService";
 
     public static final String ACTION_INSTALL = "com.qiyi.plugin.installed";
 
@@ -69,13 +69,13 @@ public class PluginInstallerService extends Service {
 
         @Override
         public void handleMessage(Message msg) {
-            PluginDebugLog.log(TAG, "handleMessage: what " + msg.what);
+            PluginDebugLog.installLog(TAG, "handleMessage: what " + msg.what);
             if (msg.what == MSG_ACTION_INSTALL) {
                 if (null != msg && msg.obj instanceof Intent) {
                     onHandleIntent((Intent) msg.obj);
                 }
                 if (!mServiceHandler.hasMessages(MSG_ACTION_INSTALL) && !mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
-                    PluginDebugLog.log(TAG, "sendMessage MSG_ACTION_QUIT");
+                    PluginDebugLog.installLog(TAG, "sendMessage MSG_ACTION_QUIT");
                     Message quit = mServiceHandler.obtainMessage(MSG_ACTION_QUIT);
                     mServiceHandler.sendMessageDelayed(quit, DELAY_QUIT_STEP);
                 }
@@ -105,13 +105,13 @@ public class PluginInstallerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        PluginDebugLog.log(TAG, "pluginInstallerService:onStartCommand");
+        PluginDebugLog.installLog(TAG, "pluginInstallerService:onStartCommand");
         super.onStartCommand(intent, flags, startId);
         if (mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
-            PluginDebugLog.log(TAG, "removeMessages MSG_ACTION_QUIT");
+            PluginDebugLog.installLog(TAG, "removeMessages MSG_ACTION_QUIT");
             mServiceHandler.removeMessages(MSG_ACTION_QUIT);
         }
-        PluginDebugLog.log(TAG, "sendMessage MSG_ACTION_INSTALL");
+        PluginDebugLog.installLog(TAG, "sendMessage MSG_ACTION_INSTALL");
         Message msg = mServiceHandler.obtainMessage(MSG_ACTION_INSTALL);
         msg.arg1 = startId;
         msg.obj = intent;
@@ -129,12 +129,12 @@ public class PluginInstallerService extends Service {
 
     private void onHandleIntent(Intent intent) {
         if (intent == null) {
-            PluginDebugLog.log(TAG, "onHandleIntent intent is null");
+            PluginDebugLog.installLog(TAG, "onHandleIntent intent is null");
             return;
         }
 
         String action = intent.getAction();
-        PluginDebugLog.log(TAG, "pluginInstallerService:action" + action);
+        PluginDebugLog.installLog(TAG, "pluginInstallerService:action" + action);
         if (action == null) {
             return;
         }
@@ -144,18 +144,18 @@ public class PluginInstallerService extends Service {
             PluginPackageInfoExt pluginInfo = intent.getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
             // String destFile = intent.getStringExtra(EXTRA_DEST_FILE);
             // String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
-            PluginDebugLog.log(TAG, "pluginInstallerService:srcFile" + srcFile);
+            PluginDebugLog.installLog(TAG, "pluginInstallerService:srcFile" + srcFile);
             handleInstall(srcFile, pluginInfo);
         }
     }
 
     private void handleInstall(String srcFile, PluginPackageInfoExt info) {
         if (null == info) {
-            PluginDebugLog.log(TAG, "Install srcFile:" + srcFile + " return due to info is null!");
+            PluginDebugLog.installLog(TAG, "Install srcFile:" + srcFile + " return due to info is null!");
             return;
         }
 
-        PluginDebugLog.log(TAG, "srcFile:" + srcFile);
+        PluginDebugLog.installLog(TAG, "srcFile:" + srcFile);
         if (srcFile.startsWith(CMPackageManager.SCHEME_ASSETS)) {
             info.mSuffixType = CMPackageManager.PLUGIN_FILE_APK;
             installBuildinApk(srcFile, info);
@@ -192,10 +192,10 @@ public class PluginInstallerService extends Service {
                     setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
                     return;
                 } else {
-                    PluginDebugLog.log(TAG, "handleInstall SO, install so lib failed!");
+                    PluginDebugLog.installLog(TAG, "handleInstall SO, install so lib failed!");
                 }
             } else {
-                PluginDebugLog.log(TAG, "handleInstall SO, rename failed!");
+                PluginDebugLog.installLog(TAG, "handleInstall SO, rename failed!");
             }
         }
         setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
@@ -217,7 +217,7 @@ public class PluginInstallerService extends Service {
                 setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
                 return;
             } else {
-                PluginDebugLog.log(TAG, "handleInstall dex, rename failed!");
+                PluginDebugLog.installLog(TAG, "handleInstall dex, rename failed!");
             }
         }
         setInstallFail(srcFile, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
@@ -230,7 +230,7 @@ public class PluginInstallerService extends Service {
      */
     private void installBuildinApk(String assetsPathWithScheme, PluginPackageInfoExt info) {
         String assetsPath = assetsPathWithScheme.substring(CMPackageManager.SCHEME_ASSETS.length());
-        PluginDebugLog.log(TAG, "pluginInstallerService:assetsPath" + assetsPath);
+        PluginDebugLog.installLog(TAG, "pluginInstallerService:assetsPath" + assetsPath);
         // 先把 asset 拷贝到临时文件。
         InputStream is = null;
         try {
@@ -255,7 +255,7 @@ public class PluginInstallerService extends Service {
      */
     private void installAPKFile(String apkFilePathWithScheme, PluginPackageInfoExt info) {
         String apkFilePath = apkFilePathWithScheme.substring(CMPackageManager.SCHEME_FILE.length());
-        PluginDebugLog.log(TAG, "PluginInstallerService::installAPKFile: " + apkFilePath);
+        PluginDebugLog.installLog(TAG, "PluginInstallerService::installAPKFile: " + apkFilePath);
 
         File source = new File(apkFilePath);
         InputStream is = null;
@@ -269,7 +269,6 @@ public class PluginInstallerService extends Service {
             e.printStackTrace();
             return;
         }
-        PluginDebugLog.log(TAG, is == null ? "判断流是否为空:true" : "判断流是否为空:false");
         doInstall(is, apkFilePathWithScheme, info);
 
         try {
@@ -284,18 +283,18 @@ public class PluginInstallerService extends Service {
     private String doInstall(InputStream is, String srcPathWithScheme, PluginPackageInfoExt info) {
 
         if (is == null || srcPathWithScheme == null) {
-            PluginDebugLog.log(TAG, "doInstall : srcPathWithScheme or InputStream is null and just return!");
+            PluginDebugLog.installLog(TAG, "doInstall : srcPathWithScheme or InputStream is null and just return!");
             return null;
         }
 
-        PluginDebugLog.log(TAG, "doInstall : " + srcPathWithScheme);
+        PluginDebugLog.installLog(TAG, "doInstall : " + srcPathWithScheme);
         if (info != null) {
-            PluginDebugLog.log(TAG, "doInstall : " + info.toString());
+            PluginDebugLog.installLog(TAG, "doInstall : " + info.toString());
         }
 
         File tempFile = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + "");
         boolean result = Util.copyToFile(is, tempFile);
-        PluginDebugLog.log(TAG, "doInstall copy result" + result);
+        PluginDebugLog.installLog(TAG, "doInstall copy result" + result);
         if (!result) {
             tempFile.delete();
             setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
@@ -316,9 +315,9 @@ public class PluginInstallerService extends Service {
             int nameStart = srcPathWithScheme.lastIndexOf("/");
             int nameEnd = srcPathWithScheme.lastIndexOf(PluginInstaller.APK_SUFFIX);
             String fileName = srcPathWithScheme.substring(nameStart + 1, nameEnd);
-            PluginDebugLog.log(TAG, "doInstall with: " + packageName + " and file: " + fileName);
+            PluginDebugLog.installLog(TAG, "doInstall with: " + packageName + " and file: " + fileName);
             if (!fileName.equals(packageName)) {
-                PluginDebugLog.log(TAG, "doInstall with wrong apk file as the packagme is not same");
+                PluginDebugLog.installLog(TAG, "doInstall with wrong apk file as the packagme is not same");
             }
         }
 
@@ -345,7 +344,7 @@ public class PluginInstallerService extends Service {
                 // throw new RuntimeException(srcPathWithScheme + " must be
                 // named with it's package name : "
                 // + packageName + PluginInstaller.APK_SUFFIX);
-                PluginDebugLog.log(TAG, "doInstall build plugin, package name is not same as in apk file, return!");
+                PluginDebugLog.installLog(TAG, "doInstall build plugin, package name is not same as in apk file, return!");
                 return null;
             }
         }
@@ -377,7 +376,7 @@ public class PluginInstallerService extends Service {
                 return null;
             }
         }
-        PluginDebugLog.log(TAG, "pluginInstallerService begain install lib");
+        PluginDebugLog.installLog(TAG, "pluginInstallerService begain install lib");
         File pkgDir = new File(PluginInstaller.getPluginappRootPath(this), packageName);
 
         if (!pkgDir.exists())
@@ -385,12 +384,12 @@ public class PluginInstallerService extends Service {
         File libDir = new File(pkgDir, PluginInstaller.NATIVE_LIB_PATH);
         libDir.mkdirs();
         Util.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());
-        PluginDebugLog.log(TAG, "pluginInstallerService finish install lib");
+        PluginDebugLog.installLog(TAG, "pluginInstallerService finish install lib");
         setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
         // dexopt
-        PluginDebugLog.log(TAG, "pluginInstallerService begain install dex");
+        PluginDebugLog.installLog(TAG, "pluginInstallerService begain install dex");
         installDex(destFile.getAbsolutePath(), packageName, PluginInstaller.getPluginappRootPath(this).getAbsolutePath(), getClassLoader());
-        PluginDebugLog.log(TAG, "pluginInstallerService finish install dex");
+        PluginDebugLog.installLog(TAG, "pluginInstallerService finish install dex");
         return packageName;
     }
 
@@ -408,7 +407,7 @@ public class PluginInstallerService extends Service {
         intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
         sendBroadcast(intent);
         if (info != null) {
-            PluginDebugLog.log(TAG, "Send setInstallFail with reason: " + failReason + " PluginPackageInfoExt: " + info);
+            PluginDebugLog.installLog(TAG, "Send setInstallFail with reason: " + failReason + " PluginPackageInfoExt: " + info);
         }
     }
 
@@ -422,7 +421,7 @@ public class PluginInstallerService extends Service {
             intent.putExtra(CMPackageManager.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
             sendBroadcast(intent);
             if (info != null) {
-                PluginDebugLog.log(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
+                PluginDebugLog.installLog(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
             }
         } catch (Exception e) {
             // sendBoradCast nullException
@@ -497,7 +496,7 @@ public class PluginInstallerService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
             int installLocation = ReflectionUtils.on(pkgInfo).<Integer> get("installLocation");
 
-            PluginDebugLog.log("plugin", "installLocation:" + installLocation);
+            PluginDebugLog.installLog("plugin", "installLocation:" + installLocation);
 
             // see PackageInfo.INSTALL_LOCATION_PREFER_EXTERNAL
             final int INSTALL_LOCATION_PREFER_EXTERNAL = 2;
@@ -522,11 +521,11 @@ public class PluginInstallerService extends Service {
         if (!preferExternal) {
             // 默认安装到 internal data dir
             destFile = new File(PluginInstaller.getPluginappRootPath(this), pkgInfo.packageName + PluginInstaller.APK_SUFFIX);
-            PluginDebugLog.log("plugin", "默认安装到internal data dir:" + destFile.getPath());
+            PluginDebugLog.installLog("plugin", "默认安装到internal data dir:" + destFile.getPath());
         } else {
             // 安装到外部存储器
             destFile = new File(getExternalFilesDir(PluginInstaller.PLUGIN_PATH), pkgInfo.packageName + PluginInstaller.APK_SUFFIX);
-            PluginDebugLog.log("plugin", "安装到外部存储器：" + destFile.getPath());
+            PluginDebugLog.installLog("plugin", "安装到外部存储器：" + destFile.getPath());
         }
         return destFile;
     }

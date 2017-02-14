@@ -57,16 +57,16 @@ public class PActivityStackSupervisor {
         if (null == intent) {
             return;
         }
-        PluginDebugLog.log(TAG, "dealLaunchMode target activity: " + intent + " source: "
+        PluginDebugLog.runtimeLog(TAG, "dealLaunchMode target activity: " + intent + " source: "
                 + intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY));
         if (PluginDebugLog.isDebug()) {
             if (null != mActivityStack && mActivityStack.size() > 0) {
                 for (Activity ac : mActivityStack) {
-                    PluginDebugLog.log(TAG, "dealLaunchMode stack: " + ac + " source: "
+                    PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack: " + ac + " source: "
                             + ((InstrActivityProxy) ac).dump());
                 }
             } else {
-                PluginDebugLog.log(TAG, "dealLaunchMode stack is empty");
+                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack is empty");
             }
         }
         String targetActivity = intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
@@ -83,10 +83,10 @@ public class PActivityStackSupervisor {
                 || (intent.getFlags() & Intent.FLAG_ACTIVITY_SINGLE_TOP) != 0;
         boolean isSingleTask = info.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK;
         boolean isClearTop = (intent.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TOP) != 0;
-        PluginDebugLog.log(TAG, "dealLaunchMode isSingleTop " + isSingleTop + " isSingleTask "
+        PluginDebugLog.runtimeLog(TAG, "dealLaunchMode isSingleTop " + isSingleTop + " isSingleTask "
                 + isSingleTask + " isClearTop " + isClearTop);
         int flag = intent.getFlags();
-        PluginDebugLog.log(TAG, "before flag: " + Integer.toHexString(intent.getFlags()));
+        PluginDebugLog.runtimeLog(TAG, "before flag: " + Integer.toHexString(intent.getFlags()));
         if ((isSingleTop || isSingleTask) && (flag & Intent.FLAG_ACTIVITY_SINGLE_TOP) != 0) {
             flag = flag ^ Intent.FLAG_ACTIVITY_SINGLE_TOP;
         }
@@ -94,7 +94,7 @@ public class PActivityStackSupervisor {
             flag = flag ^ Intent.FLAG_ACTIVITY_CLEAR_TOP;
         }
         intent.setFlags(flag);
-        PluginDebugLog.log(TAG, "after flag: " + Integer.toHexString(intent.getFlags()));
+        PluginDebugLog.runtimeLog(TAG, "after flag: " + Integer.toHexString(intent.getFlags()));
 
         if (isSingleTop && !isClearTop) {
             // 判断栈顶是否为需要启动的Activity
@@ -161,7 +161,7 @@ public class PActivityStackSupervisor {
                     }
                     for (Activity act : popActivities) {
                         if (!mActivityStack.isEmpty()) {
-                            PluginDebugLog.log(TAG, "dealLaunchMode mActivityStack remove " + act);
+                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode mActivityStack remove " + act);
                             mActivityStack.remove(act);
                         }
                     }
@@ -184,7 +184,7 @@ public class PActivityStackSupervisor {
                                 notLaunchTargetClassName = record.getComponent().getClassName();
                             }
                             if (TextUtils.equals(notLaunchTargetClassName, targetActivity)) {
-                                PluginDebugLog.log(TAG, "sIntentCacheMap found: " + targetActivity);
+                                PluginDebugLog.runtimeLog(TAG, "sIntentCacheMap found: " + targetActivity);
                                 if (isSingleTask || isSingleTop) {
                                     intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                                 }
@@ -206,7 +206,7 @@ public class PActivityStackSupervisor {
                             notLaunchTargetClassName = record
                                     .getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
                             if (TextUtils.equals(notLaunchTargetClassName, targetActivity)) {
-                                PluginDebugLog.log(TAG,
+                                PluginDebugLog.runtimeLog(TAG,
                                         "sIntentLoadingMap found: " + targetActivity);
                                 if (isSingleTask || isSingleTop) {
                                     intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -221,7 +221,7 @@ public class PActivityStackSupervisor {
 //                handleOtherPluginActivityStack(null);
             }
         }
-        PluginDebugLog.log(TAG, "dealLaunchMode end: " + intent + " "
+        PluginDebugLog.runtimeLog(TAG, "dealLaunchMode end: " + intent + " "
                 + intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY));
     }
 
@@ -279,7 +279,7 @@ public class PActivityStackSupervisor {
                             && null != env.getActivityStackSupervisor().getActivityStack()) {
                         synchronized (env.getActivityStackSupervisor().getActivityStack()) {
                             try {
-                                PluginDebugLog.log(TAG,
+                                PluginDebugLog.runtimeLog(TAG,
                                         "finish: " + ((InstrActivityProxy) removeItem).dump());
                                 removeItem.finish();
                             } catch (Exception ex) {
@@ -295,7 +295,7 @@ public class PActivityStackSupervisor {
     }
 
     public void pushActivityToStack(Activity activity) {
-        PluginDebugLog.log(TAG, "pushActivityToStack activity: " + activity + " "
+        PluginDebugLog.runtimeLog(TAG, "pushActivityToStack activity: " + activity + " "
                 + ((InstrActivityProxy) activity).dump());
         sAllActivityStack.add(activity);
         removeLoadingIntent(mEnv.getTargetPackageName(), activity.getIntent());
@@ -309,7 +309,7 @@ public class PActivityStackSupervisor {
         boolean result = false;
         synchronized (mActivityStack) {
             if (!mActivityStack.isEmpty()) {
-                PluginDebugLog.log(TAG, "popActivityFromStack activity: " + activity + " "
+                PluginDebugLog.runtimeLog(TAG, "popActivityFromStack activity: " + activity + " "
                         + ((InstrActivityProxy) activity).dump());
                 result = mActivityStack.remove(activity);
             }
@@ -373,7 +373,7 @@ public class PActivityStackSupervisor {
             intents = Collections.synchronizedList(new ArrayList<Intent>());
             sIntentLoadingMap.put(pkgName, intents);
         }
-        PluginDebugLog.log(TAG, "addLoadingIntent pkgName: " + pkgName + " intent: " + intent);
+        PluginDebugLog.runtimeLog(TAG, "addLoadingIntent pkgName: " + pkgName + " intent: " + intent);
         intents.add(intent);
     }
 
@@ -403,7 +403,7 @@ public class PActivityStackSupervisor {
         if (null != toBeRemoved) {
             result = intents.remove(toBeRemoved);
         }
-        PluginDebugLog.log(TAG, "removeLoadingIntent pkgName: " + pkgName + " toBeRemoved: "
+        PluginDebugLog.runtimeLog(TAG, "removeLoadingIntent pkgName: " + pkgName + " toBeRemoved: "
                 + toBeRemoved + " result: " + result);
     }
 

@@ -306,7 +306,6 @@ public class CMPackageManagerImpl {
             mService = null;
         }
     }
-
     private static ICMPackageManager mService = null;
     private static CMPackageManagerImpl sInstance = null;
     private Context mContext;

@@ -138,7 +138,7 @@ public class PluginInstaller {
                             // 如果外面传递的packagename 为空则全部安装
                             continue;
                         }
-                        PluginDebugLog.log("plugin", "file:" + file);
+                        PluginDebugLog.installLog("plugin", "file:" + file);
                         installBuildinApp(context, ASSETS_PATH + "/" + file, info);
                     }
 
@@ -173,7 +173,7 @@ public class PluginInstaller {
         }
 
         if (infoExt != null) {
-            PluginDebugLog.log(TAG, "installBuildinApp" + infoExt.toString());
+            PluginDebugLog.installLog(TAG, "installBuildinApp" + infoExt.toString());
         }
 
         startInstall(context, CMPackageManager.SCHEME_ASSETS + assetsPath, infoExt);
@@ -198,7 +198,7 @@ public class PluginInstaller {
         boolean isBuildin = false;
 
         if (pluginInfo != null) {
-            PluginDebugLog.log(TAG, "startInstall with file path: " + filePath + " and plugin info: " + pluginInfo.toString());
+            PluginDebugLog.installLog(TAG, "startInstall with file path: " + filePath + " and plugin info: " + pluginInfo.toString());
         }
 
         if (filePath.startsWith(CMPackageManager.SCHEME_ASSETS)) {
@@ -219,12 +219,12 @@ public class PluginInstaller {
         if (packageName != null) {
             add2InstallList(packageName); // 添加到安装列表中
             if (isBuildin) {
-                PluginDebugLog.log(TAG, "add " + packageName + " in BuildinAppList");
+                PluginDebugLog.installLog(TAG, "add " + packageName + " in BuildinAppList");
                 sBuildinAppList.add(packageName); // 添加到内置app安装列表中
             }
         }
         if (pluginInfo == null) {
-            PluginDebugLog.log(TAG, "startInstall pluginInfo is null, just return!");
+            PluginDebugLog.installLog(TAG, "startInstall pluginInfo is null, just return!");
             return;
         }
 
@@ -256,7 +256,7 @@ public class PluginInstaller {
      */
     public static void installApkFile(Context context, String filePath, PluginPackageInfoExt pluginInfo) {
         if (TextUtils.isEmpty(filePath)) {
-            PluginDebugLog.log(TAG, "filePath is empty and installApkFile return!");
+            PluginDebugLog.installLog(TAG, "filePath is empty and installApkFile return!");
             return;
         }
 
@@ -358,7 +358,7 @@ public class PluginInstaller {
      * @param packagename
      */
     private synchronized static void add2InstallList(String packagename) {
-        PluginDebugLog.log(TAG, "add2InstallList with" + packagename);
+        PluginDebugLog.installLog(TAG, "add2InstallList with" + packagename);
         if (sInstallList.contains(packagename)) {
             return;
         }

@@ -23,7 +23,6 @@ import android.graphics.Canvas;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
@@ -43,6 +42,7 @@ import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
@@ -142,7 +142,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         } else {
             ProxyEnvironmentManager.deliverPlug(this, false, pluginPkgName,
                     ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
-            Log.e(TAG, "Pkg or activity is null in LActivityProxy, just return!");
+            PluginDebugLog.log(TAG, "Pkg or activity is null in LActivityProxy, just return!");
             this.finish();
             return;
             // throw new
@@ -151,7 +151,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
         if (!tryToInitEnvironment(pluginPkgName)) {
             this.finish();
-            Log.e(TAG, "mPluginEnv is null in LActivityProxy, just return!");
+            PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
             return;
         }
         if (!ProxyEnvironmentManager.isEnterProxy(pluginPkgName)) {
@@ -165,7 +165,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (null == plugin) {
             ProxyEnvironmentManager.deliverPlug(this, false, pluginPkgName,
                     ErrorType.ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL);
-            Log.e(TAG, "Cann't get pluginActivityName class finish!");
+            PluginDebugLog.log(TAG, "Cann't get pluginActivityName class finish!");
             this.finish();
             return;
         }

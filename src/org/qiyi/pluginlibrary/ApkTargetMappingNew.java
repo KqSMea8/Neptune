@@ -347,14 +347,14 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
     @Override
     public int getThemeResource(String activity) {
         ActivityInfo info = getActivityInfo(activity);
-        if (info == null) {
-            // 支持不同系统的默认Theme
-            if (Build.VERSION.SDK_INT >= 14) {
-                return android.R.style.Theme_DeviceDefault;
-            } else {
-                return android.R.style.Theme;
-            }
-        }
+//        if (info == null) {
+//            // 支持不同系统的默认Theme
+//            if (Build.VERSION.SDK_INT >= 14) {
+//                return android.R.style.Theme_DeviceDefault;
+//            } else {
+//                return android.R.style.Theme;
+//            }
+//        }
 
         /**
          * 指定默认theme为android.R.style.Theme

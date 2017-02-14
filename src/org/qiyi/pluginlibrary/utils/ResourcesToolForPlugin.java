@@ -10,6 +10,9 @@ import android.text.TextUtils;
  * Wrapper class for invoker to get resource id Wrapper of gen/R.java
  */
 public class ResourcesToolForPlugin {
+
+    private static final String TAG = "ResourcesToolForPlugin";
+
     static final String ANIM = "anim";
     static final String ANIMATOR = "animator";
     static final String ARRAY = "array";
@@ -250,8 +253,8 @@ public class ResourcesToolForPlugin {
     private int optValue(String resourceName, String resourceType) {
         int result = 0;
         if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType) || TextUtils.isEmpty(mPackageName)) {
-            PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(), "optValue resourceName: " + resourceName + " resourceType: "
-                    + resourceType + " mPackageName: " + mPackageName + ", just return 0!");
+            PluginDebugLog.formatLog(TAG, "optValue resourceName: %s, resourceType : %s, mPackageName : %s , just return 0!",
+                    resourceName, resourceType, mPackageName);
             return result;
         }
         try {
@@ -288,8 +291,8 @@ public class ResourcesToolForPlugin {
     private int[] optValueArray(String resourceName, String resourceType) {
         int[] result = null;
         if (TextUtils.isEmpty(resourceName) || TextUtils.isEmpty(resourceType) || TextUtils.isEmpty(mPackageName)) {
-            PluginDebugLog.log(ResourcesToolForPlugin.class.getSimpleName(), "optValueArray resourceName: " + resourceName
-                    + " resourceType: " + resourceType + " mPackageName: " + mPackageName + ", just return 0!");
+            PluginDebugLog.formatLog(TAG, "optValueArray resourceName: %s, resourceType : %s, mPackageName : %s , just return 0!",
+                    resourceName, resourceType, mPackageName);
             return result;
         }
         try {

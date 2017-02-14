@@ -5,10 +5,10 @@ import java.lang.reflect.Field;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
-import android.util.Log;
 
 /**
  * 提供公共方法供自动生成的Activity调用
@@ -17,7 +17,7 @@ public class ActivityOverrider {
     private static final String tag = ActivityOverrider.class.getSimpleName();
 
     public static void changeActivityInfo(Activity activity, String pkgName, String actName) {
-        Log.d(tag, "changeActivityInfo: activity = " + activity + ", class = " + actName);
+        PluginDebugLog.log(tag, "changeActivityInfo: activity = " + activity + ", class = " + actName);
         ActivityInfo origActInfo = null;
         try {
             Field field_mActivityInfo = Activity.class.getDeclaredField("mActivityInfo");
@@ -25,7 +25,7 @@ public class ActivityOverrider {
             origActInfo = (ActivityInfo) field_mActivityInfo.get(activity);
         } catch (Exception e) {
             ProxyEnvironmentManager.deliverPlug(activity, false, pkgName, ErrorType.ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL);
-            Log.e(tag, Log.getStackTraceString(e));
+            PluginDebugLog.log(tag, e.getStackTrace());
             return;
         }
         ProxyEnvironment con = ProxyEnvironmentManager.getEnvByPkgName(pkgName);
@@ -72,7 +72,8 @@ public class ActivityOverrider {
                 }
             }
         }
-        Log.i(tag, "changeActivityInfo->changeTheme: " + " theme = " + actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
+        PluginDebugLog.log(tag, "changeActivityInfo->changeTheme: " + " theme = " +
+                actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
                 + ", logo = " + actInfo.logo + ", labelRes" + actInfo.labelRes);
     }
 }

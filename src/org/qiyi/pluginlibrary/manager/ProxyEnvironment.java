@@ -84,22 +84,22 @@ public class ProxyEnvironment {
 
         @Override
         public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-            PluginDebugLog.log(TAG, "onActivityCreated: " + activity);
+            PluginDebugLog.runtimeLog(TAG, "onActivityCreated: " + activity);
         }
 
         @Override
         public void onActivityStarted(Activity activity) {
-            PluginDebugLog.log(TAG, "onActivityStarted: " + activity);
+            PluginDebugLog.runtimeLog(TAG, "onActivityStarted: " + activity);
         }
 
         @Override
         public void onActivityResumed(Activity activity) {
-            PluginDebugLog.log(TAG, "onActivityResumed: " + activity);
+            PluginDebugLog.runtimeLog(TAG, "onActivityResumed: " + activity);
         }
 
         @Override
         public void onActivityPaused(Activity activity) {
-            PluginDebugLog.log(TAG, "onActivityPaused: " + activity);
+            PluginDebugLog.runtimeLog(TAG, "onActivityPaused: " + activity);
         }
 
         @Override
@@ -109,12 +109,12 @@ public class ProxyEnvironment {
 
         @Override
         public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
-            PluginDebugLog.log(TAG, "onActivitySaveInstanceState: " + activity);
+            PluginDebugLog.runtimeLog(TAG, "onActivitySaveInstanceState: " + activity);
         }
 
         @Override
         public void onActivityDestroyed(Activity activity) {
-            PluginDebugLog.log(TAG, "onActivityDestroyed: " + activity);
+            PluginDebugLog.runtimeLog(TAG, "onActivityDestroyed: " + activity);
         }
     };
 
@@ -246,12 +246,12 @@ public class ProxyEnvironment {
      * @return 返回值无意义
      */
     public static boolean launchIntent(Context context, ServiceConnection conn, Intent intent, boolean needAddCache) {
-        PluginDebugLog.log(TAG, "launchIntent: " + intent);
+        PluginDebugLog.runtimeLog(TAG, "launchIntent: " + intent);
         String packageName = ProxyEnvironmentManager.tryParsePkgName(context, intent);
         ProxyEnvironment env = ProxyEnvironmentManager.getEnvByPkgName(packageName);
         if (env == null) {
             ProxyEnvironmentManager.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);
-            PluginDebugLog.log(TAG, packageName + " launchIntent env is null! Just return!");
+            PluginDebugLog.runtimeLog(TAG, packageName + " launchIntent env is null! Just return!");
             PActivityStackSupervisor.clearLoadingIntent(packageName);
             return false;
             // throw new IllegalArgumentException(packageName
@@ -279,7 +279,7 @@ public class ProxyEnvironment {
                 env.mApplication.onCreate();
             } catch (Throwable t) {
                 PActivityStackSupervisor.clearLoadingIntent(packageName);
-                PluginDebugLog.log(TAG, "launchIntent application oncreate failed!");
+                PluginDebugLog.runtimeLog(TAG, "launchIntent application oncreate failed!");
                 t.printStackTrace();
                 // catch exception when application oncreate
                 System.exit(0);
@@ -303,14 +303,14 @@ public class ProxyEnvironment {
             cacheIntents.offer(intent);
         }
 
-        PluginDebugLog.log(TAG, "launchIntent_cacheIntents: " + cacheIntents);
+        PluginDebugLog.runtimeLog(TAG, "launchIntent_cacheIntents: " + cacheIntents);
         if (!env.mIsLaunchingIntent) {
             Intent curIntent = cacheIntents.poll();
             if (null != curIntent) {
                 doRealLaunch(curIntent, env, packageName, conn, context);
             }
         }
-        PluginDebugLog.log(TAG, "haveLaunchActivity end!");
+        PluginDebugLog.runtimeLog(TAG, "haveLaunchActivity end!");
         return false;
     }
 
@@ -320,7 +320,7 @@ public class ProxyEnvironment {
         if (curIntent.getComponent() != null) {
             // 获取目标class
             targetClassName = curIntent.getComponent().getClassName();
-            PluginDebugLog.log(TAG, "launchIntent_targetClassName:" + targetClassName);
+            PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClassName:" + targetClassName);
             if (TextUtils.isEmpty(targetClassName)) {
                 targetClassName = env.getTargetMapping().getDefaultActivityName();
             }
@@ -332,7 +332,7 @@ public class ProxyEnvironment {
                 targetClass = env.mDexClassLoader.loadClass(targetClassName);
             } catch (Exception e) {
                 ProxyEnvironmentManager.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_START);
-                PluginDebugLog.log(TAG, "launchIntent loadClass failed for targetClassName: " + targetClassName);
+                PluginDebugLog.runtimeLog(TAG, "launchIntent loadClass failed for targetClassName: " + targetClassName);
                 executeNext(env, packageName, conn, context);
                 return;
             }
@@ -341,7 +341,7 @@ public class ProxyEnvironment {
         String action = curIntent.getAction();
         if (TextUtils.equals(action, ACTION_TARGET_LOADED)
                 || TextUtils.equals(targetClassName, EXTRA_VALUE_LOADTARGET_STUB)) {
-            PluginDebugLog.log(TAG, "launchIntent loadtarget stub!");
+            PluginDebugLog.runtimeLog(TAG, "launchIntent loadtarget stub!");
             // 发一个内部用的动态广播
             if (BroadcastReceiver.class.isAssignableFrom(targetClass)) {
                 Intent newIntent = new Intent(curIntent);
@@ -356,7 +356,7 @@ public class ProxyEnvironment {
         }
 
         env.mIsLaunchingIntent = true;
-        PluginDebugLog.log(TAG, "launchIntent_targetClass: " + targetClass);
+        PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClass: " + targetClass);
         if (targetClass != null && Service.class.isAssignableFrom(targetClass)) {
             // 处理启动的是service
             ServiceJumpUtil.remapStartServiceIntent(env, curIntent, targetClassName);
@@ -392,7 +392,7 @@ public class ProxyEnvironment {
             @Override
             public void run() {
                 LinkedBlockingQueue<Intent> cacheIntents = PActivityStackSupervisor.getCachedIntent(packageName);
-                PluginDebugLog.log(TAG, "executeNext cacheIntents: " + cacheIntents);
+                PluginDebugLog.runtimeLog(TAG, "executeNext cacheIntents: " + cacheIntents);
                 if (null != cacheIntents) {
                     Intent toBeStart = cacheIntents.poll();
                     if (null != toBeStart) {
@@ -436,7 +436,7 @@ public class ProxyEnvironment {
             String packageName = packageInfo.packageName;
             if (!TextUtils.isEmpty(packageName)) {
                 boolean hasInstance = ProxyEnvironmentManager.hasEnvInstance(packageName);
-                PluginDebugLog.log(TAG, "sPluginsMap.containsKey(" + packageName + "):" + hasInstance);
+                PluginDebugLog.runtimeLog(TAG, "sPluginsMap.containsKey(" + packageName + "):" + hasInstance);
                 if (hasInstance) {
                     return;
                 }
@@ -445,7 +445,7 @@ public class ProxyEnvironment {
                 if (!TextUtils.isEmpty(packageInfo.srcApkPath)) {
                     File apkFile = new File(packageInfo.srcApkPath);
                     if (!apkFile.exists()) {
-                        PluginDebugLog.log(TAG,
+                        PluginDebugLog.runtimeLog(TAG,
                                 "Special case apkFile not exist, notify client! packageName: " + packageName);
                         CMPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist!");
                         return;
@@ -534,7 +534,7 @@ public class ProxyEnvironment {
      * @return
      */
     public File getDataDir(Context context, String packageName) {
-        PluginDebugLog.log(TAG, "packageName:" + packageName + " context:" + context);
+        PluginDebugLog.runtimeLog(TAG, "packageName:" + packageName + " context:" + context);
         File file = null;
         try {
             if (TextUtils.isEmpty(packageName)) {
@@ -565,11 +565,11 @@ public class ProxyEnvironment {
                 if (null != libraryInfo && !TextUtils.isEmpty(libraryInfo.packageName)) {
                     if (!sPluginDependences.containsKey(libraryInfo.packageName)
                             && !TextUtils.equals(libraryInfo.pluginInfo.mSuffixType, CMPackageManager.PLUGIN_FILE_SO)) {
-                        PluginDebugLog.log(TAG, "handleDependences inject " + libraryInfo.pluginInfo);
+                        PluginDebugLog.runtimeLog(TAG, "handleDependences inject " + libraryInfo.pluginInfo);
                         CMPackageInfo.updateSrcApkPath(mContext, libraryInfo);
                         File apkFile = new File(libraryInfo.srcApkPath);
                         if (!apkFile.exists()) {
-                            PluginDebugLog.log(TAG, "Special case apkFile not exist, notify client! packageName: "
+                            PluginDebugLog.runtimeLog(TAG, "Special case apkFile not exist, notify client! packageName: "
                                     + libraryInfo.packageName);
                             CMPackageManager.notifyClientPluginException(mContext, libraryInfo.packageName,
                                     "Apk file not exist!");
@@ -577,16 +577,16 @@ public class ProxyEnvironment {
                         }
                         injectResult = ClassLoaderInjectHelper.inject(mContext, libraryInfo.srcApkPath, null, null);
                         if (null != injectResult && injectResult.mIsSuccessful) {
-                            PluginDebugLog.log(TAG,
+                            PluginDebugLog.runtimeLog(TAG,
                                     "handleDependences injectResult success for " + libraryInfo.pluginInfo);
                             sPluginDependences.put(libraryInfo.packageName, libraryInfo.pluginInfo);
                         } else {
-                            PluginDebugLog.log(TAG,
+                            PluginDebugLog.runtimeLog(TAG,
                                     "handleDependences injectResult faild for " + libraryInfo.pluginInfo);
                             return false;
                         }
                     } else {
-                        PluginDebugLog.log(TAG, "handleDependences libraryInfo already handled!");
+                        PluginDebugLog.runtimeLog(TAG, "handleDependences libraryInfo already handled!");
                     }
                 }
                 libraryInfo = null;
@@ -601,11 +601,11 @@ public class ProxyEnvironment {
      */
     private boolean createClassLoader() {
         boolean dependence = handleDependences();
-        PluginDebugLog.log(TAG, "handleDependences: " + dependence);
+        PluginDebugLog.runtimeLog(TAG, "handleDependences: " + dependence);
         if (!dependence) {
             return dependence;
         }
-        PluginDebugLog.log(TAG, "createClassLoader");
+        PluginDebugLog.runtimeLog(TAG, "createClassLoader");
         File optimizedDirectory = new File(getDataDir(mContext, mPluginPakName).getAbsolutePath());
         if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
             mDexClassLoader = new DexClassLoader(mApkFile.getAbsolutePath(), optimizedDirectory.getAbsolutePath(),
@@ -616,15 +616,15 @@ public class ProxyEnvironment {
                 if (!sPluginDependences.containsKey(mPluginPakName)) {
                     ClassLoaderInjectHelper.inject(mContext.getClassLoader(), mDexClassLoader,
                             mTargetMapping.getPackageName() + ".R");
-                    PluginDebugLog.log(TAG, "--- Class injecting @ " + mTargetMapping.getPackageName());
+                    PluginDebugLog.runtimeLog(TAG, "--- Class injecting @ " + mTargetMapping.getPackageName());
                 } else {
-                    PluginDebugLog.log(TAG,
+                    PluginDebugLog.runtimeLog(TAG,
                             "--- Class injecting @ " + mTargetMapping.getPackageName() + " already injected!");
                 }
             }
             return true;
         } else {
-            PluginDebugLog.log(TAG,
+            PluginDebugLog.runtimeLog(TAG,
                     "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
                             + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
                             + " can write: " + optimizedDirectory.canWrite());
@@ -725,7 +725,7 @@ public class ProxyEnvironment {
 
     void quitApp(boolean force, boolean notifyHost) {
         if (force) {
-            PluginDebugLog.log(TAG, "quitapp with " + mPluginPakName);
+            PluginDebugLog.runtimeLog(TAG, "quitapp with " + mPluginPakName);
             while (!mActivityStackSupervisor.getActivityStack().isEmpty()) {
                 mActivityStackSupervisor.pollActivityStack().finish();
             }
@@ -741,11 +741,11 @@ public class ProxyEnvironment {
                         String identity = PluginServiceWrapper.
                                 getIndeitfy(mPluginPakName, serviceWrapper.getServiceClassName());
                         if (!TextUtils.isEmpty(identity)) {
-                            PluginDebugLog.log(TAG, mPluginPakName + " quitapp with service: " + identity);
+                            PluginDebugLog.runtimeLog(TAG, mPluginPakName + " quitapp with service: " + identity);
                             ServiceConnection connection = PServiceSupervisor.getConnection(identity);
                             if (connection != null && mAppWrapper != null) {
                                 try {
-                                    PluginDebugLog.log(TAG, "quitapp unbindService" + connection);
+                                    PluginDebugLog.runtimeLog(TAG, "quitapp unbindService" + connection);
                                     mAppWrapper.unbindService(connection);
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -763,7 +763,7 @@ public class ProxyEnvironment {
         if (notifyHost && (force || (isActivityStackEmpty() && PServiceSupervisor.getAliveServices().isEmpty()))) {
 
             if (null != sExitStuff) {
-                PluginDebugLog.log(TAG, "do exit stuff with " + mPluginPakName);
+                PluginDebugLog.runtimeLog(TAG, "do exit stuff with " + mPluginPakName);
                 sExitStuff.doExitStuff(getTargetPackageName());
             }
         }

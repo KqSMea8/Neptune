@@ -19,6 +19,8 @@ import android.text.TextUtils;
  */
 public class TargetActivator {
 
+    private static final String TAG = "TargetActivator";
+
     /**
      * 加载并启动插件
      *
@@ -68,13 +70,13 @@ public class TargetActivator {
             public void onReceive(Context ctx, Intent intent) {
                 String curPkg = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
                 if (ProxyEnvironment.ACTION_TARGET_LOADED.equals(intent.getAction()) && TextUtils.equals(packageName, curPkg)) {
-                    PluginDebugLog.log("plugin", "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
+                    PluginDebugLog.runtimeLog(TAG, "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
                     callback.onTargetLoaded(packageName);
                     context.getApplicationContext().unregisterReceiver(this);
                 }
             }
         };
-        PluginDebugLog.log("plugin", "注册自定义广播org.qiyi.pluginapp.action.TARGET_LOADED");
+        PluginDebugLog.runtimeLog(TAG, "注册自定义广播org.qiyi.pluginapp.action.TARGET_LOADED");
         IntentFilter filter = new IntentFilter();
         filter.addAction(ProxyEnvironment.ACTION_TARGET_LOADED);
         context.getApplicationContext().registerReceiver(recv, filter);
