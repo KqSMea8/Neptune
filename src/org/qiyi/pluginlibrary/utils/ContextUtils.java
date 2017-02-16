@@ -1,6 +1,7 @@
 package org.qiyi.pluginlibrary.utils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -15,6 +16,7 @@ import android.app.ActivityManager;
 import android.app.Application;
 import android.app.Service;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.os.Build;
@@ -98,6 +100,21 @@ public class ContextUtils {
         return topPackage;
     }
 
+    public static List<String> getRunningPluginPackage(){
+        List<String> mRunningPackage = new ArrayList<String>();
+        Iterator<Entry<String, ProxyEnvironment>> iter = ProxyEnvironmentManager.getAllEnv().entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<String, ProxyEnvironment> entry = iter.next();
+            String packageName = (String) entry.getKey();
+            ProxyEnvironment env = (ProxyEnvironment) entry.getValue();
+            if (env.getActivityStackSupervisor().getActivityStack().size()>0) {
+                mRunningPackage.add(packageName);
+            }
+        }
+
+        return mRunningPackage;
+    }
+
     /**
      * Try to get host ResourcesToolForPlugin in the plugin environment or the
      * ResourcesToolForPlugin with param context will be return
@@ -153,6 +170,12 @@ public class ContextUtils {
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "Return plugin's package name for getPluginPackageName");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
+                }else if(base instanceof ContextWrapper){
+                    base =((ContextWrapper)base).getBaseContext();
+                    if (base instanceof InterfaceToGetHost) {
+                        PluginDebugLog.log(TAG, "Return plugin's package name for getPluginPackageName");
+                        return ((InterfaceToGetHost) base).getPluginPackageName();
+                    }
                 }
             } else if (context instanceof Application) {
                 Context base = ((Application) context).getBaseContext();
@@ -165,6 +188,25 @@ public class ContextUtils {
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "Return Service plugin's package name for getPluginPackageName");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
+                }
+            } else if(context instanceof ContextWrapper){
+                Context base =((ContextWrapper)context).getBaseContext();
+                if (base instanceof InterfaceToGetHost) {
+                    PluginDebugLog.log(TAG, "Return ContextWrapper one plugin's package name for getPluginPackageName");
+                    return ((InterfaceToGetHost) base).getPluginPackageName();
+                }else if(base instanceof ContextWrapper){
+//                    base =((ContextWrapper)base).getBaseContext();
+//                    if (base instanceof InterfaceToGetHost) {
+//                        PluginDebugLog.log(TAG, "Return ContextWrapper two plugin's package name for getPluginPackageName");
+//                        return ((InterfaceToGetHost) base).getPluginPackageName();
+//                    }else if(base instanceof ContextWrapper){
+//                        base =((ContextWrapper)base).getBaseContext();
+//                        if (base instanceof InterfaceToGetHost) {
+//                            PluginDebugLog.log(TAG, "Return ContextWrapper three plugin's package name for getPluginPackageName");
+//                            return ((InterfaceToGetHost) base).getPluginPackageName();
+//                        }
+//                    }
+                    return getPluginPackageName(base);
                 }
             }
             PluginDebugLog.log(TAG, "Return context's package name for getPluginPackageName");
