@@ -162,54 +162,45 @@ public class ContextUtils {
             return null;
         }
         if (context instanceof InterfaceToGetHost) {
-            PluginDebugLog.log(TAG, "Return plugin's package name for getPluginPackageName");
+            PluginDebugLog.log(TAG, "getPluginPackageName context is InterfaceToGetHost!");
             return ((InterfaceToGetHost) context).getPluginPackageName();
         } else {
             if (context instanceof Activity) {
                 Context base = ((Activity) context).getBaseContext();
                 if (base instanceof InterfaceToGetHost) {
-                    PluginDebugLog.log(TAG, "Return plugin's package name for getPluginPackageName");
+                    PluginDebugLog.log(TAG, "getPluginPackageName context is Activity!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
                 }else if(base instanceof ContextWrapper){
-                    base =((ContextWrapper)base).getBaseContext();
-                    if (base instanceof InterfaceToGetHost) {
-                        PluginDebugLog.log(TAG, "Return plugin's package name for getPluginPackageName");
-                        return ((InterfaceToGetHost) base).getPluginPackageName();
-                    }
+                    return getPluginPackageName(base);
                 }
             } else if (context instanceof Application) {
                 Context base = ((Application) context).getBaseContext();
                 if (base instanceof InterfaceToGetHost) {
-                    PluginDebugLog.log(TAG, "Return Application plugin's package name for getPluginPackageName");
+                    PluginDebugLog.log(TAG, "getPluginPackageName context is Application!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
+                }else if(base instanceof ContextWrapper){
+                    return getPluginPackageName(base);
                 }
             } else if (context instanceof Service) {
                 Context base = ((Service) context).getBaseContext();
                 if (base instanceof InterfaceToGetHost) {
-                    PluginDebugLog.log(TAG, "Return Service plugin's package name for getPluginPackageName");
+                    PluginDebugLog.log(TAG, "getPluginPackageName context is Service!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
+                }else if(base instanceof ContextWrapper){
+                    return getPluginPackageName(base);
                 }
             } else if(context instanceof ContextWrapper){
                 Context base =((ContextWrapper)context).getBaseContext();
                 if (base instanceof InterfaceToGetHost) {
-                    PluginDebugLog.log(TAG, "Return ContextWrapper one plugin's package name for getPluginPackageName");
+                    PluginDebugLog.log(TAG, "getPluginPackageName context is ContextWrapper " +
+                            "and base is InterfaceToGetHost!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
                 }else if(base instanceof ContextWrapper){
-//                    base =((ContextWrapper)base).getBaseContext();
-//                    if (base instanceof InterfaceToGetHost) {
-//                        PluginDebugLog.log(TAG, "Return ContextWrapper two plugin's package name for getPluginPackageName");
-//                        return ((InterfaceToGetHost) base).getPluginPackageName();
-//                    }else if(base instanceof ContextWrapper){
-//                        base =((ContextWrapper)base).getBaseContext();
-//                        if (base instanceof InterfaceToGetHost) {
-//                            PluginDebugLog.log(TAG, "Return ContextWrapper three plugin's package name for getPluginPackageName");
-//                            return ((InterfaceToGetHost) base).getPluginPackageName();
-//                        }
-//                    }
+                    //递归调用
                     return getPluginPackageName(base);
                 }
             }
-            PluginDebugLog.log(TAG, "Return context's package name for getPluginPackageName");
+            PluginDebugLog.log(TAG, "getPluginPackageName context dont't match!");
             return context.getPackageName();
         }
     }
