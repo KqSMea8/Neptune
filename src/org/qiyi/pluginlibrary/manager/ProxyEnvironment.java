@@ -831,6 +831,10 @@ public class ProxyEnvironment {
         sExitStuff = stuff;
     }
 
+    public static void setPluginLifeCallBack(ActivityLifecycleCallbacks mActivityLifeCallBack){
+        sActivityLifecycleCallback = mActivityLifeCallBack;
+    }
+
     public interface IAppExitStuff {
         void doExitStuff(String pkgName);
     }
