@@ -1,6 +1,5 @@
 package org.qiyi.pluginlibrary.manager;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -259,10 +258,8 @@ public class ProxyEnvironmentManager {
     }
 
     public static void updateConfiguration(Configuration config) {
-        Iterator<?> iter = sPluginsMap.entrySet().iterator();
-        while (iter.hasNext()) {
-            Map.Entry<?, ?> entry = (Map.Entry<?, ?>) iter.next();
-            ProxyEnvironment env = (ProxyEnvironment) entry.getValue();
+        for (Map.Entry<String, ProxyEnvironment> entry : sPluginsMap.entrySet()) {
+            ProxyEnvironment env = entry.getValue();
             env.updateConfiguration(config);
         }
     }

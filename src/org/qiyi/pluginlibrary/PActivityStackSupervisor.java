@@ -147,9 +147,7 @@ public class PActivityStackSupervisor {
                 handleOtherPluginActivityStack(found);
                 List<Activity> popActivities = new ArrayList<Activity>(5);
                 synchronized (mActivityStack) {
-                    Iterator<Activity> iterator = mActivityStack.iterator();
-                    while (iterator.hasNext()) {
-                        Activity activity = iterator.next();
+                    for (Activity activity : mActivityStack) {
                         if (activity == found) {
                             if (isSingleTask || isSingleTop) {
                                 intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);

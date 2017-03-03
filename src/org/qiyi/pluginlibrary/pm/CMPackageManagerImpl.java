@@ -137,7 +137,7 @@ public class CMPackageManagerImpl {
             StringBuilder infoBuider = new StringBuilder();
             infoBuider.append("PluginInstallAction: ");
             infoBuider.append("filePath: ").append(filePath);
-            infoBuider.append(" has IInstallCallBack: ").append(listener != null ? true : false);
+            infoBuider.append(" has IInstallCallBack: ").append(listener != null);
             if (info != null) {
                 infoBuider.append(" packagename: ").append(info.packageName);
                 infoBuider.append(" plugin_ver: ").append(info.plugin_ver);
@@ -213,7 +213,7 @@ public class CMPackageManagerImpl {
             StringBuilder infoBuilder = new StringBuilder();
             infoBuilder.append("PluginDeleteAction: ");
             infoBuilder.append(
-                    " has IPackageDeleteObserver: ").append(observer != null ? true : false);
+                    " has IPackageDeleteObserver: ").append(observer != null);
             if (info != null) {
                 infoBuilder.append(" packagename: ").append(info.packageName);
                 PluginPackageInfoExt infoExt = info.pluginInfo;
@@ -594,7 +594,6 @@ public class CMPackageManagerImpl {
     /**
      * 删除某个插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
      *
-     * @param packageName 删除的插件包名
      * @param observer 删除成功回调监听
      */
     public void deletePackage(CMPackageInfo info, IPackageDeleteObserver observer) {
@@ -684,7 +683,7 @@ public class CMPackageManagerImpl {
             Iterator<ExecutionPackageAction> iterator = mPackageActions.iterator();
             while (iterator.hasNext()) {
                 ExecutionPackageAction action = iterator.next();
-                if (currentTime - action.time >= 1 * 60 * 1000) {// 1分钟
+                if (currentTime - action.time >= 60 * 1000) {// 1分钟
                     if (action != null && action.callBack != null) {
                         try {
                             action.callBack.onPackageInstallFail(action.packageInfo.packageName,
@@ -730,9 +729,7 @@ public class CMPackageManagerImpl {
         Map<String, CMPackageInfo> installedAppList = getInstalledPackageList();
         ArrayList<CMPackageInfo> list = new ArrayList<CMPackageInfo>();
         if (installedAppList != null) {
-            Iterator<Entry<String, CMPackageInfo>> iterator = installedAppList.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, CMPackageInfo> entry = iterator.next();
+            for (Entry<String, CMPackageInfo> entry : installedAppList.entrySet()) {
                 CMPackageInfo pkg = (CMPackageInfo) entry.getValue();
                 if (pkg != null &&
                         TextUtils.equals(pkg.installStatus, CMPackageInfo.PLUGIN_INSTALLED)) {

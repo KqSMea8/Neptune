@@ -48,7 +48,6 @@ import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -770,9 +769,7 @@ public class ProxyEnvironment {
     }
 
     private static boolean isActivityStackEmpty() {
-        Iterator<Entry<String, ProxyEnvironment>> iter = ProxyEnvironmentManager.getAllEnv().entrySet().iterator();
-        while (iter.hasNext()) {
-            Entry<String, ProxyEnvironment> entry = iter.next();
+        for (Entry<String, ProxyEnvironment> entry : ProxyEnvironmentManager.getAllEnv().entrySet()) {
             ProxyEnvironment environmentNew = entry.getValue();
             if (environmentNew != null && environmentNew.mActivityStackSupervisor.getActivityStack().size() > 0) {
                 return false;
