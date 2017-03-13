@@ -407,10 +407,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                         backup.renameTo(prefsFile);
                     }
 
-                    if (prefsFile.exists() && !prefsFile.canRead()) {
-
-                    }
-
                     Map map = null;
                     Class<?> fileUtilsClass = Class.forName("android.os.FileUtils");
 
@@ -533,8 +529,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         String[] fileList = sFile.list();
         if (fileList == null)
             return;
-        for (int i = 0; i < fileList.length; i++) {
-            String file = fileList[i];
+        for (String file : fileList) {
             if (file != null && (file.equals(name + ".xml") || file.contains("_" + name + ".xml"))) {
                 File oriFile = new File(sharePath + file);
                 File tarFile = getSharedPrefsFile(name);

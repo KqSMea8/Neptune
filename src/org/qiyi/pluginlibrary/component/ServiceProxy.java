@@ -190,11 +190,11 @@ public class ServiceProxy extends Service {
         PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand():" + (paramIntent == null ? "null" : paramIntent));
         if (paramIntent == null) {
             mKillProcessOnDestroy = false;
-            super.onStartCommand(paramIntent, paramInt1, paramInt2);
+            super.onStartCommand(null, paramInt1, paramInt2);
             return START_NOT_STICKY;
         }
 
-        if (paramIntent != null && !TextUtils.isEmpty(paramIntent.getAction())) {
+        if (!TextUtils.isEmpty(paramIntent.getAction())) {
             if (paramIntent.getAction().equals(ProxyEnvironmentManager.ACTION_QUIT)) {
                 PluginDebugLog.log(TAG, "service " + getClass().getName() + " received quit intent action");
                 mKillProcessOnDestroy = true;
@@ -227,14 +227,16 @@ public class ServiceProxy extends Service {
     @Override
     public boolean onUnbind(Intent paramIntent) {
         PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onUnbind():" + (paramIntent == null ? "null" : paramIntent));
-        String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
-        PluginServiceWrapper plugin = findPluginService(targetPackageName, targetClassName);
         boolean result = false;
-        if (plugin != null && plugin.getCurrentService() != null) {
-            plugin.updateBindCounter(-1);
-            result = plugin.getCurrentService().onUnbind(paramIntent);
-            plugin.tryToDestroyService(paramIntent);
+        if (null != paramIntent) {
+            String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
+            String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+            PluginServiceWrapper plugin = findPluginService(targetPackageName, targetClassName);
+            if (plugin != null && plugin.getCurrentService() != null) {
+                plugin.updateBindCounter(-1);
+                result = plugin.getCurrentService().onUnbind(paramIntent);
+                plugin.tryToDestroyService(paramIntent);
+            }
         }
         super.onUnbind(paramIntent);
         return result;
@@ -245,7 +247,7 @@ public class ServiceProxy extends Service {
     public void onStart(Intent intent, int startId) {
         PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStart():" + (intent == null ? "null" : intent));
         if (intent == null) {
-            super.onStart(intent, startId);
+            super.onStart(null, startId);
             return;
         }
         String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
@@ -277,7 +279,7 @@ public class ServiceProxy extends Service {
     public void onRebind(Intent intent) {
         PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onRebind():" + (intent == null ? "null" : intent));
         if (intent == null) {
-            super.onRebind(intent);
+            super.onRebind(null);
             return;
         }
         String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);

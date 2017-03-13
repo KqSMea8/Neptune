@@ -229,13 +229,10 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
             return false;
         }
         PluginPackageInfoExt other = (PluginPackageInfoExt) obj;
-        if (!TextUtils.equals(packageName, other.packageName) || !TextUtils.equals(plugin_ver, other.plugin_ver)
+        return !(!TextUtils.equals(packageName, other.packageName) || !TextUtils.equals(plugin_ver, other.plugin_ver)
                 || !TextUtils.equals(plugin_gray_ver, other.plugin_gray_ver) || !TextUtils.equals(scrc, other.scrc)
-                || !TextUtils.equals(url, other.url)) {
-            return false;
-        }
+                || !TextUtils.equals(url, other.url));
 
-        return true;
     }
 
     @Override

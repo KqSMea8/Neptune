@@ -124,9 +124,7 @@ public class PActivityStackSupervisor {
             Activity found = null;
             synchronized (mActivityStack) {
                 // 遍历已经起过的activity
-                Iterator<Activity> it = mActivityStack.iterator();
-                while (it.hasNext()) {
-                    Activity activity = it.next();
+                for (Activity activity : mActivityStack) {
                     String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(
                             mEnv.getInstallType(), info, mEnv.getRunningProcessName());
                     if (activity != null
@@ -262,12 +260,11 @@ public class PActivityStackSupervisor {
                 if (null != temp && act == temp) {
                     break;
                 }
-                if (!TextUtils.equals(mEnv.getTargetPackageName(),
+                if (temp != null && !TextUtils.equals(mEnv.getTargetPackageName(),
                         ((InstrActivityProxy) temp).getPluginPackageName())) {
                     needRemove.add(temp);
                 }
             }
-            temp = null;
             ProxyEnvironment env = null;
             for (Activity removeItem : needRemove) {
                 if (null != removeItem) {
@@ -288,7 +285,6 @@ public class PActivityStackSupervisor {
                     }
                 }
             }
-            env = null;
         }
     }
 

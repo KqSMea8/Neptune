@@ -71,7 +71,7 @@ public class PluginInstallerService extends Service {
         public void handleMessage(Message msg) {
             PluginDebugLog.installLog(TAG, "handleMessage: what " + msg.what);
             if (msg.what == MSG_ACTION_INSTALL) {
-                if (null != msg && msg.obj instanceof Intent) {
+                if (msg.obj instanceof Intent) {
                     onHandleIntent((Intent) msg.obj);
                 }
                 if (!mServiceHandler.hasMessages(MSG_ACTION_INSTALL) && !mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {

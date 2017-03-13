@@ -86,7 +86,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         defaultActivityName = in.readString();
         permissions = in.createTypedArray(PermissionInfo.CREATOR);
         packageInfo = in.readParcelable(PackageInfo.class.getClassLoader());
-        metaData = in.readBundle();
+        metaData = in.readBundle(getClass().getClassLoader());
         dataDir = in.readString();
         nativeLibraryDir = in.readString();
         mIsClassInject = in.readByte() != 0;
@@ -447,21 +447,21 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         final Bundle activityStates = new Bundle();
         for (String uri : mActivitiyIntentInfos.keySet()) {
             final ActivityIntentInfo aii = mActivitiyIntentInfos.get(uri);
-            activityStates.putParcelable(uri.toString(), aii);
+            activityStates.putParcelable(uri, aii);
         }
         parcel.writeBundle(activityStates);
 
         final Bundle serviceStates = new Bundle();
         for (String uri : mServiceIntentInfos.keySet()) {
             final ServiceIntentInfo aii = mServiceIntentInfos.get(uri);
-            serviceStates.putParcelable(uri.toString(), aii);
+            serviceStates.putParcelable(uri, aii);
         }
         parcel.writeBundle(serviceStates);
 
         final Bundle receiverStates = new Bundle();
         for (String uri : mReceiverIntentInfos.keySet()) {
             final ReceiverIntentInfo aii = mReceiverIntentInfos.get(uri);
-            receiverStates.putParcelable(uri.toString(), aii);
+            receiverStates.putParcelable(uri, aii);
         }
         parcel.writeBundle(receiverStates);
 

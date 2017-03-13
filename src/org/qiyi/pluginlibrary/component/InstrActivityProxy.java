@@ -20,6 +20,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -746,10 +747,14 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     }
 
     public boolean onSearchRequested(SearchEvent searchEvent) {
-        if (getController() != null) {
-            return getController().getPlugin().onSearchRequested(searchEvent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (getController() != null) {
+                return getController().getPlugin().onSearchRequested(searchEvent);
+            }
+            return super.onSearchRequested(searchEvent);
+        } else {
+            return false;
         }
-        return super.onSearchRequested(searchEvent);
     }
 
     public boolean onSearchRequested() {
@@ -760,9 +765,11 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     }
 
     public void onProvideAssistContent(AssistContent outContent) {
-        super.onProvideAssistContent(outContent);
-        if (getController() != null) {
-            getController().getPlugin().onProvideAssistContent(outContent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            super.onProvideAssistContent(outContent);
+            if (getController() != null) {
+                getController().getPlugin().onProvideAssistContent(outContent);
+            }
         }
     }
 

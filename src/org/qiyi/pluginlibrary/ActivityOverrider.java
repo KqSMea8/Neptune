@@ -30,7 +30,10 @@ public class ActivityOverrider {
         }
         ProxyEnvironment con = ProxyEnvironmentManager.getEnvByPkgName(pkgName);
 
-        ActivityInfo actInfo = con.findActivityByClassName(actName);
+        ActivityInfo actInfo = null;
+        if (null != con) {
+            actInfo = con.findActivityByClassName(actName);
+        }
         if (null != actInfo) {
             actInfo.applicationInfo = con.getTargetMapping().getPackageInfo().applicationInfo;
             if (origActInfo != null) {
@@ -57,23 +60,27 @@ public class ActivityOverrider {
             }
         }
         // Handle ActionBar title
-        if (origActInfo.nonLocalizedLabel != null) {
-            activity.setTitle(origActInfo.nonLocalizedLabel);
-        } else if (origActInfo.labelRes != 0) {
-            activity.setTitle(origActInfo.labelRes);
-        } else {
-            if (origActInfo.applicationInfo != null) {
-                if (origActInfo.applicationInfo.nonLocalizedLabel != null) {
-                    activity.setTitle(origActInfo.applicationInfo.nonLocalizedLabel);
-                } else if (origActInfo.applicationInfo.labelRes != 0) {
-                    activity.setTitle(origActInfo.applicationInfo.labelRes);
-                } else {
-                    activity.setTitle(origActInfo.applicationInfo.packageName);
+        if (null != origActInfo) {
+            if (origActInfo.nonLocalizedLabel != null) {
+                activity.setTitle(origActInfo.nonLocalizedLabel);
+            } else if (origActInfo.labelRes != 0) {
+                activity.setTitle(origActInfo.labelRes);
+            } else {
+                if (origActInfo.applicationInfo != null) {
+                    if (origActInfo.applicationInfo.nonLocalizedLabel != null) {
+                        activity.setTitle(origActInfo.applicationInfo.nonLocalizedLabel);
+                    } else if (origActInfo.applicationInfo.labelRes != 0) {
+                        activity.setTitle(origActInfo.applicationInfo.labelRes);
+                    } else {
+                        activity.setTitle(origActInfo.applicationInfo.packageName);
+                    }
                 }
             }
         }
-        PluginDebugLog.log(tag, "changeActivityInfo->changeTheme: " + " theme = " +
-                actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
-                + ", logo = " + actInfo.logo + ", labelRes" + actInfo.labelRes);
+        if (null != actInfo) {
+            PluginDebugLog.log(tag, "changeActivityInfo->changeTheme: " + " theme = " +
+                    actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
+                    + ", logo = " + actInfo.logo + ", labelRes" + actInfo.labelRes);
+        }
     }
 }

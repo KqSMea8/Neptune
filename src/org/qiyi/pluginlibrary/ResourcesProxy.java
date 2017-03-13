@@ -12,6 +12,7 @@ import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
 import android.graphics.Movie;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -196,6 +197,25 @@ public class ResourcesProxy extends Resources {
         }
     }
 
+    /**
+     * 新API 接口，不能使用Override
+     *
+     * @param id            资源ID
+     * @param theme         Theme
+     * @throws NotFoundException
+     */
+    public Drawable getDrawable(int id, Theme theme) throws NotFoundException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                return super.getDrawable(id, theme);
+            } catch (NotFoundException e) {
+                return mHostResources.getDrawable(id, theme);
+            }
+        } else {
+            return getDrawable(id);
+        }
+    }
+
     @SuppressLint("NewApi")
     @Override
     public Drawable getDrawableForDensity(int id, int density) throws NotFoundException {
@@ -203,6 +223,26 @@ public class ResourcesProxy extends Resources {
             return super.getDrawableForDensity(id, density);
         } catch (NotFoundException e) {
             return mHostResources.getDrawableForDensity(id, density);
+        }
+    }
+
+    /**
+     * 新API 接口，不能使用Override
+     *
+     * @param id            资源ID
+     * @param density       分辨率
+     * @param theme         Theme
+     * @throws NotFoundException
+     */
+    public Drawable getDrawableForDensity(int id, int density, Theme theme) throws NotFoundException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                return super.getDrawableForDensity(id, density, theme);
+            } catch (NotFoundException e) {
+                return mHostResources.getDrawableForDensity(id, density, theme);
+            }
+        } else {
+            return getDrawableForDensity(id, density);
         }
     }
 
@@ -224,12 +264,50 @@ public class ResourcesProxy extends Resources {
         }
     }
 
+    /**
+     * 新API 接口，不能使用Override
+     *
+     * @param id                资源ID
+     * @param theme             Theme
+     * @throws NotFoundException
+     */
+    public int getColor(int id, Theme theme) throws NotFoundException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                return super.getColor(id, theme);
+            } catch (NotFoundException e) {
+                return mHostResources.getColor(id, theme);
+            }
+        } else {
+            return getColor(id);
+        }
+    }
+
     @Override
     public ColorStateList getColorStateList(int id) throws NotFoundException {
         try {
             return super.getColorStateList(id);
         } catch (NotFoundException e) {
             return mHostResources.getColorStateList(id);
+        }
+    }
+
+    /**
+     * 新API 接口，不能使用Override
+     *
+     * @param id                资源ID
+     * @param theme             Theme
+     * @throws NotFoundException
+     */
+    public ColorStateList getColorStateList(int id, Theme theme) throws NotFoundException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                return super.getColorStateList(id, theme);
+            } catch (NotFoundException e) {
+                return mHostResources.getColorStateList(id, theme);
+            }
+        } else {
+            return getColorStateList(id);
         }
     }
 

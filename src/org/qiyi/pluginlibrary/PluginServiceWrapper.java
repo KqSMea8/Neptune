@@ -69,12 +69,8 @@ public class PluginServiceWrapper {
     }
 
     public boolean shouldDestroy() {
-        if (mBindCounter == 0 && (mStartCounter == PLUGIN_SERVICE_STOPED || mStartCounter == PLUGIN_SERVICE_DEFAULT)
-                && mState == PLUGIN_SERVICE_CREATED) {
-            return true;
-        } else {
-            return false;
-        }
+        return mBindCounter == 0 && (mStartCounter == PLUGIN_SERVICE_STOPED || mStartCounter == PLUGIN_SERVICE_DEFAULT)
+                && mState == PLUGIN_SERVICE_CREATED;
     }
 
     public void tryToDestroyService(Intent service) {

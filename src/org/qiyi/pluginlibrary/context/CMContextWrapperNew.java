@@ -22,8 +22,11 @@ public class CMContextWrapperNew extends CustomContextWrapper {
     @Override
     public Theme getTheme() {
         if (mTargetTheme == null) {
-            mTargetTheme = ProxyEnvironmentManager.getEnvByPkgName(mPackagename).getTargetResources().newTheme();
-            mTargetTheme.setTo(ProxyEnvironmentManager.getEnvByPkgName(mPackagename).getTargetTheme());
+            ProxyEnvironment environment = ProxyEnvironmentManager.getEnvByPkgName(mPackagename);
+            if (null != environment) {
+                mTargetTheme = environment.getTargetResources().newTheme();
+                mTargetTheme.setTo(environment.getTargetTheme());
+            }
         }
         return mTargetTheme;
     }

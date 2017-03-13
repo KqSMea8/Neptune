@@ -38,11 +38,9 @@ public class ServiceJumpUtil {
             intent.setClass(env.getHostContext(),
                     Class.forName(ProxyComponentMappingByProcess.mappingService(env.getRunningProcessName())));
             String intentInfo = "";
-            if (null != intent) {
-                intentInfo = intent.toString();
-                if (null != intent.getExtras()) {
-                    intentInfo = intentInfo + intent.getExtras().toString();
-                }
+            intentInfo = intent.toString();
+            if (null != intent.getExtras()) {
+                intentInfo = intentInfo + intent.getExtras().toString();
             }
             PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
                     PluginCenterDebugHelper.getInstance().getCurrentSystemTime(),
