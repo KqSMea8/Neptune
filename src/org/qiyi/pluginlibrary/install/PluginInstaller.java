@@ -427,6 +427,7 @@ public class PluginInstaller {
      */
     public static void deleteInstallerPackage(
             Context context, String apkPath, String packageName) {
+        PluginDebugLog.runtimeLog(TAG,"deleteInstallerPackage:"+packageName);
         if (context == null || TextUtils.isEmpty(apkPath) || TextUtils.isEmpty(packageName)) {
             return;
         }
@@ -435,11 +436,22 @@ public class PluginInstaller {
         File apk = new File(apkPath);
         File dexPath = getInstalledDexFile(context, packageName);
         if (apk.exists()) {
-            apk.delete();
+            boolean result = apk.delete();
+            if(result){
+                PluginDebugLog.runtimeFormatLog(TAG,"deleteInstallerPackage apk  %s succcess!",packageName);
+            }else{
+                PluginDebugLog.runtimeFormatLog(TAG,"deleteInstallerPackage apk  %s fail!",packageName);
+            }
+
         }
 
         if (dexPath.exists()) {
-            dexPath.delete();
+            boolean result = dexPath.delete();
+            if(result){
+                PluginDebugLog.runtimeFormatLog(TAG,"deleteInstallerPackage dex  %s succcess!",packageName);
+            }else{
+                PluginDebugLog.runtimeFormatLog(TAG,"deleteInstallerPackage dex  %s fail!",packageName);
+            }
         }
 
         File lib = new File(dataDir, "lib");

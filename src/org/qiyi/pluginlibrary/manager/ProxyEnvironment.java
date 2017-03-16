@@ -299,7 +299,10 @@ public class ProxyEnvironment {
         }
         // 避免重复添加到队列中，尤其是第一次初始化时在enterProxy中已经添加了一次
         if (!cacheIntents.contains(intent) && needAddCache) {
+            PluginDebugLog.runtimeLog(TAG, "launchIntent add to cacheIntent....");
             cacheIntents.offer(intent);
+        }else{
+            PluginDebugLog.runtimeLog(TAG, "launchIntent not add to cacheIntent....needAddCache:"+needAddCache);
         }
 
         PluginDebugLog.runtimeLog(TAG, "launchIntent_cacheIntents: " + cacheIntents);
@@ -308,8 +311,11 @@ public class ProxyEnvironment {
             if (null != curIntent) {
                 doRealLaunch(curIntent, env, packageName, conn, context);
             }
+            PluginDebugLog.runtimeLog(TAG,"launchIntent no launching intnet... and launch end!");
+        }else{
+            PluginDebugLog.runtimeLog(TAG, "launchIntent has launching intent.... so return directly!");
         }
-        PluginDebugLog.runtimeLog(TAG, "haveLaunchActivity end!");
+
         return false;
     }
 

@@ -1,32 +1,5 @@
 package org.qiyi.pluginlibrary.context;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import org.qiyi.pluginlibrary.ActivityJumpUtil;
-import org.qiyi.pluginlibrary.PServiceSupervisor;
-import org.qiyi.pluginlibrary.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.ServiceJumpUtil;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
-import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
-import org.qiyi.pluginlibrary.plugin.TargetMapping;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-import org.qiyi.pluginlibrary.utils.Util;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -43,6 +16,33 @@ import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.ArrayMap;
+
+import org.qiyi.pluginlibrary.ActivityJumpUtil;
+import org.qiyi.pluginlibrary.PServiceSupervisor;
+import org.qiyi.pluginlibrary.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.ServiceJumpUtil;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
+import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.plugin.TargetMapping;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
+import org.qiyi.pluginlibrary.utils.Util;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public abstract class CustomContextWrapper extends ContextWrapper implements InterfaceToGetHost {
 

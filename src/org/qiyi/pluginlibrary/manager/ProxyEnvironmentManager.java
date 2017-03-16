@@ -1,25 +1,5 @@
 package org.qiyi.pluginlibrary.manager;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
-import org.qiyi.pluginlibrary.PActivityStackSupervisor;
-import org.qiyi.pluginlibrary.PServiceSupervisor;
-import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.api.ITargetLoadListener;
-import org.qiyi.pluginlibrary.exception.PluginStartupException;
-import org.qiyi.pluginlibrary.install.IInstallCallBack;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -31,6 +11,26 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.PActivityStackSupervisor;
+import org.qiyi.pluginlibrary.PServiceSupervisor;
+import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
+import org.qiyi.pluginlibrary.api.ITargetLoadListener;
+import org.qiyi.pluginlibrary.exception.PluginStartupException;
+import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.pm.CMPackageInfo;
+import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 管理插件运行环境
@@ -247,7 +247,7 @@ public class ProxyEnvironmentManager {
      */
     static void initTarget(final Context context, String packageName, String processName,
             final ITargetLoadListener listenner) {
-        PluginDebugLog.runtimeLog(TAG, "initTarget");
+        PluginDebugLog.runtimeFormatLog(TAG, "initTarget packageName:%s",processName);
         try {
             new InitProxyEnvironment(context, packageName, processName, listenner).start();
         } catch (Exception e) {

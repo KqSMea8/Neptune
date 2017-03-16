@@ -87,6 +87,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             result[1] = pluginMessage.getString(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
             result[0] = pluginMessage.getString(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
             if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
+                PluginDebugLog.runtimeFormatLog(TAG,"pluginPkg:%s,pluginCls:%s",result[0],result[1]);
                 return result;
             }
         }
@@ -134,6 +135,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onCreate....");
         String pluginActivityName = null;
         String pluginPkgName = null;
         String[] pkgAndCls = getPkgAndCls();
@@ -364,6 +366,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onResume() {
         super.onResume();
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onResume....");
         if (getController() != null) {
             try {
                 getController().callOnResume();
@@ -377,6 +380,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onStart() {
         super.onStart();
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onStart....");
         if (getController() != null) {
             try {
                 getController().callOnStart();
@@ -400,6 +404,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     protected void onDestroy() {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onDestroy....");
         if (null == this.getParent() && mPluginEnv != null) {
             mPluginEnv.getActivityStackSupervisor().popActivityFromStack(this);
         }
@@ -418,6 +423,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onPause() {
         super.onPause();
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onPause....");
         if (getController() != null) {
 
             try {
@@ -432,6 +438,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     public void onBackPressed() {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onBackPressed....");
         if (getController() != null) {
             try {
                 getController().callOnBackPressed();
@@ -446,6 +453,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onStop() {
         super.onStop();
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onStop....");
         if (getController() != null) {
             try {
                 getController().callOnStop();
@@ -459,6 +467,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onRestart() {
         super.onRestart();
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onRestart....");
         if (getController() != null) {
             try {
                 getController().callOnRestart();
@@ -482,6 +491,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     public ComponentName startService(Intent service) {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy startService....");
         if (mPluginEnv != null) {
             ServiceJumpUtil.remapStartServiceIntent(mPluginEnv, service);
         }
@@ -490,6 +500,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     public boolean stopService(Intent name) {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy stopService....");
         if (mPluginEnv != null) {
             String actServiceClsName = name.getComponent().getClassName();
             PluginServiceWrapper plugin = PServiceSupervisor.getServiceByIdentifer(
@@ -508,10 +519,12 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (mPluginEnv != null) {
             ServiceJumpUtil.remapStartServiceIntent(mPluginEnv, service);
         }
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy bindService...."+service);
         return super.bindService(service, conn, flags);
     }
 
     public void startActivityForResult(Intent intent, int requestCode) {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy startActivityForResult one....");
         if (mPluginEnv != null) {
             super.startActivityForResult(
                     ActivityJumpUtil.handleStartActivityIntent(mPluginEnv.getTargetPackageName(), intent, requestCode, null, this),
@@ -523,6 +536,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @SuppressLint("NewApi")
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy startActivityForResult two....");
         if (mPluginEnv != null) {
             super.startActivityForResult(
                     ActivityJumpUtil.handleStartActivityIntent(mPluginEnv.getTargetPackageName(), intent, requestCode, options, this),
@@ -586,6 +600,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     public View onCreateView(String name, Context context, AttributeSet attrs) {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onCreateView");
         if (getController() != null) {
             return getController().callOnCreateView(name, context, attrs);
         }
@@ -594,6 +609,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onCreateView");
         if (getController() != null) {
             return getController().callOnCreateView(parent, name, context, attrs);
         }
@@ -603,6 +619,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onNewIntent");
         if (getController() != null) {
             getController().callOnNewIntent(intent);
         }
@@ -611,6 +628,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onActivityResult");
         if (getController() != null) {
             getController().getPluginRef().call("onActivityResult", PluginActivityControl.sMethods, requestCode, resultCode, data);
         }
@@ -619,6 +637,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     public void onAttachFragment(Fragment fragment) {
         super.onAttachFragment(fragment);
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onAttachFragment");
         if (getController() != null && getController().getPlugin() != null) {
             getController().getPlugin().onAttachFragment(fragment);
         }
@@ -707,6 +726,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onRestoreInstanceState");
         if (getController() != null) {
             getController().callOnRestoreInstanceState(savedInstanceState);
         }
@@ -715,6 +735,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onSaveInstanceState");
         if (getController() != null) {
             getController().callOnSaveInstanceState(outState);
         }

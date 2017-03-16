@@ -1,16 +1,16 @@
 package org.qiyi.pluginlibrary.component;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import android.app.Service;
+import android.content.Intent;
+import android.content.res.Configuration;
+import android.os.IBinder;
+import android.os.Process;
+import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.PServiceSupervisor;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.ServiceJumpUtil;
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
@@ -18,12 +18,12 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
-import android.app.Service;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.os.IBinder;
-import android.os.Process;
-import android.text.TextUtils;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Plugin service's host service(Real service)
@@ -37,7 +37,7 @@ public class ServiceProxy extends Service {
 
     @Override
     public void onCreate() {
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onCreate()");
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>onCreate()");
         super.onCreate();
         handleSlefLaunchPluginService();
     }
@@ -64,10 +64,10 @@ public class ServiceProxy extends Service {
 
     public PluginServiceWrapper loadTargetService(String targetPackageName, String targetClassName) {
         PluginServiceWrapper currentPlugin = findPluginService(targetPackageName, targetClassName);
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>loadTargetService()" + "target:"
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>loadTargetService()" + "target:"
                 + (currentPlugin == null ? "null" : currentPlugin.getClass().getName()));
         if (currentPlugin == null) {
-            PluginDebugLog.log(TAG, "ServiceProxyNew>>>>ProxyEnvironment.hasInstance:"
+            PluginDebugLog.log(TAG, "ServiceProxy>>>>ProxyEnvironment.hasInstance:"
                     + ProxyEnvironmentManager.hasEnvInstance(targetPackageName) + ";targetPackageName:" + targetPackageName);
 
             try {
@@ -88,7 +88,7 @@ public class ServiceProxy extends Service {
 
                 PServiceSupervisor.addServiceByIdentifer(targetPackageName + "." + targetClassName, currentPlugin);
 
-                PluginDebugLog.log(TAG, "ServiceProxyNew>>>start service, pkgName: " + targetPackageName + ", clsName: "
+                PluginDebugLog.log(TAG, "ServiceProxy>>>start service, pkgName: " + targetPackageName + ", clsName: "
                         + targetClassName);
             } catch (InstantiationException e) {
                 currentPlugin = null;
@@ -110,7 +110,7 @@ public class ServiceProxy extends Service {
                 ProxyEnvironmentManager.deliverPlug(this, false, targetPackageName,
                         ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION);
                 currentPlugin = null;
-                PluginDebugLog.log("plugin", "初始化target失败");
+                PluginDebugLog.log(TAG, "初始化target失败");
             }
         }
         return currentPlugin;
@@ -119,7 +119,7 @@ public class ServiceProxy extends Service {
     @Override
     public IBinder onBind(Intent paramIntent) {
 
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onBind():" + (paramIntent == null ? "null" : paramIntent));
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>onBind():" + (paramIntent == null ? "null" : paramIntent));
         mKillProcessOnDestroy = false;
         if (paramIntent == null) {
             return null;
@@ -187,7 +187,7 @@ public class ServiceProxy extends Service {
 
     @Override
     public int onStartCommand(Intent paramIntent, int paramInt1, int paramInt2) {
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand():" + (paramIntent == null ? "null" : paramIntent));
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>onStartCommand():" + (paramIntent == null ? "null" : paramIntent));
         if (paramIntent == null) {
             mKillProcessOnDestroy = false;
             super.onStartCommand(null, paramInt1, paramInt2);
@@ -206,18 +206,18 @@ public class ServiceProxy extends Service {
         String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
         String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand() currentPlugin: " + currentPlugin);
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>onStartCommand() currentPlugin: " + currentPlugin);
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
             currentPlugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STARTED);
             int result = currentPlugin.getCurrentService().onStartCommand(paramIntent, paramInt1, paramInt2);
-            PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand() result: " + result);
+            PluginDebugLog.log(TAG, "ServiceProxy>>>>>onStartCommand() result: " + result);
             if (result == START_REDELIVER_INTENT || result == START_STICKY) {
                 currentPlugin.mNeedSelfLaunch = true;
             }
             mKillProcessOnDestroy = false;
             return START_NOT_STICKY;
         } else {
-            PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStartCommand() currentPlugin is null!");
+            PluginDebugLog.log(TAG, "ServiceProxy>>>>>onStartCommand() currentPlugin is null!");
             mKillProcessOnDestroy = false;
             super.onStartCommand(paramIntent, paramInt1, paramInt2);
             return START_NOT_STICKY;
@@ -226,7 +226,7 @@ public class ServiceProxy extends Service {
 
     @Override
     public boolean onUnbind(Intent paramIntent) {
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onUnbind():" + (paramIntent == null ? "null" : paramIntent));
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>onUnbind():" + (paramIntent == null ? "null" : paramIntent));
         boolean result = false;
         if (null != paramIntent) {
             String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
@@ -245,7 +245,7 @@ public class ServiceProxy extends Service {
     @Override
     @Deprecated
     public void onStart(Intent intent, int startId) {
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onStart():" + (intent == null ? "null" : intent));
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>onStart():" + (intent == null ? "null" : intent));
         if (intent == null) {
             super.onStart(null, startId);
             return;
@@ -277,7 +277,7 @@ public class ServiceProxy extends Service {
 
     @Override
     public void onRebind(Intent intent) {
-        PluginDebugLog.log(TAG, "ServiceProxyNew>>>>>onRebind():" + (intent == null ? "null" : intent));
+        PluginDebugLog.log(TAG, "ServiceProxy>>>>>onRebind():" + (intent == null ? "null" : intent));
         if (intent == null) {
             super.onRebind(null);
             return;
