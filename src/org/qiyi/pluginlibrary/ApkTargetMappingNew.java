@@ -86,7 +86,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         defaultActivityName = in.readString();
         permissions = in.createTypedArray(PermissionInfo.CREATOR);
         packageInfo = in.readParcelable(PackageInfo.class.getClassLoader());
-        metaData = in.readBundle(getClass().getClassLoader());
+        metaData = in.readBundle();
         dataDir = in.readString();
         nativeLibraryDir = in.readString();
         mIsClassInject = in.readByte() != 0;
