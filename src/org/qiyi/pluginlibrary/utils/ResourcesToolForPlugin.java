@@ -1,10 +1,10 @@
 package org.qiyi.pluginlibrary.utils;
 
-import java.lang.reflect.Field;
-
 import android.content.Context;
 import android.content.res.Resources;
 import android.text.TextUtils;
+
+import java.lang.reflect.Field;
 
 /**
  * Wrapper class for invoker to get resource id Wrapper of gen/R.java
@@ -80,7 +80,8 @@ public class ResourcesToolForPlugin {
             mResources = resource;
             mClassLoader = clsLoader;
         }
-        mResolveByReflect = resolveByReflect;
+        //由于8.3版本已经将R文件剔除，所以统一不在使用反射
+        mResolveByReflect = false;//resolveByReflect;
     }
 
     /**
@@ -91,7 +92,7 @@ public class ResourcesToolForPlugin {
      * @param resolveByReflect
      */
     public void setResolveType(boolean resolveByReflect) {
-        mResolveByReflect = resolveByReflect;
+        mResolveByReflect = false;//resolveByReflect;
     }
 
     /**
