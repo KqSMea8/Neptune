@@ -466,7 +466,7 @@ public class ProxyEnvironmentManager {
         }
     }
 
-    private static void dump(PrintWriter printWriter){
+    public static void dump(PrintWriter printWriter){
         try{
             printWriter.print("================start dump plugin activity stack====================");
             Iterator<Map.Entry<String, ProxyEnvironment>> mIterator = sPluginsMap.entrySet().iterator();
