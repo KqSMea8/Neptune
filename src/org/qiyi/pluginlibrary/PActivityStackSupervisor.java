@@ -1,5 +1,16 @@
 package org.qiyi.pluginlibrary;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.component.InstrActivityProxy;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
+import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
+import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -9,17 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import org.qiyi.pluginlibrary.component.InstrActivityProxy;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-
-import android.app.Activity;
-import android.content.Intent;
-import android.content.pm.ActivityInfo;
-import android.text.TextUtils;
 
 public class PActivityStackSupervisor {
     private static final String TAG = PActivityStackSupervisor.class.getSimpleName();
@@ -131,6 +131,7 @@ public class PActivityStackSupervisor {
                             && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
                         String key = getActivityStackKey(activity, mEnv.getInstallType());
                         if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
+                            PluginDebugLog.runtimeLog(TAG,"dealLaunchMode found:"+((InstrActivityProxy)activity).dump());
                             found = activity;
                             break;
                         }
@@ -148,8 +149,10 @@ public class PActivityStackSupervisor {
                     for (Activity activity : mActivityStack) {
                         if (activity == found) {
                             if (isSingleTask || isSingleTop) {
+                                PluginDebugLog.runtimeLog(TAG,"dealLaunchMode add single top flag!");
                                 intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                             }
+                            PluginDebugLog.runtimeLog(TAG,"dealLaunchMode add clear top flag!");
                             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                             break;
                         }
@@ -157,12 +160,13 @@ public class PActivityStackSupervisor {
                     }
                     for (Activity act : popActivities) {
                         if (!mActivityStack.isEmpty()) {
-                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode mActivityStack remove " + act);
+                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode mActivityStack remove " + ((InstrActivityProxy)act).dump());
                             mActivityStack.remove(act);
                         }
                     }
                 }
                 for (Activity act : popActivities) {
+                    PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + ((InstrActivityProxy)act).dump());
                     act.finish();
                 }
                 mEnv.quitApp(false);
