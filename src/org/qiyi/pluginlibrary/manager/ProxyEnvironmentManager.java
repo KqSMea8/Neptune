@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.manager;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +19,7 @@ import org.qiyi.pluginlibrary.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.PServiceSupervisor;
 import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
 import org.qiyi.pluginlibrary.api.ITargetLoadListener;
+import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.exception.PluginStartupException;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
@@ -26,6 +28,8 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
+import java.io.PrintWriter;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -460,5 +464,26 @@ public class ProxyEnvironmentManager {
             }
             super.handleMessage(msg);
         }
+    }
+
+    private static void dump(PrintWriter printWriter){
+        try{
+            printWriter.print("================start dump plugin activity stack====================");
+            Iterator<Map.Entry<String, ProxyEnvironment>> mIterator = sPluginsMap.entrySet().iterator();
+            while (mIterator.hasNext()){
+                Map.Entry<String,ProxyEnvironment> tmp = mIterator.next();
+                printWriter.print("packageName:"+tmp.getKey());
+                printWriter.print("\n");
+                List<Activity> activities = tmp.getValue().getActivityStackSupervisor().getActivityStack();
+                for(Activity mActivity : activities){
+                    ((InstrActivityProxy)mActivity).dump(printWriter);
+                }
+            }
+            printWriter.print("================end dump plugin activity stack====================");
+        }catch (Exception e){
+            e.printStackTrace();
+            printWriter.print("error:"+e.getMessage());
+        }
+
     }
 }
