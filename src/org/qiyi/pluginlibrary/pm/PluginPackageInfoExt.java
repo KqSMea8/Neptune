@@ -54,6 +54,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
     public static final String IS_BASE = "is_base"; // 标示是否是lib
     private static final String SUPPORT_MIN_VERSION = "l_ver";//云控插件支持最低版本
     private static final String IS_DELIEVE_STARTUP = "s_pingback";//云控插件启动是否投递pingback,默认0使用本地过滤列表,云控：1表示投递，2表示不投递
+    public static final String MD5 = "md5";
 
     //启动是否投递pingback
     public int is_deliver_startup = 0;
@@ -108,6 +109,8 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
 
     public int is_base = 0; // 标示是否是lib
 
+    public String md5 = "";//插件包全量md5
+
     @Override
     public String toString() {
         try {
@@ -120,7 +123,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
         }
         return "Plugin [id=" + id + ", name=" + name + ", plugin_ver=" + plugin_ver + ", plugin_gray_ver=" + plugin_gray_ver + ", crc="
                 + crc + ", type=" + type + ", desc=" + desc + ", i_method=" + mPluginInstallMethod + ", url=" + url + ", mPluginFileType="
-                + mSuffixType + ", is_deliver_startup=" + is_deliver_startup + ", support_min_version=" + support_min_version + "]";
+                + mSuffixType + ", is_deliver_startup=" + is_deliver_startup + ", support_min_version=" + support_min_version + ", md5=" + md5 + "]";
     }
 
     public PluginPackageInfoExt() {
@@ -154,6 +157,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
             is_base = packageInfo.is_base;
             is_deliver_startup = packageInfo.is_deliver_startup;
             support_min_version = packageInfo.support_min_version;
+            md5 = packageInfo.md5;
         }
     }
 
@@ -184,6 +188,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
             is_base = ext.optInt(IS_BASE);
             is_deliver_startup = ext.optInt(IS_DELIEVE_STARTUP);
             support_min_version = ext.optString(SUPPORT_MIN_VERSION);
+            md5 = ext.optString(MD5);
         }
     }
 
@@ -272,6 +277,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
         is_base = parcel.readInt();
         is_deliver_startup = parcel.readInt();
         support_min_version = parcel.readString();
+        md5 = parcel.readString();
 
     }
 
@@ -307,6 +313,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
         dest.writeInt(is_base);
         dest.writeInt(is_deliver_startup);
         dest.writeString(support_min_version);
+        dest.writeString(md5);
     }
 
     public JSONObject data2JsonObj() throws JSONException {
@@ -336,6 +343,7 @@ public class PluginPackageInfoExt implements Parcelable, Serializable {
         result.put(IS_BASE, is_base);
         result.put(IS_DELIEVE_STARTUP, is_deliver_startup);
         result.put(SUPPORT_MIN_VERSION, support_min_version);
+        result.put(MD5, md5);
         return result;
     }
 }
