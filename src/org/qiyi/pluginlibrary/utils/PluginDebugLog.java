@@ -42,10 +42,8 @@ public class PluginDebugLog {
     }
 
     private static void logInternal(String tag, Object msg) {
-        if (isDebug()) {
-            if (!TextUtils.isEmpty(tag) && null != msg) {
-                Log.i(tag, String.valueOf(msg));
-            }
+        if (!TextUtils.isEmpty(tag) && null != msg) {
+            Log.i(tag, String.valueOf(msg));
         }
     }
 
@@ -64,7 +62,9 @@ public class PluginDebugLog {
      * @param msg log信息
      */
     public static void downloadLog(String tag, Object msg) {
-        logInternal(DOWNLOAD_TAG, "[ " + tag + " ] : " + msg);
+        if (isDebug()) {
+            logInternal(DOWNLOAD_TAG, "[ " + tag + " ] : " + msg);
+        }
     }
 
     /**
@@ -74,11 +74,13 @@ public class PluginDebugLog {
      * @param args
      */
     public static void downloadFormatLog(String tag,String format,Object... args){
-        try{
-            String msg = (args == null) ? format : String.format(Locale.US, format, args);
-            downloadLog(tag,msg);
-        }catch (Exception e){
-            e.printStackTrace();
+        if (isDebug()) {
+            try {
+                String msg = (args == null) ? format : String.format(Locale.US, format, args);
+                downloadLog(tag, msg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -90,7 +92,9 @@ public class PluginDebugLog {
      */
 
     public static void installLog(String tag, Object msg) {
-        logInternal(INSTALL_TAG, "[ " + tag + " ] : " + msg);
+        if (isDebug()) {
+            logInternal(INSTALL_TAG, "[ " + tag + " ] : " + msg);
+        }
     }
 
     /**
@@ -100,11 +104,13 @@ public class PluginDebugLog {
      * @param args
      */
     public static void installFormatLog(String tag,String format,Object... args){
-        try{
-            String msg = (args == null) ? format : String.format(Locale.US, format, args);
-            installLog(tag,msg);
-        }catch (Exception e){
-            e.printStackTrace();
+        if (isDebug()) {
+            try {
+                String msg = (args == null) ? format : String.format(Locale.US, format, args);
+                installLog(tag, msg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -116,7 +122,9 @@ public class PluginDebugLog {
      * @param msg log信息
      */
     public static void runtimeLog(String tag, Object msg) {
-        logInternal(RUNTIME_TAG, "[ " + tag + " ] : " + msg);
+        if (isDebug()) {
+            logInternal(RUNTIME_TAG, "[ " + tag + " ] : " + msg);
+        }
     }
 
     /**
@@ -126,11 +134,13 @@ public class PluginDebugLog {
      * @param args
      */
     public static void runtimeFormatLog(String tag,String format,Object... args){
-        try{
-            String msg = (args == null) ? format : String.format(Locale.US, format, args);
-            runtimeLog(tag,msg);
-        }catch (Exception e){
-            e.printStackTrace();
+        if (isDebug()) {
+            try {
+                String msg = (args == null) ? format : String.format(Locale.US, format, args);
+                runtimeLog(tag, msg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -142,7 +152,9 @@ public class PluginDebugLog {
      * @param msg log信息
      */
     public static void log(String tag, Object msg) {
-        logInternal(GENERAL_TAG, "[ " + tag + " ] : " + msg);
+        if (isDebug()) {
+            logInternal(GENERAL_TAG, "[ " + tag + " ] : " + msg);
+        }
     }
 
     /**
@@ -152,11 +164,13 @@ public class PluginDebugLog {
      * @param args
      */
     public static void formatLog(String tag,String format,Object... args){
-        try{
-            String msg = (args == null) ? format : String.format(Locale.US, format, args);
-            log(tag,msg);
-        }catch (Exception e){
-            e.printStackTrace();
+        if (isDebug()) {
+            try {
+                String msg = (args == null) ? format : String.format(Locale.US, format, args);
+                log(tag, msg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
