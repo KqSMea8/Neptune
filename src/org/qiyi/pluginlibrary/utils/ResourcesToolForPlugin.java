@@ -203,7 +203,11 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForBool(String sourceName) {
-        return optValue(sourceName, BOOL);
+        if(mResolveByReflect){
+            return optValue(sourceName, BOOL);
+        }
+        return getResourceId(sourceName,BOOL);
+
     }
 
     public int getResourceForDimen(String sourceName) {
@@ -214,15 +218,27 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForInteger(String sourceName) {
-        return optValue(sourceName, INTEGER);
+        if(mResolveByReflect){
+            return optValue(sourceName, INTEGER);
+        }
+        return getResourceId(sourceName,INTEGER);
+
     }
 
     public int getResourceForInterpolator(String sourceName) {
-        return optValue(sourceName, INTERPOLATOR);
+        if(mResolveByReflect){
+            return optValue(sourceName, INTERPOLATOR);
+        }
+        return getResourceId(sourceName,INTERPOLATOR);
+
     }
 
     public int getResourceForMenu(String sourceName) {
-        return optValue(sourceName, MENU);
+        if(mResolveByReflect){
+            return optValue(sourceName, MENU);
+        }
+        return getResourceId(sourceName,MENU);
+
     }
 
     public int getResourceForStyleable(String sourceName) {
@@ -234,7 +250,11 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForTransition(String sourceName) {
-        return optValue(sourceName, TRANSITION);
+        if(mResolveByReflect){
+            return optValue(sourceName, TRANSITION);
+        }
+        return getResourceId(sourceName,TRANSITION);
+
     }
 
     public int getResourceForXml(String sourceName) {
