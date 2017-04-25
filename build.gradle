@@ -78,6 +78,13 @@ android {
         delete 'build/outputs/libplugin.jar'
         delete "${target}/libplugin.jar"
     }
+
+    task getLatestCode(){
+        exec{
+            executable ='git'
+            args=['pull','--rebase']
+        }
+    }
     task makeJar(type: Copy) {
         from('build/intermediates/bundles/debug/')
         into(target)
@@ -88,7 +95,7 @@ android {
         }
 
     }
-    makeJar.dependsOn(clearJar, build)
+    makeJar.dependsOn(clearJar,getLatestCode, build)
 }
 
 /**
