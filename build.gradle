@@ -75,8 +75,8 @@ android {
     def target = new File(project.buildDir.toString()+"/libs");
 
     task clearJar(type: Delete) {
-        delete 'build/outputs/libplugin.jar'
         delete "${target}/libplugin.jar"
+        delete "${project.projectDir}/MANIFEST.MF"
     }
 
     task getLatestCode(){
