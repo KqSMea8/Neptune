@@ -642,6 +642,7 @@ public class ProxyEnvironment {
      */
     public void ejectClassLoader() {
         if (mDexClassLoader != null && mTargetMapping.getMetaData() != null && mTargetMapping.isClassNeedInject()) {
+            PluginDebugLog.runtimeLog(TAG, "--- Class injecting @ " + mTargetMapping.getPackageName());
             ClassLoaderInjectHelper.eject(mContext.getClassLoader(), mDexClassLoader);
         }
     }

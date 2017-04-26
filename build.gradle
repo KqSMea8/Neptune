@@ -80,7 +80,9 @@ android {
     }
 
     task makeJar(type: Copy) {
-        getLatestCode()
+        if(!project.hasProperty("Debug")){
+            getLatestCode()
+        }
         from('build/intermediates/bundles/debug/')
         into(target)
         include('classes.jar')
