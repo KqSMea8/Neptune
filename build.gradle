@@ -79,13 +79,8 @@ android {
         delete "${project.projectDir}/MANIFEST.MF"
     }
 
-    task getLatestCode(){
-        exec{
-            executable ='git'
-            args=['pull','--rebase']
-        }
-    }
     task makeJar(type: Copy) {
+        getLatestCode()
         from('build/intermediates/bundles/debug/')
         into(target)
         include('classes.jar')
@@ -95,7 +90,7 @@ android {
         }
 
     }
-    makeJar.dependsOn(clearJar,getLatestCode, build)
+    makeJar.dependsOn(clearJar, build)
 }
 
 /**
@@ -135,4 +130,11 @@ def getGitChangeId() {
         println 'ChangeId' + outputAsString
     }
     return outputAsString
+}
+
+def getLatestCode() {
+    exec{
+        executable ='git'
+        args=['pull','--rebase']
+    }
 }
