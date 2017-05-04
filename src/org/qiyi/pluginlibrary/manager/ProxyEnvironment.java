@@ -73,6 +73,11 @@ public class ProxyEnvironment {
     public static final String ACTION_TARGET_LOADED = "org.qiyi.pluginapp.action.TARGET_LOADED";
 
     /**
+     * 插件加载成功的广播(new)
+     */
+    public static final String ACTION_PLUGIN_LOADED = "org.qiyi.pluginapp.ACTION_PLUGIN_LOADED";
+
+    /**
      * 运行在当前进程内所有插件依赖库
      **/
     private static ConcurrentMap<String, PluginPackageInfoExt> sPluginDependences =
@@ -387,7 +392,17 @@ public class ProxyEnvironment {
                 context.startActivity(curIntent);
             }
         }
+        sendPluginLoadedBroadcast(context);
         executeNext(env, packageName, conn, context);
+    }
+
+    /**
+     * 发送插件加载成功的广播，目前主要用于从桌面快捷方式启动的插件的情况
+     */
+    private static void sendPluginLoadedBroadcast(Context context) {
+        Intent intent = new Intent();
+        intent.setAction(ACTION_PLUGIN_LOADED);
+        context.sendBroadcast(intent);
     }
 
     private static void executeNext(final ProxyEnvironment env, final String packageName, final ServiceConnection conn,
