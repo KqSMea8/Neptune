@@ -392,14 +392,14 @@ public class ProxyEnvironment {
                 context.startActivity(curIntent);
             }
         }
-        sendPluginLoadedBroadcast(context);
+//        sendPluginLoadedBroadcast(context);
         executeNext(env, packageName, conn, context);
     }
 
     /**
      * 发送插件加载成功的广播，目前主要用于从桌面快捷方式启动的插件的情况
      */
-    private static void sendPluginLoadedBroadcast(Context context) {
+    public static void sendPluginLoadedBroadcast(Context context) {
         Intent intent = new Intent();
         intent.setAction(ACTION_PLUGIN_LOADED);
         context.sendBroadcast(intent);
