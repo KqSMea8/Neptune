@@ -9,6 +9,7 @@ import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ public class PActivityStackSupervisor {
             return;
         }
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode target activity: " + intent + " source: "
-                + intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY));
+                + IntentUtils.getClsName(intent));
         if (PluginDebugLog.isDebug()) {
             if (null != mActivityStack && mActivityStack.size() > 0) {
                 for (Activity ac : mActivityStack) {
@@ -69,7 +70,7 @@ public class PActivityStackSupervisor {
                 PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack is empty");
             }
         }
-        String targetActivity = intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
+        String targetActivity =IntentUtils.getClsName(intent); //intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
         if (TextUtils.isEmpty(targetActivity)) {
             return;
         }
@@ -203,8 +204,7 @@ public class PActivityStackSupervisor {
                     while (loadingRecordIterator.hasNext()) {
                         Intent record = loadingRecordIterator.next();
                         if (null != record) {
-                            notLaunchTargetClassName = record
-                                    .getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
+                            notLaunchTargetClassName = IntentUtils.getClsName(record);
                             if (TextUtils.equals(notLaunchTargetClassName, targetActivity)) {
                                 PluginDebugLog.runtimeLog(TAG,
                                         "sIntentLoadingMap found: " + targetActivity);
@@ -222,7 +222,7 @@ public class PActivityStackSupervisor {
             }
         }
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode end: " + intent + " "
-                + intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY));
+                + IntentUtils.getClsName(intent));
     }
 
     private void handleOtherPluginActivityStack(Activity act) {
@@ -390,8 +390,8 @@ public class PActivityStackSupervisor {
         Intent toBeRemoved = null;
         if (null != intents) {
             for (Intent temp : intents) {
-                if (TextUtils.equals(temp.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY),
-                        intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY))) {
+                if (TextUtils.equals(IntentUtils.getClsName(temp),
+                        IntentUtils.getClsName(intent))) {
                     toBeRemoved = temp;
                     break;
                 }
