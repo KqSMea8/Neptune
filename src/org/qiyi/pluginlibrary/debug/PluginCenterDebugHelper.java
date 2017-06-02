@@ -47,6 +47,25 @@ public class PluginCenterDebugHelper {
 //    }
 
     /**
+     * 保存请求插件列表的url
+     *
+     * @param time      保存时间
+     * @param url       url
+     */
+    public void savePluginRequestUrl(final String time, final String url) {
+        iPluginDebugHelper.savePluginRequestUrl(context, time, url);
+    }
+
+    /**
+     * 获取插件请求url
+     *
+     * @return      url
+     */
+    public List<String> getPluginRequestUrl() {
+        return iPluginDebugHelper.getPluginRequestUrl(context);
+    }
+
+    /**
      * 保存插件列表
      *
      * @param time      保存时间

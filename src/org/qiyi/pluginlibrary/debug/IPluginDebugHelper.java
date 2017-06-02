@@ -9,6 +9,22 @@ import java.util.List;
  */
 public interface IPluginDebugHelper {
     /**
+     * 保存请求插件列表的url
+     *
+     * @param context   Context
+     * @param time      保存时间
+     * @param url       url
+     */
+    void savePluginRequestUrl(Context context, final String time, final String url);
+
+    /**
+     * 获取请求插件列表的Url
+     *
+     * @param context   Context
+     * @return          url
+     */
+    List<String> getPluginRequestUrl(Context context);
+    /**
      * 保存插件列表
      *
      * @param context   Context
