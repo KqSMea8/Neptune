@@ -25,7 +25,6 @@ import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
@@ -135,7 +134,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
         if (conn != null) {
             if (env != null && service != null && service.getComponent() != null) {
-                String serviceClass = IntentUtils.getClsName(service); //service.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
+                String serviceClass = service.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
                 String packageName = env.getTargetPackageName();
                 if (!TextUtils.isEmpty(serviceClass) && !TextUtils.isEmpty(packageName)) {
                     PServiceSupervisor.addServiceConnectionByIdentifer(packageName + "." + serviceClass, conn);

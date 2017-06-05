@@ -15,7 +15,6 @@ import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
@@ -125,8 +124,8 @@ public class ServiceProxy extends Service {
         if (paramIntent == null) {
             return null;
         }
-        String targetClassName = IntentUtils.getClsName(paramIntent); //paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = IntentUtils.getPluginPackage(paramIntent); //paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
+        String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
 
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
@@ -204,8 +203,8 @@ public class ServiceProxy extends Service {
             }
         }
         ContextUtils.notifyHostPluginStarted(this, paramIntent);
-        String targetClassName = IntentUtils.getClsName(paramIntent); //paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName =IntentUtils.getPluginPackage(paramIntent); //paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
+        String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
         PluginDebugLog.log(TAG, "ServiceProxy>>>>>onStartCommand() currentPlugin: " + currentPlugin);
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
@@ -230,8 +229,8 @@ public class ServiceProxy extends Service {
         PluginDebugLog.log(TAG, "ServiceProxy>>>>>onUnbind():" + (paramIntent == null ? "null" : paramIntent));
         boolean result = false;
         if (null != paramIntent) {
-            String targetClassName = IntentUtils.getClsName(paramIntent);// paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-            String targetPackageName =IntentUtils.getPluginPackage(paramIntent);// paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+            String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
+            String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
             PluginServiceWrapper plugin = findPluginService(targetPackageName, targetClassName);
             if (plugin != null && plugin.getCurrentService() != null) {
                 plugin.updateBindCounter(-1);
@@ -251,8 +250,8 @@ public class ServiceProxy extends Service {
             super.onStart(null, startId);
             return;
         }
-        String targetClassName = IntentUtils.getClsName(intent); //intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = IntentUtils.getPluginPackage(intent); //intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
+        String targetPackageName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
 
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
@@ -283,8 +282,8 @@ public class ServiceProxy extends Service {
             super.onRebind(null);
             return;
         }
-        String targetClassName = IntentUtils.getClsName(intent); //intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = IntentUtils.getPluginPackage(intent); //intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
+        String targetPackageName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = findPluginService(targetPackageName, targetClassName);
 
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {

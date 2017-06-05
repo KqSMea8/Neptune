@@ -9,7 +9,6 @@ import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
-import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.ComponentName;
@@ -29,7 +28,7 @@ public class ActivityJumpUtil {
 
     public static final String TARGET_CLASS_NAME = "org.qiyi.PluginActivity";
 
-    //public static final String EXTRA_TARGET_ACTIVITY = "pluginapp_extra_target_activity";
+    public static final String EXTRA_TARGET_ACTIVITY = "pluginapp_extra_target_activity";
 
     /**
      * pluginapp开关:表示activity的特殊处理，例如Translucent Theme 等
@@ -103,8 +102,8 @@ public class ActivityJumpUtil {
 
     static boolean isChangedIntent(Intent originalIntent) {
         if (originalIntent != null && originalIntent.getComponent() != null
-                && !TextUtils.isEmpty(IntentUtils.getPluginPackage(originalIntent))
-                && !TextUtils.isEmpty(IntentUtils.getClsName(originalIntent))) {
+                && !TextUtils.isEmpty(originalIntent.getStringExtra(EXTRA_TARGET_ACTIVITY))
+                && !TextUtils.isEmpty(originalIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME))) {
             if (originalIntent.getComponent().getClassName().startsWith(InstrActivityProxy.class.getName())
                     || originalIntent.getComponent().getClassName()
                             .startsWith(InstrActivityProxyTranslucent.class.getName())) {
@@ -129,8 +128,8 @@ public class ActivityJumpUtil {
         }
         ComponentName compname = new ComponentName(env.getParentPackagename(),
                 getProxyActivityClsName(env.getInstallType(), info, env.getRunningProcessName()));
-        intent.setComponent(compname);
-        IntentUtils.setProxyInfo(intent,pluginId,actName);
+        intent.setComponent(compname).putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, pluginId)
+                .putExtra(EXTRA_TARGET_ACTIVITY, actName);
     }
 
     public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode, Bundle options,

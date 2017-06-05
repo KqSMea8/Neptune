@@ -2,13 +2,12 @@ package org.qiyi.pluginlibrary;
 
 import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
-import org.qiyi.pluginlibrary.utils.IntentUtils;
 
 import android.content.Intent;
 import android.text.TextUtils;
 
 public class ServiceJumpUtil {
-    //public static final String EXTRA_TARGET_SERVICE = "pluginapp_extra_target_service";
+    public static final String EXTRA_TARGET_SERVICE = "pluginapp_extra_target_service";
     public static final String BIND_SERVICE_FLAGS = "bind_service_flags";
 
     private static final String EXTRA_TARGET_CATEGORY = "pluginapp_service_category";
@@ -30,7 +29,8 @@ public class ServiceJumpUtil {
             return;
         }
         intent.setExtrasClassLoader(env.getDexClassLoader());
-        IntentUtils.setProxyInfo(intent,env.getTargetPackageName(),targetService);
+        intent.putExtra(EXTRA_TARGET_SERVICE, targetService);
+        intent.putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, env.getTargetPackageName());
         // 同一个进程内service的bind是否重新走onBind方法，以intent的参数匹配为准FilterComparison.filterHashCode)
         // 手动添加一个category 让系统认为不同的插件activity每次bind都会走service的onBind的方法
         intent.addCategory(EXTRA_TARGET_CATEGORY + System.currentTimeMillis());

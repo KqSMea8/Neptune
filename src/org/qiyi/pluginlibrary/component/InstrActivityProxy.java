@@ -43,7 +43,6 @@ import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
@@ -79,17 +78,18 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     }
 
     private String[] getPkgAndCls() {
-        Intent mIntent = getIntent();
+        if (null == getIntent()) {
+            return null;
+        }
+        final Bundle pluginMessage = getIntent().getExtras();
         String[] result = new String[2];
-        result[0] = IntentUtils.getPluginPackage(mIntent); //pluginMessage.getString(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
-        result[1] = IntentUtils.getClsName(mIntent); //pluginMessage.getString(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
-        if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
-            PluginDebugLog.runtimeFormatLog(TAG,"pluginPkg:%s,pluginCls:%s",result[0],result[1]);
-            ProxyEnvironment mEnv = ProxyEnvironmentManager.getEnvByPkgName(result[0]);
-            if(mEnv != null){
-                mIntent.setExtrasClassLoader(ProxyEnvironmentManager.getEnvByPkgName(result[0]).getDexClassLoader());
+        if (null != pluginMessage) {
+            result[1] = pluginMessage.getString(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
+            result[0] = pluginMessage.getString(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+            if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
+                PluginDebugLog.runtimeFormatLog(TAG,"pluginPkg:%s,pluginCls:%s",result[0],result[1]);
+                return result;
             }
-            return result;
         }
         return null;
     }
