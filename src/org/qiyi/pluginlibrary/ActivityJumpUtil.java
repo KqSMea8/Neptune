@@ -1,5 +1,12 @@
 package org.qiyi.pluginlibrary;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.os.Bundle;
+import android.text.TextUtils;
+
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
@@ -9,14 +16,8 @@ import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.pm.CMPackageInfo;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
 import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
+import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.ActivityInfo;
-import android.os.Bundle;
-import android.text.TextUtils;
 
 import java.util.List;
 
@@ -130,6 +131,8 @@ public class ActivityJumpUtil {
                 getProxyActivityClsName(env.getInstallType(), info, env.getRunningProcessName()));
         intent.setComponent(compname).putExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME, pluginId)
                 .putExtra(EXTRA_TARGET_ACTIVITY, actName);
+        IntentUtils.setProxyInfo(intent,pluginId);
+
     }
 
     public static Intent handleStartActivityIntent(String pluginId, Intent intent, int requestCode, Bundle options,

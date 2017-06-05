@@ -43,6 +43,7 @@ import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
@@ -61,6 +62,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     private ProxyEnvironment mPluginEnv;
     private PluginActivityControl mPluginContrl;
     CMContextWrapperNew mPluginContextWrapper;
+    private String mProxyPkg = "";
 
     /**
      * 装载插件的Activity
@@ -78,8 +80,18 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     }
 
     private String[] getPkgAndCls() {
-        if (null == getIntent()) {
+        Intent mIntent = getIntent();
+        if (null == mIntent) {
             return null;
+        }
+
+        if(!TextUtils.isEmpty(mProxyPkg)){
+            if(mPluginEnv == null){
+                mPluginEnv = ProxyEnvironmentManager.getEnvByPkgName(mProxyPkg);
+            }
+            if(mPluginEnv!=null){
+                mIntent.setExtrasClassLoader(mPluginEnv.getDexClassLoader());
+            }
         }
         final Bundle pluginMessage = getIntent().getExtras();
         String[] result = new String[2];
@@ -136,6 +148,12 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onCreate....");
+        //从action里面拿到pkg,并全局保存，然后还原action
+        Intent mIntent = getIntent();
+        mProxyPkg = IntentUtils.getPluginPackage(mIntent);
+        IntentUtils.resetAction(mIntent);
+
+
         String pluginActivityName = null;
         String pluginPkgName = null;
         String[] pkgAndCls = getPkgAndCls();
