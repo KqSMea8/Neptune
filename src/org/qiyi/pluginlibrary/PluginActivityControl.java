@@ -65,7 +65,49 @@ public class PluginActivityControl implements PluginActivityCallback {
             return;
         }
         try {
-            if (ContextUtils.isAndroidN()) {
+            //Android O的attach方法在之前的参数基础上增加了android.view.ViewRootImpl$ActivityConfigCallback这样一个参数，
+            //目前还不能拿到源码，不清楚这个参数怎么获取，所以暂时传递一个null,待后续完善
+            if (ContextUtils.isAndroidO()) {
+                mPluginRef.call(
+                        // 方法名
+                        "attach",
+                        sMethods,
+                        // Context context
+                        // contextWrapper,
+                        mProxy,
+                        // ActivityThread aThread
+                        mProxyRef.get("mMainThread"),
+                        // Instrumentation instr
+                        pluginInstr,
+                        // IBinder token
+                        mProxyRef.get("mToken"),
+                        // int ident
+                        mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
+                        // Application application
+                        mApplication == null ? mProxy.getApplication() : mApplication,
+                        // Intent intent
+                        mProxy.getIntent(),
+                        // ActivityInfo info
+                        mProxyRef.get("mActivityInfo"),
+                        // CharSequence title
+                        mProxy.getTitle(),
+                        // Activity parent
+                        mProxy.getParent(),
+                        // String id
+                        mProxyRef.get("mEmbeddedID"),
+                        // NonConfigurationInstances
+                        // lastNonConfigurationInstances
+                        mProxy.getLastNonConfigurationInstance(),
+                        // Configuration config
+                        mProxyRef.get("mCurrentConfig"),
+                        // String mReferrer
+                        mProxyRef.get("mReferrer"),
+                        // IVoiceInteractor mVoiceInteractor
+                        mProxyRef.get("mVoiceInteractor"),
+                        mProxy.getWindow(),
+                        //android.view.ViewRootImpl$ActivityConfigCallback,这个参数暂时传递null
+                        null);
+            } else if (ContextUtils.isAndroidN()) {
                 mPluginRef.call(
                         // 方法名
                         "attach",
@@ -339,7 +381,7 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnStop() {
         if (null != getPluginRef()) {
-            if (ContextUtils.isAndroidN()) {
+            if (ContextUtils.isAndroidN() || ContextUtils.isAndroidO()) {
                 // 此处强制写false可能带来一些风险，暂时没有其他的方法处理
                 getPluginRef().call("performStop", sMethods, false);
             } else {

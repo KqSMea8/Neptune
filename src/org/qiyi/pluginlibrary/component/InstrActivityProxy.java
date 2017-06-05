@@ -229,7 +229,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
 
     @Override
     public void setTheme(int resid) {
-        if (ContextUtils.isAndroidN()) {
+        if (ContextUtils.isAndroidN() || ContextUtils.isAndroidO()) {
             String[] temp = getPkgAndCls();
             if (mNeedUpdateConfiguration && (temp != null || mPluginEnv != null)) {
                 tryToInitEnvironment(temp[0]);

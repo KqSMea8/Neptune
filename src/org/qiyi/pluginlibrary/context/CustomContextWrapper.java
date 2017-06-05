@@ -50,7 +50,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     private static final String TAG = "CustomContextWrapper";
 
     private static final String S_SHARED_PREFS =
-            ContextUtils.isAndroidN() ? "sSharedPrefsCache" : "sSharedPrefs";
+            ContextUtils.isAndroidN() || ContextUtils.isAndroidO() ? "sSharedPrefsCache" : "sSharedPrefs";
 
     protected static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(2);
 

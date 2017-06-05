@@ -278,15 +278,39 @@ public class ContextUtils {
         return pkgInfo;
     }
 
+    /**
+     * 判断是否Android N系统
+     */
     public static boolean isAndroidN() {
-        if (Build.VERSION.SDK_INT > 23) {
-            return true;
+        return isParticularAndroidVersion(24);
+    }
+
+    /**
+     * 判断是否Android O系统
+     */
+    public static boolean isAndroidO() {
+        return isParticularAndroidVersion(25);
+    }
+
+    /**
+     * 判断当前系统是否是Android N或者Android O
+     *
+     * @param sdk       Android SDK值（24或者25）
+     */
+    private static boolean isParticularAndroidVersion(int sdk) {
+        int compareSDKValue = 0;
+        String compareSDKName = "";
+        if (sdk == 24) {
+            compareSDKValue = Build.VERSION_CODES.N;
+            compareSDKName = "N";
         }
-        if (TextUtils.equals(Build.VERSION.CODENAME, "N") || TextUtils.equals(Build.VERSION.RELEASE, "N")) {
-            return true;
+        if (sdk == 25) {
+            compareSDKValue = 25;
+            compareSDKName = "O";
         }
-        PluginDebugLog.log(TAG, "isAndroidN return false!");
-        return false;
+        return Build.VERSION.SDK_INT == compareSDKValue
+                || TextUtils.equals(Build.VERSION.CODENAME, compareSDKName)
+                || TextUtils.equals(Build.VERSION.RELEASE, compareSDKName);
     }
 
     /**
