@@ -30,14 +30,14 @@ import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
 
-import org.qiyi.pluginlibrary.ActivityOverrider;
-import org.qiyi.pluginlibrary.PServiceSupervisor;
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
+import org.qiyi.pluginlibrary.ActivityOverrider;
+import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.PServiceSupervisor;
 import org.qiyi.pluginlibrary.PluginActivityControl;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.ServiceJumpUtil;
+import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
@@ -85,6 +85,12 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             return null;
         }
 
+        //从action里面拿到pkg,并全局保存，然后还原action
+        if(TextUtils.isEmpty(mProxyPkg)){
+            mProxyPkg = IntentUtils.getPluginPackage(mIntent);
+        }
+        IntentUtils.resetAction(mIntent);
+
         if(!TextUtils.isEmpty(mProxyPkg)){
             if(mPluginEnv == null){
                 mPluginEnv = ProxyEnvironmentManager.getEnvByPkgName(mProxyPkg);
@@ -93,7 +99,7 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
                 mIntent.setExtrasClassLoader(mPluginEnv.getDexClassLoader());
             }
         }
-        final Bundle pluginMessage = getIntent().getExtras();
+        final Bundle pluginMessage = mIntent.getExtras();
         String[] result = new String[2];
         if (null != pluginMessage) {
             result[1] = pluginMessage.getString(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
@@ -148,12 +154,6 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy onCreate....");
-        //从action里面拿到pkg,并全局保存，然后还原action
-        Intent mIntent = getIntent();
-        mProxyPkg = IntentUtils.getPluginPackage(mIntent);
-        IntentUtils.resetAction(mIntent);
-
-
         String pluginActivityName = null;
         String pluginPkgName = null;
         String[] pkgAndCls = getPkgAndCls();

@@ -27,6 +27,7 @@ public class IntentUtils {
         }
         String mPkgName = TextUtils.isEmpty(pkgName)?"":pkgName;
         String oriAction = mIntent.getAction();
+
         StringBuilder mBuilder = new StringBuilder(mPkgName);
         mBuilder.append(TOKEN)
                 .append(oriAction);
@@ -54,7 +55,7 @@ public class IntentUtils {
 
         String[] mInfo = actionValue.split(TOKEN);
         if(mInfo.length != 2){
-            PluginDebugLog.log(TAG,"getPluginPackage:mInfo lenght is not 3!");
+            PluginDebugLog.log(TAG,"getPluginPackage:mInfo lenght is not 2!");
             return "";
         }
         PluginDebugLog.log(TAG,"getPluginPackage:"+mInfo[0]);
@@ -82,7 +83,7 @@ public class IntentUtils {
 
         String[] mInfo = actionValue.split(TOKEN);
         if(mInfo.length != 2){
-            PluginDebugLog.log(TAG,"getAction:mInfo lenght is not 3!");
+            PluginDebugLog.log(TAG,"getAction:mInfo lenght is not 2!");
             return actionValue;
         }
         PluginDebugLog.log(TAG,"getAction:"+mInfo[1]);
@@ -98,7 +99,14 @@ public class IntentUtils {
             PluginDebugLog.log(TAG,"resetAction:mIntent is null!");
             return;
         }
-        mIntent.setAction(getAction(mIntent));
+        String mAction = getAction(mIntent);
+        if(PluginDebugLog.isDebug()){
+            PluginDebugLog.log(TAG,"resetAction:"+mAction);
+        }
+        if(mAction != null && (mAction.equals("null")|| mAction.equals(""))){
+            mAction = null;
+        }
+        mIntent.setAction(mAction);
     }
 
 
