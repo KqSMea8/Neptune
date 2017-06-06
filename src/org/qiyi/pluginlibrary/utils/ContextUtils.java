@@ -27,6 +27,10 @@ public class ContextUtils {
     private static final String QIYI_PACKAGE = "com.qiyi";
     private static final String IQIYI_PACKAGE = "com.iqiyi";
 
+    //定义Android系统
+    private static final String ANDROID_N = "N";
+    private static final String ANDROID_O = "O";
+
     /**
      * Try to get host context in the plugin environment or the param context
      * will be return
@@ -282,33 +286,34 @@ public class ContextUtils {
      * 判断是否Android N系统
      */
     public static boolean isAndroidN() {
-        return isParticularAndroidVersion(24);
+        return isParticularAndroidVersion(ANDROID_N);
     }
 
     /**
      * 判断是否Android O系统
      */
     public static boolean isAndroidO() {
-        return isParticularAndroidVersion(25);
+        return isParticularAndroidVersion(ANDROID_O);
     }
 
     /**
      * 判断当前系统是否是Android N或者Android O
      *
-     * @param sdk       Android SDK值（24或者25）
+     * @param sdk       Android SDK名（“N”或者“O”）
      */
-    private static boolean isParticularAndroidVersion(int sdk) {
-        int compareSDKValue = 0;
+    private static boolean isParticularAndroidVersion(String sdk) {
+        int minSDKValue = 0;
+        int maxSDKValue = 100;
         String compareSDKName = "";
-        if (sdk == 24) {
-            compareSDKValue = Build.VERSION_CODES.N;
+        if (TextUtils.equals(ANDROID_N, sdk)) {
+            minSDKValue = 24;
+            maxSDKValue = 25;
             compareSDKName = "N";
-        }
-        if (sdk == 25) {
-            compareSDKValue = 25;
+        } else if (TextUtils.equals(ANDROID_O, sdk)){
+            minSDKValue = 26;
             compareSDKName = "O";
         }
-        return Build.VERSION.SDK_INT == compareSDKValue
+        return (Build.VERSION.SDK_INT >= minSDKValue && Build.VERSION.SDK_INT <= maxSDKValue)
                 || TextUtils.equals(Build.VERSION.CODENAME, compareSDKName)
                 || TextUtils.equals(Build.VERSION.RELEASE, compareSDKName);
     }
