@@ -15,7 +15,6 @@ import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
 import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
@@ -36,7 +35,6 @@ public class ServiceProxy extends Service {
 
     private boolean mKillProcessOnDestroy = false;
 
-    private String mProxyPkg;
 
     @Override
     public void onCreate() {
@@ -127,7 +125,6 @@ public class ServiceProxy extends Service {
         if (paramIntent == null) {
             return null;
         }
-        setExtraClassLoader(paramIntent);
         String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
         String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
@@ -197,7 +194,6 @@ public class ServiceProxy extends Service {
             super.onStartCommand(null, paramInt1, paramInt2);
             return START_NOT_STICKY;
         }
-        setExtraClassLoader(paramIntent);
 
         if (!TextUtils.isEmpty(paramIntent.getAction())) {
             if (paramIntent.getAction().equals(ProxyEnvironmentManager.ACTION_QUIT)) {
@@ -234,7 +230,6 @@ public class ServiceProxy extends Service {
         PluginDebugLog.log(TAG, "ServiceProxy>>>>>onUnbind():" + (paramIntent == null ? "null" : paramIntent));
         boolean result = false;
         if (null != paramIntent) {
-            setExtraClassLoader(paramIntent);
             String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
             String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
             PluginServiceWrapper plugin = findPluginService(targetPackageName, targetClassName);
@@ -256,7 +251,6 @@ public class ServiceProxy extends Service {
             super.onStart(null, startId);
             return;
         }
-        setExtraClassLoader(intent);
         String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
         String targetPackageName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
@@ -289,7 +283,6 @@ public class ServiceProxy extends Service {
             super.onRebind(null);
             return;
         }
-        setExtraClassLoader(intent);
         String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
         String targetPackageName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
         PluginServiceWrapper currentPlugin = findPluginService(targetPackageName, targetClassName);
@@ -304,25 +297,5 @@ public class ServiceProxy extends Service {
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         super.onTaskRemoved(rootIntent);
-    }
-
-    /**
-     * 设置Intent的ClassLoader，避免发生类找不到的问题
-     * @param mIntent
-     */
-    private void setExtraClassLoader(Intent mIntent){
-        if(mIntent == null){
-            return;
-        }
-        if(TextUtils.isEmpty(mProxyPkg)){
-            mProxyPkg = IntentUtils.getPluginPackage(mIntent);
-        }
-        IntentUtils.resetAction(mIntent);
-        if(!TextUtils.isEmpty(mProxyPkg)){
-            ProxyEnvironment mProxyEnv = ProxyEnvironmentManager.getEnvByPkgName(mProxyPkg);
-            if(mProxyEnv != null){
-                mIntent.setExtrasClassLoader(mProxyEnv.getDexClassLoader());
-            }
-        }
     }
 }
