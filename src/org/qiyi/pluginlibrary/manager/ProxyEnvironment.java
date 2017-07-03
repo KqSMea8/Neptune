@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
@@ -24,6 +25,7 @@ import android.os.Message;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.ActivityJumpUtil;
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.PServiceSupervisor;
 import org.qiyi.pluginlibrary.PluginActivityControl;
@@ -49,7 +51,9 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -180,6 +184,7 @@ public class ProxyEnvironment {
         mInstallType = installType;
         mProcessName = processName;
         createTargetMapping(pluginPakName);
+
         // 加载classloader
         boolean clsLoader = createClassLoader();
         if (!clsLoader) {
@@ -191,7 +196,48 @@ public class ProxyEnvironment {
         createTargetResource();
         // 创建ActivityStackSupervisor
         mActivityStackSupervisor = new PActivityStackSupervisor(this);
+        //注册静态广播
+        installStaticReceiver();
+
     }
+
+    /**
+     * 动态注册插件定义的静态广播
+     */
+    private void installStaticReceiver() {
+        if(mTargetMapping ==null){
+            return;
+        }
+        Map<String,ApkTargetMappingNew.ReceiverIntentInfo> mReceiverIntentInfos =
+                mTargetMapping.getReceiverIntentInfos();
+        if(mReceiverIntentInfos != null){
+            Set<Entry<String,ApkTargetMappingNew.ReceiverIntentInfo>> mEntrys = mReceiverIntentInfos.entrySet();
+            Context mGlobalContext = mContext.getApplicationContext();
+            if(mEntrys != null){
+                for(Map.Entry<String,ApkTargetMappingNew.ReceiverIntentInfo> mEntry : mEntrys){
+                    ApkTargetMappingNew.ReceiverIntentInfo mReceiverInfo = mEntry.getValue();
+                    if(mReceiverInfo != null){
+                        try{
+                            BroadcastReceiver mReceiver =
+                                    BroadcastReceiver.class.cast(mDexClassLoader.
+                                            loadClass(mReceiverInfo.mInfo.name).newInstance());
+                            List<IntentFilter> mFilters = mReceiverInfo.mFilter;
+                            if(mFilters != null){
+                                for(IntentFilter mItem :mFilters){
+                                    mGlobalContext.registerReceiver(mReceiver,mItem);
+                                }
+                            }
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+
+                    }
+                }
+            }
+
+        }
+    }
+
 
     void updateConfiguration(Configuration config) {
         if (null != mTargetResources) {

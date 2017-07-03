@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
@@ -12,6 +13,7 @@ import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -78,6 +80,10 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         init(context, apkFile);
     }
 
+    public Map<String, ReceiverIntentInfo> getReceiverIntentInfos() {
+        return mReceiverIntentInfos;
+    }
+
     protected ApkTargetMappingNew(Parcel in) {
         versionName = in.readString();
         versionCode = in.readInt();
@@ -138,7 +144,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         try {
             packageInfo = context.getPackageManager().getPackageArchiveInfo(apkFile.getAbsolutePath(),
                     PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS | PackageManager.GET_META_DATA
-                            | PackageManager.GET_SERVICES | PackageManager.GET_CONFIGURATIONS);
+                            | PackageManager.GET_SERVICES | PackageManager.GET_CONFIGURATIONS | PackageManager.GET_RECEIVERS);
             if (packageInfo == null) {
                 throw new Exception("getPackageArchiveInfo is null for file: " + apkFile.getAbsolutePath());
             }
@@ -202,6 +208,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
     public boolean usePluginCodePath() {
         return mUsePluginCodePath;
     }
+
 
     public ActivityInfo findActivityByClassName(String activityClsName) {
         if (packageInfo == null || packageInfo.activities == null) {
@@ -275,6 +282,37 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         }
         return null;
 
+    }
+
+    public ActivityInfo resolveReceiver(Intent mIntent){
+        if (mIntent == null) {
+            return null;
+        }
+        if(mReceiverIntentInfos != null){
+            ComponentName compname = mIntent.getComponent();
+            if (compname != null) {
+                String className = compname.getClassName();
+                if (!TextUtils.isEmpty(className)) {
+                    ReceiverIntentInfo mReceiverInfo = mReceiverIntentInfos.get(className);
+                    if (mReceiverInfo != null) {
+                        return mReceiverInfo.mInfo;
+                    }
+                }
+            }else {
+                for (ReceiverIntentInfo info : mReceiverIntentInfos.values()) {
+                    if (info != null && info.mFilter != null) {
+                        for (IntentFilter filter : info.mFilter) {
+                            if (filter.match(mIntent.getAction(), null, null,null,
+                                    null, "TAG") > 0) {
+                                return info.mInfo;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     public ServiceInfo resolveService(Intent intent) {

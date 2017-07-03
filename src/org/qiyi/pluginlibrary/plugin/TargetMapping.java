@@ -1,11 +1,16 @@
 package org.qiyi.pluginlibrary.plugin;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Bundle;
+
+import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+
+import java.util.Map;
 
 /**
  * 
@@ -39,6 +44,8 @@ public interface TargetMapping {
 
     ServiceInfo resolveService(Intent intent);
 
+    ActivityInfo resolveReceiver(Intent intent);
+
     String getDataDir();
 
     String getnativeLibraryDir();
@@ -48,4 +55,6 @@ public interface TargetMapping {
     boolean usePluginApplicationInfo();
 
     boolean usePluginCodePath();
+
+    Map<String, ApkTargetMappingNew.ReceiverIntentInfo> getReceiverIntentInfos();
 }
