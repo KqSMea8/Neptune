@@ -1,12 +1,25 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven'
+apply from: './maven_push.gradle'
 
 buildscript {
     repositories {
         jcenter()
+        maven {
+            url="http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
+        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.2.2'
     }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/")
+        pom.groupId = "com.qiyi.video.plugin"
+        pom.artifactId = "pluginsdk"
+        pom.version = "1.0" }
 }
 
 dependencies {
@@ -79,6 +92,8 @@ android {
         delete "${project.projectDir}/MANIFEST.MF"
     }
 
+    //在基线8.7版本开始废弃，通过gradle uploadArchives上传aar到maven服务器,
+    // debug的时候gradle -PDebug uploadArchives
     task makeJar(type: Copy) {
         if(!project.hasProperty("Debug")){
             getLatestCode()

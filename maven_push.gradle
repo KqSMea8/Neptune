@@ -1,0 +1,77 @@
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+def mavenRepositoryUrl
+if (isReleaseBuild()) {
+    println 'RELEASE BUILD'
+
+    mavenRepositoryUrl = hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL
+            : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
+} else {
+    println 'SNAPSHOTS BUILD'
+
+    mavenRepositoryUrl = hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
+            : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
+}
+def getRepositoryUsername() {
+    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
+}
+
+def getRepositoryPassword() {
+    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
+}
+
+def isReleaseBuild() {
+    return !VERSION_NAME.contains("SNAPSHOT");
+}
+
+
+
+afterEvaluate { project ->
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+                pom.artifactId = POM_ARTIFACT_ID
+                pom.groupId = POM_GROUP_ID
+                pom.version = VERSION_NAME
+
+                repository(url: mavenRepositoryUrl) {
+                    authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+                }
+
+                pom.project {
+                    name POM_NAME
+                    packaging POM_PACKAGING
+                    description POM_DESCRIPTION
+                }
+            }
+        }
+    }
+
+    // 进行数字签名
+    signing {
+        required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.archives
+    }
+
+    // type显示指定任务类型或任务, 这里指定要执行Javadoc这个task,这个task在gradle中已经定义
+    task androidJavadocs(type: Javadoc) {
+        // 设置源码所在的位置
+        source = android.sourceSets.main.java.sourceFiles
+    }
+
+    // 生成javadoc.jar
+    task androidJavadocsJar(type: Jar) {
+        // 指定文档名称
+        classifier = 'javadoc'
+        from androidJavadocs.destinationDir
+    }
+
+
+
+    // 产生相关配置文件的任务
+    artifacts {
+        archives androidJavadocsJar
+    }
+}
