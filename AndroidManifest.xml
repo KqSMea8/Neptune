@@ -70,6 +70,8 @@
         <service
             android:name="org.qiyi.pluginlibrary.component.ServiceProxy1"
             android:process=":plugin1" />
+        <service
+            android:name="org.qiyi.pluginlibrary.component.ServiceProxy2" />
 
 
     </application>
