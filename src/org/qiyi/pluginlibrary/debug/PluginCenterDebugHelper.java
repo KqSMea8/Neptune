@@ -83,6 +83,15 @@ public class PluginCenterDebugHelper {
     }
 
     /**
+     * 获取某个插件的后端吐的信息
+     *
+     * @param pluginName        插件包名
+     */
+    public String getPluginInfo(String pluginName) {
+        return iPluginDebugHelper.getPluginInfo(pluginName);
+    }
+
+    /**
      * 保存插件下载状态（只保存成功和失败）
      *
      * @param time              保存信息时的时间

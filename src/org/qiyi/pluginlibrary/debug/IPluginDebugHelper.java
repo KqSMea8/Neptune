@@ -42,6 +42,13 @@ public interface IPluginDebugHelper {
     List<String> getPluginList(Context context);
 
     /**
+     * 获取某个插件的后端吐的信息
+     *
+     * @param pluginName        插件包名
+     */
+    String getPluginInfo(String pluginName);
+
+    /**
      * 保存插件下载状态（只保存成功和失败）
      *
      * @param context           Context
