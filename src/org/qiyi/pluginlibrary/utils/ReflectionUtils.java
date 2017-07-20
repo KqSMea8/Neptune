@@ -15,6 +15,8 @@ import java.util.Vector;
 
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.exception.ReflectException;
+
 public class ReflectionUtils {
     public static <T> T getFieldValue(Object obj, String fieldName)
             throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {

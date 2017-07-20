@@ -20,10 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.plugin.PluginActivityCallback;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.ReflectException;
+import org.qiyi.pluginlibrary.exception.ReflectException;
 
 /**
  * 插件的控制器<br> 派发插件事件和控制插件生命周期

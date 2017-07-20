@@ -10,7 +10,6 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;

@@ -1,6 +1,5 @@
 package org.qiyi.pluginlibrary.plugin;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
@@ -8,7 +7,7 @@ import android.content.pm.PermissionInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Bundle;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
 
 import java.util.Map;
 

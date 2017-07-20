@@ -28,9 +28,9 @@ import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.PServiceSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.PluginActivityControl;
-import org.qiyi.pluginlibrary.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
@@ -74,14 +74,6 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (pkgAndCls != null) {
             pluginPkgName = pkgAndCls[0];
             pluginActivityName = pkgAndCls[1];
-
-            /*设置软件盘属性 START*/
-            PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pluginPkgName);
-            if (null != loadedApk) {
-                ActivityInfo info = loadedApk.getActivityInfoByClassName(pluginActivityName);
-                getWindow().setSoftInputMode(info.softInputMode);
-            }
-            /*设置软件盘属性 END*/
         } else {
             PluginManager.deliver(this, false, pluginPkgName,
                     ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
@@ -131,28 +123,36 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
             setTheme(resTheme);
             // Set plugin's default theme.
             mPluginActivity.setTheme(resTheme);
-//            try {
-//                if (getParent() == null) {
-//                    mLoadedApk.getActivityStackSupervisor().pushActivityToStack(this);
-//                }
-//                mPluginContrl.callOnCreate(savedInstanceState);
-//                mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
-//                PluginManager.sendPluginLoadedBroadcast(InstrActivityProxy.this.getBaseContext());
-//            } catch (Exception e) {
-//                PluginManager.deliver(this, false, pluginPkgName,
-//                        ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
-//                e.printStackTrace();
-//                this.finish();
-//                return;
-//            }
 
-            if (getParent() == null) {
-                mLoadedApk.getActivityStackSupervisor().pushActivityToStack(this);
+            // in debug mode,dot't try cacth
+            if(PluginDebugLog.isDebug()){
+                callProxyOnCreate(savedInstanceState);
+            }else{
+                try {
+                    callProxyOnCreate(savedInstanceState);
+                } catch (Exception e) {
+                    PluginManager.deliver(this, false, pluginPkgName,
+                            ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
+                    e.printStackTrace();
+                    this.finish();
+                    return;
+                }
             }
-            mPluginContrl.callOnCreate(savedInstanceState);
-            mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
-            PluginManager.sendPluginLoadedBroadcast(InstrActivityProxy.this.getBaseContext());
+
         }
+    }
+
+    /**
+     * 调用被代理的Activity的onCreate方法
+     * @param savedInstanceState
+     */
+    private void callProxyOnCreate(Bundle savedInstanceState) {
+        if (getParent() == null) {
+            mLoadedApk.getActivityStackSupervisor().pushActivityToStack(this);
+        }
+        mPluginContrl.callOnCreate(savedInstanceState);
+        mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
+        PluginManager.sendPluginLoadedBroadcast(InstrActivityProxy.this.getBaseContext());
     }
 
 
@@ -928,7 +928,6 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
                 origActInfo.nonLocalizedLabel = mActivityInfo.nonLocalizedLabel;
                 origActInfo.packageName = mActivityInfo.packageName;
                 origActInfo.permission = mActivityInfo.permission;
-                // origActInfo.processName
                 origActInfo.screenOrientation = mActivityInfo.screenOrientation;
                 origActInfo.softInputMode = mActivityInfo.softInputMode;
                 origActInfo.targetActivity = mActivityInfo.targetActivity;
@@ -953,6 +952,11 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
                     }
                 }
             }
+        }
+        try{
+            getWindow().setSoftInputMode(mActivityInfo.softInputMode);
+        }catch (Exception e){
+            e.printStackTrace();
         }
         if (null != mActivityInfo) {
             PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +

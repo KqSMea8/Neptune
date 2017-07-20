@@ -18,10 +18,10 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.PActivityStackSupervisor;
-import org.qiyi.pluginlibrary.PServiceSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
 import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.listenter.IPluginInitListener;
@@ -90,7 +90,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     /**
      * 通过包名获取{@link PluginLoadedApk}对象
-     * 注意此方法仅仅查找，没找到并不会尝试加载
+     * 注意:此方法仅仅到{@link #sPluginsMap}中查找，并不会去加载插件
      *
      * @param mPluginPackage 插件的包名
      * @return 返回包名为mPluginPackage 指定的插件的PluginLoadedApk对象，如果插件没有加载，则返回Null
@@ -119,7 +119,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * @param mPluginPackage   插件包名
      * @param mPluginLoadedApk 插件的内存实例对象
      */
-    public static void addPluginLoadedApk(String mPluginPackage, PluginLoadedApk mPluginLoadedApk) {
+    private static void addPluginLoadedApk(String mPluginPackage, PluginLoadedApk mPluginLoadedApk) {
         if (TextUtils.isEmpty(mPluginPackage)) {
             return;
         }
@@ -139,7 +139,6 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         if (TextUtils.isEmpty(mPluginPackage)) {
             return null;
         }
-
         return sPluginsMap.remove(mPluginPackage);
     }
 
@@ -157,7 +156,8 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      *
      * @param mHostContext 主工程的上下文
      * @param mIntent      需要启动的组件的Intent
-     * @param mProcessName 需要启动的插件运行的进程名称
+     * @param mProcessName 需要启动的插件运行的进程名称,插件方可以在Application的android:process指定
+     *                     如果没有指定，则有插件中心分配
      */
     public static void launchPlugin(final Context mHostContext, Intent mIntent,String mProcessName) {
         launchPlugin(mHostContext, mIntent, null,mProcessName);
@@ -169,7 +169,8 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * @param mHostContext       主工程的上下文
      * @param mIntent            需要启动的组件的Intent
      * @param mServiceConnection bindService时需要的ServiceConnection,如果不是bindService的方式启动组件，传入Null
-     * @param mProcessName 插件启动的进程名称
+     * @param mProcessName 需要启动的插件运行的进程名称,插件方可以在Application的android:process指定
+     *                     如果没有指定，则有插件中心分配
      */
     public static void launchPlugin(final Context mHostContext,
                                     final Intent mIntent,
@@ -184,25 +185,22 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
         LinkedBlockingQueue<Intent> cacheIntents = PActivityStackSupervisor.getCachedIntent(packageName);
         if (cacheIntents != null && cacheIntents.size() > 0) {
-            // 说明插件正在loading,正在loading，直接返回吧，等着loading完调起
-            // 把intent都缓存起来
             cacheIntents.add(mIntent);
             PluginDebugLog.runtimeLog(TAG, "LoadingMap is not empty, Cache current intent, intent: " + mIntent);
             return;
         }
 
-        // 判断是否已经进入到代理
         boolean isLoadAndInit = isPluginLoadedAndInit(packageName);
         if (!isLoadAndInit) {
             if (null == cacheIntents) {
                 cacheIntents = new LinkedBlockingQueue<Intent>();
                 PActivityStackSupervisor.addCachedIntent(packageName, cacheIntents);
             }
-            // 正在加载的插件队列
+            //cache intent ,and launch it when load and init!
             cacheIntents.add(mIntent);
             PluginDebugLog.runtimeLog(TAG, "Environment is loading cache current intent, intent: " + mIntent);
         } else {
-            // 已经初始化，直接起Intent
+            //launch it direct!
             readyToStartSpecifyPlugin(mHostContext, mServiceConnection, mIntent, true);
             return;
         }
@@ -316,19 +314,17 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             PluginDebugLog.runtimeLog(TAG, packageName + " launchIntent env is null! Just return!");
             PActivityStackSupervisor.clearLoadingIntent(packageName);
             return false;
-            // throw new IllegalArgumentException(packageName
-            // +" not loaded, Make sure you have call the init method!");
         }
 
-        LinkedBlockingQueue<Intent> cacheIntents = null;
+
         if (!mLoadedApk.makeApplication()) {
             PluginDebugLog.log(TAG, "makeApplication fail:%s", packageName);
             return false;
         }
-        cacheIntents = PActivityStackSupervisor.getCachedIntent(packageName);
+        LinkedBlockingQueue<Intent> cacheIntents =
+                PActivityStackSupervisor.getCachedIntent(packageName);
 
         if (cacheIntents == null) {
-            // 没有缓存的Intent，取当前的Intent;
             cacheIntents = new LinkedBlockingQueue<Intent>();
             PActivityStackSupervisor.addCachedIntent(packageName, cacheIntents);
         }
@@ -389,7 +385,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         String targetClassName = "";
         ComponentName mComponet = mIntent.getComponent();
         if (mComponet != null) {
-            // 显示启动组件
+            //显式启动
             targetClassName = mComponet.getClassName();
             PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClassName:" + targetClassName);
             if (TextUtils.isEmpty(targetClassName)) {
@@ -424,7 +420,6 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 newIntent.setPackage(mHostContext.getPackageName());
                 mHostContext.sendBroadcast(newIntent);
             }
-
             // 表示后台加载，不需要处理该Intent
             executeNext(mLoadedApk, mConnection, mHostContext);
             return;
@@ -433,7 +428,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         mLoadedApk.changeLaunchingIntentStatus(true);
         PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClass: " + targetClass);
         if (targetClass != null && Service.class.isAssignableFrom(targetClass)) {
-            //启动的是Service
+            //处理的是Service
             ComponetFinder.findSuitableServiceByIntent(mLoadedApk, mIntent, targetClassName);
             if (mConnection == null) {
                 mHostContext.startService(mIntent);
@@ -534,13 +529,13 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
                     @Override
                     public void onPacakgeInstalled(CMPackageInfo info) {
-                        //安装完毕，开始异步加载插件
+                        //install done ,load async
                         loadPluginAsync(mHostContext.getApplicationContext(), packageInfo.packageName,
                                 new IPluginLoadListener() {
                                     @Override
                                     public void onLoadFinished(String packageName) {
                                         try {
-                                            //加载完毕，准备启动，启动之前，检查是否init
+                                            //load done,start plugin
                                             readyToStartSpecifyPlugin(mHostContext, mServiceConnection, mIntent, false);
                                             if (sPluginStatusListener != null) {
                                                 sPluginStatusListener.onPluginReady(packageName);
@@ -848,7 +843,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
 
     /**
-     * 设置投递逻辑的实现
+     * 设置投递逻辑的实现(宿主工程调用)
      *
      * @param mDeliverImpl
      */
@@ -857,7 +852,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
     }
 
     /**
-     * 设置插件状态监听器
+     * 设置插件状态监听器(宿主工程调用)
      *
      * @param mListener
      */
@@ -866,7 +861,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
     }
 
     /**
-     * 设置插件退出监听回调
+     * 设置插件退出监听回调(宿主工程调用)
      * @param mExitStuff
      */
     public static void setExitStuff(IAppExitStuff mExitStuff){
@@ -874,7 +869,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
     }
 
     /**
-     * 设置Activity生命周期回调
+     * 设置Activity生命周期回调(宿主工程调用)
      * @param mCallbacks
      */
     public static void setPluginLifeCallBack(Application.ActivityLifecycleCallbacks mCallbacks){

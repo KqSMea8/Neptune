@@ -1,4 +1,4 @@
-package org.qiyi.pluginlibrary.utils;
+package org.qiyi.pluginlibrary.exception;
 
 /**
  * 反射发生错误时抛出异常

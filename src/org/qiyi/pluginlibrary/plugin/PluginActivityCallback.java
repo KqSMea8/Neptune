@@ -1,4 +1,4 @@
-package org.qiyi.pluginlibrary;
+package org.qiyi.pluginlibrary.plugin;
 
 import android.content.Context;
 import android.content.Intent;

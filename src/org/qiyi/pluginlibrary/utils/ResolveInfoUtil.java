@@ -5,10 +5,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
-import org.qiyi.pluginlibrary.ApkTargetMappingNew.ActivityIntentInfo;
-import org.qiyi.pluginlibrary.ApkTargetMappingNew.ReceiverIntentInfo;
-import org.qiyi.pluginlibrary.ApkTargetMappingNew.ServiceIntentInfo;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew.ActivityIntentInfo;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew.ReceiverIntentInfo;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew.ServiceIntentInfo;
 
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;

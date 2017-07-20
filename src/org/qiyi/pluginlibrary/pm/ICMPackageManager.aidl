@@ -5,7 +5,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.pm.IPackageDeleteObserver;
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
 
 interface ICMPackageManager {
 

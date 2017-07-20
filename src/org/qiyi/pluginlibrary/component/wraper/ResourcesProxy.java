@@ -1,4 +1,4 @@
-package org.qiyi.pluginlibrary;
+package org.qiyi.pluginlibrary.component.wraper;
 
 import java.io.InputStream;
 

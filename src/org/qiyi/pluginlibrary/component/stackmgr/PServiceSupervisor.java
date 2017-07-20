@@ -1,4 +1,4 @@
-package org.qiyi.pluginlibrary;
+package org.qiyi.pluginlibrary.component.stackmgr;
 
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;

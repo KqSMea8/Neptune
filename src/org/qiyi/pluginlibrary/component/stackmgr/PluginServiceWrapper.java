@@ -1,7 +1,9 @@
-package org.qiyi.pluginlibrary;
+package org.qiyi.pluginlibrary.component.stackmgr;
 
 import android.app.Service;
 import android.content.Intent;
+
+import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 
 /**
  * Wrapper for plugin service

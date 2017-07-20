@@ -3,7 +3,6 @@ package org.qiyi.pluginlibrary.pm;
 import java.io.File;
 import java.util.Map;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;

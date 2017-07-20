@@ -18,8 +18,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 
-import org.qiyi.pluginlibrary.PServiceSupervisor;
-import org.qiyi.pluginlibrary.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;

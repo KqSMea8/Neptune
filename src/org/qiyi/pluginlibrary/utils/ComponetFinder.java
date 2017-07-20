@@ -9,7 +9,7 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;

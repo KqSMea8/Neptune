@@ -1,4 +1,4 @@
-package org.qiyi.pluginlibrary;
+package org.qiyi.pluginlibrary.pm;
 
 import java.io.File;
 import java.util.HashMap;

@@ -1,6 +1,5 @@
 package org.qiyi.pluginlibrary.runtime;
 
-import android.app.Activity;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.app.Service;
@@ -14,17 +13,16 @@ import android.content.pm.PackageInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.os.Bundle;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
-import org.qiyi.pluginlibrary.PActivityStackSupervisor;
-import org.qiyi.pluginlibrary.PServiceSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.PluginActivityControl;
-import org.qiyi.pluginlibrary.PluginInstrument;
-import org.qiyi.pluginlibrary.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.ResourcesProxy;
+import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
