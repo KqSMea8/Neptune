@@ -74,6 +74,14 @@ public class InstrActivityProxy extends Activity implements InterfaceToGetHost {
         if (pkgAndCls != null) {
             pluginPkgName = pkgAndCls[0];
             pluginActivityName = pkgAndCls[1];
+
+            /*设置软件盘属性 START*/
+            PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pluginPkgName);
+            if (null != loadedApk) {
+                ActivityInfo info = loadedApk.getActivityInfoByClassName(pluginActivityName);
+                getWindow().setSoftInputMode(info.softInputMode);
+            }
+            /*设置软件盘属性 END*/
         } else {
             PluginManager.deliver(this, false, pluginPkgName,
                     ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
