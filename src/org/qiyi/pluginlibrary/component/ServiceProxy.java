@@ -10,10 +10,10 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.PServiceSupervisor;
 import org.qiyi.pluginlibrary.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.ServiceJumpUtil;
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Plugin service's host service(Real service)
+ * 插件Service 代理
  */
 public class ServiceProxy extends Service {
     private static final String TAG = ServiceProxy.class.getSimpleName();
@@ -69,19 +69,20 @@ public class ServiceProxy extends Service {
                 + (currentPlugin == null ? "null" : currentPlugin.getClass().getName()));
         if (currentPlugin == null) {
             PluginDebugLog.log(TAG, "ServiceProxy>>>>ProxyEnvironment.hasInstance:"
-                    + ProxyEnvironmentManager.hasEnvInstance(targetPackageName) + ";targetPackageName:" + targetPackageName);
+                    + PluginManager.isPluginLoaded(targetPackageName) + ";targetPackageName:" + targetPackageName);
 
             try {
-                ProxyEnvironment env = ProxyEnvironmentManager.getEnvByPkgName(targetPackageName);
-                if (null == env) {
+                PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(targetPackageName);
+                if (null == mLoadedApk) {
                     return null;
                 }
-                Service pluginService = ((Service) env.getDexClassLoader().loadClass(targetClassName).newInstance());
+                Service pluginService = ((Service) mLoadedApk.getPluginClassLoader()
+                        .loadClass(targetClassName).newInstance());
                 CMContextWrapperNew actWrapper = new CMContextWrapperNew(ServiceProxy.this.getBaseContext(),
                         targetPackageName);
                 ReflectionUtils.on(pluginService).call("attach", sMethods, actWrapper,
                         ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,
-                        ReflectionUtils.getFieldValue(this, "mToken"), env.getApplication(),
+                        ReflectionUtils.getFieldValue(this, "mToken"), mLoadedApk.getPluginApplication(),
                         ReflectionUtils.getFieldValue(this, "mActivityManager"));
                 currentPlugin = new PluginServiceWrapper(targetClassName, targetPackageName, this, pluginService);
                 pluginService.onCreate();
@@ -94,21 +95,21 @@ public class ServiceProxy extends Service {
             } catch (InstantiationException e) {
                 currentPlugin = null;
                 e.printStackTrace();
-                ProxyEnvironmentManager.deliverPlug(this, false, targetPackageName,
+                PluginManager.deliver(this, false, targetPackageName,
                         ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_INSTANTIATION);
             } catch (IllegalAccessException e) {
                 currentPlugin = null;
                 e.printStackTrace();
-                ProxyEnvironmentManager.deliverPlug(this, false, targetPackageName,
+                PluginManager.deliver(this, false, targetPackageName,
                         ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_ILLEGALACCESS);
             } catch (ClassNotFoundException e) {
                 currentPlugin = null;
                 e.printStackTrace();
-                ProxyEnvironmentManager.deliverPlug(this, false, targetPackageName,
+                PluginManager.deliver(this, false, targetPackageName,
                         ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_CLASSNOTFOUND);
             } catch (Exception e) {
                 e.printStackTrace();
-                ProxyEnvironmentManager.deliverPlug(this, false, targetPackageName,
+                PluginManager.deliver(this, false, targetPackageName,
                         ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION);
                 currentPlugin = null;
                 PluginDebugLog.log(TAG, "初始化target失败");
@@ -125,8 +126,8 @@ public class ServiceProxy extends Service {
         if (paramIntent == null) {
             return null;
         }
-        String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+        String targetPackageName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
 
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
@@ -196,7 +197,7 @@ public class ServiceProxy extends Service {
         }
 
         if (!TextUtils.isEmpty(paramIntent.getAction())) {
-            if (paramIntent.getAction().equals(ProxyEnvironmentManager.ACTION_QUIT)) {
+            if (paramIntent.getAction().equals(IIntentConstant.ACTION_QUIT)) {
                 PluginDebugLog.log(TAG, "service " + getClass().getName() + " received quit intent action");
                 mKillProcessOnDestroy = true;
                 stopSelf();
@@ -204,8 +205,8 @@ public class ServiceProxy extends Service {
             }
         }
         ContextUtils.notifyHostPluginStarted(this, paramIntent);
-        String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+        String targetPackageName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
         PluginDebugLog.log(TAG, "ServiceProxy>>>>>onStartCommand() currentPlugin: " + currentPlugin);
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
@@ -230,8 +231,8 @@ public class ServiceProxy extends Service {
         PluginDebugLog.log(TAG, "ServiceProxy>>>>>onUnbind():" + (paramIntent == null ? "null" : paramIntent));
         boolean result = false;
         if (null != paramIntent) {
-            String targetClassName = paramIntent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-            String targetPackageName = paramIntent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+            String targetClassName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+            String targetPackageName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY);
             PluginServiceWrapper plugin = findPluginService(targetPackageName, targetClassName);
             if (plugin != null && plugin.getCurrentService() != null) {
                 plugin.updateBindCounter(-1);
@@ -251,12 +252,13 @@ public class ServiceProxy extends Service {
             super.onStart(null, startId);
             return;
         }
-        String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+        String targetPackageName = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
 
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
-            currentPlugin.updateBindCounter(1);
+            //currentPlugin.updateBindCounter(1);
+            currentPlugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STARTED);
             currentPlugin.getCurrentService().onStart(intent, startId);
         }
         super.onStart(intent, startId);
@@ -283,8 +285,8 @@ public class ServiceProxy extends Service {
             super.onRebind(null);
             return;
         }
-        String targetClassName = intent.getStringExtra(ServiceJumpUtil.EXTRA_TARGET_SERVICE);
-        String targetPackageName = intent.getStringExtra(ProxyEnvironment.EXTRA_TARGET_PACKAGNAME);
+        String targetClassName = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+        String targetPackageName = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY);
         PluginServiceWrapper currentPlugin = findPluginService(targetPackageName, targetClassName);
 
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {

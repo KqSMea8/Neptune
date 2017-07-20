@@ -4,16 +4,14 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -54,6 +52,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
     private String dataDir;
     private String nativeLibraryDir;
+    private String mProcessName;
 
     // 是否需要把插件class注入进入父classloader
     private boolean mIsClassInject = false;
@@ -84,10 +83,16 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return mReceiverIntentInfos;
     }
 
+    @Override
+    public String getProcessName() {
+        return mProcessName;
+    }
+
     protected ApkTargetMappingNew(Parcel in) {
         versionName = in.readString();
         versionCode = in.readInt();
         packageName = in.readString();
+        mProcessName = in.readString();
         applicationClassName = in.readString();
         defaultActivityName = in.readString();
         permissions = in.createTypedArray(PermissionInfo.CREATOR);
@@ -150,6 +155,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
             }
             packageName = packageInfo.packageName;
             applicationClassName = packageInfo.applicationInfo.className;
+            mProcessName = packageInfo.applicationInfo.processName;
             permissions = packageInfo.permissions;
             versionCode = packageInfo.versionCode;
             versionName = packageInfo.versionName;
@@ -177,7 +183,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
             ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
         } catch (RuntimeException e) {
-            ProxyEnvironmentManager.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
+            PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
             return;
         } catch (Throwable e) {
@@ -186,7 +192,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
             // java.lang.NoSuchFieldError:
             // com.android.internal.R$styleable.AndroidManifest
             // java.lang.NoSuchMethodError: android.graphics.PixelXorXfermode
-            ProxyEnvironmentManager.deliverPlug(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
+            PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
         }
     }
@@ -471,6 +477,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         parcel.writeString(versionName);
         parcel.writeInt(versionCode);
         parcel.writeString(packageName);
+        parcel.writeString(mProcessName);
         parcel.writeString(applicationClassName);
         parcel.writeString(defaultActivityName);
         parcel.writeTypedArray(permissions, i);

@@ -7,6 +7,9 @@ import java.util.concurrent.ConcurrentMap;
 import android.content.ServiceConnection;
 import android.text.TextUtils;
 
+/**
+ * 保存所有正在运行的Service
+ */
 public class PServiceSupervisor {
     /**
      * 记录正在运行的service

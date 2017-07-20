@@ -4,13 +4,7 @@ import org.qiyi.pluginlibrary.component.InstrActivityProxy;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange;
 import org.qiyi.pluginlibrary.component.ServiceProxy1;
 import org.qiyi.pluginlibrary.component.ServiceProxy2;
-import org.qiyi.pluginlibrary.component.ServiceProxy3;
-import org.qiyi.pluginlibrary.component.ServiceProxy4;
-import org.qiyi.pluginlibrary.component.ServiceProxy5;
-import org.qiyi.pluginlibrary.component.ServiceProxy6;
-import org.qiyi.pluginlibrary.component.ServiceProxy7;
-import org.qiyi.pluginlibrary.component.ServiceProxy8;
-import org.qiyi.pluginlibrary.component.ServiceProxy9;
+
 import org.qiyi.pluginlibrary.component.InstrActivityProxyLandscape;
 import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.component.ServiceProxy;
@@ -117,20 +111,7 @@ public class ProxyComponentMappingByProcess {
             return ServiceProxy1.class.getName();
         case 2:
             return ServiceProxy2.class.getName();
-        case 3:
-            return ServiceProxy3.class.getName();
-        case 4:
-            return ServiceProxy4.class.getName();
-        case 5:
-            return ServiceProxy5.class.getName();
-        case 6:
-            return ServiceProxy6.class.getName();
-        case 7:
-            return ServiceProxy7.class.getName();
-        case 8:
-            return ServiceProxy8.class.getName();
-        case 9:
-            return ServiceProxy9.class.getName();
+
         default:
             return ServiceProxy.class.getName();
         }

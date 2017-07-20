@@ -13,7 +13,7 @@ import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.manager.TargetActivator;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.BroadcastReceiver;
@@ -517,7 +517,7 @@ public class CMPackageManager {
 
             try {
                 // 先停止运行插件
-                TargetActivator.unLoadTarget(packageName);
+                PluginManager.exitPlugin(packageName);
             } catch (Exception e) {
                 e.printStackTrace();
             }

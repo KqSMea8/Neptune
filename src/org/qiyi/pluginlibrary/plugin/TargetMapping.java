@@ -57,4 +57,6 @@ public interface TargetMapping {
     boolean usePluginCodePath();
 
     Map<String, ApkTargetMappingNew.ReceiverIntentInfo> getReceiverIntentInfos();
+
+    String getProcessName();
 }

@@ -1,12 +1,7 @@
-package org.qiyi.pluginlibrary.api;
+package org.qiyi.pluginlibrary.listenter;
 
-/**
- * 插件加载回调接口
- *
- * @author chenyangkun
- * @since 2014-4-24
- */
-public interface ITargetLoadListener {
+
+public interface IPluginLoadListener {
 
     /**
      * 加载成功的回调，主线程回调

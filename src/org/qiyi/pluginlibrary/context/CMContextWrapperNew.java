@@ -1,12 +1,15 @@
 package org.qiyi.pluginlibrary.context;
 
-import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
 
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 
+/**
+ * 自定义ContextWrapper的实现类
+ */
 public class CMContextWrapperNew extends CustomContextWrapper {
     /** 插件包名 */
     private String mPackagename = null;
@@ -22,10 +25,10 @@ public class CMContextWrapperNew extends CustomContextWrapper {
     @Override
     public Theme getTheme() {
         if (mTargetTheme == null) {
-            ProxyEnvironment environment = ProxyEnvironmentManager.getEnvByPkgName(mPackagename);
-            if (null != environment) {
-                mTargetTheme = environment.getTargetResources().newTheme();
-                mTargetTheme.setTo(environment.getTargetTheme());
+            PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(mPackagename);
+            if (null != mLoadedApk) {
+                mTargetTheme = mLoadedApk.getPluginResource().newTheme();
+                mTargetTheme.setTo(mLoadedApk.getPluginTheme());
             }
         }
         return mTargetTheme;
@@ -42,8 +45,8 @@ public class CMContextWrapperNew extends CustomContextWrapper {
     }
 
     @Override
-    protected ProxyEnvironment getEnvironment() {
-        return ProxyEnvironmentManager.getEnvByPkgName(mPackagename);
+    protected PluginLoadedApk getPluginLoadedApk() {
+        return PluginManager.getPluginLoadedApkByPkgName(mPackagename);
     }
 
     @Override

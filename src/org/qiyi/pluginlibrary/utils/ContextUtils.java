@@ -5,10 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -92,12 +93,12 @@ public class ContextUtils {
 
     public static String getTopActivity() {
         String topPackage = null;
-        for (Entry<String, ProxyEnvironment> entry : ProxyEnvironmentManager.getAllEnv().entrySet()) {
+        for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             String packageName = (String) entry.getKey();
-            ProxyEnvironment env = (ProxyEnvironment) entry.getValue();
-            if (env.getActivityStackSupervisor().getActivityStack().size() == 0) {
+            PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
+            if (mLoadedApk.getActivityStackSupervisor().getActivityStack().size() == 0) {
                 continue;
-            } else if (Util.isResumed(env.getActivityStackSupervisor().getActivityStack().getFirst())) {
+            } else if (Util.isResumed(mLoadedApk.getActivityStackSupervisor().getActivityStack().getFirst())) {
                 topPackage = packageName;
             }
         }
@@ -106,10 +107,10 @@ public class ContextUtils {
 
     public static List<String> getRunningPluginPackage(){
         List<String> mRunningPackage = new ArrayList<String>();
-        for (Entry<String, ProxyEnvironment> entry : ProxyEnvironmentManager.getAllEnv().entrySet()) {
+        for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             String packageName = (String) entry.getKey();
-            ProxyEnvironment env = (ProxyEnvironment) entry.getValue();
-            if (env.getActivityStackSupervisor().getActivityStack().size() > 0) {
+            PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
+            if (mLoadedApk.getActivityStackSupervisor().getActivityStack().size() > 0) {
                 mRunningPackage.add(packageName);
             }
         }
@@ -273,12 +274,12 @@ public class ContextUtils {
             return null;
         }
 
-        ProxyEnvironment proxyNew = ProxyEnvironmentManager.getEnvByPkgName(pkg);
+        PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkg);
 
-        if (proxyNew == null) {
+        if (mLoadedApk == null) {
             return null;
         }
-        PackageInfo pkgInfo = proxyNew.getTargetPackageInfo();
+        PackageInfo pkgInfo = mLoadedApk.getPluginPackageInfo();
         return pkgInfo;
     }
 
@@ -326,8 +327,8 @@ public class ContextUtils {
      */
     public static void notifyHostPluginStarted(Context context, Intent intent) {
         if (null != context && null != intent && !TextUtils.isEmpty(intent.getStringExtra(
-                ProxyEnvironmentManager.EXTRA_SHOW_LOADING))) {
-            context.sendBroadcast(new Intent(ProxyEnvironmentManager.EXTRA_SHOW_LOADING));
+                IIntentConstant.EXTRA_SHOW_LOADING))) {
+            context.sendBroadcast(new Intent(IIntentConstant.EXTRA_SHOW_LOADING));
         }
     }
 }

@@ -6,9 +6,11 @@ import android.content.pm.ActivityInfo;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironment;
-import org.qiyi.pluginlibrary.manager.ProxyEnvironmentManager;
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.pm.CMPackageManager;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.util.ArrayList;
@@ -34,10 +36,10 @@ public class PActivityStackSupervisor {
 
     // 插件的Activity栈
     private LinkedList<Activity> mActivityStack;
-    private ProxyEnvironment mEnv;
+    private PluginLoadedApk mLoadedApk;
 
-    public PActivityStackSupervisor(ProxyEnvironment env) {
-        mEnv = env;
+    public PActivityStackSupervisor(PluginLoadedApk mLoadedApk) {
+        this.mLoadedApk = mLoadedApk;
         mActivityStack = new LinkedList<Activity>();
     }
 
@@ -58,7 +60,7 @@ public class PActivityStackSupervisor {
             return;
         }
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode target activity: " + intent + " source: "
-                + intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY));
+                + intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY));
         if (PluginDebugLog.isDebug()) {
             if (null != mActivityStack && mActivityStack.size() > 0) {
                 for (Activity ac : mActivityStack) {
@@ -69,13 +71,13 @@ public class PActivityStackSupervisor {
                 PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack is empty");
             }
         }
-        String targetActivity = intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
+        String targetActivity = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
         if (TextUtils.isEmpty(targetActivity)) {
             return;
         }
 
         // 不支持LAUNCH_SINGLE_INSTANCE
-        ActivityInfo info = mEnv.getTargetMapping().getActivityInfo(targetActivity);
+        ActivityInfo info = mLoadedApk.getPluginMapping().getActivityInfo(targetActivity);
         if (info == null || info.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
             return;
         }
@@ -103,10 +105,9 @@ public class PActivityStackSupervisor {
                 activity = mActivityStack.getFirst();
             }
             boolean hasSameActivity = false;
-            String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(mEnv.getInstallType(),
-                    info, mEnv.getRunningProcessName());
+            String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk,info);
             if (activity != null && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
-                String key = getActivityStackKey(activity, mEnv.getInstallType());
+                String key = getActivityStackKey(activity);
 
                 if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -125,11 +126,10 @@ public class PActivityStackSupervisor {
             synchronized (mActivityStack) {
                 // 遍历已经起过的activity
                 for (Activity activity : mActivityStack) {
-                    String proxyClsName = ActivityJumpUtil.getProxyActivityClsName(
-                            mEnv.getInstallType(), info, mEnv.getRunningProcessName());
+                    String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk,info);
                     if (activity != null
                             && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
-                        String key = getActivityStackKey(activity, mEnv.getInstallType());
+                        String key = getActivityStackKey(activity);
                         if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
                             PluginDebugLog.runtimeLog(TAG,"dealLaunchMode found:"+((InstrActivityProxy)activity).dump());
                             found = activity;
@@ -169,11 +169,11 @@ public class PActivityStackSupervisor {
                     PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + ((InstrActivityProxy)act).dump());
                     act.finish();
                 }
-                mEnv.quitApp(false);
+                mLoadedApk.quitApp(false);
             } else {
                 // 遍历还未启动cache中的activity记录
                 LinkedBlockingQueue<Intent> recoreds = sIntentCacheMap
-                        .get(mEnv.getTargetPackageName());
+                        .get(mLoadedApk.getPluginPackageName());
                 if (null != recoreds) {
                     Iterator<Intent> recordIterator = recoreds.iterator();
                     String notLaunchTargetClassName = null;
@@ -196,7 +196,7 @@ public class PActivityStackSupervisor {
                     }
                 }
                 // 遍历启动过程中的activity记录
-                List<Intent> loadingIntents = sIntentLoadingMap.get(mEnv.getTargetPackageName());
+                List<Intent> loadingIntents = sIntentLoadingMap.get(mLoadedApk.getPluginPackageName());
                 if (null != loadingIntents) {
                     Iterator<Intent> loadingRecordIterator = loadingIntents.iterator();
                     String notLaunchTargetClassName = null;
@@ -204,7 +204,7 @@ public class PActivityStackSupervisor {
                         Intent record = loadingRecordIterator.next();
                         if (null != record) {
                             notLaunchTargetClassName = record
-                                    .getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY);
+                                    .getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
                             if (TextUtils.equals(notLaunchTargetClassName, targetActivity)) {
                                 PluginDebugLog.runtimeLog(TAG,
                                         "sIntentLoadingMap found: " + targetActivity);
@@ -222,7 +222,7 @@ public class PActivityStackSupervisor {
             }
         }
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode end: " + intent + " "
-                + intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY));
+                + intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY));
     }
 
     private void handleOtherPluginActivityStack(Activity act) {
@@ -264,19 +264,19 @@ public class PActivityStackSupervisor {
                 if (null != temp && act == temp) {
                     break;
                 }
-                if (temp != null && !TextUtils.equals(mEnv.getTargetPackageName(),
+                if (temp != null && !TextUtils.equals(mLoadedApk.getPluginPackageName(),
                         ((InstrActivityProxy) temp).getPluginPackageName())) {
                     needRemove.add(temp);
                 }
             }
-            ProxyEnvironment env = null;
+            PluginLoadedApk mLoadedApk = null;
             for (Activity removeItem : needRemove) {
                 if (null != removeItem) {
-                    env = ProxyEnvironmentManager.getEnvByPkgName(
+                    mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(
                             ((InstrActivityProxy) removeItem).getPluginPackageName());
-                    if (null != env
-                            && null != env.getActivityStackSupervisor().getActivityStack()) {
-                        synchronized (env.getActivityStackSupervisor().getActivityStack()) {
+                    if (null != mLoadedApk
+                            && null != mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
+                        synchronized (mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
                             try {
                                 PluginDebugLog.runtimeLog(TAG,
                                         "finish: " + ((InstrActivityProxy) removeItem).dump());
@@ -284,7 +284,7 @@ public class PActivityStackSupervisor {
                             } catch (Exception ex) {
                                 ex.printStackTrace();
                             }
-                            env.getActivityStackSupervisor().mActivityStack.remove(removeItem);
+                            mLoadedApk.getActivityStackSupervisor().mActivityStack.remove(removeItem);
                         }
                     }
                 }
@@ -296,7 +296,7 @@ public class PActivityStackSupervisor {
         PluginDebugLog.runtimeLog(TAG, "pushActivityToStack activity: " + activity + " "
                 + ((InstrActivityProxy) activity).dump());
         sAllActivityStack.add(activity);
-        removeLoadingIntent(mEnv.getTargetPackageName(), activity.getIntent());
+        removeLoadingIntent(mLoadedApk.getPluginPackageName(), activity.getIntent());
         synchronized (mActivityStack) {
             mActivityStack.addFirst(activity);
         }
@@ -390,8 +390,8 @@ public class PActivityStackSupervisor {
         Intent toBeRemoved = null;
         if (null != intents) {
             for (Intent temp : intents) {
-                if (TextUtils.equals(temp.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY),
-                        intent.getStringExtra(ActivityJumpUtil.EXTRA_TARGET_ACTIVITY))) {
+                if (TextUtils.equals(temp.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY),
+                        intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY))) {
                     toBeRemoved = temp;
                     break;
                 }
@@ -405,24 +405,18 @@ public class PActivityStackSupervisor {
                 + toBeRemoved + " result: " + result);
     }
 
-    private static String getActivityStackKey(Activity activity, String pluginInstallType) {
+    private static String getActivityStackKey(Activity activity) {
         String key = "";
-        if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_INSTR, pluginInstallType)
-                || TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEFAULT, pluginInstallType)
-                || TextUtils.isEmpty(pluginInstallType)) {
-            InstrActivityProxy lActivityProxy = null;
-            try {
-                lActivityProxy = (InstrActivityProxy) activity;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return key;
-            }
-            PluginActivityControl ctl = lActivityProxy.getController();
-            if (ctl != null && ctl.getPlugin() != null) {
-                key = ctl.getPlugin().getClass().getName();
-            }
-        } else if (TextUtils.equals(CMPackageManager.PLUGIN_METHOD_DEXMAKER, pluginInstallType)) {
-            key = activity.getClass().getSuperclass().getName();
+        InstrActivityProxy lActivityProxy = null;
+        try {
+            lActivityProxy = (InstrActivityProxy) activity;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return key;
+        }
+        PluginActivityControl ctl = lActivityProxy.getController();
+        if (ctl != null && ctl.getPlugin() != null) {
+            key = ctl.getPlugin().getClass().getName();
         }
         return key;
     }
