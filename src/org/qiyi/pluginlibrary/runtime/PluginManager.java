@@ -22,11 +22,10 @@ import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
-import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
 import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
 import org.qiyi.pluginlibrary.listenter.IPluginInitListener;
 import org.qiyi.pluginlibrary.listenter.IPluginLoadListener;
-import org.qiyi.pluginlibrary.component.InstrActivityProxy;
+import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.constant.IMsgConstant;
 import org.qiyi.pluginlibrary.exception.PluginStartupException;
@@ -159,7 +158,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * @param mProcessName 需要启动的插件运行的进程名称,插件方可以在Application的android:process指定
      *                     如果没有指定，则有插件中心分配
      */
-    public static void launchPlugin(final Context mHostContext, Intent mIntent,String mProcessName) {
+    public static void launchPlugin(final Context mHostContext,
+                                    Intent mIntent,
+                                    String mProcessName) {
         launchPlugin(mHostContext, mIntent, null,mProcessName);
     }
 
@@ -247,12 +248,14 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
 
     /**
-     * 异步初始化插件
+     * @deprecated
+     * 异步初始化插件（宿主静默加载插件,遗留逻辑，不建议使用）
      * @param mHostContext
      * @param packageName
      * @param processName
      * @param mListener
      */
+    @Deprecated
     public static void initPluginAsync(final Context mHostContext,
                                   final String packageName,
                                   final String processName,
@@ -912,10 +915,10 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * 退出插件
      * @param mContext
      *      主进程Context
-     * @param mPackageName
-     *      要退出的插件名
+     * @param mProcessName
+     *      要退出进程
      */
-    public static void quit(Context mContext, String mPackageName) {
+    public static void quit(Context mContext, String mProcessName) {
 
         CMPackageManagerImpl.getInstance(mContext).exit();
 
@@ -926,11 +929,11 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             }
         }
         PServiceSupervisor.clearConnections();
-        // sAliveServices will be cleared, when on ServiceProxy destroy.
+        // sAliveServices will be cleared, when on ServiceProxy1 destroy.
 
         if (mContext != null) {
             Intent intent = new Intent();
-            String proxyServiceName = ProxyComponentMappingByProcess.mappingService(mPackageName);
+            String proxyServiceName = ComponetFinder.matchServiceProxyByFeature(mProcessName);
 
             Class<?> proxyServiceNameClass = null;
             try {
@@ -958,7 +961,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 printWriter.print("\n");
                 List<Activity> activities = tmp.getValue().getActivityStackSupervisor().getActivityStack();
                 for(Activity mActivity : activities){
-                    ((InstrActivityProxy)mActivity).dump(printWriter);
+                    ((InstrActivityProxy1)mActivity).dump(printWriter);
                 }
             }
             printWriter.print("================end dump plugin activity stack====================");

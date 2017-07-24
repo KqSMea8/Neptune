@@ -9,10 +9,8 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.component.processmgr.ProcessManger;
 import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
-import org.qiyi.pluginlibrary.ProxyComponentMappingByProcess;
-import org.qiyi.pluginlibrary.component.InstrActivityProxy;
-import org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
 import org.qiyi.pluginlibrary.plugin.TargetMapping;
@@ -33,6 +31,17 @@ import java.util.List;
 
 public class ComponetFinder implements IIntentConstant {
     private static final String TAG = "ComponetFinder";
+
+    public static final String DEFAULT_ACTIVITY_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.InstrActivityProxy";
+    public static final String DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent";
+    public static final String DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.InstrActivityProxyLandscape";
+    public static final String DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange";
+    public static final String DEFAULT_SERVICE_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.ServiceProxy";
 
     /**
      * 在插件中查找可以处理mIntent的Service组件,找到之后为其分配合适的Proxy
@@ -81,7 +90,7 @@ public class ComponetFinder implements IIntentConstant {
         mIntent.addCategory(EXTRA_TARGET_CATEGORY + System.currentTimeMillis());
         try {
             mIntent.setClass(mLoadedApk.getHostContext(),
-                    Class.forName(ProxyComponentMappingByProcess.mappingService(mLoadedApk.getProcessName())));
+                    Class.forName(matchServiceProxyByFeature(mLoadedApk.getProcessName())));
             String intentInfo = "";
             intentInfo = mIntent.toString();
             if (null != mIntent.getExtras()) {
@@ -207,9 +216,9 @@ public class ComponetFinder implements IIntentConstant {
         if (mIntent != null && mIntent.getComponent() != null
                 && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_CLASS_KEY))
                 && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_PACKAGNAME_KEY))) {
-            if (mIntent.getComponent().getClassName().startsWith(InstrActivityProxy.class.getName())
+            if (mIntent.getComponent().getClassName().startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)
                     || mIntent.getComponent().getClassName()
-                    .startsWith(InstrActivityProxyTranslucent.class.getName())) {
+                    .startsWith(ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX)) {
                 return true;
             }
         }
@@ -301,9 +310,68 @@ public class ComponetFinder implements IIntentConstant {
             }
         }
 
-        return ProxyComponentMappingByProcess.mappingActivity(isTranslucent, isLandscape,
+        return matchActivityProxyByFeature(isTranslucent, isLandscape,
                 isHandleConfigChange,mLoadedApk.getProcessName());
     }
+
+    /**
+     * 根据被代理的Activity的Feature和进程名称选择代理
+     * @param isTranslucent
+     *          是否透明
+     * @param isLandscape
+     *          是否横屏
+     * @param isHandleConfig
+     *          配置变化是否仅仅执行onConfiguration方法
+     * @param mProcessName
+     *          当前插件运行的进程名称
+     * @return
+     */
+    public static String matchActivityProxyByFeature(boolean isTranslucent,
+                                              boolean isLandscape,
+                                              boolean isHandleConfig,
+                                              String mProcessName){
+        int index = ProcessManger.getProcessIndex(mProcessName);
+        if(index <=0 || index >2){
+            //越界检查
+            PluginDebugLog.log(TAG,"matchActivityProxyByFeature index is out of bounds!");
+            index = 1;
+        }
+
+        if (isTranslucent) {
+            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+                    ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX +index);
+            return ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX +index;
+        } else if (isLandscape) {
+            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+                    ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX +index);
+            return ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX +index;
+        }
+        if (isHandleConfig) {
+            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+                    ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX +index);
+            return ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX +index;
+        } else {
+            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+                    ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX +index);
+            return ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX +index;
+        }
+
+    }
+
+    /**
+     * 通过进程名称匹配ServiceProxy
+     * @param processName
+     *          进程名称
+     * @return
+     *          Service代理名称
+     */
+    public static String matchServiceProxyByFeature(String processName){
+        String proxyServiceName =
+                DEFAULT_SERVICE_PROXY_PREFIX + ProcessManger.getProcessIndex(processName);
+        PluginDebugLog.log(TAG,"matchServiceProxyByFeature:"+proxyServiceName);
+        return proxyServiceName;
+    }
+
 
 
 }

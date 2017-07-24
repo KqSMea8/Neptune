@@ -72,8 +72,8 @@ public class ContextUtils {
     public static String getTopActivityName(Context context, String packName) {
         String topActivity = getTopActivity(context);
         if (!TextUtils.isEmpty(topActivity)) {
-            if (topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent")
-                    || topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxy")) {
+            if (topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent1")
+                    || topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxy1")) {
                 return "plugin:" + getTopActivity();
             } else {
                 return topActivity;

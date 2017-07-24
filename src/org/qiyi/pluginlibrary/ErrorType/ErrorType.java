@@ -118,7 +118,7 @@ public class ErrorType {
     public static final int ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL = ERROR_CLIENT_SET_APPLICATION_BASE_FAIL + 1;
 
     /**
-     * 3.0 Instrumentation插件方案，InstrActivityProxy onCreate 时
+     * 3.0 Instrumentation插件方案，InstrActivityProxy1 onCreate 时
      * intent中无pluginMessage
      */
     public static final int ERROR_CLIENT_GET_PKG_AND_CLS_FAIL = ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL + 1;
@@ -127,10 +127,10 @@ public class ErrorType {
      * 只有ProxyEnvironmentNew为null的时候会）
      */
     public static final int ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL = ERROR_CLIENT_GET_PKG_AND_CLS_FAIL + 1;
-    /** 3.0 Instrumentation插件方案，InstrActivityProxy fillPluginActivity 发生异常 */
+    /** 3.0 Instrumentation插件方案，InstrActivityProxy1 fillPluginActivity 发生异常 */
     public static final int ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL = ERROR_CLIENT_TRY_TO_INIT_ENVIRONMENT_FAIL + 1;
     /**
-     * 3.0 Instrumentation插件方案，InstrActivityProxy new PluginActivityControl 发生异常
+     * 3.0 Instrumentation插件方案，InstrActivityProxy1 new PluginActivityControl 发生异常
      */
     public static final int ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL = ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL + 1;
     /**

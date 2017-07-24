@@ -1,5 +1,7 @@
 package org.qiyi.pluginlibrary.component;
-
-public class InstrActivityProxy2 extends InstrActivityProxy {
+/**
+ * :plugin2 Activity　代理
+ */
+public class InstrActivityProxy2 extends InstrActivityProxy1 {
 
 }

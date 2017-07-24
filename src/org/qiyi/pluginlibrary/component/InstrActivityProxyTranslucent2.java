@@ -1,5 +1,7 @@
 package org.qiyi.pluginlibrary.component;
-
-public class InstrActivityProxyTranslucent2 extends InstrActivityProxy {
+/**
+ * :plugin2 Activity　代理，用于透明的Activity
+ */
+public class InstrActivityProxyTranslucent2 extends InstrActivityProxy1 {
 
 }
