@@ -30,7 +30,7 @@ import android.view.SearchEvent;
 import android.view.View;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
-import org.qiyi.pluginlibrary.PluginActivityControl;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
@@ -518,7 +518,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy startActivityForResult one....");
         if (mLoadedApk != null) {
             super.startActivityForResult(
-                    ComponetFinder.findSuitableActivityByIntent(mLoadedApk.getPluginPackageName(),
+                    ComponetFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
                             intent, requestCode, this),
                     requestCode);
         } else {
@@ -531,7 +531,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy startActivityForResult two....");
         if (mLoadedApk != null) {
             super.startActivityForResult(
-                    ComponetFinder.findSuitableActivityByIntent(mLoadedApk.getPluginPackageName(),
+                    ComponetFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
                             intent, requestCode, this),
                     requestCode, options);
         } else {
@@ -543,7 +543,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public ComponentName startService(Intent mIntent) {
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 startService....");
         if (mLoadedApk != null) {
-            ComponetFinder.findSuitableServiceByIntent(mLoadedApk,mIntent);
+            ComponetFinder.switchToServiceProxy(mLoadedApk,mIntent);
         }
         return super.startService(mIntent);
     }
@@ -557,8 +557,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             PluginServiceWrapper plugin = PServiceSupervisor.getServiceByIdentifer(
                     PluginServiceWrapper.getIndeitfy(mLoadedApk.getPluginPackageName(), actServiceClsName));
             if (plugin != null) {
-                plugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
-                plugin.tryToDestroyService(name);
+                plugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
+                plugin.tryToDestroyService();
                 return true;
             }
         }
@@ -569,48 +569,12 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public boolean bindService(Intent mIntent, ServiceConnection conn, int flags) {
         if (mLoadedApk != null) {
             //ServiceJumpUtil.remapStartServiceIntent(mPluginEnv, service);
-            ComponetFinder.findSuitableServiceByIntent(mLoadedApk,mIntent);
+            ComponetFinder.switchToServiceProxy(mLoadedApk,mIntent);
         }
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 bindService...."+mIntent);
         return super.bindService(mIntent, conn, flags);
     }
 
-//    public void startActivityForResult(Intent intent, int requestCode) {
-//        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 startActivityForResult one....");
-//        if (mLoadedApk != null) {
-//            super.startActivityForResult(
-//                    ActivityJumpUtil.handleStartActivityIntent(mLoadedApk.getPluginPackageName(), intent, requestCode, null, this),
-//                    requestCode);
-//        } else {
-//            super.startActivityForResult(intent, requestCode);
-//        }
-//    }
-//
-//    @SuppressLint("NewApi")
-//    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
-//        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 startActivityForResult two....");
-//        if (mLoadedApk != null) {
-//            super.startActivityForResult(
-//                    ActivityJumpUtil.handleStartActivityIntent(mPluginEnv.getTargetPackageName(), intent, requestCode, options, this),
-//                    requestCode, options);
-//        } else {
-//            super.startActivityForResult(intent, requestCode, options);
-//        }
-//    }
-
-    // public void startActivityFromFragment(Fragment fragment, Intent intent,
-    // int requestCode) {
-    // // TODO Auto-generated method stub
-    // super.startActivityFromFragment(fragment, intent, requestCode);
-    // }
-    //
-    // @Override
-    // public void startActivityFromFragment(Fragment fragment, Intent intent,
-    // int requestCode,
-    // Bundle options) {
-    // // TODO Auto-generated method stub
-    // super.startActivityFromFragment(fragment, intent, requestCode, options);
-    // }
 
     @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {

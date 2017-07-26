@@ -1,4 +1,4 @@
-package org.qiyi.pluginlibrary;
+package org.qiyi.pluginlibrary.component.stackmgr;
 
 import android.app.Activity;
 import android.app.Application;

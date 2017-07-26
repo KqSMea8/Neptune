@@ -3,10 +3,9 @@ package org.qiyi.pluginlibrary.component.stackmgr;
 import android.app.Service;
 import android.content.Intent;
 
-import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
-
 /**
- * Wrapper for plugin service
+ * 对插件Service的包装，记录每个Service的状态，便于对
+ * Service的生命周期进行管理
  */
 public class PluginServiceWrapper {
     /** status to indicate service has been created **/
@@ -17,17 +16,16 @@ public class PluginServiceWrapper {
     public static final int PLUGIN_SERVICE_DESTROYED = PLUGIN_SERVICE_STOPED + 1;
 
     int mState = PLUGIN_SERVICE_DEFAULT;
-
+    /**插件中被代理Service的类名*/
     private String mServiceClassName;
-
+    /**插件包名*/
     private String mPkgName;
-
+    /**代理Service*/
     private Service mParentService;
-
+    /**插件中被代理的Service对象*/
     private Service mCurrentService;
-
+    /**Service被绑定的次数*/
     private int mBindCounter = 0;
-    private int mStartCounter = PLUGIN_SERVICE_DEFAULT;
 
     /**
      * Indicate service should launch after process killed illegal support
@@ -43,6 +41,10 @@ public class PluginServiceWrapper {
         mCurrentService = current;
     }
 
+    /**
+     * 更新当前Service的状态
+     * @param state
+     */
     public void updateServiceState(int state) {
         mState = state;
     }
@@ -66,19 +68,24 @@ public class PluginServiceWrapper {
         }
     }
 
-    public void updateStartStatus(int status) {
-        mStartCounter = status;
+
+    /**
+     * 判断当前Service 是否可以执行onDestroy
+     * @return
+     */
+    private boolean shouldDestroy() {
+        return mBindCounter == 0 &&
+                (mState > PLUGIN_SERVICE_DEFAULT && mState != PLUGIN_SERVICE_DESTROYED);
     }
 
-    public boolean shouldDestroy() {
-        return mBindCounter == 0 && (mStartCounter == PLUGIN_SERVICE_STOPED || mStartCounter == PLUGIN_SERVICE_DEFAULT)
-                && mState == PLUGIN_SERVICE_CREATED;
-    }
-
-    public void tryToDestroyService(Intent service) {
+    /**
+     * 尝试执行Service的onDestroy方法
+     */
+    public void tryToDestroyService() {
         if (mCurrentService != null && shouldDestroy()) {
             try {
                 mCurrentService.onDestroy();
+                mState = PLUGIN_SERVICE_DESTROYED;
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -90,6 +97,12 @@ public class PluginServiceWrapper {
         }
     }
 
+    /**
+     * 获取当前Service保存的key值
+     * @param pkg
+     * @param serviceClsName
+     * @return
+     */
     public static String getIndeitfy(String pkg, String serviceClsName) {
         return pkg + "." + serviceClsName;
     }

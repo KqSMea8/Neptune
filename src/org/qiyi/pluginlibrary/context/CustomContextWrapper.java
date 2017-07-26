@@ -103,7 +103,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         PluginDebugLog.log(getLogTag(), "startService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
-            ComponetFinder.findSuitableServiceByIntent(mLoadedApk,service);
+            ComponetFinder.switchToServiceProxy(mLoadedApk,service);
         }
         return super.startService(service);
     }
@@ -126,8 +126,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             PluginServiceWrapper plugin = PServiceSupervisor
                     .getServiceByIdentifer(PluginServiceWrapper.getIndeitfy(getPluginPackageName(), actServiceClsName));
             if (plugin != null) {
-                plugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
-                plugin.tryToDestroyService(name);
+                plugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
+                plugin.tryToDestroyService();
                 return true;
             }
         }
@@ -139,7 +139,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         PluginDebugLog.log(getLogTag(), "bindService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
-            ComponetFinder.findSuitableServiceByIntent(mLoadedApk,service);
+            ComponetFinder.switchToServiceProxy(mLoadedApk,service);
         }
         if (conn != null) {
             if (mLoadedApk != null && service != null) {
@@ -162,12 +162,12 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public void startActivity(Intent intent) {
-        super.startActivity(ComponetFinder.findSuitableActivityByIntent(getPluginPackageName(), intent, -1, this));
+        super.startActivity(ComponetFinder.switchToActivityProxy(getPluginPackageName(), intent, -1, this));
     }
 
     @Override
     public void startActivity(Intent intent, Bundle options) {
-        super.startActivity(ComponetFinder.findSuitableActivityByIntent(getPluginPackageName(), intent, -1, this), options);
+        super.startActivity(ComponetFinder.switchToActivityProxy(getPluginPackageName(), intent, -1, this), options);
     }
 
     @Override

@@ -49,7 +49,7 @@ public class ComponetFinder implements IIntentConstant {
      * @param mLoadedApk 插件的{@link PluginLoadedApk}对象
      * @param mIntent    需要查找的Intent
      */
-    public static void findSuitableServiceByIntent(PluginLoadedApk mLoadedApk, Intent mIntent) {
+    public static void switchToServiceProxy(PluginLoadedApk mLoadedApk, Intent mIntent) {
         if (mIntent == null || mLoadedApk == null) {
             return;
         }
@@ -57,13 +57,13 @@ public class ComponetFinder implements IIntentConstant {
             //隐式启动
             ServiceInfo mServiceInfo = mLoadedApk.getPluginMapping().resolveService(mIntent);
             if (mServiceInfo != null) {
-                findSuitableServiceByIntent(mLoadedApk, mIntent, mServiceInfo.name);
+                switchToServiceProxy(mLoadedApk, mIntent, mServiceInfo.name);
             }
             return;
         } else {
             //显示启动
             String targetService = mIntent.getComponent().getClassName();
-            findSuitableServiceByIntent(mLoadedApk, mIntent, targetService);
+            switchToServiceProxy(mLoadedApk, mIntent, targetService);
         }
     }
 
@@ -75,9 +75,9 @@ public class ComponetFinder implements IIntentConstant {
      * @param mIntent       需要查找的Intent
      * @param targetService 处理当前Intent的组件的类名
      */
-    public static void findSuitableServiceByIntent(PluginLoadedApk mLoadedApk,
-                                                   Intent mIntent,
-                                                   String targetService) {
+    public static void switchToServiceProxy(PluginLoadedApk mLoadedApk,
+                                            Intent mIntent,
+                                            String targetService) {
         if (null == mLoadedApk || null == mIntent || TextUtils.isEmpty(targetService)
                 || mLoadedApk.getPluginMapping().getServiceInfo(targetService) == null) {
             return;
@@ -113,10 +113,10 @@ public class ComponetFinder implements IIntentConstant {
      * @param context
      * @return
      */
-    public static Intent findSuitableActivityByIntent(String mPluginPackageName,
-                                                   Intent mIntent,
-                                                   int requestCode,
-                                                   Context context) {
+    public static Intent switchToActivityProxy(String mPluginPackageName,
+                                               Intent mIntent,
+                                               int requestCode,
+                                               Context context) {
 
         if (mIntent == null) {
             PluginDebugLog.log(TAG, "handleStartActivityIntent intent is null!");

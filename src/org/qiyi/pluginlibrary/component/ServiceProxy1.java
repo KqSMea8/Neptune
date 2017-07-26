@@ -210,7 +210,7 @@ public class ServiceProxy1 extends Service {
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
         PluginDebugLog.log(TAG, "ServiceProxy1>>>>>onStartCommand() currentPlugin: " + currentPlugin);
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
-            currentPlugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STARTED);
+            currentPlugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STARTED);
             int result = currentPlugin.getCurrentService().onStartCommand(paramIntent, paramInt1, paramInt2);
             PluginDebugLog.log(TAG, "ServiceProxy1>>>>>onStartCommand() result: " + result);
             if (result == START_REDELIVER_INTENT || result == START_STICKY) {
@@ -237,7 +237,7 @@ public class ServiceProxy1 extends Service {
             if (plugin != null && plugin.getCurrentService() != null) {
                 plugin.updateBindCounter(-1);
                 result = plugin.getCurrentService().onUnbind(paramIntent);
-                plugin.tryToDestroyService(paramIntent);
+                plugin.tryToDestroyService();
             }
         }
         super.onUnbind(paramIntent);
@@ -257,8 +257,7 @@ public class ServiceProxy1 extends Service {
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);
 
         if (currentPlugin != null && currentPlugin.getCurrentService() != null) {
-            //currentPlugin.updateBindCounter(1);
-            currentPlugin.updateStartStatus(PluginServiceWrapper.PLUGIN_SERVICE_STARTED);
+            currentPlugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STARTED);
             currentPlugin.getCurrentService().onStart(intent, startId);
         }
         super.onStart(intent, startId);

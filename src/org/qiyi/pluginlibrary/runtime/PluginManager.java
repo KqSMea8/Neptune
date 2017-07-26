@@ -432,7 +432,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClass: " + targetClass);
         if (targetClass != null && Service.class.isAssignableFrom(targetClass)) {
             //处理的是Service
-            ComponetFinder.findSuitableServiceByIntent(mLoadedApk, mIntent, targetClassName);
+            ComponetFinder.switchToServiceProxy(mLoadedApk, mIntent, targetClassName);
             if (mConnection == null) {
                 mHostContext.startService(mIntent);
             } else {
@@ -441,7 +441,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             }
         } else {
             //处理的是Activity
-            ComponetFinder.findSuitableActivityByIntent(mLoadedApk.getPluginPackageName(),
+            ComponetFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
                     mIntent, -1, mHostContext);
             PActivityStackSupervisor.addLoadingIntent(mLoadedApk.getPluginPackageName(), mIntent);
             Context lastActivity = null;
