@@ -22,7 +22,7 @@ def getRepositoryPassword() {
 }
 
 def isReleaseBuild() {
-    return !VERSION_NAME.contains("SNAPSHOT");
+    return !(VERSION_NAME.contains('SNAPSHOP'));
 }
 
 task pullLatestCode() {
