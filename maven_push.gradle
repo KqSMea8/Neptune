@@ -25,6 +25,15 @@ def isReleaseBuild() {
     return !VERSION_NAME.contains("SNAPSHOT");
 }
 
+task pullLatestCode() {
+    if(isReleaseBuild()){
+        exec{
+            executable ='git'
+            args=['pull','--rebase']
+        }
+    }
+}
+
 
 
 afterEvaluate { project ->

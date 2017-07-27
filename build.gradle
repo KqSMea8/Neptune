@@ -93,11 +93,7 @@ android {
     }
 
     //在基线8.7版本开始废弃，通过gradle uploadArchives上传aar到maven服务器,
-    // debug的时候gradle -PDebug uploadArchives
     task makeJar(type: Copy) {
-        if(!project.hasProperty("Debug")){
-            getLatestCode()
-        }
         from('build/intermediates/bundles/debug/')
         into(target)
         include('classes.jar')
@@ -147,11 +143,4 @@ def getGitChangeId() {
         println 'ChangeId' + outputAsString
     }
     return outputAsString
-}
-
-def getLatestCode() {
-    exec{
-        executable ='git'
-        args=['pull','--rebase']
-    }
 }
