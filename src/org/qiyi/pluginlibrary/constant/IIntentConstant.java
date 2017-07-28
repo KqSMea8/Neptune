@@ -10,7 +10,7 @@ public interface IIntentConstant {
     /**代理插件包名的key*/
     public static final String EXTRA_TARGET_PACKAGNAME_KEY = "targe_package";
     /**代理插件组件类名的key*/
-    public static final String EXTRA_TARGET_CLASS_KEY = "targe_class";
+    public static final String EXTRA_TARGET_CLASS_KEY = "pluginapp_extra_target_activity"; //"targe_class";
     /**主动加载插件的广播*/
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "target_stub";
     /**通知插件启动完毕(用于快捷方式)*/
