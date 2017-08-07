@@ -10,12 +10,11 @@ import android.content.res.TypedArray;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.processmgr.ProcessManger;
-import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
-import org.qiyi.pluginlibrary.plugin.TargetMapping;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
+import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 
@@ -55,7 +54,7 @@ public class ComponetFinder implements IIntentConstant {
         }
         if (mIntent.getComponent() == null) {
             //隐式启动
-            ServiceInfo mServiceInfo = mLoadedApk.getPluginMapping().resolveService(mIntent);
+            ServiceInfo mServiceInfo = mLoadedApk.getPluginPackageInfo().resolveService(mIntent);
             if (mServiceInfo != null) {
                 switchToServiceProxy(mLoadedApk, mIntent, mServiceInfo.name);
             }
@@ -79,7 +78,7 @@ public class ComponetFinder implements IIntentConstant {
                                             Intent mIntent,
                                             String targetService) {
         if (null == mLoadedApk || null == mIntent || TextUtils.isEmpty(targetService)
-                || mLoadedApk.getPluginMapping().getServiceInfo(targetService) == null) {
+                || mLoadedApk.getPluginPackageInfo().getServiceInfo(targetService) == null) {
             return;
         }
         mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
@@ -142,7 +141,7 @@ public class ComponetFinder implements IIntentConstant {
             if (mLoadedApk != null) {
                 if (TextUtils.equals(pkg, mPluginPackageName)
                         || TextUtils.equals(pkg, mLoadedApk.getHostPackageName())) {
-                    TargetMapping thisPlugin = mLoadedApk.getPluginMapping();
+                    PluginPackageInfo thisPlugin = mLoadedApk.getPluginPackageInfo();
                     targetActivity = thisPlugin.getActivityInfo(toActName);
                 }
 
@@ -152,7 +151,7 @@ public class ComponetFinder implements IIntentConstant {
                 mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkg);
                 // Check in pkg's apk
                 if (!TextUtils.isEmpty(pkg) && mLoadedApk != null) {
-                    TargetMapping otherPlug = mLoadedApk.getPluginMapping();
+                    PluginPackageInfo otherPlug = mLoadedApk.getPluginPackageInfo();
                     if (otherPlug != null) {
                         targetActivity = otherPlug.getActivityInfo(toActName);
                     }
@@ -161,17 +160,18 @@ public class ComponetFinder implements IIntentConstant {
 
         } else {
             if (mLoadedApk != null) {
-                TargetMapping mapping = mLoadedApk.getPluginMapping();
+                PluginPackageInfo mapping = mLoadedApk.getPluginPackageInfo();
                 if (mapping != null) {
                     targetActivity = mapping.resolveActivity(mIntent);
                 }
             } else {
                 if (null != context) {
-                    List<CMPackageInfo> packageList = CMPackageManagerImpl.getInstance(context).getInstalledApps();
+                    List<PluginLiteInfo> packageList = PluginPackageManagerNative.getInstance(context).getInstalledApps();
                     if (packageList != null) {
-                        for (CMPackageInfo pkgInfo : CMPackageManagerImpl.getInstance(context).getInstalledApps()) {
+                        for (PluginLiteInfo pkgInfo : PluginPackageManagerNative.getInstance(context).getInstalledApps()) {
                             if (pkgInfo != null) {
-                                ApkTargetMappingNew target = pkgInfo.getTargetMapping(context);
+                                PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
+                                .getPluginPackageInfo(context,pkgInfo); //pkgInfo.getTargetMapping(context);
                                 if (null != target) {
                                     targetActivity = target.resolveActivity(mIntent);
                                     break;
@@ -242,7 +242,7 @@ public class ComponetFinder implements IIntentConstant {
                     mPackageName);
             return;
         }
-        ActivityInfo info = mLoadedApk.getPluginMapping().getActivityInfo(activityName);
+        ActivityInfo info = mLoadedApk.getPluginPackageInfo().getActivityInfo(activityName);
         if (null == info) {
             PluginDebugLog.formatLog(TAG,
                     "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: %s",
@@ -278,6 +278,7 @@ public class ComponetFinder implements IIntentConstant {
                 android.R.attr.windowBackground
         });
         isTranslucent=array.getBoolean(0, false);
+        PluginDebugLog.runtimeLog(TAG,"activity theme is translucent:"+isTranslucent);
         array.recycle();
         if(!isTranslucent){
             //兼容遗留逻辑
@@ -331,7 +332,7 @@ public class ComponetFinder implements IIntentConstant {
                                               boolean isHandleConfig,
                                               String mProcessName){
         int index = ProcessManger.getProcessIndex(mProcessName);
-        if(index <=0 || index >2){
+        if(index <0 || index >2){
             //越界检查
             PluginDebugLog.log(TAG,"matchActivityProxyByFeature index is out of bounds!");
             index = 1;

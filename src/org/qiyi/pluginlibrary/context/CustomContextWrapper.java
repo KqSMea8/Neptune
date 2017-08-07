@@ -22,7 +22,7 @@ import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
-import org.qiyi.pluginlibrary.plugin.TargetMapping;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
@@ -74,8 +74,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         if (mApplicationInfo == null) {
             mApplicationInfo = super.getApplicationInfo();
             PluginLoadedApk mLoadedApk = getPluginLoadedApk();
-            if (mLoadedApk != null && getPluginMapping() != null) {
-                TargetMapping targetMapping = getPluginMapping();
+            if (mLoadedApk != null && getPluginPackageInfo() != null) {
+                PluginPackageInfo targetMapping = getPluginPackageInfo();
                 if (targetMapping.usePluginApplicationInfo()) {
                     mApplicationInfo.dataDir = targetMapping.getDataDir();
                     PluginDebugLog.log(TAG, "change data dir: " + mApplicationInfo.dataDir);
@@ -117,7 +117,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             if(name.getComponent() != null){
                 actServiceClsName = name.getComponent().getClassName();
             }else{
-                ServiceInfo mServiceInfo = getPluginMapping().resolveService(name);
+                ServiceInfo mServiceInfo = getPluginPackageInfo().resolveService(name);
                 if(mServiceInfo != null){
                     actServiceClsName = mServiceInfo.name;
                 }
@@ -178,7 +178,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             return superFile;
         }
 
-        File fileDir = new File(getPluginMapping().getDataDir() + "/files/");
+        File fileDir = new File(getPluginPackageInfo().getDataDir() + "/files/");
         if (!fileDir.exists()) {
             fileDir.mkdir();
         }
@@ -191,7 +191,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         if (mLoadedApk == null) {
             return super.getCacheDir();
         }
-        File cacheDir = new File(getPluginMapping().getDataDir() + "/cache/");
+        File cacheDir = new File(getPluginPackageInfo().getDataDir() + "/cache/");
         if (!cacheDir.exists()) {
             cacheDir.mkdir();
         }
@@ -204,7 +204,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         if (mLoadedApk == null) {
             return super.getFilesDir();
         }
-        File file = new File(getPluginMapping().getDataDir() + "/files/" + name);
+        File file = new File(getPluginPackageInfo().getDataDir() + "/files/" + name);
         return mLoadedApk.getPluginAssetManager() == null ? super.getFileStreamPath(name) : file;
     }
 
@@ -214,7 +214,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         if (mLoadedApk == null) {
             return super.getFilesDir();
         }
-        File fileDir = new File(getPluginMapping().getDataDir() + "/app_" + name + "/");
+        File fileDir = new File(getPluginPackageInfo().getDataDir() + "/app_" + name + "/");
         if (!fileDir.exists()) {
             fileDir.mkdir();
         }
@@ -237,7 +237,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             if (mLoadedApk == null) {
                 return super.getDatabasePath(name);
             }
-            f = new File(getPluginMapping().getDataDir() + "/databases/" + name);
+            f = new File(getPluginPackageInfo().getDataDir() + "/databases/" + name);
             if (!f.exists()) {
                 f.mkdir();
             }
@@ -287,13 +287,13 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         if (mLoadedApk == null) {
             return super.deleteFile(name);
         }
-        File fileDir = new File(getPluginMapping().getDataDir() + "/files/" + name);
+        File fileDir = new File(getPluginPackageInfo().getDataDir() + "/files/" + name);
         return mLoadedApk.getPluginAssetManager() == null ? super.deleteFile(name) : fileDir.delete();
     }
 
     @Override
     public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory) {
-        File databaseDir = new File(getPluginMapping().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
         if (!databaseDir.exists()) {
             databaseDir.mkdir();
         }
@@ -321,13 +321,13 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         String dbPath = "/data/data/" + this.getPackageName() + "/databases/";
         File file = new File(dbPath, name);
         if (file.exists()) {
-            File targetFile = new File(getPluginMapping().getDataDir() + "/databases/" + name);
+            File targetFile = new File(getPluginPackageInfo().getDataDir() + "/databases/" + name);
             if (!targetFile.exists()) {
                 Util.moveFile(file, targetFile);
             }
             File bakFile = new File(dbPath, dbName + ".db-journal");
             File targetBakFile = new File(
-                    getPluginMapping().getDataDir() + "/databases/" + dbName + ".db-journal");
+                    getPluginPackageInfo().getDataDir() + "/databases/" + dbName + ".db-journal");
             if (bakFile.exists() && !targetBakFile.exists()) {
                 Util.moveFile(bakFile, targetBakFile);
             }
@@ -336,7 +336,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory, DatabaseErrorHandler errorHandler) {
-        File databaseDir = new File(getPluginMapping().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
         if (!databaseDir.exists()) {
             databaseDir.mkdir();
         }
@@ -349,7 +349,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public boolean deleteDatabase(String name) {
-        File databaseDir = new File(getPluginMapping().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
         if (!databaseDir.exists()) {
             databaseDir.mkdir();
         }
@@ -358,7 +358,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public String[] databaseList() {
-        File databaseDir = new File(getPluginMapping().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
         if (!databaseDir.exists()) {
             databaseDir.mkdir();
         }
@@ -367,7 +367,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     private File getSharedPrefsFile(String name) {
         File base = null;
-        base = new File(getPluginMapping().getDataDir() + "/shared_prefs/");
+        base = new File(getPluginPackageInfo().getDataDir() + "/shared_prefs/");
         if (!base.exists()) {
             base.mkdir();
         }
@@ -460,7 +460,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                         oSharedPrefs.put(name, sp);
                     }
                 }
-                if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginMapping()
+                if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
                         .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
                     ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
                     // JavaCalls.invokeMethod(sp,
@@ -495,7 +495,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                         packagePrefs.put(name, sp);
                         return (SharedPreferences) sp;
                     }
-                    if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginMapping()
+                    if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
                             .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
                         ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
                         // JavaCalls.invokeMethod(sp,
@@ -535,7 +535,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {
-        if (getPluginLoadedApk() != null && getPluginMapping() != null) {
+        if (getPluginLoadedApk() != null && getPluginPackageInfo() != null) {
             backupSharedPreference(name);
             SharedPreferences sp = getSharedPreferecesForPlugin(name, mode);
             if (sp != null) {
@@ -580,7 +580,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     @Override
     public String getPackageCodePath() {
         if (getPluginLoadedApk() != null) {
-            TargetMapping targetMapping = getPluginMapping();
+            PluginPackageInfo targetMapping = getPluginPackageInfo();
             if (targetMapping != null && targetMapping.usePluginCodePath()) {
                 PackageInfo packageInfo = targetMapping.getPackageInfo();
                 if (packageInfo != null && packageInfo.applicationInfo != null) {
@@ -608,10 +608,10 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return null;
     }
 
-    public TargetMapping getPluginMapping(){
+    public PluginPackageInfo getPluginPackageInfo(){
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if(mLoadedApk != null){
-            return mLoadedApk.getPluginMapping();
+            return mLoadedApk.getPluginPackageInfo();
         }
         return null;
     }

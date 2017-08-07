@@ -15,13 +15,13 @@ import java.util.List;
  * 插件安装service管理，正常情况下此Service会持续存在，
  * Created by xiepengchong on 15/10/29.
  */
-public class CMPackageManagerService extends Service {
+public class PluginPackageManagerService extends Service {
 
-    private static CMPackageManager mManager;
+    private static PluginPackageManager mManager;
 
     @Override
     public void onCreate() {
-        mManager = CMPackageManager.getInstance(this);
+        mManager = PluginPackageManager.getInstance(this);
     }
 
     @Override
@@ -35,11 +35,11 @@ public class CMPackageManagerService extends Service {
         return initBinder();
     }
 
-    private ICMPackageManager.Stub initBinder() {
-        return new ICMPackageManager.Stub() {
+    private IPluginPackageManager.Stub initBinder() {
+        return new IPluginPackageManager.Stub() {
 
             @Override
-            public List<CMPackageInfo> getInstalledApps() throws RemoteException {
+            public List<PluginLiteInfo> getInstalledApps() throws RemoteException {
                 if (mManager == null) {
                     return null;
                 }
@@ -47,7 +47,7 @@ public class CMPackageManagerService extends Service {
             }
 
             @Override
-            public CMPackageInfo getPackageInfo(String pkg) throws RemoteException {
+            public PluginLiteInfo getPackageInfo(String pkg) throws RemoteException {
                 if (mManager == null || TextUtils.isEmpty(pkg)) {
                     return null;
                 }
@@ -60,18 +60,18 @@ public class CMPackageManagerService extends Service {
             }
 
             @Override
-            public boolean canInstallPackage(PluginPackageInfoExt info) throws RemoteException {
+            public boolean canInstallPackage(PluginLiteInfo info) throws RemoteException {
                 return mManager != null && info != null && mManager.canInstallPackage(info);
             }
 
             @Override
-            public boolean canUninstallPackage(CMPackageInfo info) throws RemoteException {
+            public boolean canUninstallPackage(PluginLiteInfo info) throws RemoteException {
                 return mManager != null && info != null && mManager.canUninstallPackage(info);
             }
 
             @Override
             public void installApkFile(String filePath, IInstallCallBack listener,
-                                       PluginPackageInfoExt pluginInfo) throws RemoteException {
+                                       PluginLiteInfo pluginInfo) throws RemoteException {
                 if (mManager == null || TextUtils.isEmpty(filePath)) {
                     return;
                 }
@@ -79,17 +79,17 @@ public class CMPackageManagerService extends Service {
             }
 
             @Override
-            public void installBuildinApps(String packageName, IInstallCallBack listener, PluginPackageInfoExt info)
+            public void installBuildinApps(PluginLiteInfo info,IInstallCallBack listener)
                     throws RemoteException {
-                if (mManager == null || TextUtils.isEmpty(packageName)) {
+                if (mManager == null || TextUtils.isEmpty(info.packageName)) {
                     return;
                 }
-                mManager.installBuildinApps(packageName, listener, info);
+                mManager.installBuildinApps(info, listener);
             }
 
             @Override
             public void deletePackage(
-                    CMPackageInfo packageInfo, IPackageDeleteObserver observer) throws RemoteException {
+                    PluginLiteInfo packageInfo, IPluginUninstallCallBack observer) throws RemoteException {
                 if (mManager == null) {
                     return;
                 }
@@ -97,13 +97,13 @@ public class CMPackageManagerService extends Service {
             }
 
             @Override
-            public boolean uninstall(CMPackageInfo packageInfo) throws RemoteException {
+            public boolean uninstall(PluginLiteInfo packageInfo) throws RemoteException {
                 return mManager != null && mManager.uninstall(packageInfo);
             }
 
             @Override
             public void packageAction(
-                    CMPackageInfo packageInfo, IInstallCallBack callBack) throws RemoteException {
+                    PluginLiteInfo packageInfo, IInstallCallBack callBack) throws RemoteException {
                 if (mManager == null ||
                         packageInfo == null || TextUtils.isEmpty(packageInfo.packageName)) {
                     return;
@@ -120,9 +120,17 @@ public class CMPackageManagerService extends Service {
             }
 
             @Override
-            public ApkTargetMappingNew getApkTargetMapping(String pkgName) throws RemoteException {
+            public PluginPackageInfo getPluginPackageInfo(String pkgName) throws RemoteException {
                 if (mManager != null) {
-                    return mManager.getApkTargetMapping(pkgName);
+                    return mManager.getPluginPackageInfo(pkgName);
+                }
+                return null;
+            }
+
+            @Override
+            public List<String> getPluginRefs(String pkgName) throws RemoteException {
+                if (mManager != null) {
+                    return mManager.getPluginRefs(pkgName);
                 }
                 return null;
             }

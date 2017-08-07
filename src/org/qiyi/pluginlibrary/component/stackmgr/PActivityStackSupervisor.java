@@ -76,7 +76,7 @@ public class PActivityStackSupervisor {
         }
 
         // 不支持LAUNCH_SINGLE_INSTANCE
-        ActivityInfo info = mLoadedApk.getPluginMapping().getActivityInfo(targetActivity);
+        ActivityInfo info = mLoadedApk.getPluginPackageInfo().getActivityInfo(targetActivity);
         if (info == null || info.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
             return;
         }

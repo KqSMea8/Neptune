@@ -10,14 +10,14 @@ import android.content.res.Resources.Theme;
 /**
  * 自定义ContextWrapper的实现类
  */
-public class CMContextWrapperNew extends CustomContextWrapper {
+public class PluginContextWrapper extends CustomContextWrapper {
     /** 插件包名 */
     private String mPackagename = null;
 
     // 插件自己保存一个theme，不用父类创建的，为了兼容OPPO手机上的bug
     private Resources.Theme mTargetTheme;
 
-    public CMContextWrapperNew(Context paramContext, String pkgName) {
+    public PluginContextWrapper(Context paramContext, String pkgName) {
         super(paramContext);
         mPackagename = pkgName;
     }
@@ -51,6 +51,6 @@ public class CMContextWrapperNew extends CustomContextWrapper {
 
     @Override
     protected String getLogTag() {
-        return CMContextWrapperNew.class.getSimpleName();
+        return PluginContextWrapper.class.getSimpleName();
     }
 }

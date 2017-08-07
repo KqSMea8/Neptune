@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.plugin.TargetMapping;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
@@ -28,9 +27,9 @@ import android.os.Parcelable;
 import android.text.TextUtils;
 
 /**
- * @author huangbo 插件apk资源初始化
+ * 存放插件apk的{@link PackageInfo}里面的信息
  */
-public class ApkTargetMappingNew implements TargetMapping, Parcelable {
+public class PluginPackageInfo implements Parcelable {
 
     static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
 
@@ -75,7 +74,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
     /** Save all receiver's resolve info */
     private Map<String, ReceiverIntentInfo> mReceiverIntentInfos = new HashMap<String, ReceiverIntentInfo>(0);
 
-    public ApkTargetMappingNew(Context context, File apkFile) {
+    public PluginPackageInfo(Context context, File apkFile) {
         init(context, apkFile);
     }
 
@@ -83,12 +82,11 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return mReceiverIntentInfos;
     }
 
-    @Override
     public String getProcessName() {
         return mProcessName;
     }
 
-    protected ApkTargetMappingNew(Parcel in) {
+    protected PluginPackageInfo(Parcel in) {
         versionName = in.readString();
         versionCode = in.readInt();
         packageName = in.readString();
@@ -133,15 +131,15 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return !TextUtils.isEmpty(packageName) && packageInfo != null;
     }
 
-    public static final Creator<ApkTargetMappingNew> CREATOR = new Creator<ApkTargetMappingNew>() {
+    public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
         @Override
-        public ApkTargetMappingNew createFromParcel(Parcel in) {
-            return new ApkTargetMappingNew(in);
+        public PluginPackageInfo createFromParcel(Parcel in) {
+            return new PluginPackageInfo(in);
         }
 
         @Override
-        public ApkTargetMappingNew[] newArray(int size) {
-            return new ApkTargetMappingNew[size];
+        public PluginPackageInfo[] newArray(int size) {
+            return new PluginPackageInfo[size];
         }
     };
 
@@ -174,7 +172,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
 
                     if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
                         packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
-                        PluginDebugLog.log("ApkTargetMappingNew",
+                        PluginDebugLog.log("PluginPackageInfo",
                                 "change sourceDir dir: " + packageInfo.applicationInfo.sourceDir);
                         mUsePluginCodePath = true;
                     }
@@ -205,12 +203,10 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return nativeLibraryDir;
     }
 
-    @Override
     public boolean usePluginApplicationInfo() {
         return mUsePluginAppInfo;
     }
 
-    @Override
     public boolean usePluginCodePath() {
         return mUsePluginCodePath;
     }
@@ -349,22 +345,18 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return null;
     }
 
-    @Override
     public boolean isClassNeedInject() {
         return mIsClassInject;
     }
 
-    @Override
     public String getPackageName() {
         return packageName;
     }
 
-    @Override
     public String getApplicationClassName() {
         return applicationClassName;
     }
 
-    @Override
     public String getDefaultActivityName() {
         return defaultActivityName;
     }
@@ -373,22 +365,18 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return permissions;
     }
 
-    @Override
     public String getVersionName() {
         return versionName;
     }
 
-    @Override
     public int getVersionCode() {
         return versionCode;
     }
 
-    @Override
     public PackageInfo getPackageInfo() {
         return packageInfo;
     }
 
-    @Override
     public int getThemeResource(String activity) {
         ActivityInfo info = getActivityInfo(activity);
 //        if (info == null) {
@@ -416,7 +404,6 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return info.getThemeResource();
     }
 
-    @Override
     public ActivityInfo getActivityInfo(String activity) {
         if (!TextUtils.isEmpty(activity) && mActivitiyIntentInfos != null) {
             ActivityIntentInfo info = mActivitiyIntentInfos.get(activity);
@@ -427,7 +414,6 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return null;
     }
 
-    @Override
     public ServiceInfo getServiceInfo(String service) {
         if (!TextUtils.isEmpty(service) && mServiceIntentInfos != null) {
             ServiceIntentInfo info = mServiceIntentInfos.get(service);
@@ -438,9 +424,7 @@ public class ApkTargetMappingNew implements TargetMapping, Parcelable {
         return null;
     }
 
-    /**
-     * @return the metaData
-     */
+
     public Bundle getMetaData() {
         return metaData;
     }

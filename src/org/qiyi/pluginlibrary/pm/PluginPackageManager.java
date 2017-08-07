@@ -2,6 +2,7 @@ package org.qiyi.pluginlibrary.pm;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,27 +10,27 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
 /**
  * 负责安装卸载app，获取安装列表等工作.<br> 负责安装插件的一些方法 功能类似系统中的PackageManager
  */
-public class CMPackageManager {
+public class PluginPackageManager {
 
-    private static final String TAG = PluginDebugLog.TAG;
+    private static final String TAG = "PluginPackageManager";
 
     /**
      * 安装成功，发送广播
@@ -51,93 +52,31 @@ public class CMPackageManager {
      */
     public static final String ACTION_HANDLE_PLUGIN_EXCEPTION = "handle_plugin_exception";
 
-    /**
-     * 安装插件方案的版本
-     **/
-    public static final String PLUGIN_METHOD_DEFAULT = "plugin_method_default";
-    public static final String PLUGIN_METHOD_DEXMAKER = "plugin_method_dexmaker";
-    public static final String PLUGIN_METHOD_INSTR = "plugin_method_instr";
-
-    /**
-     * 插件文件后缀类型
-     **/
-    public static final String PLUGIN_FILE_APK = "apk";
-    public static final String PLUGIN_FILE_SO = "so";
-    public static final String PLUGIN_FILE_DEX = "dex";
-
-    /**
-     * 插件文件来源类型
-     **/
-    public static final String PLUGIN_SOURCE_ASSETS = "assets";
-    public static final String PLUGIN_SOURCE_SDCARD = "sdcard";
-    public static final String PLUGIN_SOURCE_NETWORK = "network";
-
-    /**
-     * 安装完的pkg的包名
-     */
-    public static final String EXTRA_PKG_NAME = "package_name";
-    /**
-     * 支持 assets:// 和 file:// 两种，对应内置和外部apk安装。 比如 assets://megapp/xxxx.apk , 或者
-     * file:///data/data/com.qiyi.xxx/files/xxx.apk
-     */
-    public static final String EXTRA_SRC_FILE = "install_src_file";
-    /**
-     * 安装完的apk path，没有scheme 比如 /data/data/com.qiyi.video/xxx.apk
-     */
-    public static final String EXTRA_DEST_FILE = "install_dest_file";
-
-    // /** 安装完的pkg的 version code */
-    // public static final String EXTRA_VERSION_CODE = "version_code";
-    // /** 安装完的pkg的 version name */
-    // public static final String EXTRA_VERSION_NAME = "version_name";
-    /**
-     * 安装完的pkg的 plugin info
-     */
-    public static final String EXTRA_PLUGIN_INFO = "plugin_info";
-
+    
     public static final String SCHEME_ASSETS = "assets://";
     public static final String SCHEME_FILE = "file://";
     public static final String SCHEME_SO = "so://";
     public static final String SCHEME_DEX = "dex://";
 
-    /**
-     * application context
-     */
     private Context mContext;
 
-    private static CMPackageManager sInstance;// 安装对象
+    private static PluginPackageManager sInstance;// 安装对象
 
     private ConcurrentHashMap<String, IActionFinishCallback> mActionFinishCallbacks =
             new ConcurrentHashMap<String, IActionFinishCallback>();
 
-    /**
-     * 已安装列表。 !!!!!!! 不要直接引用该变量。 因为该变量是 lazy init 方式，不需要的时不进行初始化。 使用
-     * {@link #getInstalledPkgsInstance()} 获取该实例
-     */
-    private ConcurrentHashMap<String, ApkTargetMappingNew> mTargetMappingCache =
-            new ConcurrentHashMap<String, ApkTargetMappingNew>();
-
-    /**
-     * 安装包任务队列。
-     */
-    private List<PackageAction> mPackageActions = new LinkedList<CMPackageManager.PackageAction>();
-
+    private ConcurrentHashMap<String, PluginPackageInfo> mTargetMappingCache =
+            new ConcurrentHashMap<String, PluginPackageInfo>();
+    /**插件安装任务列表*/
+    private List<PackageAction> mPackageActions = new LinkedList<PluginPackageManager.PackageAction>();
+    /**插件安装监听列表*/
     private Map<String, IInstallCallBack> listenerMap = new HashMap<String, IInstallCallBack>();
+    /**验证插件基本信息、获取插件状态等信息接口，该接口通常交由主工程实现，并设置*/
+    private static IVerifyPluginInfo sVerifyPluginInfo = null;
 
-    private static ICMPackageInfoManager sCMPackageInfoManager = null;
 
-    /**
-     * Return code for when package deletion succeeds. This is passed to the
-     * {@link IPackageDeleteObserver} by {@link #deletePackage()} if the system
-     * succeeded in deleting the package.
-     */
     public static final int DELETE_SUCCEEDED = 1;
 
-    /**
-     * Deletion failed return code: this is passed to the
-     * {@link IPackageDeleteObserver} by {@link #deletePackage()} if the system
-     * failed to delete the package for an unspecified reason.
-     */
     public static final int DELETE_FAILED_INTERNAL_ERROR = -1;
 
     public static final int INSTALL_SUCCESS = 2;
@@ -148,13 +87,13 @@ public class CMPackageManager {
 
     public static final int UNINSTALL_FAILED = -3;
 
-    private CMPackageManager(Context context) {
+    private PluginPackageManager(Context context) {
         mContext = context.getApplicationContext();
         registerInstallderReceiver();
     }
 
-    public static void setPackageInfoManager(ICMPackageInfoManager packageInfoManager) {
-        sCMPackageInfoManager = packageInfoManager;
+    public static void setVerifyPluginInfoImpl(IVerifyPluginInfo packageInfoManager) {
+        sVerifyPluginInfo = packageInfoManager;
     }
 
     /**
@@ -163,11 +102,26 @@ public class CMPackageManager {
      * @param context
      * @return
      */
-    synchronized static CMPackageManager getInstance(Context context) {
+    synchronized static PluginPackageManager getInstance(Context context) {
         if (sInstance == null) {
-            sInstance = new CMPackageManager(context);
+            sInstance = new PluginPackageManager(context);
         }
         return sInstance;
+    }
+
+    /**
+     * 保护性的更新srcApkPath
+     * //TODO 此方法的逻辑待完善，对于安装在外置卡的插件，此路径跟新有误
+     * @param context
+     * @param cmPkgInfo
+     */
+    public static void updateSrcApkPath(Context context, PluginLiteInfo cmPkgInfo) {
+        if (null != context && null != cmPkgInfo && TextUtils.isEmpty(cmPkgInfo.srcApkPath)) {
+            cmPkgInfo.srcApkPath = PluginInstaller.getPluginappRootPath(ContextUtils.getOriginalContext(context))
+                    .getAbsolutePath() + File.separator + cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX;
+            PluginDebugLog.log(TAG, "Special case srcApkPath is null!!! Set default value for srcApkPath! packageName: "
+                    + cmPkgInfo.packageName + " srcApkPath: " + cmPkgInfo.srcApkPath);
+        }
     }
 
     /**
@@ -175,9 +129,9 @@ public class CMPackageManager {
      *
      * @return
      */
-    public List<CMPackageInfo> getInstalledApps() {
-        if (sCMPackageInfoManager != null) {
-            List<CMPackageInfo> packageInfoList = sCMPackageInfoManager.getInstalledPackages();
+    public List<PluginLiteInfo> getInstalledApps() {
+        if (sVerifyPluginInfo != null) {
+            List<PluginLiteInfo> packageInfoList = sVerifyPluginInfo.getInstalledPackages();
             return packageInfoList;
         }
         return null;
@@ -192,75 +146,74 @@ public class CMPackageManager {
         public void onReceive(Context context, Intent intent) {
             try {
                 String action = intent.getAction();
-                PluginDebugLog.installLog(TAG,
-                        "ACTION_PACKAGE_INSTALLED " + action + " intent: " + intent);
                 if (ACTION_PACKAGE_INSTALLED.equals(action)) {
-                    String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
-                    String destApkPath = intent.getStringExtra(CMPackageManager.EXTRA_DEST_FILE);
-                    PluginPackageInfoExt infoExt = intent
-                            .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-                    PluginDebugLog.installLog(TAG, "ACTION_PACKAGE_INSTALLED " + infoExt);
-                    CMPackageInfo pkgInfo = new CMPackageInfo();
-                    pkgInfo.packageName = pkgName;
-                    pkgInfo.srcApkPath = destApkPath;
-                    pkgInfo.installStatus = CMPackageInfo.PLUGIN_INSTALLED;
-                    pkgInfo.pluginInfo = infoExt;
-
-                    IInstallCallBack callback = listenerMap.get(pkgName);
+                    PluginLiteInfo pkgInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
+                    if(pkgInfo == null){
+                        pkgInfo = new PluginLiteInfo();
+                        String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
+                        String destApkPath = intent.getStringExtra(IIntentConstant.EXTRA_DEST_FILE);
+                        pkgInfo.packageName = pkgName;
+                        pkgInfo.srcApkPath = destApkPath;
+                        pkgInfo.installStatus = PluginLiteInfo.PLUGIN_INSTALLED;
+                    }
+                    PluginDebugLog.installFormatLog(TAG, "plugin install success: %s",pkgInfo.packageName);
+                    IInstallCallBack callback = listenerMap.get(pkgInfo.packageName);
                     if (callback != null) {
                         try {
                             callback.onPacakgeInstalled(pkgInfo);
                         } catch (RemoteException e) {
                             e.printStackTrace();
                         } finally {
-                            listenerMap.remove(pkgName);
+                            listenerMap.remove(pkgInfo.packageName);
                         }
                     }
                     // 执行等待执行的action
                     executePackageAction(pkgInfo, true, 0);
-                    onActionFinish(pkgName, INSTALL_SUCCESS);
+                    onActionFinish(pkgInfo.packageName, INSTALL_SUCCESS);
                 } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
-                    String assetsPath = intent.getStringExtra(CMPackageManager.EXTRA_SRC_FILE);
-                    if (!TextUtils.isEmpty(assetsPath)) {
-                        int start = assetsPath.lastIndexOf("/");
-                        int end = start + 1;
-                        if (assetsPath.endsWith(PluginInstaller.APK_SUFFIX)) {
-                            end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
-                        } else if (assetsPath.endsWith(PluginInstaller.SO_SUFFIX)) {
-                            end = assetsPath.lastIndexOf(PluginInstaller.SO_SUFFIX);
-                        }
-                        String mapPackagename = assetsPath.substring(start + 1, end);
-                        // 失败原因
-                        int failReason = intent.getIntExtra(ErrorType.ERROR_RESON,
-                                ErrorType.SUCCESS);
-                        PluginDebugLog.installLog(TAG,
-                                "ACTION_PACKAGE_INSTALLFAIL mapPackagename: " + mapPackagename
-                                        + " failReason: " + failReason + " assetsPath: "
-                                        + assetsPath);
-                        if (listenerMap.get(mapPackagename) != null) {
-                            try {
-                                listenerMap.get(mapPackagename).onPackageInstallFail(mapPackagename,
-                                        failReason);
-                            } catch (RemoteException e) {
-                                e.printStackTrace();
-                            } finally {
-                                listenerMap.remove(mapPackagename);
+                    PluginLiteInfo pkgInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
+                    if(pkgInfo == null){
+                        pkgInfo = new PluginLiteInfo();
+                        String assetsPath = intent.getStringExtra(IIntentConstant.EXTRA_SRC_FILE);
+                        if (!TextUtils.isEmpty(assetsPath)){
+                            int start = assetsPath.lastIndexOf("/");
+                            int end = start + 1;
+                            if (assetsPath.endsWith(PluginInstaller.APK_SUFFIX)) {
+                                end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
+                            } else if (assetsPath.endsWith(PluginInstaller.SO_SUFFIX)) {
+                                end = assetsPath.lastIndexOf(PluginInstaller.SO_SUFFIX);
                             }
+                            String mapPackagename = assetsPath.substring(start + 1, end);
+                            pkgInfo.packageName = mapPackagename;
                         }
-                        PluginPackageInfoExt infoExt = intent
-                                .getParcelableExtra(CMPackageManager.EXTRA_PLUGIN_INFO);
-                        CMPackageInfo pkgInfo = new CMPackageInfo();
-                        pkgInfo.packageName = mapPackagename;
-                        pkgInfo.installStatus = CMPackageInfo.PLUGIN_UNINSTALLED;
-                        pkgInfo.pluginInfo = infoExt;
-                        executePackageAction(pkgInfo, false, failReason);
-                        onActionFinish(mapPackagename, INSTALL_FAILED);
                     }
+
+                    // 失败原因
+                    int failReason = intent.getIntExtra(ErrorType.ERROR_RESON,
+                            ErrorType.SUCCESS);
+                    PluginDebugLog.installFormatLog(TAG,
+                            "plugin install fail:%s,reason:%d ", pkgInfo.packageName
+                                    , failReason);
+                    if (listenerMap.get(pkgInfo.packageName) != null) {
+                        try {
+                            listenerMap.get(pkgInfo.packageName).onPackageInstallFail(pkgInfo.packageName,
+                                    failReason);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        } finally {
+                            listenerMap.remove(pkgInfo.packageName);
+                        }
+                    }
+                    executePackageAction(pkgInfo, false, failReason);
+                    onActionFinish(pkgInfo.packageName, INSTALL_FAILED);
                 } else if (TextUtils.equals(ACTION_HANDLE_PLUGIN_EXCEPTION, action)) {
-                    String pkgName = intent.getStringExtra(EXTRA_PKG_NAME);
+                    String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
                     String exception = intent.getStringExtra(ErrorType.ERROR_RESON);
-                    if (null != sCMPackageInfoManager && !TextUtils.isEmpty(pkgName)) {
-                        sCMPackageInfoManager.handlePluginException(pkgName, exception);
+                    PluginDebugLog.installFormatLog(TAG,
+                            "plugin install exception:%s,exception:%s",pkgName
+                            ,exception);
+                    if (null != sVerifyPluginInfo && !TextUtils.isEmpty(pkgName)) {
+                        sVerifyPluginInfo.handlePluginException(pkgName, exception);
                     }
                 }
             } catch (Exception e) {
@@ -306,7 +259,7 @@ public class CMPackageManager {
      * @param packageInfo 插件信息
      * @param callBack
      */
-    public void packageAction(CMPackageInfo packageInfo, IInstallCallBack callBack) {
+    public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callBack) {
         boolean packageInstalled = isPackageInstalled(packageInfo.packageName);
         boolean installing = PluginInstaller.isInstalling(packageInfo.packageName);
         PluginDebugLog.installLog(TAG, "packageAction , " + packageInfo.packageName + " installed : "
@@ -336,12 +289,18 @@ public class CMPackageManager {
         clearExpiredPkgAction();
     }
 
+    /**
+     * 执行队列中等待的Action
+     * @param packageInfo
+     * @param isSuccess
+     * @param failReason
+     */
     private void executePackageAction(
-            CMPackageInfo packageInfo, boolean isSuccess, int failReason) {
+            PluginLiteInfo packageInfo, boolean isSuccess, int failReason) {
         if (packageInfo == null) {
             return;
         }
-        ArrayList<PackageAction> executeList = new ArrayList<CMPackageManager.PackageAction>();
+        ArrayList<PackageAction> executeList = new ArrayList<>();
 
         String packageName = packageInfo.packageName;
         if (!TextUtils.isEmpty(packageName)) {
@@ -352,14 +311,12 @@ public class CMPackageManager {
             }
         }
 
-        // 首先从总列表中删除
         synchronized (this) {
             for (PackageAction action : executeList) {
                 mPackageActions.remove(action);
             }
         }
 
-        // 挨个执行
         for (PackageAction action : executeList) {
             if (action.callBack != null) {
                 try {
@@ -409,8 +366,8 @@ public class CMPackageManager {
      * 判断一个package是否安装
      */
     public boolean isPackageInstalled(String packageName) {
-        if (sCMPackageInfoManager != null) {
-            return sCMPackageInfoManager.isPackageInstalled(packageName);
+        if (sVerifyPluginInfo != null) {
+            return sVerifyPluginInfo.isPackageInstalled(packageName);
         }
         return false;
     }
@@ -421,15 +378,15 @@ public class CMPackageManager {
      * @param packageName
      * @return 没有安装反馈null
      */
-    public CMPackageInfo getPackageInfo(String packageName) {
+    public PluginLiteInfo getPackageInfo(String packageName) {
         if (TextUtils.isEmpty(packageName)) {
             PluginDebugLog.log(TAG, "getPackageInfo return null due to empty package name");
             return null;
         }
 
-        if (sCMPackageInfoManager != null) {
-            if (sCMPackageInfoManager.isPackageInstalled(packageName)) {
-                CMPackageInfo info = sCMPackageInfoManager.getPackageInfo(packageName);
+        if (sVerifyPluginInfo != null) {
+            if (sVerifyPluginInfo.isPackageInstalled(packageName)) {
+                PluginLiteInfo info = sVerifyPluginInfo.getPackageInfo(packageName);
                 if (null != info) {
                     return info;
                 } else {
@@ -442,7 +399,7 @@ public class CMPackageManager {
             }
         } else {
             PluginDebugLog.log(TAG, "getPackageInfo " +
-                    packageName + " return null due to CMPackageInfoManager is null");
+                    packageName + " return null due to verifyPluginInfoImpl is null");
         }
 
         return null;
@@ -455,23 +412,22 @@ public class CMPackageManager {
      * @param filePath apk 文件目录 比如 /sdcard/xxxx.apk
      * @param pluginInfo 插件信息
      */
-    public void installApkFile(final String filePath, IInstallCallBack listener, PluginPackageInfoExt pluginInfo) {
-        int start = filePath.lastIndexOf("/");
-        int end = start + 1;
-        if (filePath.endsWith(PluginInstaller.SO_SUFFIX)) {
-            end = filePath.lastIndexOf(PluginInstaller.SO_SUFFIX);
-        } else if (filePath.endsWith(PluginInstaller.DEX_SUFFIX)) {
-            end = filePath.lastIndexOf(PluginInstaller.DEX_SUFFIX);
-        } else {
-            end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
+    public void installApkFile(final String filePath, IInstallCallBack listener, PluginLiteInfo pluginInfo) {
+        if(TextUtils.isEmpty(pluginInfo.packageName)){
+            int start = filePath.lastIndexOf("/");
+            int end = start + 1;
+            if (filePath.endsWith(PluginInstaller.SO_SUFFIX)) {
+                end = filePath.lastIndexOf(PluginInstaller.SO_SUFFIX);
+            } else if (filePath.endsWith(PluginInstaller.DEX_SUFFIX)) {
+                end = filePath.lastIndexOf(PluginInstaller.DEX_SUFFIX);
+            } else {
+                end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
+            }
+            String mapPackagename = filePath.substring(start + 1, end);
+            pluginInfo.packageName = mapPackagename;
         }
-        String mapPackagename = filePath.substring(start + 1, end);
-        listenerMap.put(mapPackagename, listener);
-        PluginDebugLog.installLog(TAG, "installApkFile:" + mapPackagename);
-        if (pluginInfo != null && !TextUtils.equals(pluginInfo.mFileSourceType, CMPackageManager.PLUGIN_SOURCE_SDCARD)) {
-            PluginDebugLog.installLog(TAG, "installApkFile: change mFileSourceType to PLUGIN_SOURCE_SDCARD");
-            pluginInfo.mFileSourceType = CMPackageManager.PLUGIN_SOURCE_NETWORK;
-        }
+        listenerMap.put(pluginInfo.packageName, listener);
+        PluginDebugLog.installFormatLog(TAG, "installApkFile:%s",pluginInfo.packageName);
         PluginInstaller.installApkFile(mContext, filePath, pluginInfo);
     }
 
@@ -479,40 +435,39 @@ public class CMPackageManager {
      * 安装内置在 assets/puginapp 目录下的 apk。 内置app必须以 packageName 命名，比如
      * com.qiyi.xx.apk
      *
-     * @param packageName
      * @param listener
      * @param info 插件信息
      */
-    public void installBuildinApps(String packageName, IInstallCallBack listener, PluginPackageInfoExt info) {
-        listenerMap.put(packageName, listener);
-        PluginInstaller.installBuildinApps(packageName, mContext, info);
+    public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener) {
+        listenerMap.put(info.packageName, listener);
+        PluginInstaller.installBuildinApps(mContext,info);
     }
 
     /**
      * 删除安装包。 卸载插件应用程序,目前只有在升级时调用次方法，把插件状态改成upgrading状态
      *
-     * @param packageInfo 需要删除的package 的 CMPackageInfo
+     * @param packageInfo 需要删除的package 的 PluginLiteInfo
      * @param observer 卸载结果回调
      */
-    public void deletePackage(final CMPackageInfo packageInfo, IPackageDeleteObserver observer) {
+    public void deletePackage(final PluginLiteInfo packageInfo, IPluginUninstallCallBack observer) {
         deletePackage(packageInfo, observer, false, true);
     }
 
     /**
      * 删除安装包。 卸载插件应用程序
      *
-     * @param packageInfo 需要删除的package 的 CMPackageInfo
+     * @param packageInfo 需要删除的package 的 PluginLiteInfo
      * @param observer 卸载结果回调
      * @param deleteData 是否删除生成的data
      * @param upgrading 是否是升级之前的操作
      */
-    private void deletePackage(final CMPackageInfo packageInfo, IPackageDeleteObserver observer,
+    private void deletePackage(final PluginLiteInfo packageInfo, IPluginUninstallCallBack observer,
                                boolean deleteData, boolean upgrading) {
 
         if (packageInfo != null) {
             String packageName = packageInfo.packageName;
-            PluginDebugLog.log(TAG, "deletePackage with " + packageName +
-                    " deleteData: " + deleteData + " upgrading: " + upgrading);
+            PluginDebugLog.installFormatLog(TAG, "delete plugin :%s,deleteData:%s,upgrading:%s" , packageName
+                    , String.valueOf(deleteData) , String.valueOf(upgrading));
 
             try {
                 // 先停止运行插件
@@ -535,7 +490,7 @@ public class CMPackageManager {
 
                 // 回调
                 if (observer != null) {
-                    observer.packageDeleted(packageName, DELETE_SUCCEEDED);
+                    observer.onPluginUnintall(packageName, DELETE_SUCCEEDED);
                 }
             } catch (Exception e) {
                 // TODO: handle exception
@@ -549,19 +504,19 @@ public class CMPackageManager {
     /**
      * 卸载，删除文件
      *
-     * @param packageInfo CMPackageInfo
+     * @param packageInfo PluginLiteInfo
      * @return
      */
-    public boolean uninstall(CMPackageInfo packageInfo) {
+    public boolean uninstall(PluginLiteInfo packageInfo) {
 
         boolean uninstallFlag = false;
 
         if (packageInfo != null) {
             String packageName = packageInfo.packageName;
-            PluginDebugLog.installLog(TAG, "CMPackageManager::uninstall: " + packageName);
+            PluginDebugLog.installFormatLog(TAG, "uninstall plugin:%s ",packageName);
             try {
                 if (TextUtils.isEmpty(packageName)) {
-                    PluginDebugLog.installLog(TAG, "CMPackageManager::uninstall pkgName is empty return");
+                    PluginDebugLog.installLog(TAG, "uninstall plugin pkgName is empty return");
                     return false;
                 }
 
@@ -576,7 +531,7 @@ public class CMPackageManager {
                 // 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
                 // 1，卸载语音插件之后会出现，找不到库文件
                 // 2.卸载了啪啪奇插件之后，会出现 .so库 已经被打开，无法被另一个打开
-                // CMPackageManager.getInstance(pluginContext).deletePackage(pluginData.mPlugin.packageName,
+                // PluginPackageManager.getInstance(pluginContext).deletePackage(pluginData.mPlugin.packageName,
                 // observer);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -593,19 +548,19 @@ public class CMPackageManager {
         return uninstallFlag;
     }
 
-    public static SharedPreferences getPreferences(Context context, String shareName) {
-        SharedPreferences spf = null;
-        if (hasHoneycomb()) {
-            spf = context.getSharedPreferences(shareName, Context.MODE_MULTI_PROCESS);
-        } else {
-            spf = context.getSharedPreferences(shareName, Context.MODE_PRIVATE);
-        }
-        return spf;
-    }
+//    public static SharedPreferences getPreferences(Context context, String shareName) {
+//        SharedPreferences spf = null;
+//        if (hasHoneycomb()) {
+//            spf = context.getSharedPreferences(shareName, Context.MODE_MULTI_PROCESS);
+//        } else {
+//            spf = context.getSharedPreferences(shareName, Context.MODE_PRIVATE);
+//        }
+//        return spf;
+//    }
 
-    private static boolean hasHoneycomb() {
-        return Build.VERSION.SDK_INT >= 11;
-    }
+//    private static boolean hasHoneycomb() {
+//        return Build.VERSION.SDK_INT >= 11;
+//    }
 
     public void setActionFinishCallback(IActionFinishCallback callback) {
         if (callback != null) {
@@ -634,41 +589,126 @@ public class CMPackageManager {
         }
     }
 
-    public boolean canInstallPackage(PluginPackageInfoExt info) {
-        if (sCMPackageInfoManager != null) {
-            return sCMPackageInfoManager.canInstallPackage(info);
+    public boolean canInstallPackage(PluginLiteInfo info) {
+        if (sVerifyPluginInfo != null) {
+            return sVerifyPluginInfo.canInstallPackage(info);
         }
         return false;
     }
 
-    public boolean canUninstallPackage(CMPackageInfo info) {
-        if (sCMPackageInfoManager != null) {
-            return sCMPackageInfoManager.canUninstallPackage(info);
+    public boolean canUninstallPackage(PluginLiteInfo info) {
+        if (sVerifyPluginInfo != null) {
+            return sVerifyPluginInfo.canUninstallPackage(info);
         }
         return false;
     }
 
-    public ApkTargetMappingNew getApkTargetMapping(String pkgName) {
-        CMPackageInfo packageInfo = getPackageInfo(pkgName);
-        CMPackageInfo.updateSrcApkPath(mContext, packageInfo);
-        ApkTargetMappingNew result = null;
+    public PluginPackageInfo getPluginPackageInfo(String pkgName) {
+        PluginPackageInfo result = null;
+        if(!TextUtils.isEmpty(pkgName)){
+            result = mTargetMappingCache.get(pkgName);
+            if(result != null){
+                PluginDebugLog.runtimeLog(TAG,"getPackageInfo from local cache");
+                return result;
+            }
+        }
+        PluginLiteInfo packageInfo = getPackageInfo(pkgName);
+        updateSrcApkPath(mContext, packageInfo);
+
         if (null != packageInfo) {
-            result = packageInfo.getTargetMapping(mContext, pkgName, packageInfo.srcApkPath, mTargetMappingCache);
+            if (!TextUtils.isEmpty(packageInfo.srcApkPath)) {
+                File file = new File(packageInfo.srcApkPath);
+                if (file.exists()) {
+                    result = new PluginPackageInfo(mContext, file);
+                }
+            }
+        }
+        if(result != null){
+            mTargetMappingCache.put(pkgName,result);
         }
         return result;
+    }
+
+    /**
+     * 获取插件的依赖列表
+     * @param pkgName
+     * @return
+     */
+    public List<String> getPluginRefs(String pkgName){
+        List<String> mRefs = Collections.emptyList();
+        if (TextUtils.isEmpty(pkgName)) {
+            PluginDebugLog.log(TAG, "getPackageInfo return null due to empty package name");
+            return mRefs;
+        }
+
+        if (sVerifyPluginInfo != null) {
+            mRefs = sVerifyPluginInfo.getPluginRefs(pkgName);
+        }
+        return mRefs;
     }
 
     public static void notifyClientPluginException(Context context, String pkgName, String exceptionMsg) {
         try {
             Intent intent = new Intent(ACTION_HANDLE_PLUGIN_EXCEPTION);
             intent.setPackage(context.getPackageName());
-            intent.putExtra(EXTRA_PKG_NAME, pkgName);
+            intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, pkgName);
             intent.putExtra(ErrorType.ERROR_RESON, exceptionMsg);
             context.sendBroadcast(intent);
-            PluginDebugLog.log(TAG,
-                    "notifyClientPluginException Success " + " pkgName: " + pkgName + " exceptionMsg: " + exceptionMsg);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 直接获取已经安装的插件列表(不经过ipc，直接读取sp)
+     * @return
+     */
+    public List<PluginLiteInfo> getInstalledPackagesDirectly(){
+        List<PluginLiteInfo> mInstallPlugins = Collections.emptyList();
+        if(sVerifyPluginInfo != null){
+           mInstallPlugins = sVerifyPluginInfo.getInstalledPackagesDirectly();
+        }
+        return mInstallPlugins;
+    }
+
+    /**
+     * 直接判断指定插件是否安装
+     * @param packageName
+     * @return
+     */
+    public boolean isPackageInstalledDirectly(String packageName){
+        if(TextUtils.isEmpty(packageName)){
+            return false;
+        }
+        if(sVerifyPluginInfo != null){
+            return sVerifyPluginInfo.isPackageInstalledDirectly(packageName);
+        }
+        return false;
+    }
+
+    /**
+     * 直接获取插件依赖
+     * @param packageName
+     * @return
+     */
+    List<String> getPluginRefsDirectly(String packageName){
+        List<String> mRefPlugins = Collections.emptyList();
+        if(sVerifyPluginInfo != null){
+            mRefPlugins = sVerifyPluginInfo.getPluginRefsDirectly(packageName);
+        }
+        return mRefPlugins;
+    }
+
+    /**
+     * 直接获取插件的信息
+     * @param packageName
+     * @return
+     */
+    PluginLiteInfo getPackageInfoDirectly(String packageName){
+        PluginLiteInfo mInfo = null;
+        if(!TextUtils.isEmpty(packageName) && sVerifyPluginInfo != null){
+            mInfo = sVerifyPluginInfo.getPackageInfoDirectly(packageName);
+        }
+        return mInfo;
     }
 }

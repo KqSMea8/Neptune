@@ -10,7 +10,7 @@ public interface IIntentConstant {
     /**代理插件包名的key*/
     public static final String EXTRA_TARGET_PACKAGNAME_KEY = "targe_package";
     /**代理插件组件类名的key*/
-    public static final String EXTRA_TARGET_CLASS_KEY = "pluginapp_extra_target_activity"; //"targe_class";
+    public static final String EXTRA_TARGET_CLASS_KEY = "targe_class";
     /**主动加载插件的广播*/
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "target_stub";
     /**通知插件启动完毕(用于快捷方式)*/
@@ -42,4 +42,15 @@ public interface IIntentConstant {
      * 控制插件启动时的loading
      */
     public static final String EXTRA_SHOW_LOADING = "plugin_show_loading";
+
+
+
+    /**安装完的插件的*/
+    public static final String EXTRA_PKG_NAME = "package_name";
+    /**安装插件的apk的源路径*/
+    public static final String EXTRA_SRC_FILE = "install_src_file";
+    /**插件的安装地址*/
+    public static final String EXTRA_DEST_FILE = "install_dest_file";
+    /**被安装的插件的信息*/
+    public static final String EXTRA_PLUGIN_INFO = "plugin_info";
 }

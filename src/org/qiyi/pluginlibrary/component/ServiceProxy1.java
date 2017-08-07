@@ -11,7 +11,7 @@ import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
+import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
@@ -78,7 +78,7 @@ public class ServiceProxy1 extends Service {
                 }
                 Service pluginService = ((Service) mLoadedApk.getPluginClassLoader()
                         .loadClass(targetClassName).newInstance());
-                CMContextWrapperNew actWrapper = new CMContextWrapperNew(ServiceProxy1.this.getBaseContext(),
+                PluginContextWrapper actWrapper = new PluginContextWrapper(ServiceProxy1.this.getBaseContext(),
                         targetPackageName);
                 ReflectionUtils.on(pluginService).call("attach", sMethods, actWrapper,
                         ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,

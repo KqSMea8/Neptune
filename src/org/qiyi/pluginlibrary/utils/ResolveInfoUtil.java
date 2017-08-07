@@ -5,10 +5,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
-import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew.ActivityIntentInfo;
-import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew.ReceiverIntentInfo;
-import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew.ServiceIntentInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ActivityIntentInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ReceiverIntentInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ServiceIntentInfo;
 
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
@@ -29,7 +29,7 @@ public class ResolveInfoUtil {
      * @param dexPath apk path
      * @param target
      */
-    public static void parseResolveInfo(String dexPath, ApkTargetMappingNew target) {
+    public static void parseResolveInfo(String dexPath, PluginPackageInfo target) {
 
         try { // 先得到解析类PackageParser并实例化
             Class<?> packageParserClass = Class.forName("android.content.pm.PackageParser");

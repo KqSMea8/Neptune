@@ -279,7 +279,7 @@ public class ContextUtils {
         if (mLoadedApk == null) {
             return null;
         }
-        PackageInfo pkgInfo = mLoadedApk.getPluginPackageInfo();
+        PackageInfo pkgInfo = mLoadedApk.getPackageInfo();
         return pkgInfo;
     }
 

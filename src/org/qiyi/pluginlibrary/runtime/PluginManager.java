@@ -18,11 +18,11 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
-import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
+import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.listenter.IPluginInitListener;
 import org.qiyi.pluginlibrary.listenter.IPluginLoadListener;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
@@ -30,10 +30,9 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.constant.IMsgConstant;
 import org.qiyi.pluginlibrary.exception.PluginStartupException;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
-import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageManager;
+import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -207,26 +206,28 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         }
 
         // Handle plugin dependences
-        final CMPackageInfo info = CMPackageManagerImpl.getInstance(mHostContext.getApplicationContext())
+        final PluginLiteInfo info = PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext())
                 .getPackageInfo(packageName);
-        if (info != null && info.pluginInfo != null && info.pluginInfo.getPluginResfs() != null
-                && info.pluginInfo.getPluginResfs().size() > 0) {
+        final List<String> mPluginRefs = PluginPackageManagerNative.getInstance(mHostContext)
+                .getPluginRefs(packageName);
+        if (info != null && mPluginRefs!=null
+                && mPluginRefs.size() > 0) {
             PluginDebugLog.runtimeLog(TAG,
-                    "Start to check dependence installation size: " + info.pluginInfo.getPluginResfs().size());
-            final AtomicInteger count = new AtomicInteger(info.pluginInfo.getPluginResfs().size());
-            for (String pkgName : info.pluginInfo.getPluginResfs()) {
-                PluginDebugLog.runtimeLog(TAG, "Start to check installation pkgName: " + pkgName);
-                final CMPackageInfo refInfo = CMPackageManagerImpl.getInstance(mHostContext.getApplicationContext())
+                    "start to check dependence installation size: " + mPluginRefs.size());
+            final AtomicInteger count = new AtomicInteger(mPluginRefs.size());
+            for (String pkgName : mPluginRefs) {
+                PluginDebugLog.runtimeLog(TAG, "start to check installation pkgName: " + pkgName);
+                final PluginLiteInfo refInfo = PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext())
                         .getPackageInfo(pkgName);
-                CMPackageManagerImpl.getInstance(mHostContext.getApplicationContext()).packageAction(refInfo,
+                PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext()).packageAction(refInfo,
                         new IInstallCallBack.Stub() {
                             @Override
-                            public void onPacakgeInstalled(CMPackageInfo packageInfo) {
+                            public void onPacakgeInstalled(PluginLiteInfo packageInfo) {
                                 count.getAndDecrement();
-                                PluginDebugLog.runtimeLog(TAG, "Check installation success pkgName: " + refInfo.packageName);
+                                PluginDebugLog.runtimeLog(TAG, "check installation success pkgName: " + refInfo.packageName);
                                 if (count.get() == 0) {
                                     PluginDebugLog.runtimeLog(TAG,
-                                            "Start Check installation after check dependence packageName: "
+                                            "start Check installation after check dependence packageName: "
                                                     + packageName);
                                     checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent,mProcessName);
                                 }
@@ -235,13 +236,13 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                             @Override
                             public void onPackageInstallFail(String pName, int failReason) throws RemoteException {
                                 PluginDebugLog.runtimeLog(TAG,
-                                        "Check installation failed pkgName: " + pName + " failReason: " + failReason);
+                                        "check installation failed pkgName: " + pName + " failReason: " + failReason);
                                 count.set(-1);
                             }
                         });
             }
         } else {
-            PluginDebugLog.runtimeLog(TAG, "Start Check installation without dependences packageName: " + packageName);
+            PluginDebugLog.runtimeLog(TAG, "start Check installation without dependences packageName: " + packageName);
             checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent,mProcessName);
         }
     }
@@ -392,7 +393,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             targetClassName = mComponet.getClassName();
             PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClassName:" + targetClassName);
             if (TextUtils.isEmpty(targetClassName)) {
-                targetClassName = mLoadedApk.getPluginMapping().getDefaultActivityName();
+                targetClassName = mLoadedApk.getPluginPackageInfo().getDefaultActivityName();
             }
         }
 
@@ -515,11 +516,11 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * @param mIntent            启动组件的Intent
      */
     private static void checkPkgInstallationAndLaunch(final Context mHostContext,
-                                                      final CMPackageInfo packageInfo,
+                                                      final PluginLiteInfo packageInfo,
                                                       final ServiceConnection mServiceConnection,
                                                       final Intent mIntent,
                                                       final String mProcessName) {
-        CMPackageManagerImpl.getInstance(mHostContext.getApplicationContext()).packageAction(packageInfo,
+        PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext()).packageAction(packageInfo,
                 new IInstallCallBack.Stub() {
 
                     @Override
@@ -531,7 +532,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                     }
 
                     @Override
-                    public void onPacakgeInstalled(CMPackageInfo info) {
+                    public void onPacakgeInstalled(PluginLiteInfo info) {
                         //install done ,load async
                         loadPluginAsync(mHostContext.getApplicationContext(), packageInfo.packageName,
                                 new IPluginLoadListener() {
@@ -589,13 +590,14 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         }
         ComponentName cpn = mIntent.getComponent();
         if (cpn == null || TextUtils.isEmpty(cpn.getPackageName())) {
-            List<CMPackageInfo> packageList =
-                    CMPackageManagerImpl.getInstance(mHostContext).getInstalledApps();
+            List<PluginLiteInfo> packageList =
+                    PluginPackageManagerNative.getInstance(mHostContext).getInstalledApps();
             if (packageList != null) {
                 // Here, loop all installed packages to get pkgName.
-                for (CMPackageInfo info : packageList) {
+                for (PluginLiteInfo info : packageList) {
                     if (info != null) {
-                        ApkTargetMappingNew target = info.getTargetMapping(mHostContext);
+                        PluginPackageInfo target = PluginPackageManagerNative.getInstance(mHostContext)
+                        .getPluginPackageInfo(mHostContext,info);
                         if (null != target) {
                             if (target.resolveActivity(mIntent) != null) {
                                 return info.packageName;
@@ -644,10 +646,10 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      */
     private static void deliverPlugInner(Context mContext, boolean success, String pakName, int errorCode) {
         if (null != mContext && mDeliver != null && !TextUtils.isEmpty(pakName)) {
-            CMPackageInfo info = CMPackageManagerImpl.getInstance(ContextUtils.getOriginalContext(mContext))
+            PluginLiteInfo info = PluginPackageManagerNative.getInstance(ContextUtils.getOriginalContext(mContext))
                     .getPackageInfo(pakName);
-            if (info != null && info.pluginInfo != null) {
-                mDeliver.deliver(success, info.pluginInfo, errorCode);
+            if (info != null ) {
+                mDeliver.deliver(success, info, errorCode);
             }
         }
     }
@@ -675,9 +677,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         @Override
         public void run() {
             try {
-                CMPackageInfo packageInfo =
-                        CMPackageManagerImpl.getInstance(mHostContext).getPackageInfo(mPackageName);
-                if (packageInfo != null && packageInfo.pluginInfo != null) {
+                PluginLiteInfo packageInfo =
+                        PluginPackageManagerNative.getInstance(mHostContext).getPackageInfo(mPackageName);
+                if (packageInfo != null) {
                     PluginDebugLog.runtimeLog("plugin",
                             "doInBackground:" + mPackageName);
                     createPluginLoadedApkInstance(mHostContext, packageInfo,mProcessName);
@@ -705,7 +707,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
          * @param packageInfo
          */
         private void createPluginLoadedApkInstance(Context context,
-                                                   CMPackageInfo packageInfo,
+                                                   PluginLiteInfo packageInfo,
                                                    String mProcessName) {
             if (packageInfo != null) {
                 String packageName = packageInfo.packageName;
@@ -717,13 +719,13 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                         return;
                     }
                     PluginLoadedApk mLoadedApk = null;
-                    CMPackageInfo.updateSrcApkPath(context, packageInfo);
+                    PluginPackageManager.updateSrcApkPath(context, packageInfo);
                     if (!TextUtils.isEmpty(packageInfo.srcApkPath)) {
                         File apkFile = new File(packageInfo.srcApkPath);
                         if (!apkFile.exists()) {
                             PluginDebugLog.runtimeLog(TAG,
                                     "Special case apkFile not exist, notify client! packageName: " + packageName);
-                            CMPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist!");
+                            PluginPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist!");
                             return;
                         }
                         try {
@@ -883,7 +885,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * 插件状态投递逻辑接口，由外部实现并设置进来
      */
     public interface IDeliverInterface {
-        void deliver(boolean success, PluginPackageInfoExt pkgInfo, int errorCode);
+        void deliver(boolean success, PluginLiteInfo pkgInfo, int errorCode);
     }
 
     public interface IAppExitStuff {
@@ -904,7 +906,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         if (mLoadedApk == null) {
             return;
         }
-        CMContextWrapperNew appWrapper = mLoadedApk.getAppWrapper();
+        PluginContextWrapper appWrapper = mLoadedApk.getAppWrapper();
         if (appWrapper != null) {
             appWrapper.stopService(intent);
         }
@@ -920,7 +922,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      */
     public static void quit(Context mContext, String mProcessName) {
 
-        CMPackageManagerImpl.getInstance(mContext).exit();
+        PluginPackageManagerNative.getInstance(mContext).exit();
 
         for (Map.Entry<String, PluginLoadedApk> entry : getAllPluginLoadedApk().entrySet()) {
             PluginLoadedApk plugin = entry.getValue();

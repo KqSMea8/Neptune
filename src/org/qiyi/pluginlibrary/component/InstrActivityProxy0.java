@@ -28,6 +28,7 @@ import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
+
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
@@ -54,10 +55,10 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 
 /**
- * :plugin1 Activity　代理
+ * 主进程 Activity　代理
  */
-public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost {
-    private static final String TAG = InstrActivityProxy1.class.getSimpleName();
+public class InstrActivityProxy0 extends Activity implements InterfaceToGetHost {
+    private static final String TAG = InstrActivityProxy0.class.getSimpleName();
 
     private PluginLoadedApk mLoadedApk;
     private PluginActivityControl mPluginContrl;
@@ -104,7 +105,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             return;
         }
         try {
-            mPluginContrl = new PluginActivityControl(InstrActivityProxy1.this, mPluginActivity,
+            mPluginContrl = new PluginActivityControl(InstrActivityProxy0.this, mPluginActivity,
                     mLoadedApk.getPluginApplication(), mLoadedApk.getPluginInstrument());
         } catch (Exception e1) {
             PluginManager.deliver(this, false, pluginPkgName,
@@ -114,7 +115,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             return;
         }
         if (null != mPluginContrl) {
-            mPluginContextWrapper = new PluginContextWrapper(InstrActivityProxy1.this.getBaseContext(), pluginPkgName);
+            mPluginContextWrapper = new PluginContextWrapper(InstrActivityProxy0.this.getBaseContext(), pluginPkgName);
             ActivityInfo actInfo = mLoadedApk.getActivityInfoByClassName(pluginActivityName);
             if (actInfo != null) {
                 changeActivityInfo(this, pluginPkgName, actInfo);
@@ -153,7 +154,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
         mPluginContrl.callOnCreate(savedInstanceState);
         mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
-        PluginManager.sendPluginLoadedBroadcast(InstrActivityProxy1.this.getBaseContext());
+        PluginManager.sendPluginLoadedBroadcast(InstrActivityProxy0.this.getBaseContext());
     }
 
 
@@ -261,7 +262,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                     if (actInfo != null) {
                         int resTheme = actInfo.getThemeResource();
                         if (mNeedUpdateConfiguration) {
-                            changeActivityInfo(InstrActivityProxy1.this, temp[0], actInfo);
+                            changeActivityInfo(InstrActivityProxy0.this, temp[0], actInfo);
                             super.setTheme(resTheme);
                             mNeedUpdateConfiguration = false;
                             return;

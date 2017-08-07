@@ -15,7 +15,8 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.pm.ApkTargetMappingNew;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
@@ -24,12 +25,9 @@ import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.context.CMContextWrapperNew;
-import org.qiyi.pluginlibrary.plugin.TargetMapping;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
-import org.qiyi.pluginlibrary.pm.CMPackageManager;
-import org.qiyi.pluginlibrary.pm.CMPackageManagerImpl;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfoExt;
+import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.pm.PluginPackageManager;
+import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -60,7 +58,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 保存插件的依赖关系
      */
-    private static ConcurrentHashMap<String, PluginPackageInfoExt> sPluginDependences
+    private static ConcurrentHashMap<String, PluginLiteInfo> sPluginDependences
             = new ConcurrentHashMap<>();
     /**
      * 主工程的Resource对象
@@ -101,7 +99,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 插件的详细信息，主要通过解析AndroidManifet.xml获得
      */
-    private TargetMapping mPluginMapping;
+    private PluginPackageInfo mPluginMapping;
     /**
      * 当前插件的Activity栈
      */
@@ -125,7 +123,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 自定义Context,主要用来改写其中的一些方法从而改变插件行为
      */
-    private CMContextWrapperNew mAppWrapper;
+    private PluginContextWrapper mAppWrapper;
     /**
      * 自定义Instrumentation，对Activity跳转进行拦截
      */
@@ -185,14 +183,14 @@ public class PluginLoadedApk implements IIntentConstant {
         if (mPluginMapping == null || mHostContext == null) {
             return;
         }
-        Map<String, ApkTargetMappingNew.ReceiverIntentInfo> mReceiverIntentInfos =
+        Map<String, PluginPackageInfo.ReceiverIntentInfo> mReceiverIntentInfos =
                 mPluginMapping.getReceiverIntentInfos();
         if (mReceiverIntentInfos != null) {
-            Set<Map.Entry<String, ApkTargetMappingNew.ReceiverIntentInfo>> mEntrys =
+            Set<Map.Entry<String, PluginPackageInfo.ReceiverIntentInfo>> mEntrys =
                     mReceiverIntentInfos.entrySet();
             Context mGlobalContext = mHostContext.getApplicationContext();
-            for (Map.Entry<String, ApkTargetMappingNew.ReceiverIntentInfo> mEntry : mEntrys) {
-                ApkTargetMappingNew.ReceiverIntentInfo mReceiverInfo = mEntry.getValue();
+            for (Map.Entry<String, PluginPackageInfo.ReceiverIntentInfo> mEntry : mEntrys) {
+                PluginPackageInfo.ReceiverIntentInfo mReceiverInfo = mEntry.getValue();
                 if (mReceiverInfo != null) {
                     try {
                         BroadcastReceiver mReceiver =
@@ -357,7 +355,7 @@ public class PluginLoadedApk implements IIntentConstant {
                     mPluginPackageName);
             return;
         }
-        this.mAppWrapper = new CMContextWrapperNew(((Application) mHostContext)
+        this.mAppWrapper = new PluginContextWrapper(((Application) mHostContext)
                 .getBaseContext(), mPluginPackageName);
         // attach
         Method attachMethod;
@@ -379,10 +377,11 @@ public class PluginLoadedApk implements IIntentConstant {
      * @throws Exception 当提取信息失败时，会抛出一些异常
      */
     private void extraPluginPackageInfo(String mPluginPackage) throws Exception {
-        CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(mHostContext)
+        PluginLiteInfo pkgInfo = PluginPackageManagerNative.getInstance(mHostContext)
                 .getPackageInfo(mPluginPackage);
         if (pkgInfo != null) {
-            mPluginMapping = pkgInfo.getTargetMapping(mHostContext);
+            mPluginMapping = PluginPackageManagerNative.getInstance(mHostContext)
+                    .getPluginPackageInfo(mHostContext,pkgInfo); //pkgInfo.getTargetMapping(mHostContext);
             if (null == mPluginMapping || null == mPluginMapping.getPackageInfo()) {
                 throw new Exception("Exception case targetMapping init failed!");
             }
@@ -409,26 +408,24 @@ public class PluginLoadedApk implements IIntentConstant {
      * @return true:处理成功，false：处理失败
      */
     private boolean handleDependences() {
-        CMPackageInfo pkgInfo = CMPackageManagerImpl.getInstance(mHostContext)
-                .getPackageInfo(mPluginPackageName);
-        List<String> dependencies = pkgInfo.pluginInfo.getPluginResfs();
+        List<String> dependencies = PluginPackageManagerNative
+                .getInstance(mHostContext).getPluginRefs(mPluginPackageName); //pkgInfo.pluginInfo.getPluginResfs();
         if (null != dependencies) {
-            CMPackageInfo libraryInfo;
+            PluginLiteInfo libraryInfo;
             ClassLoaderInjectHelper.InjectResult injectResult;
             for (int i = 0; i < dependencies.size(); i++) {
-                libraryInfo = CMPackageManagerImpl.getInstance(mHostContext)
+                libraryInfo = PluginPackageManagerNative.getInstance(mHostContext)
                         .getPackageInfo(dependencies.get(i));
                 if (null != libraryInfo && !TextUtils.isEmpty(libraryInfo.packageName)) {
-                    if (!sPluginDependences.containsKey(libraryInfo.packageName)
-                            && !TextUtils.equals(libraryInfo.pluginInfo.mSuffixType, CMPackageManager.PLUGIN_FILE_SO)) {
-                        PluginDebugLog.runtimeLog(TAG, "handleDependences inject " + libraryInfo.pluginInfo);
-                        CMPackageInfo.updateSrcApkPath(mHostContext, libraryInfo);
+                    if (!sPluginDependences.containsKey(libraryInfo.packageName)) {
+                        PluginDebugLog.runtimeLog(TAG, "handleDependences inject " + libraryInfo.packageName);
+                        PluginPackageManager.updateSrcApkPath(mHostContext, libraryInfo);
                         File apkFile = new File(libraryInfo.srcApkPath);
                         if (!apkFile.exists()) {
                             PluginDebugLog.runtimeLog(TAG,
                                     "Special case apkFile not exist, notify client! packageName: "
                                             + libraryInfo.packageName);
-                            CMPackageManager.notifyClientPluginException(mHostContext,
+                            PluginPackageManager.notifyClientPluginException(mHostContext,
                                     libraryInfo.packageName,
                                     "Apk file not exist!");
                             return false;
@@ -438,12 +435,12 @@ public class PluginLoadedApk implements IIntentConstant {
                         if (null != injectResult && injectResult.mIsSuccessful) {
                             PluginDebugLog.runtimeLog(TAG,
                                     "handleDependences injectResult success for "
-                                            + libraryInfo.pluginInfo);
-                            sPluginDependences.put(libraryInfo.packageName, libraryInfo.pluginInfo);
+                                            + libraryInfo.packageName);
+                            sPluginDependences.put(libraryInfo.packageName, libraryInfo);
                         } else {
                             PluginDebugLog.runtimeLog(TAG,
                                     "handleDependences injectResult faild for "
-                                            + libraryInfo.pluginInfo);
+                                            + libraryInfo.packageName);
                             return false;
                         }
                     } else {
@@ -596,11 +593,11 @@ public class PluginLoadedApk implements IIntentConstant {
      *
      * @return
      */
-    public TargetMapping getPluginMapping() {
+    public PluginPackageInfo getPluginPackageInfo() {
         return mPluginMapping;
     }
 
-    public PackageInfo getPluginPackageInfo(){
+    public PackageInfo getPackageInfo(){
         if(mPluginMapping != null){
             return mPluginMapping.getPackageInfo();
         }
@@ -665,7 +662,7 @@ public class PluginLoadedApk implements IIntentConstant {
      * 获取当前插件的自定义Context
      * @return
      */
-    public CMContextWrapperNew getAppWrapper(){
+    public PluginContextWrapper getAppWrapper(){
         return mAppWrapper;
     }
 

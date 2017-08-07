@@ -1,6 +1,6 @@
 // IInstallCallBack.aidl
 package org.qiyi.pluginlibrary.install;
-import org.qiyi.pluginlibrary.pm.CMPackageInfo;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 interface IInstallCallBack {
 
     /**
@@ -9,7 +9,7 @@ interface IInstallCallBack {
      * @param packageName
      *            插件包名
      */
-    void onPacakgeInstalled(in CMPackageInfo info);
+    void onPacakgeInstalled(in PluginLiteInfo info);
 
     /**
      * 安装失败回调

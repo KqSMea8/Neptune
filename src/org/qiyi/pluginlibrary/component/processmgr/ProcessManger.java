@@ -1,12 +1,6 @@
 package org.qiyi.pluginlibrary.component.processmgr;
 
-import android.content.Context;
 import android.text.TextUtils;
-
-import org.qiyi.pluginlibrary.plugin.TargetMapping;
-import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
-import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 /**
  * 管理插件运行在哪个进程

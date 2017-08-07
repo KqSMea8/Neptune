@@ -17,6 +17,13 @@
             </intent-filter>
         </service>
 
+        <service android:name="org.qiyi.pluginlibrary.pm.PluginPackageManagerService" />
+
+
+        <activity
+            android:name="org.qiyi.pluginlibrary.component.InstrActivityProxy0"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name="org.qiyi.pluginlibrary.component.InstrActivityProxy1"
@@ -28,6 +35,12 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize"
             android:process=":plugin2"
             android:screenOrientation="portrait" />
+
+        <activity
+            android:name="org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent0"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent" />
 
         <activity
             android:name="org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent1"
@@ -44,6 +57,11 @@
 
 
         <activity
+            android:name="org.qiyi.pluginlibrary.component.InstrActivityProxyLandscape0"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:screenOrientation="landscape" />
+
+        <activity
             android:name="org.qiyi.pluginlibrary.component.InstrActivityProxyLandscape1"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
             android:process=":plugin1"
@@ -54,6 +72,11 @@
             android:process=":plugin2"
             android:screenOrientation="landscape" />
 
+
+        <activity
+            android:name="org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange0"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+             />
 
         <activity
             android:name="org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange1"
