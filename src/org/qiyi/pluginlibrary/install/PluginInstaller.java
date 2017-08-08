@@ -102,7 +102,6 @@ public class PluginInstaller {
          * 获取packagename 1、内置app，要求必须以 packagename.apk 命名，处于效率考虑。
          * 2、外部文件的安装，直接从file中获取packagename, 消耗100ms级别，可以容忍。
          */
-        String packageName = null;
         boolean isBuildin = false;
         PluginDebugLog.installFormatLog(TAG, "startInstall with file path:%s and plugin pkgName:%s"
                 ,filePath , info.packageName);
@@ -113,10 +112,10 @@ public class PluginInstaller {
         }
 
         if (!TextUtils.isEmpty(info.packageName)) {
-            add2InstallList(packageName); // 添加到安装列表中
+            add2InstallList(info.packageName); // 添加到安装列表中
             if (isBuildin) {
-                PluginDebugLog.installLog(TAG, "add " + packageName + " in BuildinAppList");
-                sBuildinAppList.add(packageName); // 添加到内置app安装列表中
+                PluginDebugLog.installFormatLog(TAG, "add %s in buildInAppList" ,info.packageName);
+                sBuildinAppList.add(info.packageName); // 添加到内置app安装列表中
             }
         }else{
             PluginDebugLog.installLog(TAG, "startInstall PluginLiteInfo.packagename is null, just return!");
@@ -233,7 +232,7 @@ public class PluginInstaller {
      * @param packagename
      */
     private synchronized static void add2InstallList(String packagename) {
-        PluginDebugLog.installLog(TAG, "add2InstallList with" + packagename);
+        PluginDebugLog.installFormatLog(TAG, "add2InstallList with %s" ,packagename);
         if (sInstallList.contains(packagename)) {
             return;
         }

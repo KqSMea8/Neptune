@@ -278,7 +278,8 @@ public class ComponetFinder implements IIntentConstant {
                 android.R.attr.windowBackground
         });
         isTranslucent=array.getBoolean(0, false);
-        PluginDebugLog.runtimeLog(TAG,"activity theme is translucent:"+isTranslucent);
+        PluginDebugLog.runtimeFormatLog(TAG,"activity theme is translucent:%s and themeid:%d",
+                isTranslucent,actInfo.getThemeResource());
         array.recycle();
         if(!isTranslucent){
             //兼容遗留逻辑

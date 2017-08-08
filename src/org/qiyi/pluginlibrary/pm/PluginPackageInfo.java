@@ -30,13 +30,7 @@ import android.text.TextUtils;
  * 存放插件apk的{@link PackageInfo}里面的信息
  */
 public class PluginPackageInfo implements Parcelable {
-
-    static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
-
-    static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
-    static final String PLUGIN_APPLICATION_CODE_PATH = "Hanlde_plugin_code_path";
-
-    // 插件class注入进入父classloader标志
+    private static final String TAG = "PluginPackageInfo";
     static final String META_KEY_CLASSINJECT = "pluginapp_class_inject";
 
     private String versionName;
@@ -45,7 +39,6 @@ public class PluginPackageInfo implements Parcelable {
     private String applicationClassName;
     private String defaultActivityName;
     private PermissionInfo[] permissions;
-    /** Apk's package info */
     private PackageInfo packageInfo;
     private Bundle metaData;
 
@@ -55,15 +48,7 @@ public class PluginPackageInfo implements Parcelable {
 
     // 是否需要把插件class注入进入父classloader
     private boolean mIsClassInject = false;
-    /*
-     * should use plugin application info instead of host's
-     */
-    private boolean mUsePluginAppInfo = false;
 
-    /*
-     * should use plugin code path instead of host's
-     */
-    private boolean mUsePluginCodePath = false;
 
     /** Save all activity's resolve info */
     private Map<String, ActivityIntentInfo> mActivitiyIntentInfos = new HashMap<String, ActivityIntentInfo>(0);
@@ -99,8 +84,6 @@ public class PluginPackageInfo implements Parcelable {
         dataDir = in.readString();
         nativeLibraryDir = in.readString();
         mIsClassInject = in.readByte() != 0;
-        mUsePluginAppInfo = in.readByte() != 0;
-        mUsePluginCodePath = in.readByte() != 0;
 
         final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
 
@@ -123,13 +106,6 @@ public class PluginPackageInfo implements Parcelable {
 
     }
 
-    /**
-     * private function to check validation
-     * @return
-     */
-    public boolean isValidate() {
-        return !TextUtils.isEmpty(packageName) && packageInfo != null;
-    }
 
     public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
         @Override
@@ -146,8 +122,12 @@ public class PluginPackageInfo implements Parcelable {
     private void init(Context context, File apkFile) {
         try {
             packageInfo = context.getPackageManager().getPackageArchiveInfo(apkFile.getAbsolutePath(),
-                    PackageManager.GET_ACTIVITIES | PackageManager.GET_PERMISSIONS | PackageManager.GET_META_DATA
-                            | PackageManager.GET_SERVICES | PackageManager.GET_CONFIGURATIONS | PackageManager.GET_RECEIVERS);
+                    PackageManager.GET_ACTIVITIES
+                            | PackageManager.GET_PERMISSIONS
+                            | PackageManager.GET_META_DATA
+                            | PackageManager.GET_SERVICES
+                            | PackageManager.GET_CONFIGURATIONS
+                            | PackageManager.GET_RECEIVERS);
             if (packageInfo == null) {
                 throw new Exception("getPackageArchiveInfo is null for file: " + apkFile.getAbsolutePath());
             }
@@ -160,25 +140,12 @@ public class PluginPackageInfo implements Parcelable {
 
             metaData = packageInfo.applicationInfo.metaData;
             packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
+            packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
             dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName).getAbsolutePath();
             nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
             if (metaData != null) {
                 mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
-                String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
-                if (!TextUtils.isEmpty(applicationMetaData)) {
-                    if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
-                        mUsePluginAppInfo = true;
-                    }
-
-                    if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
-                        packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
-                        PluginDebugLog.log("PluginPackageInfo",
-                                "change sourceDir dir: " + packageInfo.applicationInfo.sourceDir);
-                        mUsePluginCodePath = true;
-                    }
-                }
             }
-
             ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
         } catch (RuntimeException e) {
             PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
@@ -203,13 +170,6 @@ public class PluginPackageInfo implements Parcelable {
         return nativeLibraryDir;
     }
 
-    public boolean usePluginApplicationInfo() {
-        return mUsePluginAppInfo;
-    }
-
-    public boolean usePluginCodePath() {
-        return mUsePluginCodePath;
-    }
 
 
     public ActivityInfo findActivityByClassName(String activityClsName) {
@@ -379,20 +339,6 @@ public class PluginPackageInfo implements Parcelable {
 
     public int getThemeResource(String activity) {
         ActivityInfo info = getActivityInfo(activity);
-//        if (info == null) {
-//            // 支持不同系统的默认Theme
-//            if (Build.VERSION.SDK_INT >= 14) {
-//                return android.R.style.Theme_DeviceDefault;
-//            } else {
-//                return android.R.style.Theme;
-//            }
-//        }
-
-        /**
-         * 指定默认theme为android.R.style.Theme
-         * 有些OPPO手机上，把theme设置成0，其实会把Theme设置成holo主题
-         * ，带ActionBar，导致插件黑屏，目前插件SDK不支持ActionBar
-         */
         if (info == null || info.getThemeResource() == 0) {
             // 支持不同系统的默认Theme
             if (Build.VERSION.SDK_INT >= 14) {
@@ -470,8 +416,6 @@ public class PluginPackageInfo implements Parcelable {
         parcel.writeString(dataDir);
         parcel.writeString(nativeLibraryDir);
         parcel.writeByte((byte) (mIsClassInject ? 1 : 0));
-        parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
-        parcel.writeByte((byte) (mUsePluginCodePath ? 1 : 0));
 
         final Bundle activityStates = new Bundle();
         for (String uri : mActivitiyIntentInfos.keySet()) {

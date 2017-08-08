@@ -111,16 +111,25 @@ public class PluginPackageManager {
 
     /**
      * 保护性的更新srcApkPath
-     * //TODO 此方法的逻辑待完善，对于安装在外置卡的插件，此路径跟新有误
      * @param context
      * @param cmPkgInfo
      */
     public static void updateSrcApkPath(Context context, PluginLiteInfo cmPkgInfo) {
         if (null != context && null != cmPkgInfo && TextUtils.isEmpty(cmPkgInfo.srcApkPath)) {
-            cmPkgInfo.srcApkPath = PluginInstaller.getPluginappRootPath(ContextUtils.getOriginalContext(context))
-                    .getAbsolutePath() + File.separator + cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX;
-            PluginDebugLog.log(TAG, "Special case srcApkPath is null!!! Set default value for srcApkPath! packageName: "
-                    + cmPkgInfo.packageName + " srcApkPath: " + cmPkgInfo.srcApkPath);
+            File mApkFile = new File(PluginInstaller.getPluginappRootPath(ContextUtils.getOriginalContext(context)), cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX);
+            if(!mApkFile.exists()){
+                //安装在sd卡
+                mApkFile = new File(context.getExternalFilesDir(PluginInstaller.PLUGIN_PATH), cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX);
+            }
+            if(mApkFile.exists()){
+                cmPkgInfo.srcApkPath = mApkFile.getAbsolutePath();
+                PluginDebugLog.runtimeFormatLog(TAG,
+                        "special case srcApkPath is null! Set default value for srcApkPath:%s  packageName:%s",
+                        mApkFile.getAbsolutePath(),cmPkgInfo.packageName);
+            }else{
+                PluginDebugLog.runtimeLog(TAG,"updateSrcApkPath fail!");
+            }
+
         }
     }
 
@@ -493,7 +502,6 @@ public class PluginPackageManager {
                     observer.onPluginUnintall(packageName, DELETE_SUCCEEDED);
                 }
             } catch (Exception e) {
-                // TODO: handle exception
                 e.printStackTrace();
             } finally {
                 onActionFinish(packageName, DELETE_SUCCEEDED);

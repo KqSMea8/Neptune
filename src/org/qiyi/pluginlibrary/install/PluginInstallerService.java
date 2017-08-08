@@ -408,22 +408,24 @@ public class PluginInstallerService extends Service {
      * @param apkFile
      * @param packageName
      */
-    private static void installDex(String apkFile, String packageName, String pkgDirPath, ClassLoader clsLoader) {
-
+    private static void installDex(String apkFile,
+                                   String packageName,
+                                   String pkgDirPath,
+                                   ClassLoader clsLoader) {
+        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO){
+            PluginDebugLog.installFormatLog(TAG,"installDex return direct!");
+            return;
+        }
         File pkgDir = new File(pkgDirPath, packageName);
-
         if (pkgDir.exists() && pkgDir.canRead() && pkgDir.canWrite()) {
-            ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null, clsLoader);
-            // 构造函数会执行loaddex底层函数。
-
             // android 2.3以及以上会执行dexopt，2.2以及下不会执行。需要额外主动load一次类才可以
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.FROYO) {
-                try {
-                    classloader.loadClass(packageName + ".R");
-                } catch (ClassNotFoundException e) {
-                    // e.printStackTrace();
-
-                }
+            try {
+                // 构造函数会执行loaddex底层函数。
+                PluginDebugLog.installFormatLog(TAG,"installDex  load R file..");
+                ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null, clsLoader);
+                classloader.loadClass(packageName + ".R");
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
         }
     }

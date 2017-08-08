@@ -565,7 +565,6 @@ public class PluginPackageManagerNative {
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
-                // TODO: 15/10/29 catch should do something
             }
         }
         onBindService(mContext);
@@ -599,7 +598,6 @@ public class PluginPackageManagerNative {
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
-                // TODO: 15/10/29 catch should do something
             }
         }
         onBindService(mContext);
