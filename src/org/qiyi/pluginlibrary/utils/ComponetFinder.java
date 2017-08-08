@@ -7,6 +7,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.processmgr.ProcessManger;
@@ -41,6 +42,7 @@ public class ComponetFinder implements IIntentConstant {
             "org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange";
     public static final String DEFAULT_SERVICE_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.ServiceProxy";
+    public static final int TRANSLUCENTCOLOR = Color.parseColor("#00000000");
 
     /**
      * 在插件中查找可以处理mIntent的Service组件,找到之后为其分配合适的Proxy
@@ -277,9 +279,12 @@ public class ComponetFinder implements IIntentConstant {
                 android.R.attr.windowIsTranslucent,
                 android.R.attr.windowBackground
         });
-        isTranslucent=array.getBoolean(0, false);
-        PluginDebugLog.runtimeFormatLog(TAG,"activity theme is translucent:%s and themeid:%d",
-                isTranslucent,actInfo.getThemeResource());
+        boolean attr_0 = array.getBoolean(0, false);
+        int attr_1 = array.getColor(1, Color.parseColor("#ffffff"));
+        isTranslucent = attr_0 && (attr_1 == TRANSLUCENTCOLOR);
+
+        PluginDebugLog.runtimeFormatLog(TAG, "attr_0:%s,attr_1:%d,isTranslucent:%s",
+                attr_0,attr_1,isTranslucent);
         array.recycle();
         if(!isTranslucent){
             //兼容遗留逻辑
