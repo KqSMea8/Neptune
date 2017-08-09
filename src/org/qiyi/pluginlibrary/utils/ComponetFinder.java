@@ -9,6 +9,7 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.text.TextUtils;
+import android.util.TypedValue;
 
 import org.qiyi.pluginlibrary.component.processmgr.ProcessManger;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
@@ -288,15 +289,24 @@ public class ComponetFinder implements IIntentConstant {
         mTheme.applyStyle(actInfo.getThemeResource(), true);
         TypedArray array = mTheme.obtainStyledAttributes(new int[]{
                 android.R.attr.windowIsTranslucent,
-                android.R.attr.windowBackground
         });
         boolean attr_0 = array.getBoolean(0, false);
-        int attr_1 = array.getColor(1, Color.parseColor("#ffffff"));
-        isTranslucent = attr_0 && (attr_1 == TRANSLUCENTCOLOR);
-
-        PluginDebugLog.runtimeFormatLog(TAG, "attr_0:%s,attr_1:%d,isTranslucent:%s",
-                attr_0,attr_1,isTranslucent);
         array.recycle();
+        try{
+            TypedValue tv = new TypedValue();
+            mTheme.resolveAttribute(android.R.attr.windowBackground, tv, true);
+            if (tv.type >= TypedValue.TYPE_FIRST_COLOR_INT && tv.type <= TypedValue.TYPE_LAST_COLOR_INT) {
+                PluginDebugLog.runtimeFormatLog(TAG,"windowBackground is color and is translucent:%s",
+                        (tv.data==TRANSLUCENTCOLOR));
+                isTranslucent = attr_0 && (tv.data == TRANSLUCENTCOLOR);
+            }else{
+                PluginDebugLog.runtimeFormatLog(TAG,"windowBackground is drawable!");
+                isTranslucent = false;
+            }
+        }catch (Exception e){
+            PluginDebugLog.runtimeFormatLog(TAG,"windowBackground read exception!");
+            isTranslucent = attr_0;
+        }
         if(!isTranslucent){
             //兼容遗留逻辑
             if (actInfo != null && actInfo.metaData != null) {

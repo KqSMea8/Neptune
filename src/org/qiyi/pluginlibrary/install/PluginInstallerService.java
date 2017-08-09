@@ -32,9 +32,7 @@ import android.text.TextUtils;
 import dalvik.system.DexClassLoader;
 
 /**
- * apk 安装service，从srcfile安装到destfile，并且安装so，以及dexopt。 因为android4.1
- * 以下系统dexopt会导致线程hang住无法返回，所以我们放到了一个独立进程，减小概率。
- * dexopt系统bug：http://code.google.com/p/android/issues/detail?id=14962
+ * 在独立进程对插件进程进行安装
  */
 public class PluginInstallerService extends Service {
 

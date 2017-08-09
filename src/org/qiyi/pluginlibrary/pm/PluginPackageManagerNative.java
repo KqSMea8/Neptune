@@ -802,40 +802,7 @@ public class PluginPackageManagerNative {
         return available;
     }
 
-    public int getPackageStatus(String packageName) {
-        if (mActionMap.contains(packageName)) {
-            List<Action> list = mActionMap.get(packageName);
-            if (list != null && list.size() > 0) {
-                PluginDebugLog.log(TAG, list.size() + " actions in action list for " + packageName + " isPackageAvailable : true");
-                if (PluginDebugLog.isDebug()) {
-                    for (int index = 0; index < list.size(); index++) {
-                        Action action = list.get(index);
-                        if (action != null) {
-                            PluginDebugLog.log(TAG, index + " action in action list: " + action.toString());
-                        }
-                    }
-                }
-                Action action = list.get(0);
-                if (action != null) {
-                    return action.getStatus();
-                }
-            }
-        }
 
-        if (mService != null) {
-            boolean packageInstalled = false;
-            try {
-                packageInstalled = mService.isPackageInstalled(packageName);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-            if (packageInstalled) {
-                return STATUS_PACKAGE_INSTALLED;
-            }
-        }
-
-        return STATUS_PACKAGE_NOT_INSTALLED;
-    }
 
     /**
      * 获取插件的{@link android.content.pm.PackageInfo}
