@@ -142,7 +142,8 @@ public class ComponetFinder implements IIntentConstant {
             String pkg = compname.getPackageName();
             String toActName = compname.getClassName();
             if (mLoadedApk != null) {
-                if (TextUtils.equals(pkg, mPluginPackageName)) {
+                if (TextUtils.equals(pkg, mPluginPackageName)
+                        || TextUtils.equals(pkg, mLoadedApk.getHostPackageName())) {
                     PluginPackageInfo thisPlugin = mLoadedApk.getPluginPackageInfo();
                     targetActivity = thisPlugin.getActivityInfo(toActName);
                     if(targetActivity != null){
