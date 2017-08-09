@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.ServiceInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -36,6 +37,7 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
@@ -552,15 +554,28 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public boolean stopService(Intent name) {
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 stopService....");
         if (mLoadedApk != null) {
-            //TODO 如果是隐式调用，那么这里会崩溃
-            String actServiceClsName = name.getComponent().getClassName();
-            PluginServiceWrapper plugin = PServiceSupervisor.getServiceByIdentifer(
-                    PluginServiceWrapper.getIndeitfy(mLoadedApk.getPluginPackageName(), actServiceClsName));
-            if (plugin != null) {
-                plugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
-                plugin.tryToDestroyService();
-                return true;
+            String mTargetServiceName = null;
+            if(name.getComponent()!=null){
+                mTargetServiceName = name.getComponent().getClassName();
+
+            }else{
+                PluginPackageInfo mInfo = mLoadedApk.getPluginPackageInfo();
+                ServiceInfo mServiceInfo = mInfo.resolveService(name);
+                if(mServiceInfo != null){
+                    mTargetServiceName =mServiceInfo.name;
+                }
             }
+            if(!TextUtils.isEmpty(mTargetServiceName)){
+                PluginServiceWrapper plugin = PServiceSupervisor.getServiceByIdentifer(
+                        PluginServiceWrapper.getIndeitfy(mLoadedApk.getPluginPackageName(),
+                                mTargetServiceName));
+                if (plugin != null) {
+                    plugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
+                    plugin.tryToDestroyService();
+                    return true;
+                }
+            }
+
         }
         return super.stopService(name);
     }
@@ -568,7 +583,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     @Override
     public boolean bindService(Intent mIntent, ServiceConnection conn, int flags) {
         if (mLoadedApk != null) {
-            //ServiceJumpUtil.remapStartServiceIntent(mPluginEnv, service);
             ComponetFinder.switchToServiceProxy(mLoadedApk,mIntent);
         }
         PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 bindService...."+mIntent);

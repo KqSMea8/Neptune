@@ -79,15 +79,16 @@ public class ComponetFinder implements IIntentConstant {
     public static void switchToServiceProxy(PluginLoadedApk mLoadedApk,
                                             Intent mIntent,
                                             String targetService) {
-        if (null == mLoadedApk || null == mIntent || TextUtils.isEmpty(targetService)
+        if (null == mLoadedApk
+                || null == mIntent
+                || TextUtils.isEmpty(targetService)
+                || mLoadedApk.getPluginPackageInfo()==null
                 || mLoadedApk.getPluginPackageInfo().getServiceInfo(targetService) == null) {
             return;
         }
         mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
         mIntent.putExtra(EXTRA_TARGET_CLASS_KEY, targetService);
         mIntent.putExtra(EXTRA_TARGET_PACKAGNAME_KEY, mLoadedApk.getPluginPackageName());
-        // 同一个进程内service的bind是否重新走onBind方法，以intent的参数匹配为准FilterComparison.filterHashCode)
-        // 手动添加一个category 让系统认为不同的插件activity每次bind都会走service的onBind的方法
         mIntent.addCategory(EXTRA_TARGET_CATEGORY + System.currentTimeMillis());
         try {
             mIntent.setClass(mLoadedApk.getHostContext(),
@@ -120,16 +121,15 @@ public class ComponetFinder implements IIntentConstant {
                                                Context context) {
 
         if (mIntent == null) {
-            PluginDebugLog.log(TAG, "handleStartActivityIntent intent is null!");
+            PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent intent is null!");
             return mIntent;
         }
-        PluginDebugLog.log(TAG, "handleStartActivityIntent: pluginId: "
+        PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent: pluginId: "
                 + mPluginPackageName + ", intent: " + mIntent
                 + ", requestCode: " + requestCode);
         if (hasProxyActivity(mIntent)) {
-            PluginDebugLog.log(TAG,
-                    "handleStartActivityIntent has change the intent just return the original intent! "
-                            + mIntent);
+            PluginDebugLog.runtimeLog(TAG,
+                    "handleStartActivityIntent has change the intent just return");
             return mIntent;
         }
         ActivityInfo targetActivity = null;
@@ -141,25 +141,31 @@ public class ComponetFinder implements IIntentConstant {
             String pkg = compname.getPackageName();
             String toActName = compname.getClassName();
             if (mLoadedApk != null) {
-                if (TextUtils.equals(pkg, mPluginPackageName)
-                        || TextUtils.equals(pkg, mLoadedApk.getHostPackageName())) {
+                if (TextUtils.equals(pkg, mPluginPackageName)) {
                     PluginPackageInfo thisPlugin = mLoadedApk.getPluginPackageInfo();
                     targetActivity = thisPlugin.getActivityInfo(toActName);
-                }
-
-            }
-
-            if (targetActivity == null) {
-                mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkg);
-                // Check in pkg's apk
-                if (!TextUtils.isEmpty(pkg) && mLoadedApk != null) {
-                    PluginPackageInfo otherPlug = mLoadedApk.getPluginPackageInfo();
-                    if (otherPlug != null) {
-                        targetActivity = otherPlug.getActivityInfo(toActName);
+                    if(targetActivity != null){
+                        PluginDebugLog.runtimeLog(TAG,
+                                "switchToActivityProxy find targetActivity in current currentPlugin!");
                     }
                 }
-            }
+            }else{
+                if(!TextUtils.isEmpty(pkg) && targetActivity == null){
+                    PluginLiteInfo mLiteInfo = new PluginLiteInfo();
+                    mLiteInfo.packageName = pkg;
+                    PluginPackageInfo otherPluginInfo = PluginPackageManagerNative.getInstance(context)
+                            .getPluginPackageInfo(context,mLiteInfo);
+                    if(otherPluginInfo != null){
+                        targetActivity = otherPluginInfo.getActivityInfo(toActName);
+                        if(targetActivity != null){
+                            PluginDebugLog.runtimeFormatLog(TAG,
+                                    "switchToActivityProxy find targetActivity in plugin %s!",pkg);
+                        }
+                    }
 
+
+                }
+            }
         } else {
             if (mLoadedApk != null) {
                 PluginPackageInfo mapping = mLoadedApk.getPluginPackageInfo();
@@ -168,15 +174,22 @@ public class ComponetFinder implements IIntentConstant {
                 }
             } else {
                 if (null != context) {
-                    List<PluginLiteInfo> packageList = PluginPackageManagerNative.getInstance(context).getInstalledApps();
+                    List<PluginLiteInfo> packageList =
+                            PluginPackageManagerNative.getInstance(context).getInstalledApps();
                     if (packageList != null) {
-                        for (PluginLiteInfo pkgInfo : PluginPackageManagerNative.getInstance(context).getInstalledApps()) {
+                        for (PluginLiteInfo pkgInfo : packageList) {
                             if (pkgInfo != null) {
                                 PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
-                                .getPluginPackageInfo(context,pkgInfo); //pkgInfo.getTargetMapping(context);
+                                .getPluginPackageInfo(context,pkgInfo);
                                 if (null != target) {
                                     targetActivity = target.resolveActivity(mIntent);
-                                    break;
+                                    if(targetActivity != null){
+                                        if(targetActivity != null){
+                                            PluginDebugLog.runtimeFormatLog(TAG,
+                                                    "switchToActivityProxy find targetActivity in plugin %s!",pkgInfo.packageName);
+                                        }
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -184,7 +197,7 @@ public class ComponetFinder implements IIntentConstant {
                 }
             }
         }
-        PluginDebugLog.log(TAG, "handleStartActivityIntent pluginId: "
+        PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent pluginId: "
                 + mPluginPackageName + " intent: " + mIntent.toString()
                 + " targetActivity: " + targetActivity);
         if (targetActivity != null) {
@@ -218,9 +231,7 @@ public class ComponetFinder implements IIntentConstant {
         if (mIntent != null && mIntent.getComponent() != null
                 && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_CLASS_KEY))
                 && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_PACKAGNAME_KEY))) {
-            if (mIntent.getComponent().getClassName().startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)
-                    || mIntent.getComponent().getClassName()
-                    .startsWith(ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX)) {
+            if (mIntent.getComponent().getClassName().startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
                 return true;
             }
         }
@@ -239,15 +250,15 @@ public class ComponetFinder implements IIntentConstant {
     private static void setActivityProxy(Intent mIntent, String mPackageName, String activityName) {
         PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(mPackageName);
         if (null == mLoadedApk) {
-            PluginDebugLog.formatLog(TAG,
-                    "ActivityJumpUtil setPluginIntent failed, %s, ProxyEnvironmentNew is null",
+            PluginDebugLog.runtimeFormatLog(TAG,
+                    "setActivityProxy failed, %s, PluginLoadedApk is null",
                     mPackageName);
             return;
         }
         ActivityInfo info = mLoadedApk.getPluginPackageInfo().getActivityInfo(activityName);
         if (null == info) {
             PluginDebugLog.formatLog(TAG,
-                    "ActivityJumpUtil setPluginIntent failed, activity info is null. actName: %s",
+                    "setActivityProxy failed, activity info is null. actName: %s",
                     activityName);
             return;
         }
@@ -292,12 +303,14 @@ public class ComponetFinder implements IIntentConstant {
                 String special_cfg = actInfo.metaData.getString(META_KEY_ACTIVITY_SPECIAL);
                 if (!TextUtils.isEmpty(special_cfg)) {
                     if (special_cfg.contains(PLUGIN_ACTIVITY_TRANSLUCENT)) {
-                        PluginDebugLog.log(TAG, "getProxyActivityClsName meta data contrains translucent flag");
+                        PluginDebugLog.runtimeLog(TAG,
+                                "getProxyActivityClsName meta data contrains translucent flag");
                         isTranslucent = true;
                     }
 
                     if (special_cfg.contains(PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE)) {
-                        PluginDebugLog.log(TAG, "getProxyActivityClsName meta data contrains handleConfigChange flag");
+                        PluginDebugLog.runtimeLog(TAG,
+                                "getProxyActivityClsName meta data contrains handleConfigChange flag");
                         isHandleConfigChange = true;
                     }
                 }
@@ -306,13 +319,13 @@ public class ComponetFinder implements IIntentConstant {
 
         if (actInfo != null) {
             if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                PluginDebugLog.log(TAG, "getProxyActivityClsName activiy screenOrientation: "
+                PluginDebugLog.runtimeLog(TAG, "getProxyActivityClsName activiy screenOrientation: "
                         + actInfo.screenOrientation + " isHandleConfigChange = false");
                 isHandleConfigChange = false;
             }
 
             if (actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                PluginDebugLog.log(TAG, "getProxyActivityClsName isLandscape = true");
+                PluginDebugLog.runtimeLog(TAG, "getProxyActivityClsName isLandscape = true");
                 isLandscape = true;
             }
         }
@@ -345,20 +358,20 @@ public class ComponetFinder implements IIntentConstant {
         }
 
         if (isTranslucent) {
-            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
                     ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX +index);
             return ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX +index;
         } else if (isLandscape) {
-            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
                     ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX +index);
             return ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX +index;
         }
         if (isHandleConfig) {
-            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
                     ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX +index);
             return ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX +index;
         } else {
-            PluginDebugLog.log(TAG,"matchActivityProxyByFeature:"+
+            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
                     ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX +index);
             return ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX +index;
         }
@@ -375,10 +388,7 @@ public class ComponetFinder implements IIntentConstant {
     public static String matchServiceProxyByFeature(String processName){
         String proxyServiceName =
                 DEFAULT_SERVICE_PROXY_PREFIX + ProcessManger.getProcessIndex(processName);
-        PluginDebugLog.log(TAG,"matchServiceProxyByFeature:"+proxyServiceName);
+        PluginDebugLog.runtimeFormatLog(TAG,"matchServiceProxyByFeature:%s",proxyServiceName);
         return proxyServiceName;
     }
-
-
-
 }
