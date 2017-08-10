@@ -149,6 +149,25 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         return Collections.unmodifiableMap(sPluginsMap);
     }
 
+
+    /**
+     * 启动插件
+     * @param mHostContext
+     * @param packageName
+     *      插件包名
+     */
+    public static void launchPlugin(Context mHostContext,String packageName){
+        if(mHostContext == null && TextUtils.isEmpty(packageName)){
+            PluginDebugLog.runtimeLog(TAG,"launchPlugin mHostContext is null or packageName is null!");
+            return;
+        }
+
+        ComponentName mComponetName = new ComponentName(packageName,"");
+        Intent mIntent = new Intent();
+        mIntent.setComponent(mComponetName);
+        launchPlugin(mHostContext,mIntent,null);
+    }
+
     /**
      * 启动插件
      *

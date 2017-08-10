@@ -160,14 +160,7 @@ public class PluginLoadedApk implements IIntentConstant {
         this.mPluginPackageName = mPluginPackageName;
         this.mActivityStackSupervisor = new PActivityStackSupervisor(this);
         extraPluginPackageInfo(this.mPluginPackageName);
-        if(TextUtils.isEmpty(mProcessName) && mPluginMapping != null){
-            this.mProcessName = mPluginMapping.getProcessName();
-            if(TextUtils.isEmpty(mProcessName)){
-                throw new NullPointerException("PluginLoadedApk mProcessName is null!");
-            }
-        }else{
-            this.mProcessName = mProcessName;
-        }
+        this.mProcessName = mProcessName;
         if (!createClassLoader()) {
             throw new Exception("ProxyEnvironmentNew init failed for createClassLoader failed:" + " apkFile: " + mPluginFile.getAbsolutePath() + " pluginPakName: " + mPluginPackageName);
         }

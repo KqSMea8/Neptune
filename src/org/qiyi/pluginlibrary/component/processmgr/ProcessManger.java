@@ -34,12 +34,9 @@ public class ProcessManger {
      *          插件的index
      */
     public static int getProcessIndex(String processName){
-        if(TextUtils.isEmpty(processName)){
-            return 1;
-        }
+
         if(mOutterSelecter!= null){
-            int index = mOutterSelecter.getProcessIndex(processName);
-            return index;
+            return mOutterSelecter.getProcessIndex(processName);
         }
         return 1;
     }
