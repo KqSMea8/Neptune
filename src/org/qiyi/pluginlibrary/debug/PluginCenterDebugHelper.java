@@ -1,7 +1,9 @@
 package org.qiyi.pluginlibrary.debug;
 
+import android.content.ComponentName;
 import android.content.Context;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -53,7 +55,10 @@ public class PluginCenterDebugHelper {
      * @param url       url
      */
     public void savePluginRequestUrl(final String time, final String url) {
-        iPluginDebugHelper.savePluginRequestUrl(context, time, url);
+        if(iPluginDebugHelper!=null){
+            iPluginDebugHelper.savePluginRequestUrl(context, time, url);
+        }
+
     }
 
     /**
@@ -62,7 +67,12 @@ public class PluginCenterDebugHelper {
      * @return      url
      */
     public List<String> getPluginRequestUrl() {
-        return iPluginDebugHelper.getPluginRequestUrl(context);
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getPluginRequestUrl(context);
+        }else{
+            return Collections.emptyList();
+        }
+
     }
 
     /**
@@ -72,14 +82,22 @@ public class PluginCenterDebugHelper {
      * @param plugins   插件列表
      */
     public void savePluginList(final String time, final String plugins) {
-        iPluginDebugHelper.savePluginList(context, time, plugins);
+        if(iPluginDebugHelper != null){
+            iPluginDebugHelper.savePluginList(context, time, plugins);
+        }
+
     }
 
     /**
      * 获取存储的插件列表信息
      */
     public List<String> getPluginList() {
-        return iPluginDebugHelper.getPluginList(context);
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getPluginList(context);
+        }else {
+            return Collections.emptyList();
+        }
+
     }
 
     /**
@@ -88,7 +106,11 @@ public class PluginCenterDebugHelper {
      * @param pluginName        插件包名
      */
     public String getPluginInfo(String pluginName) {
-        return iPluginDebugHelper.getPluginInfo(pluginName);
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getPluginInfo(pluginName);
+        }
+        return "";
+
     }
 
     /**
@@ -98,7 +120,10 @@ public class PluginCenterDebugHelper {
      * @param downloadState     下载状态
      */
     public void savePlguinDownloadState(final String time, final String downloadState) {
-        iPluginDebugHelper.savePlguinDownloadState(context, time, downloadState);
+        if(iPluginDebugHelper != null){
+            iPluginDebugHelper.savePlguinDownloadState(context, time, downloadState);
+        }
+
 
     }
 
@@ -106,7 +131,12 @@ public class PluginCenterDebugHelper {
      * 获取插件下载状态信息
      */
     public List<String> getPluginDownloadState(){
-        return iPluginDebugHelper.getPluginDownloadState(context);
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getPluginDownloadState(context);
+        }else {
+            return Collections.emptyList();
+        }
+
     }
 
     /**
@@ -116,14 +146,20 @@ public class PluginCenterDebugHelper {
      * @param installState      安装状态
      */
     public void savePluginInstallState(final String time, final String installState) {
-        iPluginDebugHelper.savePluginInstallState(context, time, installState);
+        if(iPluginDebugHelper != null){
+            iPluginDebugHelper.savePluginInstallState(context, time, installState);
+        }
     }
 
     /**
      * 获得插件安装的状态信息
      */
     public List<String> getPluginInstallState() {
-        return iPluginDebugHelper.getPluginInstallState(context);
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getPluginInstallState(context);
+        }else {
+            return Collections.emptyList();
+        }
     }
 
     /**
@@ -133,14 +169,22 @@ public class PluginCenterDebugHelper {
      * @param pluginInfo    插件信息
      */
     public void saveRunningPluginInfo(final String time, final String pluginInfo) {
-        iPluginDebugHelper.saveRunningPluginInfo(context, time, pluginInfo);
+        if(iPluginDebugHelper != null){
+            iPluginDebugHelper.saveRunningPluginInfo(context, time, pluginInfo);
+        }
+
     }
 
     /**
      * 获得运行的插件信息
      */
     public List<String> getRunningPluginInfo() {
-        return iPluginDebugHelper.getRunningPluginInfo(context);
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getRunningPluginInfo(context);
+        }else {
+            return Collections.emptyList();
+        }
+
     }
 
     /**
@@ -150,14 +194,21 @@ public class PluginCenterDebugHelper {
      * @param intent        跳转信息
      */
     public void savePluginActivityAndServiceJump(final String time, final String intent) {
-        iPluginDebugHelper.savePluginActivityAndServiceJump(context, time, intent);
+        if(iPluginDebugHelper != null){
+            iPluginDebugHelper.savePluginActivityAndServiceJump(context, time, intent);
+        }
     }
 
     /**
      * 获得插件跳转信息
      */
     public List<String> getPluginJumpInfo() {
-        return iPluginDebugHelper.getPluginJumpInfo(context);
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getPluginJumpInfo(context);
+        }else {
+            return Collections.emptyList();
+        }
+
     }
 
     /**
@@ -166,6 +217,11 @@ public class PluginCenterDebugHelper {
      * @return  返回{"yyyy年MM月dd日: HH:mm:ss : "}格式的时间
      */
     public String getCurrentSystemTime() {
-        return iPluginDebugHelper.getCurrentSystemTime();
+        if(iPluginDebugHelper != null){
+            return iPluginDebugHelper.getCurrentSystemTime();
+        }else {
+            return "";
+        }
+
     }
 }

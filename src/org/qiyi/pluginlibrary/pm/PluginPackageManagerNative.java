@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageInfo;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
@@ -831,6 +832,27 @@ public class PluginPackageManagerNative {
             }
         }
         return target;
+    }
+
+    /**
+     * 用于安装一个没有后台配置的apk
+     * @param mContext
+     * @param mApkFile
+     */
+    public void installStrangeApkFile(Context mContext,File mApkFile,IInstallCallBack mInstallCallback){
+        if(mContext == null || mApkFile == null){
+            PluginDebugLog.installLog(TAG,"installStrangeApkFile mContext == null or mApkFile ==null");
+            return;
+        }
+
+        PluginLiteInfo mPluginLiteInfo = new PluginLiteInfo();
+        PackageInfo mPackageInfo = mContext.getPackageManager()
+                .getPackageArchiveInfo(mApkFile.getAbsolutePath(),0);
+        if(mPackageInfo != null){
+            mPluginLiteInfo.packageName = mPackageInfo.packageName;
+            mPluginLiteInfo.mPluginVersion = mPackageInfo.versionName;
+            installApkFile(mApkFile.getAbsolutePath(),mInstallCallback,mPluginLiteInfo);
+        }
     }
 
 
