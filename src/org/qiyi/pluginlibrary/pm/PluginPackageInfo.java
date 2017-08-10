@@ -32,6 +32,9 @@ import android.text.TextUtils;
 public class PluginPackageInfo implements Parcelable {
     private static final String TAG = "PluginPackageInfo";
     static final String META_KEY_CLASSINJECT = "pluginapp_class_inject";
+    static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
+    static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
+    static final String PLUGIN_APPLICATION_CODE_PATH = "Hanlde_plugin_code_path";
 
     private String versionName;
     private int versionCode;
@@ -48,6 +51,10 @@ public class PluginPackageInfo implements Parcelable {
 
     // 是否需要把插件class注入进入父classloader
     private boolean mIsClassInject = false;
+
+    private boolean mUsePluginAppInfo = false;
+
+    private boolean mUsePluginCodePath = false;
 
 
     /** Save all activity's resolve info */
@@ -84,6 +91,8 @@ public class PluginPackageInfo implements Parcelable {
         dataDir = in.readString();
         nativeLibraryDir = in.readString();
         mIsClassInject = in.readByte() != 0;
+        mUsePluginAppInfo = in.readByte() != 0;
+        mUsePluginCodePath = in.readByte() != 0;
 
         final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
 
@@ -140,11 +149,27 @@ public class PluginPackageInfo implements Parcelable {
 
             metaData = packageInfo.applicationInfo.metaData;
             packageInfo.applicationInfo.publicSourceDir = apkFile.getAbsolutePath();
-            packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
             dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName).getAbsolutePath();
             nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
             if (metaData != null) {
                 mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
+                if (metaData != null) {
+                    mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
+                    String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
+                    if (!TextUtils.isEmpty(applicationMetaData)) {
+                        if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
+                            mUsePluginAppInfo = true;
+                        }
+
+                        if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
+                            packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
+                            PluginDebugLog.log("PluginPackageInfo",
+                                    "change sourceDir dir: " + packageInfo.applicationInfo.sourceDir);
+                            mUsePluginCodePath = true;
+                        }
+                    }
+                }
+
             }
             ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
         } catch (RuntimeException e) {
@@ -309,6 +334,14 @@ public class PluginPackageInfo implements Parcelable {
         return mIsClassInject;
     }
 
+    public boolean ismUsePluginAppInfo() {
+        return mUsePluginAppInfo;
+    }
+
+    public boolean ismUsePluginCodePath() {
+        return mUsePluginCodePath;
+    }
+
     public String getPackageName() {
         return packageName;
     }
@@ -416,6 +449,8 @@ public class PluginPackageInfo implements Parcelable {
         parcel.writeString(dataDir);
         parcel.writeString(nativeLibraryDir);
         parcel.writeByte((byte) (mIsClassInject ? 1 : 0));
+        parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
+        parcel.writeByte((byte) (mUsePluginCodePath ? 1 : 0));
 
         final Bundle activityStates = new Bundle();
         for (String uri : mActivitiyIntentInfos.keySet()) {

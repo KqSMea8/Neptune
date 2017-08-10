@@ -76,13 +76,13 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             PluginLoadedApk mLoadedApk = getPluginLoadedApk();
             if (mLoadedApk != null && getPluginPackageInfo() != null) {
                 PluginPackageInfo targetMapping = getPluginPackageInfo();
-//                if (targetMapping.usePluginApplicationInfo()) {
-//                    mApplicationInfo.dataDir = targetMapping.getDataDir();
-//                    PluginDebugLog.log(TAG, "change data dir: " + mApplicationInfo.dataDir);
-//                    mApplicationInfo.nativeLibraryDir = targetMapping.getnativeLibraryDir();
-//                    PluginDebugLog.log(TAG, "change native lib path: " +
-//                            mApplicationInfo.nativeLibraryDir);
-//                }
+                if (targetMapping.ismUsePluginAppInfo()) {
+                    mApplicationInfo.dataDir = targetMapping.getDataDir();
+                    PluginDebugLog.log(TAG, "change data dir: " + mApplicationInfo.dataDir);
+                    mApplicationInfo.nativeLibraryDir = targetMapping.getnativeLibraryDir();
+                    PluginDebugLog.log(TAG, "change native lib path: " +
+                            mApplicationInfo.nativeLibraryDir);
+                }
             }
         }
         return mApplicationInfo;
@@ -580,18 +580,18 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     @Override
     public String getPackageCodePath() {
 
-//        if (getPluginLoadedApk() != null) {
-//            PluginPackageInfo targetMapping = getPluginPackageInfo();
-//            if (targetMapping != null && targetMapping.usePluginCodePath()) {
-//                PackageInfo packageInfo = targetMapping.getPackageInfo();
-//                if (packageInfo != null && packageInfo.applicationInfo != null) {
-//                    String sourceDir = packageInfo.applicationInfo.sourceDir;
-//                    if (!TextUtils.isEmpty(sourceDir)) {
-//                        return sourceDir;
-//                    }
-//                }
-//            }
-//        }
+        if (getPluginLoadedApk() != null) {
+            PluginPackageInfo targetMapping = getPluginPackageInfo();
+            if (targetMapping != null && targetMapping.ismUsePluginCodePath()) {
+                PackageInfo packageInfo = targetMapping.getPackageInfo();
+                if (packageInfo != null && packageInfo.applicationInfo != null) {
+                    String sourceDir = packageInfo.applicationInfo.sourceDir;
+                    if (!TextUtils.isEmpty(sourceDir)) {
+                        return sourceDir;
+                    }
+                }
+            }
+        }
         return super.getPackageCodePath();
     }
 
