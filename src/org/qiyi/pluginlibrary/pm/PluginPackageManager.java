@@ -601,14 +601,14 @@ public class PluginPackageManager {
         if (sVerifyPluginInfo != null) {
             return sVerifyPluginInfo.canInstallPackage(info);
         }
-        return false;
+        return true;
     }
 
     public boolean canUninstallPackage(PluginLiteInfo info) {
         if (sVerifyPluginInfo != null) {
             return sVerifyPluginInfo.canUninstallPackage(info);
         }
-        return false;
+        return true;
     }
 
     public PluginPackageInfo getPluginPackageInfo(String pkgName) {

@@ -13,7 +13,8 @@ public interface IIntentConstant {
     public static final String EXTRA_TARGET_CLASS_KEY = "targe_class";
     /**主动加载插件的广播*/
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "target_stub";
-    /**通知插件启动完毕(用于快捷方式)*/
+    /**通知插件启动完毕(用于快捷方式) */
+    @Deprecated
     public static final String ACTION_PLUGIN_LOADED = "org.qiyi.pluginapp.ACTION_PLUGIN_LOADED";
 
     /**插件初始化完毕*/
@@ -32,18 +33,10 @@ public interface IIntentConstant {
     public static final String PLUGIN_ACTIVITY_TRANSLUCENT = "Translucent";
     @Deprecated
     public static final String PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE = "Handle_configuration_change";
-
-    /**
-     * 插件退出
-     */
+    /**Service退出*/
     public static final String ACTION_QUIT = "org.qiyi.pluginapp.action.QUIT";
-
-    /**
-     * 控制插件启动时的loading
-     */
+    /**控制插件启动loading*/
     public static final String EXTRA_SHOW_LOADING = "plugin_show_loading";
-
-
 
     /**安装完的插件的*/
     public static final String EXTRA_PKG_NAME = "package_name";
