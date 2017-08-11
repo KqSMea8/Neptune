@@ -30,13 +30,14 @@ public class PluginLiteInfo implements Parcelable {
     public String mPluginVersion="";
     /**插件的灰度版本*/
     public String mPluginGrayVersion="";
+    /**插件唯一标识符*/
+    public String id = "";
+
 
 
     public PluginLiteInfo() {
 
     }
-
-
 
     protected PluginLiteInfo(Parcel in) {
         packageName = in.readString();
@@ -44,6 +45,7 @@ public class PluginLiteInfo implements Parcelable {
         installStatus = in.readString();
         mPluginVersion = in.readString();
         mPluginGrayVersion = in.readString();
+        id = in.readString();
     }
 
     public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
@@ -70,6 +72,7 @@ public class PluginLiteInfo implements Parcelable {
         parcel.writeString(installStatus);
         parcel.writeString(mPluginVersion);
         parcel.writeString(mPluginGrayVersion);
+        parcel.writeString(id);
     }
 
 
