@@ -34,5 +34,4 @@ interface IPluginPackageManager {
 
     List<String> getPluginRefs(in String pkgName);
 
-
 }

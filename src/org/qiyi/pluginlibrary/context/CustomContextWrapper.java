@@ -23,6 +23,7 @@ import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
@@ -196,6 +197,69 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             cacheDir.mkdir();
         }
         return mLoadedApk.getPluginAssetManager() == null ? super.getCacheDir() : cacheDir;
+    }
+
+    @Override
+    public File getExternalFilesDir(String type) {
+        try {
+            PluginLoadedApk mLoadedApk = getPluginLoadedApk();
+
+            File pluginExternalFileRootDir = PluginPackageManager.getExternalFilesRootDir();
+
+            if (null != mLoadedApk && null != pluginExternalFileRootDir && pluginExternalFileRootDir.exists()) {
+                File subPluginFileRootDir = new File(pluginExternalFileRootDir, mLoadedApk.getPluginPackageName());
+                if (subPluginFileRootDir.exists() || subPluginFileRootDir.mkdir()) {
+                    if (TextUtils.isEmpty(type)) {
+                        PluginDebugLog.runtimeFormatLog(
+                                TAG, "getExternalFilesDir subPluginFileRootDir %s : ",
+                                subPluginFileRootDir.getAbsolutePath());
+
+                        return subPluginFileRootDir;
+                    } else {
+                        File targetSubFileDir = new File(subPluginFileRootDir, type);
+                        if (targetSubFileDir.exists() || targetSubFileDir.mkdir()) {
+                            PluginDebugLog.runtimeFormatLog(
+                                    TAG, "getExternalFilesDir targetSubFileDir %s : ",
+                                    targetSubFileDir.getAbsolutePath());
+
+                            return targetSubFileDir;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            PluginDebugLog.runtimeFormatLog(TAG, "getExternalFilesDir throws exception %s : ", e.getMessage());
+            e.printStackTrace();
+        }
+        PluginDebugLog.runtimeFormatLog(TAG, "get hooked external files dir failed, return default");
+
+        return super.getExternalFilesDir(type);
+    }
+
+    @Override
+    public File getExternalCacheDir() {
+        try {
+            PluginLoadedApk mLoadedApk = getPluginLoadedApk();
+
+            File pluginExternalCacheRootDir = PluginPackageManager.getExternalCacheRootDir();
+
+            if (null != mLoadedApk && null != pluginExternalCacheRootDir && pluginExternalCacheRootDir.exists()) {
+                File subPluginCacheRootDir = new File(pluginExternalCacheRootDir, mLoadedApk.getPluginPackageName());
+                if (subPluginCacheRootDir.exists() || subPluginCacheRootDir.mkdir()) {
+                    PluginDebugLog.runtimeFormatLog(
+                            TAG, "getExternalCacheDir subPluginCacheRootDir %s : ",
+                            subPluginCacheRootDir.getAbsolutePath());
+
+                    return subPluginCacheRootDir;
+                }
+            }
+        } catch (Exception e) {
+            PluginDebugLog.runtimeFormatLog(TAG, "getExternalCacheDir throws exception %s : ", e.getMessage());
+            e.printStackTrace();
+        }
+        PluginDebugLog.runtimeLog(TAG, "get hooked external cache dir failed, return default");
+
+        return super.getExternalCacheDir();
     }
 
     @Override

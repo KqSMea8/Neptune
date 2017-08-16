@@ -668,6 +668,26 @@ public class PluginPackageManager {
     }
 
     /**
+     * 获取内置存储的files根目录
+     */
+    public static File getExternalFilesRootDir() {
+        if (null != sVerifyPluginInfo) {
+            return sVerifyPluginInfo.getExternalFilesRootDirDirectly();
+        }
+        return null;
+    }
+
+    /**
+     * 获取内置存储的cache根目录
+     */
+    public static File getExternalCacheRootDir() {
+        if (null != sVerifyPluginInfo) {
+            return sVerifyPluginInfo.getExternalCacheRootDirDirectly();
+        }
+        return null;
+    }
+
+    /**
      * 直接获取已经安装的插件列表(不经过ipc，直接读取sp)
      * @return
      */
