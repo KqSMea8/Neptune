@@ -320,6 +320,16 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     }
 
     @Override
+    public File getExternalFilesDir(String type) {
+        return mPluginContextWrapper.getExternalFilesDir(type);
+    }
+
+    @Override
+    public File getExternalCacheDir() {
+        return mPluginContextWrapper.getExternalCacheDir();
+    }
+
+    @Override
     public File getFileStreamPath(String name) {
         return mPluginContextWrapper.getFileStreamPath(name);
     }
