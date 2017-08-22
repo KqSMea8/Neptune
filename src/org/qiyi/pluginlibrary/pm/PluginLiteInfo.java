@@ -32,6 +32,8 @@ public class PluginLiteInfo implements Parcelable {
     public String mPluginGrayVersion="";
     /**插件唯一标识符*/
     public String id = "";
+    /**控制插件启动是否投递*/
+    public int mDeliverStartUp;
 
 
 
@@ -46,6 +48,7 @@ public class PluginLiteInfo implements Parcelable {
         mPluginVersion = in.readString();
         mPluginGrayVersion = in.readString();
         id = in.readString();
+        mDeliverStartUp = in.readInt();
     }
 
     public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
@@ -73,6 +76,7 @@ public class PluginLiteInfo implements Parcelable {
         parcel.writeString(mPluginVersion);
         parcel.writeString(mPluginGrayVersion);
         parcel.writeString(id);
+        parcel.writeInt(mDeliverStartUp);
     }
 
 
