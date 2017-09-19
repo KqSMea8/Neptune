@@ -255,21 +255,20 @@ public class PluginInstallerService extends Service {
         PluginDebugLog.installFormatLog(TAG,
                 "doInstall : %s,pkgName: %s" ,srcPathWithScheme, info.packageName);
 
-
-        File tempFile = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + "");
-
-        boolean result = Util.copyToFile(is, tempFile);
-        PluginDebugLog.installLog(TAG, "doInstall copy result" + result);
-        if (!result) {
-            tempFile.delete();
-            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+        PackageManager pm = this.getPackageManager();
+        String apkFilePath = null;
+        if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_FILE)) {
+            apkFilePath = srcPathWithScheme.substring(PluginPackageManager.SCHEME_FILE.length());
+        } else if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_ASSETS)) {
+            apkFilePath = srcPathWithScheme.substring(PluginPackageManager.SCHEME_ASSETS.length());
+        }
+        if (null == apkFilePath) {
+            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PARSE_ERROR, info);
             return null;
         }
 
-        PackageManager pm = this.getPackageManager();
-        PackageInfo pkgInfo = pm.getPackageArchiveInfo(tempFile.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
+        PackageInfo pkgInfo = pm.getPackageArchiveInfo(apkFilePath, PackageManager.GET_ACTIVITIES);
         if (pkgInfo == null) {
-            tempFile.delete();
             setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PARSE_ERROR, info);
             return null;
         }
@@ -294,7 +293,6 @@ public class PluginInstallerService extends Service {
             String fileName = srcPathWithScheme.substring(start + 1, end);
             //info.pluginTotalSize = tempFile.length(); // 如果是内置的apk，需要自己获取大小，并存储，
             if (!packageName.equals(fileName)) {
-                tempFile.delete();
                 // throw new RuntimeException(srcPathWithScheme + " must be
                 // named with it's package name : "
                 // + packageName + PluginInstaller.APK_SUFFIX);
@@ -309,27 +307,29 @@ public class PluginInstallerService extends Service {
         }
 
         // 生成安装文件
-        if (tempFile.getParent().equals(destFile.getParent())) {
+        File srcApkPath = new File(apkFilePath);
+        if (!srcApkPath.exists()) {
+            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PARSE_ERROR, info);
+            return null;
+        }
+        if (srcApkPath.getParent().equals(destFile.getParent())) {
             // 目标文件和临时文件在同一目录下
             PluginDebugLog.installFormatLog(TAG,
                     "doInstall:%s tmpFile and destFile in samp directory!",packageName);
-            tempFile.renameTo(destFile);
+            srcApkPath.renameTo(destFile);
         } else {
             // 拷贝到其他目录，比如安装到 sdcard
             PluginDebugLog.installFormatLog(TAG,
                     "doInstall:%s tmpFile and destFile in different directory!",packageName);
             try {
-                InputStream tempIs = new FileInputStream(tempFile);
-                boolean tempResult = Util.copyToFile(tempIs, destFile);
-                tempIs.close();
-                tempFile.delete(); // 删除临时文件
+                boolean tempResult = Util.copyToFile(is, destFile);
+                is.close();
                 if (!tempResult) {
                     setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
                     return null;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                tempFile.delete();
                 setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
                 return null;
             }
