@@ -316,7 +316,10 @@ public class PluginInstallerService extends Service {
             // 目标文件和临时文件在同一目录下
             PluginDebugLog.installFormatLog(TAG,
                     "doInstall:%s tmpFile and destFile in samp directory!",packageName);
-            srcApkPath.renameTo(destFile);
+            if (!srcApkPath.renameTo(destFile)) {
+                setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+                return null;
+            }
         } else {
             // 拷贝到其他目录，比如安装到 sdcard
             PluginDebugLog.installFormatLog(TAG,
@@ -338,12 +341,16 @@ public class PluginInstallerService extends Service {
                 "pluginInstallerService begain install lib,pkgName:%s",packageName);
         File pkgDir = new File(PluginInstaller.getPluginappRootPath(this), packageName);
 
-        if (!pkgDir.exists()){
-            pkgDir.mkdir();
+        if (!pkgDir.exists() && !pkgDir.mkdir()){
+            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+            return null;
         }
 
         File libDir = new File(pkgDir, PluginInstaller.NATIVE_LIB_PATH);
-        libDir.mkdirs();
+        if (!libDir.exists() && !libDir.mkdirs()) {
+            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+            return null;
+        }
         Util.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService finish install lib,pkgName:%s",packageName);
