@@ -1,13 +1,11 @@
 package org.qiyi.pluginlibrary.pm;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.RemoteException;
+import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.ErrorType.ErrorType;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
@@ -18,12 +16,14 @@ import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.RemoteException;
-import android.text.TextUtils;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 负责安装卸载app，获取安装列表等工作.<br> 负责安装插件的一些方法 功能类似系统中的PackageManager
@@ -515,7 +515,7 @@ public class PluginPackageManager {
      * @param packageInfo PluginLiteInfo
      * @return
      */
-    public boolean uninstall(PluginLiteInfo packageInfo) {
+    public boolean uninstall(final PluginLiteInfo packageInfo) {
 
         boolean uninstallFlag = false;
 
@@ -536,11 +536,15 @@ public class PluginPackageManager {
                     }
                 }
 
-                // 暂时不去真正的卸载，只是去删除下载的文件,如果真正删除会出现以下两个问题
-                // 1，卸载语音插件之后会出现，找不到库文件
-                // 2.卸载了啪啪奇插件之后，会出现 .so库 已经被打开，无法被另一个打开
-                // PluginPackageManager.getInstance(pluginContext).deletePackage(pluginData.mPlugin.packageName,
-                // observer);
+                if(uninstallFlag){
+                    deletePackage(packageInfo, new IPluginUninstallCallBack.Stub(){
+                        @Override
+                        public void onPluginUnintall(String packageName, int returnCode) throws RemoteException {
+                            PluginDebugLog.runtimeFormatLog(TAG,"onPluginUninstall %s",packageName);
+                        }
+                    });
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
                 uninstallFlag = false;
