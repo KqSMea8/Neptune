@@ -21,6 +21,7 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -251,8 +252,10 @@ public class PluginPackageManagerNative {
                 // list.
                 canMeetCondition = true;
             }
-            PluginDebugLog.installFormatLog(TAG,
-                    "%s 's PluginDeleteAction canMeetCondition %s",info.packageName,canMeetCondition);
+            if (null != info) {
+                PluginDebugLog.installFormatLog(TAG,
+                        "%s 's PluginDeleteAction canMeetCondition %s", info.packageName, canMeetCondition);
+            }
             return canMeetCondition;
         }
 
@@ -745,12 +748,20 @@ public class PluginPackageManagerNative {
         // try to read process name in /proc/pid/cmdline if no result from
         // activity manager
         String cmdline = null;
+        BufferedReader processFileReader = null;
         try {
-            BufferedReader processFileReader = new BufferedReader(new FileReader(String.format("/proc/%d/cmdline", Process.myPid())));
+            processFileReader = new BufferedReader(new FileReader(String.format("/proc/%d/cmdline", Process.myPid())));
             cmdline = processFileReader.readLine().trim();
-            processFileReader.close();
         } catch (Exception ex) {
             ex.printStackTrace();
+        } finally {
+            if (null != processFileReader) {
+                try {
+                    processFileReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         return cmdline;

@@ -130,8 +130,9 @@ public final class Util {
             if (destFile.exists()) {
                 destFile.delete();
             }
-            FileOutputStream out = new FileOutputStream(destFile);
+            FileOutputStream out = null;
             try {
+                out = new FileOutputStream(destFile);
                 byte[] buffer = new byte[4096]; // SUPPRESS CHECKSTYLE
                 int bytesRead;
                 while ((bytesRead = inputStream.read(buffer)) >= 0) {
@@ -443,24 +444,40 @@ public final class Util {
 
     private static void copyFile(File sourceFile, File targetFile) throws IOException {
 
-        FileInputStream input = new FileInputStream(sourceFile);
-        BufferedInputStream inBuff = new BufferedInputStream(input);
+        BufferedInputStream inBuff = null;
 
-        FileOutputStream output = new FileOutputStream(targetFile);
-        BufferedOutputStream outBuff = new BufferedOutputStream(output);
+        BufferedOutputStream outBuff = null;
 
-        byte[] b = new byte[1024 * 5];
-        int len;
-        while ((len = inBuff.read(b)) != -1) {
-            outBuff.write(b, 0, len);
+        try {
+            FileInputStream input = new FileInputStream(sourceFile);
+            FileOutputStream output = new FileOutputStream(targetFile);
+            inBuff = new BufferedInputStream(input);
+            outBuff = new BufferedOutputStream(output);
+            byte[] b = new byte[1024 * 5];
+            int len;
+            while ((len = inBuff.read(b)) != -1) {
+                outBuff.write(b, 0, len);
+            }
+
+            outBuff.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != inBuff) {
+                try {
+                    inBuff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (null != outBuff) {
+                try {
+                    outBuff.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-
-        outBuff.flush();
-
-        inBuff.close();
-        outBuff.close();
-        output.close();
-        input.close();
     }
 
     public static void moveFile(File sourceFile, File targetFile) {

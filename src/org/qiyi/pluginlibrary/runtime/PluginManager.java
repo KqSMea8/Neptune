@@ -197,7 +197,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                                     final String mProcessName) {
         final String packageName = tryParsePkgName(mHostContext, mIntent);
         if (TextUtils.isEmpty(packageName)) {
-            deliver(mHostContext, false, mHostContext.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);
+            if (null != mHostContext) {
+                deliver(mHostContext, false, mHostContext.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);
+            }
             PluginDebugLog.runtimeLog(TAG, "enterProxy packageName is null return! packageName: " + packageName);
             return;
         }
@@ -521,7 +523,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
     public static boolean isPluginLoadedAndInit(String mPluginPackage) {
         if (isPluginLoaded(mPluginPackage)) {
             PluginLoadedApk mPlugin = getPluginLoadedApkByPkgName(mPluginPackage);
-            return mPlugin.hasPluginInit();
+            return null != mPlugin && mPlugin.hasPluginInit();
         }
         return false;
     }

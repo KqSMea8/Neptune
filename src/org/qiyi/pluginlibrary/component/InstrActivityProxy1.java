@@ -257,8 +257,10 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (ContextUtils.isAndroidN() || ContextUtils.isAndroidO()) {
             String[] temp = parsePkgAndClsFromIntent();
             if (mNeedUpdateConfiguration && (temp != null || mLoadedApk != null)) {
-                tryToInitPluginLoadApk(temp[0]);
-                if (mLoadedApk != null) {
+                if (null != temp) {
+                    tryToInitPluginLoadApk(temp[0]);
+                }
+                if (mLoadedApk != null && temp != null) {
                     ActivityInfo actInfo = mLoadedApk.getActivityInfoByClassName(temp[1]);
                     if (actInfo != null) {
                         int resTheme = actInfo.getThemeResource();
@@ -878,7 +880,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public String dump() {
         String[] pkgCls = parsePkgAndClsFromIntent();
         if (null != pkgCls && pkgCls.length == 2) {
-            return "Package&Cls is: " + this + " " + (pkgCls != null ? pkgCls[0] + " " + pkgCls[1] : "") + " flg=0x"
+            return "Package&Cls is: " + this + " " + (pkgCls[0] + " " + pkgCls[1]) + " flg=0x"
                     + Integer.toHexString(getIntent().getFlags());
         } else {
             return "Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags());
@@ -888,7 +890,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public void dump(PrintWriter printWriter){
         String[] pkgCls = parsePkgAndClsFromIntent();
         if (null != pkgCls && pkgCls.length == 2) {
-            printWriter.print("Package&Cls is: " + this + " " + (pkgCls != null ? pkgCls[0] + " " + pkgCls[1] : "") + " flg=0x"
+            printWriter.print("Package&Cls is: " + this + " " + (pkgCls[0] + " " + pkgCls[1]) + " flg=0x"
                     + Integer.toHexString(getIntent().getFlags())); ;
         } else {
             printWriter.print("Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags()));
@@ -927,7 +929,9 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
 
         if (null != mActivityInfo) {
-            mActivityInfo.applicationInfo = mLoadedApk.getPluginPackageInfo().getPackageInfo().applicationInfo;
+            if (null != mLoadedApk && null != mLoadedApk.getPluginPackageInfo()) {
+                mActivityInfo.applicationInfo = mLoadedApk.getPluginPackageInfo().getPackageInfo().applicationInfo;
+            }
             if (origActInfo != null) {
                 origActInfo.applicationInfo = mActivityInfo.applicationInfo;
                 origActInfo.configChanges = mActivityInfo.configChanges;
@@ -968,12 +972,13 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 }
             }
         }
-        try{
-            getWindow().setSoftInputMode(mActivityInfo.softInputMode);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
         if (null != mActivityInfo) {
+            try {
+                getWindow().setSoftInputMode(mActivityInfo.softInputMode);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +
                     mActivityInfo.getThemeResource() + ", icon = " + mActivityInfo.getIconResource()
                     + ", logo = " + mActivityInfo.logo + ", labelRes" + mActivityInfo.labelRes);

@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -492,15 +493,23 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
                     Method getFileStatus = fileUtilsClass.getDeclaredMethod("getFileStatus", String.class, fileStatusClass);
                     boolean getFileStatusResult = (Boolean) getFileStatus.invoke(FileStatus, prefsFile.getPath(), FileStatus);
+                    FileInputStream str = null;
                     if (getFileStatusResult && prefsFile.canRead()) {
                         try {
-                            FileInputStream str = new FileInputStream(prefsFile);
+                            str = new FileInputStream(prefsFile);
                             Class<?> xmlUtilClass = Class.forName("com.android.internal.util.XmlUtils");
                             map = (Map) xmlUtilClass.getDeclaredMethod("readMapXml", FileInputStream.class)
                                     .invoke(xmlUtilClass.newInstance(), str);
-                            str.close();
                         } catch (Exception e) {
                             e.printStackTrace();
+                        } finally {
+                            if (null != str) {
+                                try {
+                                    str.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                     }
                     SharedPreferencesImpl.getMethod("replace", Map.class, fileStatusClass).invoke(sp, map, FileStatus);

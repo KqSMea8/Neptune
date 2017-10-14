@@ -66,19 +66,21 @@ public class ReflectionUtils {
         for (String fName : fieldNames) {
             i++;
             field = getField_(targetClass, fName, resolveParent);
-            field.setAccessible(true);
-            rs[0] = field;
-            rs[1] = targetObj;
-            val = field.get(targetObj);
-            if (val == null) {
-                if (i < fieldNames.length) {
-                    throw new IllegalAccessException(
-                            "can not getFieldValue as field '" + fName + "' value is null in '" + targetClass.getName() + "'");
+            if (null != field) {
+                field.setAccessible(true);
+                rs[0] = field;
+                rs[1] = targetObj;
+                val = field.get(targetObj);
+                if (val == null) {
+                    if (i < fieldNames.length) {
+                        throw new IllegalAccessException(
+                                "can not getFieldValue as field '" + fName + "' value is null in '" + targetClass.getName() + "'");
+                    }
+                    break;
                 }
-                break;
+                targetObj = val;
+                targetClass = targetObj.getClass();
             }
-            targetObj = val;
-            targetClass = targetObj.getClass();
         }
         return rs;
     }
@@ -233,7 +235,9 @@ public class ReflectionUtils {
     public ReflectionUtils set(String name, Object value) throws ReflectException {
         try {
             Field field = field0(name);
-            field.set(object, unwrap(value));
+            if (null != field) {
+                field.set(object, unwrap(value));
+            }
             return this;
         } catch (Exception e) {
             throw new ReflectException(e);
