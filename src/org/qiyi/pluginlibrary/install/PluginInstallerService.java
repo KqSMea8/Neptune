@@ -257,10 +257,20 @@ public class PluginInstallerService extends Service {
 
         PackageManager pm = this.getPackageManager();
         String apkFilePath = null;
+        File tempFile = null;
         if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_FILE)) {
             apkFilePath = srcPathWithScheme.substring(PluginPackageManager.SCHEME_FILE.length());
         } else if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_ASSETS)) {
-            apkFilePath = srcPathWithScheme.substring(PluginPackageManager.SCHEME_ASSETS.length());
+//            apkFilePath = srcPathWithScheme.substring(PluginPackageManager.SCHEME_ASSETS.length());
+            tempFile = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + "");
+            boolean result = Util.copyToFile(is, tempFile);
+            PluginDebugLog.installLog(TAG, "doInstall copy result" + result);
+            if (!result) {
+                tempFile.delete();
+                setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
+                return null;
+            }
+            apkFilePath = tempFile.getAbsolutePath();
         }
         if (null == apkFilePath) {
             setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PARSE_ERROR, info);
@@ -344,6 +354,10 @@ public class PluginInstallerService extends Service {
         if (!pkgDir.exists() && !pkgDir.mkdir()){
             setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_COPY_ERROR, info);
             return null;
+        }
+
+        if (null != tempFile && tempFile.exists()) {
+            tempFile.delete();
         }
 
         File libDir = new File(pkgDir, PluginInstaller.NATIVE_LIB_PATH);
