@@ -272,6 +272,7 @@ public class PluginInstaller {
         if(ContextUtils.isAndroidO()){
             //删除prof文件
             File mProf = new File(apk.getAbsolutePath()+".prof");
+            PluginDebugLog.installFormatLog(TAG,"prof path:%s",mProf.getAbsolutePath());
             if(mProf.exists() && mProf.delete()){
                 PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage prof  %s succcess!",packageName);
             }else{
@@ -291,7 +292,6 @@ public class PluginInstaller {
         }else{
             try{
                 if(ContextUtils.isAndroidO()){
-                    File apkDir = apk.getParentFile();
                     String currentInstructionSet = "";
                     try {
                         currentInstructionSet =  Util.getCurrentInstructionSet();
@@ -300,7 +300,7 @@ public class PluginInstaller {
                         e.printStackTrace();
                     }
 
-                    String pathPrefix = apk.getAbsolutePath() + "/oat/"
+                    String pathPrefix = apk.getParent() + "/oat/"
                             + currentInstructionSet + "/" + packageName;
 
                     String oPath = pathPrefix + ".odex";
@@ -308,7 +308,8 @@ public class PluginInstaller {
 
                     File oPathFile = new File(oPath);
                     File vPathFile = new File(vPath);
-
+                    PluginDebugLog.installFormatLog(TAG,"odex path:%s",oPathFile.getAbsolutePath());
+                    PluginDebugLog.installFormatLog(TAG,"vdex path:%s",vPathFile.getAbsolutePath());
                     if(oPathFile.exists() && oPathFile.delete()){
                         PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage odex  %s succcess!",packageName);
                     }else{
