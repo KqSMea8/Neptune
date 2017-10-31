@@ -24,6 +24,7 @@ import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.os.Build;
+import android.util.Log;
 
 /**
  *
@@ -529,5 +530,22 @@ public final class Util {
             }
         }
         return result;
+    }
+
+
+    /**
+     * 判断当前手机的指令集
+     */
+    private static String currentInstructionSet = null;
+    public static String getCurrentInstructionSet() throws Exception {
+        if (currentInstructionSet != null) {
+            return currentInstructionSet;
+        }
+        Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
+        Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
+
+        currentInstructionSet = (String) currentGet.invoke(null);
+        Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
+        return currentInstructionSet;
     }
 }

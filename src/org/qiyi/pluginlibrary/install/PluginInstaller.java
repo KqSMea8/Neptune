@@ -15,6 +15,7 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
 
@@ -268,6 +269,8 @@ public class PluginInstaller {
 
         }
 
+
+
         if (dexPath.exists()) {
             boolean result = dexPath.delete();
             if(result){
@@ -275,7 +278,49 @@ public class PluginInstaller {
             }else{
                 PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage dex  %s fail!",packageName);
             }
+        }else{
+            try{
+                if(ContextUtils.isAndroidO()){
+                    File apkDir = apk.getParentFile();
+                    String currentInstructionSet = "";
+                    try {
+                        currentInstructionSet =  Util.getCurrentInstructionSet();
+                    } catch (Exception e) {
+                        currentInstructionSet = "arm";
+                        e.printStackTrace();
+                    }
+
+                    String pathPrefix = apk.getAbsolutePath() + "/oat/"
+                            + currentInstructionSet + "/" + packageName;
+
+                    String oPath = pathPrefix + ".odex";
+                    String vPath = pathPrefix + ".vdex";
+
+                    File oPathFile = new File(oPath);
+                    File vPathFile = new File(vPath);
+
+                    if(oPathFile.exists() && oPathFile.delete()){
+                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage odex  %s succcess!",packageName);
+                    }else{
+                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage odex  %s fail!",packageName);
+                    }
+
+                    if(vPathFile.exists() && vPathFile.delete()){
+                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage vdex  %s succcess!",packageName);
+                    }else{
+                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage vdex  %s fail!",packageName);
+                    }
+
+
+
+
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
         }
+
 
         File lib = new File(dataDir, "lib");
 
