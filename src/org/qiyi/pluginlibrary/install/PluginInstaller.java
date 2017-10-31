@@ -269,6 +269,16 @@ public class PluginInstaller {
 
         }
 
+        if(ContextUtils.isAndroidO()){
+            //删除prof文件
+            File mProf = new File(apk.getAbsolutePath()+".prof");
+            if(mProf.exists() && mProf.delete()){
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage prof  %s succcess!",packageName);
+            }else{
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage prof  %s fail!",packageName);
+            }
+        }
+
 
 
         if (dexPath.exists()) {
