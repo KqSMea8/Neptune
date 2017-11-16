@@ -13,6 +13,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
@@ -372,7 +373,7 @@ public class PluginInstallerService extends Service {
         // dexopt
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService begain install dex,pkgName:%s",packageName);
-        installDex(destFile.getAbsolutePath(), packageName, PluginInstaller.getPluginappRootPath(this).getAbsolutePath(), getClassLoader());
+        installDex(destFile, packageName, PluginInstaller.getPluginappRootPath(this).getAbsolutePath());
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService finish install dex,pkgName:%s",packageName);
         return packageName;
@@ -427,26 +428,56 @@ public class PluginInstallerService extends Service {
      * @param apkFile
      * @param packageName
      */
-    private static void installDex(String apkFile,
+    private static void installDex(final File apkFile,
                                    String packageName,
-                                   String pkgDirPath,
-                                   ClassLoader clsLoader) {
-        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO){
-            PluginDebugLog.installFormatLog(TAG,"installDex return direct!");
-            return;
-        }
-        File pkgDir = new File(pkgDirPath, packageName);
-        if (pkgDir.exists() && pkgDir.canRead() && pkgDir.canWrite()) {
-            // android 2.3以及以上会执行dexopt，2.2以及下不会执行。需要额外主动load一次类才可以
-            try {
-                // 构造函数会执行loaddex底层函数。
-                PluginDebugLog.installFormatLog(TAG,"installDex  load R file..");
-                ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null, clsLoader);
-                classloader.loadClass(packageName + ".R");
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                                   String pkgDirPath) {
+
+        final File pkgDir = new File(pkgDirPath, packageName);
+        DexOptimizer.optimize(apkFile, pkgDir, VersionUtils.hasNougat(), new DexOptimizer.ResultCallback() {
+            @Override
+            public void onStart(File dexFile, File optimizedDir) {
+                if(dexFile != null){
+                    PluginDebugLog.installFormatLog(TAG,"DexOptimizer onStart: dexFile:%s",dexFile.getAbsolutePath());
+                }
+
             }
-        }
+
+            @Override
+            public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                if(dexFile != null){
+                    PluginDebugLog.installFormatLog(TAG,"DexOptimizer onSuccess: dexFile:%s",dexFile.getAbsolutePath());
+                }
+
+            }
+
+            @Override
+            public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                try{
+                    new DexClassLoader(apkFile.getAbsolutePath(), pkgDir.getAbsolutePath(), null, getClass().getClassLoader());
+                    PluginDebugLog.installFormatLog(TAG,"DexOptimizer onFail:%s",thr.getMessage());
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
+//        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO){
+//            PluginDebugLog.installFormatLog(TAG,"installDex return direct!");
+//            return;
+//        }
+//        File pkgDir = new File(pkgDirPath, packageName);
+//        if (pkgDir.exists() && pkgDir.canRead() && pkgDir.canWrite()) {
+//            // android 2.3以及以上会执行dexopt，2.2以及下不会执行。需要额外主动load一次类才可以
+//            try {
+//                // 构造函数会执行loaddex底层函数。
+//                PluginDebugLog.installFormatLog(TAG,"installDex  load R file..");
+//                ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null, clsLoader);
+//                classloader.loadClass(packageName + ".R");
+//            } catch (ClassNotFoundException e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 
     @SuppressLint("NewApi")
