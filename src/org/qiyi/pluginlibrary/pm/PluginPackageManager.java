@@ -503,8 +503,6 @@ public class PluginPackageManager {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                onActionFinish(packageName, DELETE_SUCCEEDED);
             }
         }
     }
