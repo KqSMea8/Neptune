@@ -233,6 +233,7 @@ public class PluginInstallerService extends Service {
                         this, info.packageName, "download Apk file not exist!");
             }
             e.printStackTrace();
+            setInstallFail(apkFilePath, ErrorType.ERROR_CLIENT_FILE_NOTFOUND, info);
             return;
         }
         doInstall(is, apkFilePathWithScheme, info);
