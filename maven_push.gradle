@@ -11,7 +11,7 @@ if (isReleaseBuild()) {
     println 'SNAPSHOTS BUILD'
 
     mavenRepositoryUrl = hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
-            : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
+            : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android-snapshot/"
 }
 def getRepositoryUsername() {
     return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
