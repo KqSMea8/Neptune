@@ -132,7 +132,7 @@ public class DexOptimizer {
                 if (useInterpretMode) {
                     interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
                 } else {
-                    new DexClassLoader(dexFile.getAbsolutePath(),optimizedPath,null,this.getClass().getClassLoader());
+                    new DexClassLoader(dexFile.getAbsolutePath(),this.optimizedDir.getAbsolutePath(),null,this.getClass().getClassLoader());
                 }
                 if (callback != null) {
                     callback.onSuccess(dexFile, optimizedDir, new File(optimizedPath));
