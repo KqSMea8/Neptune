@@ -5,13 +5,11 @@ def mavenRepositoryUrl
 if (isReleaseBuild()) {
     println 'RELEASE BUILD'
 
-    mavenRepositoryUrl = hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL
-            : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
+    mavenRepositoryUrl = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
 } else {
     println 'SNAPSHOTS BUILD'
 
-    mavenRepositoryUrl = hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
-            : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android-snapshot/"
+    mavenRepositoryUrl = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android-snapshot/"
 }
 def getRepositoryUsername() {
     return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
