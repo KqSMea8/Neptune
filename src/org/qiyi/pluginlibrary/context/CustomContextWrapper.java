@@ -15,6 +15,7 @@ import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.os.Bundle;
+import android.os.FileUtils;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 
@@ -287,6 +288,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     }
 
+    private static void setFilePermissionsForDb(String dbPath) {
+        int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
+        FileUtils.setPermissions(dbPath, perms, -1, -1);
+    }
+
     @Override
     public File getDatabasePath(String name) {
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
@@ -305,6 +311,13 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             f = new File(getPluginPackageInfo().getDataDir() + "/databases/" + name);
             if (!f.exists()) {
                 f.mkdir();
+            }
+        }
+        if(f != null && f.exists()){
+            try{
+                setFilePermissionsForDb(f.getAbsolutePath());
+            }catch (Exception e){
+                e.printStackTrace();
             }
         }
 
