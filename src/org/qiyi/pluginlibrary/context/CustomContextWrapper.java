@@ -14,6 +14,7 @@ import android.content.res.Resources;
 import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.FileUtils;
 import android.text.TextUtils;
@@ -32,6 +33,7 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -315,7 +317,10 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
         if(f != null && f.exists()){
             try{
-                setFilePermissionsForDb(f.getAbsolutePath());
+                if(VersionUtils.hasOreo_MR1()){
+                    setFilePermissionsForDb(f.getAbsolutePath());
+                }
+
             }catch (Exception e){
                 e.printStackTrace();
             }

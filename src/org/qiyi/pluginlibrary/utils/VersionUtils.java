@@ -33,4 +33,12 @@ public class VersionUtils {
     public static boolean hasOreo(){
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
     }
+
+    /**
+     * 判断是否是8.1+
+     * @return
+     */
+    public static boolean hasOreo_MR1(){
+        return Build.VERSION.SDK_INT >= 27;
+    }
 }
