@@ -290,8 +290,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     }
 
-    private static void setFilePermissionsForDb(String dbPath) {
-        int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
+    private static void setFilePermissionsForDb(String dbPath,int perms) {
+        //int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
         FileUtils.setPermissions(dbPath, perms, -1, -1);
     }
 
@@ -310,23 +310,32 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             if (mLoadedApk == null) {
                 return super.getDatabasePath(name);
             }
-            f = new File(getPluginPackageInfo().getDataDir() + "/databases/" + name);
-            if (!f.exists()) {
-                f.mkdir();
+            File tmpDir = new File(getPluginPackageInfo().getDataDir()+ "/databases/");
+            if(!tmpDir.exists()){
+                tmpDir.mkdirs();
             }
-        }
-        if(f != null && f.exists()){
-            try{
-                if(VersionUtils.hasOreo_MR1()){
-                    setFilePermissionsForDb(f.getAbsolutePath());
+            if(tmpDir.exists() && VersionUtils.hasOreo_MR1()){
+                int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR |FileUtils.S_IXUSR
+                        | FileUtils.S_IRGRP | FileUtils.S_IWGRP| FileUtils.S_IXGRP
+                        |FileUtils.S_IXOTH;
+                setFilePermissionsForDb(tmpDir.getAbsolutePath(),perms);
+
+            }
+            f = new File(tmpDir, name);
+            if(VersionUtils.hasOreo_MR1()){
+                if(!f.exists()){
+                    try {
+                        f.createNewFile();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-
-            }catch (Exception e){
-                e.printStackTrace();
+                int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
+                setFilePermissionsForDb(f.getAbsolutePath(),perms);
             }
         }
 
-        return mLoadedApk.getPluginAssetManager() == null ? super.getDatabasePath(name) : f;
+        return f;
     }
 
     @Override
