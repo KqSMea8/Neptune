@@ -292,6 +292,7 @@ public class PluginPackageManagerNative {
             if (null != service) {
                 mService = IPluginPackageManager.Stub.asInterface(service);
             }
+            PluginDebugLog.runtimeLog(TAG, "PluginPackageManagerServiceConnection connected");
             if (mService != null) {
                 try {
                     mService.setActionFinishCallback(new ActionFinishCallback(mProcessName));
@@ -306,6 +307,7 @@ public class PluginPackageManagerNative {
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mService = null;
+            PluginDebugLog.runtimeLog(TAG, "PluginPackageManagerServiceConnection disconnected");
         }
     }
     private static IPluginPackageManager mService = null;
@@ -679,6 +681,7 @@ public class PluginPackageManagerNative {
                 e.printStackTrace();
             }
         }
+        PluginDebugLog.runtimeLog(TAG, "packageAction service is disconnected, need to rebind");
         ExecutionPackageAction action = new ExecutionPackageAction();
         action.type = ActionType.PACKAGE_ACTION;
         action.time = System.currentTimeMillis();
@@ -700,6 +703,7 @@ public class PluginPackageManagerNative {
             while (iterator.hasNext()) {
                 ExecutionPackageAction action = iterator.next();
                 if (currentTime - action.time >= 60 * 1000) {// 1分钟
+                    PluginDebugLog.runtimeLog(TAG, "packageAction is expired, remove it");
                     if (action != null && action.callBack != null) {
                         try {
                             action.callBack.onPackageInstallFail(action.packageInfo.packageName,

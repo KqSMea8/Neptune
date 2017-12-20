@@ -207,7 +207,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         LinkedBlockingQueue<Intent> cacheIntents = PActivityStackSupervisor.getCachedIntent(packageName);
         if (cacheIntents != null && cacheIntents.size() > 0) {
             cacheIntents.add(mIntent);
-            PluginDebugLog.runtimeLog(TAG, "LoadingMap is not empty, Cache current intent, intent: " + mIntent);
+            PluginDebugLog.runtimeLog(TAG, "LoadingMap is not empty, Cache current intent, intent: " + mIntent + ", packageName: " + packageName);
             return;
         }
 
@@ -218,9 +218,10 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 PActivityStackSupervisor.addCachedIntent(packageName, cacheIntents);
             }
             //cache intent ,and launch it when load and init!
+            PluginDebugLog.runtimeLog(TAG, "Environment is initializing and loading, cache current intent first, intent: " + mIntent);
             cacheIntents.add(mIntent);
-            PluginDebugLog.runtimeLog(TAG, "Environment is loading cache current intent, intent: " + mIntent);
         } else {
+            PluginDebugLog.runtimeLog(TAG, "Environment is already ready, launch current intent directly: " + mIntent);
             //launch it direct!
             readyToStartSpecifyPlugin(mHostContext, mServiceConnection, mIntent, true);
             return;
@@ -263,7 +264,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                         });
             }
         } else {
-            PluginDebugLog.runtimeLog(TAG, "start Check installation without dependences packageName: " + packageName);
+            PluginDebugLog.runtimeLog(TAG, "start Check installation without dependence packageName: " + packageName);
             checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent,mProcessName);
         }
     }
@@ -555,11 +556,15 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                     @Override
                     public void onPacakgeInstalled(PluginLiteInfo info) {
                         //install done ,load async
+                        PluginDebugLog.runtimeLog(TAG,
+                                "checkPkgInstallationAndLaunch installed packageName: " + info.packageName);
                         loadPluginAsync(mHostContext.getApplicationContext(), packageInfo.packageName,
                                 new IPluginLoadListener() {
                                     @Override
                                     public void onLoadFinished(String packageName) {
                                         try {
+                                            PluginDebugLog.runtimeLog(TAG,
+                                                    "checkPkgInstallationAndLaunch loadPluginAsync callback onLoadFinished pkgName: " + packageName);
                                             //load done,start plugin
                                             readyToStartSpecifyPlugin(mHostContext, mServiceConnection, mIntent, false);
                                             if (sPluginStatusListener != null) {
@@ -592,9 +597,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         try {
             mExecutor.execute(new LoadPluginTask(mContext, mPackageName, mListener,mProcessName));
         } catch (Exception e) {
+            e.printStackTrace();
             PActivityStackSupervisor.clearLoadingIntent(mPackageName);
             deliver(mContext, false, mPackageName, ErrorType.ERROR_CLIENT_LOAD_INIT_TARGET);
-            e.printStackTrace();
         }
     }
 
@@ -710,6 +715,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                     PluginDebugLog.runtimeLog("plugin", "packageInfo is null before initProxyEnvironment");
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 if (e instanceof PluginStartupException) {
                     PluginStartupException ex = (PluginStartupException) e;
                     deliver(mHostContext, false, mPackageName, ex.getCode());
@@ -752,13 +758,14 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                         try {
                             mLoadedApk = new PluginLoadedApk(context, apkFile, packageName,mProcessName);
                         } catch (Exception e) {
-                            PActivityStackSupervisor.clearLoadingIntent(packageName);
                             e.printStackTrace();
+                            PActivityStackSupervisor.clearLoadingIntent(packageName);
                             deliver(context, false, packageName,
                                     ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
                         }
                         if (mLoadedApk != null) {
                             addPluginLoadedApk(packageName, mLoadedApk);
+                            PluginDebugLog.runtimeLog(TAG, "plugin loaded success! packageName: " + packageName);
                         }
                     }
                 }
