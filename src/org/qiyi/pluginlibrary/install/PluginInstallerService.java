@@ -279,7 +279,13 @@ public class PluginInstallerService extends Service {
             return null;
         }
 
-        PackageInfo pkgInfo = pm.getPackageArchiveInfo(apkFilePath, PackageManager.GET_ACTIVITIES);
+        PackageInfo pkgInfo = null;
+        try{
+            pkgInfo = pm.getPackageArchiveInfo(apkFilePath, PackageManager.GET_ACTIVITIES);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
         if (pkgInfo == null) {
             setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PARSE_ERROR, info);
             return null;
