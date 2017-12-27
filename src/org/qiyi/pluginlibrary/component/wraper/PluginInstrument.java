@@ -39,16 +39,24 @@ public class PluginInstrument extends Instrumentation {
             int requestCode, Bundle options) {
 
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
-
+        try{
+            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /** @Override */
     public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
             int requestCode) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode).get();
-
+        try{
+            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode).get();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -57,8 +65,13 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
             int requestCode, Bundle options, int userId) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options, userId)
-                .get();
+        try{
+            return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options, userId)
+                    .get();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -67,8 +80,13 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
             int requestCode, Bundle options, boolean ignoreTargetSecurity, int userId) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options,
-                ignoreTargetSecurity, userId).get();
+        try{
+            return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options,
+                    ignoreTargetSecurity, userId).get();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return  null;
     }
 
     /** @Override */
@@ -77,7 +95,12 @@ public class PluginInstrument extends Instrumentation {
         for (Intent intent : intents) {
             ComponetFinder.switchToActivityProxy(mPkgName, intent, 0, who);
         }
-        mInstrumentRef.call("execStartActivitiesAsUser", sMethods, who, contextThread, token, target, intents, options, userId);
+        try{
+            mInstrumentRef.call("execStartActivitiesAsUser", sMethods, who, contextThread, token, target, intents, options, userId);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -86,7 +109,13 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Fragment target, Intent intent,
             int requestCode, Bundle options) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+        try{
+            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return  null;
+
     }
 
     /**
@@ -95,6 +124,12 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, String target, Intent intent,
             int requestCode, Bundle options) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+        try{
+            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+
     }
 }
