@@ -739,6 +739,11 @@ public class PluginPackageManager {
         if(!TextUtils.isEmpty(packageName) && sVerifyPluginInfo != null){
             mInfo = sVerifyPluginInfo.getPackageInfoDirectly(packageName);
         }
+
+        if (mInfo == null) {
+            PluginDebugLog.runtimeLog(TAG, "getPackageInfoDirectly mInfo is null, packageName: " + packageName);
+        }
+
         return mInfo;
     }
 }

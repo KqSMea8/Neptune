@@ -35,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * {@link PluginPackageManager}只能在主进程使用
  */
 public class PluginPackageManagerNative {
-    private static final String TAG = PluginInstaller.TAG+"_Native";
+    private static final String TAG = PluginInstaller.TAG + "_Native";
 
     private static final int STATUS_PACKAGE_INSTALLED = 0x00;
     private static final int STATUS_PACKAGE_INSTALLING = 0x01;
@@ -67,21 +67,21 @@ public class PluginPackageManagerNative {
 
         @Override
         public void onActionComplete(String packageName, int errorCode) throws RemoteException {
-            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s,errorCode:%d",packageName ,  errorCode);
+            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s,errorCode:%d", packageName, errorCode);
             if (mActionMap.containsKey(packageName)) {
                 CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
                 if (null == list) {
                     return;
                 }
                 synchronized (list) {
-                    PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!",packageName,list.size());
+                    PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!", packageName, list.size());
                     if (list.size() > 0) {
                         if (PluginDebugLog.isDebug()) {
                             for (int index = 0; index < list.size(); index++) {
                                 Action action = list.get(index);
                                 if (action != null) {
                                     PluginDebugLog.installFormatLog(TAG,
-                                            "index %d action :%s",index , action.toString());
+                                            "index %d action :%s", index, action.toString());
                                 }
                             }
                         }
@@ -89,35 +89,35 @@ public class PluginPackageManagerNative {
                         Action finishedAction = list.remove(0);
                         if (finishedAction != null) {
                             PluginDebugLog.installFormatLog(TAG,
-                                    "get and remove first action:%s ",finishedAction.toString());
+                                    "get and remove first action:%s ", finishedAction.toString());
                         }
 
                         if (finishedAction != null && finishedAction instanceof PluginUninstallAction) {
                             PluginDebugLog.installFormatLog(TAG,
-                                    "this is PluginUninstallAction  for :%s",packageName);
+                                    "this is PluginUninstallAction  for :%s", packageName);
                             PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
                             if (uninstallAction != null && uninstallAction.observer != null && uninstallAction.info != null
                                     && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
-                                PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s",packageName);
+                                PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", packageName);
                                 uninstallAction.observer.onPluginUnintall(uninstallAction.info.packageName, errorCode);
                             }
                         }
 
                         int index = 0;
-                        PluginDebugLog.installFormatLog(TAG,"start find can execute action ...");
+                        PluginDebugLog.installFormatLog(TAG, "start find can execute action ...");
                         while (index < list.size()) {
                             Action action = list.get(index);
                             if (action != null) {
                                 if (action.meetCondition()) {
                                     PluginDebugLog.installFormatLog(TAG,
-                                            "doAction for %s and action is %s" ,packageName,
+                                            "doAction for %s and action is %s", packageName,
                                             action.toString());
                                     action.doAction();
                                     break;
                                 } else {
                                     PluginDebugLog.installFormatLog(TAG,
                                             "remove deprecate action of %s,and action:%s "
-                                            ,packageName, action.toString());
+                                            , packageName, action.toString());
                                     list.remove(index);
                                 }
                             }
@@ -125,7 +125,7 @@ public class PluginPackageManagerNative {
 
                         if (list.size() == 0) {
                             PluginDebugLog.installFormatLog(TAG,
-                                    "remove empty action list of %s",packageName);
+                                    "remove empty action list of %s", packageName);
                             mActionMap.remove(packageName);
                         }
                     }
@@ -183,7 +183,7 @@ public class PluginPackageManagerNative {
             }
             if (info != null) {
                 PluginDebugLog.installFormatLog(TAG, "%s 's PluginInstallAction meetCondition:%s",
-                        info.packageName,String.valueOf(canMeetCondition));
+                        info.packageName, String.valueOf(canMeetCondition));
             }
             return canMeetCondition;
         }
@@ -260,7 +260,7 @@ public class PluginPackageManagerNative {
         }
 
         @Override
-        public void doAction(){
+        public void doAction() {
             if (callbackHost != null) {
                 callbackHost.uninstallInternal(info);
             }
@@ -273,10 +273,8 @@ public class PluginPackageManagerNative {
     }
 
 
-
     private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> mActionMap =
             new ConcurrentHashMap<String, CopyOnWriteArrayList<Action>>();
-
 
 
     private static class PluginPackageManagerServiceConnection implements ServiceConnection {
@@ -292,7 +290,7 @@ public class PluginPackageManagerNative {
             if (null != service) {
                 mService = IPluginPackageManager.Stub.asInterface(service);
             }
-            PluginDebugLog.runtimeLog(TAG, "PluginPackageManagerServiceConnection connected");
+            PluginDebugLog.runtimeLog(TAG, "onServiceConnected called");
             if (mService != null) {
                 try {
                     mService.setActionFinishCallback(new ActionFinishCallback(mProcessName));
@@ -301,15 +299,18 @@ public class PluginPackageManagerNative {
                 }
                 executePackageAction(mContext);
                 executePendingAction();
+            } else {
+                PluginDebugLog.runtimeLog(TAG, "onServiceConnected, mService is null");
             }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mService = null;
-            PluginDebugLog.runtimeLog(TAG, "PluginPackageManagerServiceConnection disconnected");
+            PluginDebugLog.runtimeLog(TAG, "onServiceDisconnected called");
         }
     }
+
     private static IPluginPackageManager mService = null;
     private static PluginPackageManagerNative sInstance = null;
     private Context mContext;
@@ -377,10 +378,11 @@ public class PluginPackageManagerNative {
     }
 
     private static void executePendingAction() {
+        PluginDebugLog.runtimeLog(TAG, "executePendingAction start....");
         for (Map.Entry<String, CopyOnWriteArrayList<Action>> entry : mActionMap.entrySet()) {
             if (entry != null) {
                 CopyOnWriteArrayList<Action> actions = entry.getValue();
-                PluginDebugLog.installFormatLog(TAG, "execute %d pending actions!",actions.size());
+                PluginDebugLog.installFormatLog(TAG, "execute %d pending actions!", actions.size());
                 if (actions != null) {
                     synchronized (actions) {
                         int index = 0;
@@ -388,11 +390,11 @@ public class PluginPackageManagerNative {
                             Action action = actions.get(index);
                             if (action != null) {
                                 if (action.meetCondition()) {
-                                    PluginDebugLog.installFormatLog(TAG, "start doAction for pending action %s" , action.toString());
+                                    PluginDebugLog.installFormatLog(TAG, "start doAction for pending action %s", action.toString());
                                     action.doAction();
                                     break;
                                 } else {
-                                    PluginDebugLog.installFormatLog(TAG, "remove deprecate pending action from action list for %s" , action.toString());
+                                    PluginDebugLog.installFormatLog(TAG, "remove deprecate pending action from action list for %s", action.toString());
                                     actions.remove(index);
                                 }
                             }
@@ -408,17 +410,19 @@ public class PluginPackageManagerNative {
      */
     private static void executePackageAction(Context context) {
         if (context != null) {
+            PluginDebugLog.runtimeLog(TAG, "executePackageAction start....");
             Iterator<ExecutionPackageAction> iterator = mPackageActions.iterator();
             while (iterator.hasNext()) {
                 ExecutionPackageAction action = iterator.next();
                 ActionType type = action.type;
+                PluginDebugLog.runtimeLog(TAG, "executePackageAction iterator, actionType: " + type);
                 switch (type) {
-                case PACKAGE_ACTION:
+                    case PACKAGE_ACTION:
                         PluginPackageManagerNative.getInstance(context).
                                 packageAction(action.packageInfo, action.callBack);
-                    break;
-                default:
-                    break;
+                        break;
+                    default:
+                        break;
                 }
                 iterator.remove();
             }
@@ -455,12 +459,14 @@ public class PluginPackageManagerNative {
     public PluginLiteInfo getPackageInfo(String pkg) {
         if (mService != null) {
             try {
+                PluginDebugLog.runtimeLog(TAG, "getPackageInfo service is connected and not null, call remote service");
                 return mService.getPackageInfo(pkg);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
 
+        PluginDebugLog.runtimeLog(TAG, "getPackageInfo, service is disconnected, need rebind");
         PluginLiteInfo info =
                 PluginPackageManager.getInstance(mContext).getPackageInfoDirectly(pkg);
         onBindService(mContext);
@@ -470,6 +476,7 @@ public class PluginPackageManagerNative {
 
     /**
      * 获取插件依赖关系
+     *
      * @param pkgName
      * @return
      */
@@ -484,8 +491,6 @@ public class PluginPackageManagerNative {
         onBindService(mContext);
         return PluginPackageManager.getInstance(mContext).getPluginRefsDirectly(pkgName);
     }
-
-
 
 
     /**
@@ -583,8 +588,8 @@ public class PluginPackageManagerNative {
      * @param info
      */
     public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener) {
-        if(info == null){
-            PluginDebugLog.installLog(TAG,"installBuildInApps but PluginLiteInfo is null!");
+        if (info == null) {
+            PluginDebugLog.installLog(TAG, "installBuildInApps but PluginLiteInfo is null!");
             return;
         }
         BuildinPluginInstallAction action = new BuildinPluginInstallAction();
@@ -596,7 +601,7 @@ public class PluginPackageManagerNative {
         }
     }
 
-    private void installBuildinAppsInternal(PluginLiteInfo info,IInstallCallBack listener) {
+    private void installBuildinAppsInternal(PluginLiteInfo info, IInstallCallBack listener) {
         if (mService != null) {
             try {
                 mService.deletePackage(getPackageInfo(info.packageName), null);
@@ -675,6 +680,7 @@ public class PluginPackageManagerNative {
     public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callBack) {
         if (mService != null) {
             try {
+                PluginDebugLog.runtimeLog(TAG, "packageAction service is connected and not null, call remote service");
                 mService.packageAction(packageInfo, callBack);
                 return;
             } catch (RemoteException e) {
@@ -819,9 +825,9 @@ public class PluginPackageManagerNative {
     }
 
 
-
     /**
      * 获取插件的{@link android.content.pm.PackageInfo}
+     *
      * @param context
      * @param mPackageInfo
      * @return
@@ -836,7 +842,7 @@ public class PluginPackageManagerNative {
                     e.printStackTrace();
                 }
             } else {
-                PluginPackageManager.updateSrcApkPath(context,mPackageInfo);
+                PluginPackageManager.updateSrcApkPath(context, mPackageInfo);
                 if (null != context && !TextUtils.isEmpty(mPackageInfo.srcApkPath)) {
                     File file = new File(mPackageInfo.srcApkPath);
                     if (file.exists()) {
@@ -851,22 +857,23 @@ public class PluginPackageManagerNative {
 
     /**
      * 用于安装一个没有后台配置的apk
+     *
      * @param mContext
      * @param mApkFile
      */
-    public void installStrangeApkFile(Context mContext,File mApkFile,IInstallCallBack mInstallCallback){
-        if(mContext == null || mApkFile == null){
-            PluginDebugLog.installLog(TAG,"installStrangeApkFile mContext == null or mApkFile ==null");
+    public void installStrangeApkFile(Context mContext, File mApkFile, IInstallCallBack mInstallCallback) {
+        if (mContext == null || mApkFile == null) {
+            PluginDebugLog.installLog(TAG, "installStrangeApkFile mContext == null or mApkFile ==null");
             return;
         }
 
         PluginLiteInfo mPluginLiteInfo = new PluginLiteInfo();
         PackageInfo mPackageInfo = mContext.getPackageManager()
-                .getPackageArchiveInfo(mApkFile.getAbsolutePath(),0);
-        if(mPackageInfo != null){
+                .getPackageArchiveInfo(mApkFile.getAbsolutePath(), 0);
+        if (mPackageInfo != null) {
             mPluginLiteInfo.packageName = mPackageInfo.packageName;
             mPluginLiteInfo.mPluginVersion = mPackageInfo.versionName;
-            installApkFile(mApkFile.getAbsolutePath(),mInstallCallback,mPluginLiteInfo);
+            installApkFile(mApkFile.getAbsolutePath(), mInstallCallback, mPluginLiteInfo);
         }
     }
 

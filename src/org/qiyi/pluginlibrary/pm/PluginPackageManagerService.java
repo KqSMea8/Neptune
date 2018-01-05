@@ -8,6 +8,7 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.util.List;
 
@@ -16,6 +17,7 @@ import java.util.List;
  * Created by xiepengchong on 15/10/29.
  */
 public class PluginPackageManagerService extends Service {
+    private static final String TAG = "PluginPackageManagerService";
 
     private static PluginPackageManager mManager;
 
@@ -106,6 +108,7 @@ public class PluginPackageManagerService extends Service {
                     PluginLiteInfo packageInfo, IInstallCallBack callBack) throws RemoteException {
                 if (mManager == null ||
                         packageInfo == null || TextUtils.isEmpty(packageInfo.packageName)) {
+                    PluginDebugLog.runtimeLog(TAG, "packageAction param error, packageInfo is null or packageName is empty");
                     return;
                 }
                 mManager.packageAction(packageInfo, callBack);

@@ -203,7 +203,7 @@ public class ContextUtils {
                     return getPluginPackageName(base);
                 }
             }
-            PluginDebugLog.log(TAG, getInvokeInfo() + "getPluginPackageName context dont't match!");
+            //PluginDebugLog.log(TAG, getInvokeInfo() + "getPluginPackageName context dont't match!");
             return context.getPackageName();
         }
     }
