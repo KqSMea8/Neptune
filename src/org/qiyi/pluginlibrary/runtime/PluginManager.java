@@ -152,20 +152,20 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     /**
      * 启动插件
+     *
      * @param mHostContext
-     * @param packageName
-     *      插件包名
+     * @param packageName  插件包名
      */
-    public static void launchPlugin(Context mHostContext,String packageName){
-        if(mHostContext == null && TextUtils.isEmpty(packageName)){
-            PluginDebugLog.runtimeLog(TAG,"launchPlugin mHostContext is null or packageName is null!");
+    public static void launchPlugin(Context mHostContext, String packageName) {
+        if (mHostContext == null && TextUtils.isEmpty(packageName)) {
+            PluginDebugLog.runtimeLog(TAG, "launchPlugin mHostContext is null or packageName is null!");
             return;
         }
 
-        ComponentName mComponetName = new ComponentName(packageName,"");
+        ComponentName mComponetName = new ComponentName(packageName, "");
         Intent mIntent = new Intent();
         mIntent.setComponent(mComponetName);
-        launchPlugin(mHostContext,mIntent,null);
+        launchPlugin(mHostContext, mIntent, null);
     }
 
     /**
@@ -179,7 +179,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
     public static void launchPlugin(final Context mHostContext,
                                     Intent mIntent,
                                     String mProcessName) {
-        launchPlugin(mHostContext, mIntent, null,mProcessName);
+        launchPlugin(mHostContext, mIntent, null, mProcessName);
     }
 
     /**
@@ -188,8 +188,8 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * @param mHostContext       主工程的上下文
      * @param mIntent            需要启动的组件的Intent
      * @param mServiceConnection bindService时需要的ServiceConnection,如果不是bindService的方式启动组件，传入Null
-     * @param mProcessName 需要启动的插件运行的进程名称,插件方可以在Application的android:process指定
-     *                     如果没有指定，则有插件中心分配
+     * @param mProcessName       需要启动的插件运行的进程名称,插件方可以在Application的android:process指定
+     *                           如果没有指定，则有插件中心分配
      */
     public static void launchPlugin(final Context mHostContext,
                                     final Intent mIntent,
@@ -232,7 +232,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 .getPackageInfo(packageName);
         final List<String> mPluginRefs = PluginPackageManagerNative.getInstance(mHostContext)
                 .getPluginRefs(packageName);
-        if (info != null && mPluginRefs!=null
+        if (info != null && mPluginRefs != null
                 && mPluginRefs.size() > 0) {
             PluginDebugLog.runtimeLog(TAG,
                     "start to check dependence installation size: " + mPluginRefs.size());
@@ -251,7 +251,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                                     PluginDebugLog.runtimeLog(TAG,
                                             "start Check installation after check dependence packageName: "
                                                     + packageName);
-                                    checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent,mProcessName);
+                                    checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent, mProcessName);
                                 }
                             }
 
@@ -263,26 +263,31 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                             }
                         });
             }
-        } else {
+        } else if (info != null) {
             PluginDebugLog.runtimeLog(TAG, "start Check installation without dependence packageName: " + packageName);
-            checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent,mProcessName);
+            checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent, mProcessName);
+        } else {
+            PluginDebugLog.runtimeLog(TAG, "pluginLiteInfo is null packageName: " + packageName);
+            PActivityStackSupervisor.clearLoadingIntent(packageName);
+            if (PluginDebugLog.isDebug()) {
+                throw new IllegalStateException("pluginLiteInfo is null when launchPlugin " + packageName);
+            }
         }
     }
 
 
     /**
-     * @deprecated
-     * 异步初始化插件（宿主静默加载插件,遗留逻辑，不建议使用）
      * @param mHostContext
      * @param packageName
      * @param processName
      * @param mListener
+     * @deprecated 异步初始化插件（宿主静默加载插件,遗留逻辑，不建议使用）
      */
     @Deprecated
     public static void initPluginAsync(final Context mHostContext,
-                                  final String packageName,
-                                  final String processName,
-                                  final IPluginInitListener mListener) {
+                                       final String packageName,
+                                       final String processName,
+                                       final IPluginInitListener mListener) {
 
         if (mListener == null) {
             return;
@@ -293,7 +298,6 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             mListener.onInitFinished(packageName);
             return;
         }
-
 
 
         BroadcastReceiver recv = new BroadcastReceiver() {
@@ -314,9 +318,8 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         Intent intent = new Intent();
         intent.setAction(IIntentConstant.ACTION_PLUGIN_INIT);
         intent.setComponent(new ComponentName(packageName, recv.getClass().getName()));
-        launchPlugin(mHostContext,intent, processName);
+        launchPlugin(mHostContext, intent, processName);
     }
-
 
 
     /**
@@ -329,9 +332,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      *                     false:如果插件没初始化，则直接抛弃此Intent
      */
     public static boolean readyToStartSpecifyPlugin(Context mContet,
-                                                     ServiceConnection mConnection,
-                                                     Intent mIntent,
-                                                     boolean needAddCache) {
+                                                    ServiceConnection mConnection,
+                                                    Intent mIntent,
+                                                    boolean needAddCache) {
         PluginDebugLog.runtimeLog(TAG, "launchIntent: " + mIntent);
         String packageName = tryParsePkgName(mContet, mIntent);
         PluginLoadedApk mLoadedApk = getPluginLoadedApkByPkgName(packageName);
@@ -374,6 +377,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     /**
      * 跟新所有插件的资源配置
+     *
      * @param config
      */
     public static void updateConfiguration(Configuration config) {
@@ -504,7 +508,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 PluginDebugLog.runtimeLog(TAG, "executeNext cacheIntents: " + cacheIntents);
                 if (null != cacheIntents) {
                     Intent toBeStart = cacheIntents.poll();
-                    if(toBeStart != null){
+                    if (toBeStart != null) {
                         doRealLaunch(mContext, mLoadedApk, toBeStart, mConnection);
                         return;
                     }
@@ -579,7 +583,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                                             e.printStackTrace();
                                         }
                                     }
-                                },mProcessName);
+                                }, mProcessName);
                     }
                 });
     }
@@ -593,9 +597,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * @param mListener    加载结果回调
      */
     private static void loadPluginAsync(final Context mContext, String mPackageName,
-                                       final IPluginLoadListener mListener,String mProcessName) {
+                                        final IPluginLoadListener mListener, String mProcessName) {
         try {
-            mExecutor.execute(new LoadPluginTask(mContext, mPackageName, mListener,mProcessName));
+            mExecutor.execute(new LoadPluginTask(mContext, mPackageName, mListener, mProcessName));
         } catch (Exception e) {
             e.printStackTrace();
             PActivityStackSupervisor.clearLoadingIntent(mPackageName);
@@ -623,7 +627,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 for (PluginLiteInfo info : packageList) {
                     if (info != null) {
                         PluginPackageInfo target = PluginPackageManagerNative.getInstance(mHostContext)
-                        .getPluginPackageInfo(mHostContext,info);
+                                .getPluginPackageInfo(mHostContext, info);
                         if (null != target) {
                             if (target.resolveActivity(mIntent) != null) {
                                 return info.packageName;
@@ -674,7 +678,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         if (null != mContext && mDeliver != null && !TextUtils.isEmpty(pakName)) {
             PluginLiteInfo info = PluginPackageManagerNative.getInstance(ContextUtils.getOriginalContext(mContext))
                     .getPackageInfo(pakName);
-            if (info != null ) {
+            if (info != null) {
                 mDeliver.deliver(success, info, errorCode);
             }
         }
@@ -708,7 +712,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 if (packageInfo != null) {
                     PluginDebugLog.runtimeLog("plugin",
                             "doInBackground:" + mPackageName);
-                    createPluginLoadedApkInstance(mHostContext, packageInfo,mProcessName);
+                    createPluginLoadedApkInstance(mHostContext, packageInfo, mProcessName);
 
                     new PluginLoadedApkHandler(mListener, mPackageName, Looper.getMainLooper()).sendEmptyMessage(PLUGIN_LOADED_APK_CREATE_FINISH);
                 } else {
@@ -756,7 +760,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                             return;
                         }
                         try {
-                            mLoadedApk = new PluginLoadedApk(context, apkFile, packageName,mProcessName);
+                            mLoadedApk = new PluginLoadedApk(context, apkFile, packageName, mProcessName);
                         } catch (Exception e) {
                             e.printStackTrace();
                             PActivityStackSupervisor.clearLoadingIntent(packageName);
@@ -827,6 +831,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     /**
      * 通知插件加载完毕（解决快捷方式添加闪屏时，插件还没启动，闪屏就关闭了）
+     *
      * @param context
      */
     public static void sendPluginLoadedBroadcast(Context context) {
@@ -869,6 +874,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
     public interface IPluginStatusListener {
         /**
          * 插件初始化完毕
+         *
          * @param packageName 初始化完毕的插件包名
          */
         void onPluginReady(String packageName);
@@ -895,17 +901,19 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     /**
      * 设置插件退出监听回调(宿主工程调用)
+     *
      * @param mExitStuff
      */
-    public static void setExitStuff(IAppExitStuff mExitStuff){
+    public static void setExitStuff(IAppExitStuff mExitStuff) {
         sExitStuff = mExitStuff;
     }
 
     /**
      * 设置Activity生命周期回调(宿主工程调用)
+     *
      * @param mCallbacks
      */
-    public static void setPluginLifeCallBack(Application.ActivityLifecycleCallbacks mCallbacks){
+    public static void setPluginLifeCallBack(Application.ActivityLifecycleCallbacks mCallbacks) {
         sActivityLifecycleCallback = mCallbacks;
     }
 
@@ -922,6 +930,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     /**
      * 停止指定的Service
+     *
      * @param intent
      */
     public static void stopService(Intent intent) {
@@ -943,10 +952,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     /**
      * 退出插件
-     * @param mContext
-     *      主进程Context
-     * @param mProcessName
-     *      要退出进程
+     *
+     * @param mContext     主进程Context
+     * @param mProcessName 要退出进程
      */
     public static void quit(Context mContext, String mProcessName) {
 
@@ -981,23 +989,23 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         }
     }
 
-    public static void dump(PrintWriter printWriter){
-        try{
+    public static void dump(PrintWriter printWriter) {
+        try {
             printWriter.print("================start dump plugin activity stack====================");
             Iterator<Map.Entry<String, PluginLoadedApk>> mIterator = sPluginsMap.entrySet().iterator();
-            while (mIterator.hasNext()){
-                Map.Entry<String,PluginLoadedApk> tmp = mIterator.next();
-                printWriter.print("packageName:"+tmp.getKey());
+            while (mIterator.hasNext()) {
+                Map.Entry<String, PluginLoadedApk> tmp = mIterator.next();
+                printWriter.print("packageName:" + tmp.getKey());
                 printWriter.print("\n");
                 List<Activity> activities = tmp.getValue().getActivityStackSupervisor().getActivityStack();
-                for(Activity mActivity : activities){
-                    ((InstrActivityProxy1)mActivity).dump(printWriter);
+                for (Activity mActivity : activities) {
+                    ((InstrActivityProxy1) mActivity).dump(printWriter);
                 }
             }
             printWriter.print("================end dump plugin activity stack====================");
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            printWriter.print("error:"+e.getMessage());
+            printWriter.print("error:" + e.getMessage());
         }
 
     }
@@ -1042,7 +1050,6 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             PluginDebugLog.runtimeLog(TAG, "onActivityDestroyed: " + activity);
         }
     };
-
 
 
 }
