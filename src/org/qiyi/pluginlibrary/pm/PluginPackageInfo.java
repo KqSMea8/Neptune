@@ -196,7 +196,6 @@ public class PluginPackageInfo implements Parcelable {
     }
 
 
-
     public ActivityInfo findActivityByClassName(String activityClsName) {
         if (packageInfo == null || packageInfo.activities == null) {
             return null;
@@ -212,18 +211,16 @@ public class PluginPackageInfo implements Parcelable {
     /**
      * Resolve activity by intent
      *
-     * @param intent
-     * @return
      */
     public ActivityInfo resolveActivity(Intent intent) {
         if (intent == null) {
             return null;
         }
         if (mActivitiyIntentInfos != null) {
-            ComponentName compname = intent.getComponent();
+            ComponentName compName = intent.getComponent();
             String className = null;
-            if (compname != null) {
-                className = compname.getClassName();
+            if (compName != null) {
+                className = compName.getClassName();
             }
             if (!TextUtils.isEmpty(className)) {
                 ActivityIntentInfo act = mActivitiyIntentInfos.get(className);
@@ -271,25 +268,27 @@ public class PluginPackageInfo implements Parcelable {
 
     }
 
-    public ActivityInfo resolveReceiver(Intent mIntent){
+
+    public ActivityInfo resolveReceiver(Intent mIntent) {
         if (mIntent == null) {
             return null;
         }
-        if(mReceiverIntentInfos != null){
-            ComponentName compname = mIntent.getComponent();
-            if (compname != null) {
-                String className = compname.getClassName();
-                if (!TextUtils.isEmpty(className)) {
-                    ReceiverIntentInfo mReceiverInfo = mReceiverIntentInfos.get(className);
-                    if (mReceiverInfo != null) {
-                        return mReceiverInfo.mInfo;
-                    }
+        if (mReceiverIntentInfos != null) {
+            ComponentName compName = mIntent.getComponent();
+            String className = null;
+            if (compName != null) {
+                className = compName.getClassName();
+            }
+            if (!TextUtils.isEmpty(className)) {
+                ReceiverIntentInfo mReceiverInfo = mReceiverIntentInfos.get(className);
+                if (mReceiverInfo != null) {
+                    return mReceiverInfo.mInfo;
                 }
-            }else {
+            } else {
                 for (ReceiverIntentInfo info : mReceiverIntentInfos.values()) {
                     if (info != null && info.mFilter != null) {
                         for (IntentFilter filter : info.mFilter) {
-                            if (filter.match(mIntent.getAction(), null, null,null,
+                            if (filter.match(mIntent.getAction(), null, null, null,
                                     null, "TAG") > 0) {
                                 return info.mInfo;
                             }
@@ -298,7 +297,6 @@ public class PluginPackageInfo implements Parcelable {
                 }
             }
         }
-
         return null;
     }
 
@@ -306,9 +304,13 @@ public class PluginPackageInfo implements Parcelable {
         if (intent == null) {
             return null;
         }
-        ComponentName compname = intent.getComponent();
-        if (compname != null && mServiceIntentInfos != null) {
-            String className = compname.getClassName();
+
+        if (mServiceIntentInfos != null) {
+            ComponentName compName = intent.getComponent();
+            String className = null;
+            if (compName != null) {
+                className = compName.getClassName();
+            }
             if (!TextUtils.isEmpty(className)) {
                 ServiceIntentInfo service = mServiceIntentInfos.get(className);
                 if (service != null) {
