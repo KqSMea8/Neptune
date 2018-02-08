@@ -65,7 +65,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     private PluginActivityControl mPluginContrl;
     private PluginContextWrapper mPluginContextWrapper;
     private String mPluginPackage = "";
-
+    private volatile boolean mRestartCalled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,7 +141,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                     return;
                 }
             }
-
+            mRestartCalled = false;  // onCreate()-->onStart()
         }
     }
 
@@ -418,7 +418,13 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     @Override
     protected void onStart() {
         super.onStart();
-        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 onStart....");
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 onStart...., mRestartCalled: " + mRestartCalled);
+        if (mRestartCalled) {
+            // onStop()-->onRestart()-->onStart()，避免回调插件Activity#onStart方法两次
+            mRestartCalled = false;
+            return;
+        }
+
         if (getController() != null) {
             try {
                 getController().callOnStart();
@@ -431,6 +437,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+        PluginDebugLog.runtimeLog(TAG,"InstrActivityProxy1 onPostCreate....");
         if (getController() != null) {
             try {
                 getController().callOnPostCreate(savedInstanceState);
@@ -450,7 +457,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
             try {
                 getController().callOnDestroy();
-                // LCallbackManager.callAllOnDestroy();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -480,11 +486,9 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (getController() != null) {
             try {
                 getController().callOnBackPressed();
-                // LCallbackManager.callAllOnBackPressed();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
     }
 
@@ -495,7 +499,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (getController() != null) {
             try {
                 getController().callOnStop();
-                // LCallbackManager.callAllOnStop();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -509,19 +512,17 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (getController() != null) {
             try {
                 getController().callOnRestart();
-                // LCallbackManager.callAllOnRestart();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        mRestartCalled = true;  //标记onRestart()被回调
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (getController() != null) {
-            // LCallbackManager.callAllOnKeyDown(keyCode, event);
             return getController().callOnKeyDown(keyCode, event);
-
         }
 
         return super.onKeyDown(keyCode, event);

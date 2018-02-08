@@ -1,16 +1,16 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-def mavenRepositoryUrl
-if (isReleaseBuild()) {
-    println 'RELEASE BUILD'
-
-    mavenRepositoryUrl = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
-} else {
-    println 'SNAPSHOTS BUILD'
-
-    mavenRepositoryUrl = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android-snapshot/"
+def getRepositoryUrl() {
+    if (isReleaseBuild()) {
+        println 'RELEASE BUILD'
+        return hasProperty('NEXUS_REPO') ? NEXUS_REPO : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
+    } else {
+        println 'SNAPSHOTS BUILD'
+        return "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android-snapshot/"
+    }
 }
+
 def getRepositoryUsername() {
     return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
 }
@@ -20,10 +20,10 @@ def getRepositoryPassword() {
 }
 
 def isReleaseBuild() {
-    return !(VERSION_NAME.contains('SNAPSHOT'));
+    return !(VERSION_NAME.contains('SNAPSHOT'))
 }
 
-task pullLatestCode() {
+task pullLatestCode() << {
     if(isReleaseBuild()){
         exec{
             executable ='git'
@@ -43,7 +43,7 @@ afterEvaluate { project ->
                 pom.groupId = POM_GROUP_ID
                 pom.version = VERSION_NAME
 
-                repository(url: mavenRepositoryUrl) {
+                repository(url: uri(getRepositoryUrl())) {
                     authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
                 }
 
