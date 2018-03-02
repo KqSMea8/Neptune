@@ -9,6 +9,8 @@ import android.os.Parcelable;
  *  版本号(可以为空)
  *  灰度版本号(可以为空)
  *  安装位置(安装完成后，将安装路径放在此字段返回给调用者)
+ *  apk包AndroidManifest配置的包名
+ *  apk包AndroidManifest配置的版本号
  */
 public class PluginLiteInfo implements Parcelable {
     private static final String TAG = "PluginLiteInfo";
@@ -20,7 +22,7 @@ public class PluginLiteInfo implements Parcelable {
     public static final String PLUGIN_UNINSTALLED = "uninstall";
     public static final String PLUGIN_UPGRADING = "upgrading";
 
-    /**插件包名*/
+    /**插件包名(后端吐的)*/
     public String packageName;
     /**插件的安装路径*/
     public String srcApkPath;
@@ -34,7 +36,10 @@ public class PluginLiteInfo implements Parcelable {
     public String id = "";
     /**控制插件启动是否投递*/
     public int mDeliverStartUp;
-
+    /**插件安装apk里的包名*/
+    public String srcApkPkgName;
+    /**插件安装apk里的版本号*/
+    public String srcApkVersion="";
 
 
     public PluginLiteInfo() {
@@ -49,6 +54,8 @@ public class PluginLiteInfo implements Parcelable {
         mPluginGrayVersion = in.readString();
         id = in.readString();
         mDeliverStartUp = in.readInt();
+        srcApkPkgName = in.readString();
+        srcApkVersion = in.readString();
     }
 
     public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
@@ -77,6 +84,8 @@ public class PluginLiteInfo implements Parcelable {
         parcel.writeString(mPluginGrayVersion);
         parcel.writeString(id);
         parcel.writeInt(mDeliverStartUp);
+        parcel.writeString(srcApkPkgName);
+        parcel.writeString(srcApkVersion);
     }
 
 

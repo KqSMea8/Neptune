@@ -291,18 +291,34 @@ public class PluginInstallerService extends Service {
             return null;
         }
 
-        String packageName = pkgInfo.packageName;
+        info.srcApkPkgName = pkgInfo.packageName;
+        info.srcApkVersion = pkgInfo.versionName;
+
+        String packageName = !TextUtils.isEmpty(info.packageName) ?
+                info.packageName : pkgInfo.packageName;
 
         if (PluginDebugLog.isDebug()) {
             int nameStart = srcPathWithScheme.lastIndexOf("/");
             int nameEnd = srcPathWithScheme.lastIndexOf(PluginInstaller.APK_SUFFIX);
             String fileName = srcPathWithScheme.substring(nameStart + 1, nameEnd);
             PluginDebugLog.installLog(TAG, "doInstall with: " + packageName + " and file: " + fileName);
-            if (!fileName.equals(packageName)) {
-                PluginDebugLog.installLog(TAG, "doInstall with wrong apk file as the packagme is not same");
+            // 待安装的插件和apk里的包名是否一致
+            if (!fileName.equals(packageName) || !TextUtils.equals(info.packageName, pkgInfo.packageName)) {
+                PluginDebugLog.installFormatLog(TAG, "doInstall with wrong apk, packageName not match, toInstall packageName=%s, "
+                    + "toInstall apk fileName=%s, packageName in apk=%s", info.packageName, fileName, pkgInfo.packageName);
+            }
+            // 待安装的插件和apk里的版本号是否一致
+            if (!TextUtils.equals(info.mPluginVersion, pkgInfo.versionName)) {
+                PluginDebugLog.installFormatLog(TAG, "doInstall with wrong apk, versionName not match, packageName=%s, "
+                    + "toInstall version=%s, versionName in apk=%s", packageName, info.mPluginVersion, pkgInfo.versionName);
             }
         }
 
+        if (!TextUtils.isEmpty(info.packageName) && !TextUtils.equals(info.packageName, pkgInfo.packageName)) {
+            PluginDebugLog.installLog(TAG, "doInstall with apk packageName not match with plugin name, " + packageName);
+            setInstallFail(srcPathWithScheme, ErrorType.ERROR_CLIENT_PACKAGE_NAME_NOT_MATCH, info);
+            return null;
+        }
 
         // 如果是内置app，检查文件名是否以包名命名，处于效率原因，要求内置app必须以包名命名.
         if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_ASSETS)) {
@@ -310,7 +326,7 @@ public class PluginInstallerService extends Service {
             int end = srcPathWithScheme.lastIndexOf(PluginInstaller.APK_SUFFIX);
             String fileName = srcPathWithScheme.substring(start + 1, end);
             //info.pluginTotalSize = tempFile.length(); // 如果是内置的apk，需要自己获取大小，并存储，
-            if (!packageName.equals(fileName)) {
+            if (!packageName.equals(fileName) || !TextUtils.equals(fileName, pkgInfo.packageName)) {
                 // throw new RuntimeException(srcPathWithScheme + " must be
                 // named with it's package name : "
                 // + packageName + PluginInstaller.APK_SUFFIX);

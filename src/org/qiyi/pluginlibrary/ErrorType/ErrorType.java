@@ -69,6 +69,8 @@ public class ErrorType {
     public static final int ERROR_CLIENT_COPY_ERROR = 0x1005;
     /** 安装超时 */
     public static final int ERROR_CLIENT_TIME_OUT = 0x1006;
+    /** 插件包名和配置的包名不匹配 */
+    public static final int ERROR_CLIENT_PACKAGE_NAME_NOT_MATCH = 0x1100;
 
     /** 插件apk文件未找到 */
     public static final int ERROR_CLIENT_FILE_NOTFOUND = 0x1007;

@@ -266,7 +266,9 @@ public class ComponetFinder implements IIntentConstant {
         }
         ComponentName compname = new ComponentName(mLoadedApk.getHostPackageName(),
                 findActivityProxy(mLoadedApk,info));
-        mIntent.setComponent(compname).putExtra(EXTRA_TARGET_PACKAGNAME_KEY, mPackageName)
+        mIntent.setComponent(compname)
+                .addCategory(activityName)
+                .putExtra(EXTRA_TARGET_PACKAGNAME_KEY, mPackageName)
                 .putExtra(EXTRA_TARGET_CLASS_KEY, activityName);
         IntentUtils.setProxyInfo(mIntent, mPackageName);
 
