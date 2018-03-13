@@ -61,12 +61,11 @@ public class DexOptimizer {
     }
 
     private static class OptimizeWorker {
-        private static String targetISA = null;
-
         private final File           dexFile;
         private final File           optimizedDir;
         private final boolean        useInterpretMode;
         private final ResultCallback callback;
+        private final String targetISA;
 
         OptimizeWorker(File dexFile, File optimizedDir, boolean useInterpretMode, String targetISA, ResultCallback cb) {
             this.dexFile = dexFile;

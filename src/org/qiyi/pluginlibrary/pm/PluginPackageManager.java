@@ -7,7 +7,7 @@ import android.content.IntentFilter;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
@@ -176,7 +176,7 @@ public class PluginPackageManager {
                     IInstallCallBack callback = listenerMap.get(pkgInfo.packageName);
                     if (callback != null) {
                         try {
-                            callback.onPacakgeInstalled(pkgInfo);
+                            callback.onPackageInstalled(pkgInfo);
                         } catch (RemoteException e) {
                             e.printStackTrace();
                         } finally {
@@ -190,30 +190,23 @@ public class PluginPackageManager {
                     PluginLiteInfo pkgInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
                     if (pkgInfo == null) {
                         pkgInfo = new PluginLiteInfo();
-                        String assetsPath = intent.getStringExtra(IIntentConstant.EXTRA_SRC_FILE);
-                        if (!TextUtils.isEmpty(assetsPath)) {
-                            int start = assetsPath.lastIndexOf("/");
-                            int end = start + 1;
-                            if (assetsPath.endsWith(PluginInstaller.APK_SUFFIX)) {
-                                end = assetsPath.lastIndexOf(PluginInstaller.APK_SUFFIX);
-                            } else if (assetsPath.endsWith(PluginInstaller.SO_SUFFIX)) {
-                                end = assetsPath.lastIndexOf(PluginInstaller.SO_SUFFIX);
-                            }
-                            String mapPackagename = assetsPath.substring(start + 1, end);
-                            pkgInfo.packageName = mapPackagename;
+                        String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
+                        String filePath = intent.getStringExtra(IIntentConstant.EXTRA_SRC_FILE);
+                        if (!TextUtils.isEmpty(pkgName)) {
+                            pkgInfo.packageName = pkgName;
+                        } else if (!TextUtils.isEmpty(filePath)) {
+                            pkgInfo.packageName = PluginInstaller.extractPkgNameFromPath(filePath);
                         }
+                        pkgInfo.installStatus = PluginLiteInfo.PLUGIN_UNINSTALLED;
                     }
-
                     // 失败原因
-                    int failReason = intent.getIntExtra(ErrorType.ERROR_RESON,
-                            ErrorType.SUCCESS);
+                    int failReason = intent.getIntExtra(ErrorType.ERROR_REASON, ErrorType.SUCCESS);
                     PluginDebugLog.installFormatLog(TAG,
-                            "plugin install fail:%s,reason:%d ", pkgInfo.packageName
-                            , failReason);
-                    if (listenerMap.get(pkgInfo.packageName) != null) {
+                            "plugin install fail:%s,reason:%d ", pkgInfo.packageName, failReason);
+                    IInstallCallBack callBack = listenerMap.get(pkgInfo.packageName);
+                    if (callBack != null) {
                         try {
-                            listenerMap.get(pkgInfo.packageName).onPackageInstallFail(pkgInfo.packageName,
-                                    failReason);
+                            callBack.onPackageInstallFail(pkgInfo, failReason);
                         } catch (RemoteException e) {
                             e.printStackTrace();
                         } finally {
@@ -224,7 +217,7 @@ public class PluginPackageManager {
                     onActionFinish(pkgInfo.packageName, INSTALL_FAILED);
                 } else if (TextUtils.equals(ACTION_HANDLE_PLUGIN_EXCEPTION, action)) {
                     String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
-                    String exception = intent.getStringExtra(ErrorType.ERROR_RESON);
+                    String exception = intent.getStringExtra(ErrorType.ERROR_REASON);
                     PluginDebugLog.installFormatLog(TAG,
                             "plugin install exception:%s,exception:%s", pkgName
                             , exception);
@@ -265,6 +258,7 @@ public class PluginPackageManager {
     private class PackageAction {
         long timestamp;// 时间
         IInstallCallBack callBack;// 安装回调
+        PluginLiteInfo pkgInfo;   // 插件基础信息
         String packageName;// 包名
     }
 
@@ -284,13 +278,14 @@ public class PluginPackageManager {
         if (packageInstalled && (!installing)) { // 安装了，并且没有更新操作
             try {
                 if (callBack != null) {
-                    callBack.onPacakgeInstalled(packageInfo);
+                    callBack.onPackageInstalled(packageInfo);
                 }
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         } else {
             PackageAction action = new PackageAction();
+            action.pkgInfo = packageInfo;
             action.packageName = packageInfo.packageName;
             action.timestamp = System.currentTimeMillis();
             action.callBack = callBack;
@@ -338,9 +333,9 @@ public class PluginPackageManager {
             if (action.callBack != null) {
                 try {
                     if (isSuccess) {
-                        action.callBack.onPacakgeInstalled(packageInfo);
+                        action.callBack.onPackageInstalled(packageInfo);
                     } else {
-                        action.callBack.onPackageInstallFail(action.packageName, failReason);
+                        action.callBack.onPackageInstallFail(packageInfo, failReason);
                     }
                 } catch (RemoteException e) {
                     e.printStackTrace();
@@ -369,7 +364,7 @@ public class PluginPackageManager {
                 mPackageActions.remove(action);
                 try {
                     if (action != null && action.callBack != null) {
-                        action.callBack.onPackageInstallFail(action.packageName, ErrorType.ERROR_CLIENT_TIME_OUT);
+                        action.callBack.onPackageInstallFail(action.pkgInfo, ErrorType.INSTALL_ERROR_CLIENT_TIME_OUT);
                     }
 
                 } catch (RemoteException e) {
@@ -424,24 +419,14 @@ public class PluginPackageManager {
 
     /**
      * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
-     * 启动service进行安装操作。 安装完会有 {@link #ACTION_PACKAGE_INSTALLED} broadcast。
+     * 启动service进行安装操作。 安装完会有 {@link #ACTION_PACKAGE_INSTALLED} 广播。
      *
      * @param filePath   apk 文件目录 比如 /sdcard/xxxx.apk
      * @param pluginInfo 插件信息
      */
     public void installApkFile(final String filePath, IInstallCallBack listener, PluginLiteInfo pluginInfo) {
         if (TextUtils.isEmpty(pluginInfo.packageName)) {
-            int start = filePath.lastIndexOf("/");
-            int end = start + 1;
-            if (filePath.endsWith(PluginInstaller.SO_SUFFIX)) {
-                end = filePath.lastIndexOf(PluginInstaller.SO_SUFFIX);
-            } else if (filePath.endsWith(PluginInstaller.DEX_SUFFIX)) {
-                end = filePath.lastIndexOf(PluginInstaller.DEX_SUFFIX);
-            } else {
-                end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
-            }
-            String mapPackagename = filePath.substring(start + 1, end);
-            pluginInfo.packageName = mapPackagename;
+            pluginInfo.packageName = PluginInstaller.extractPkgNameFromPath(filePath);
         }
         listenerMap.put(pluginInfo.packageName, listener);
         PluginDebugLog.installFormatLog(TAG, "installApkFile:%s", pluginInfo.packageName);
@@ -566,19 +551,6 @@ public class PluginPackageManager {
         return uninstallFlag;
     }
 
-//    public static SharedPreferences getPreferences(Context context, String shareName) {
-//        SharedPreferences spf = null;
-//        if (hasHoneycomb()) {
-//            spf = context.getSharedPreferences(shareName, Context.MODE_MULTI_PROCESS);
-//        } else {
-//            spf = context.getSharedPreferences(shareName, Context.MODE_PRIVATE);
-//        }
-//        return spf;
-//    }
-
-//    private static boolean hasHoneycomb() {
-//        return Build.VERSION.SDK_INT >= 11;
-//    }
 
     public void setActionFinishCallback(IActionFinishCallback callback) {
         if (callback != null) {
@@ -671,7 +643,7 @@ public class PluginPackageManager {
             Intent intent = new Intent(ACTION_HANDLE_PLUGIN_EXCEPTION);
             intent.setPackage(context.getPackageName());
             intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, pkgName);
-            intent.putExtra(ErrorType.ERROR_RESON, exceptionMsg);
+            intent.putExtra(ErrorType.ERROR_REASON, exceptionMsg);
             context.sendBroadcast(intent);
         } catch (Exception e) {
             e.printStackTrace();

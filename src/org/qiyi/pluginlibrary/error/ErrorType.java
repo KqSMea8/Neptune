@@ -1,19 +1,58 @@
-package org.qiyi.pluginlibrary.ErrorType;
+package org.qiyi.pluginlibrary.error;
 
 /**
- * @author zhuchengjin 一些异常情况
+ * @author zhuchengjin
+ * 一些异常情况, 错误码定义
  */
 public class ErrorType {
 
-    /**
-     * 错误的原因
-     */
-    public static final String ERROR_RESON = "eror_reson";
+    /** 错误的原因 */
+    public static final String ERROR_REASON = "error_reason";
+    /** 成功 */
+    public static final int SUCCESS = 0;
+    public static final int SUCCESS_DOWNLOADED = 1;  //下载成功
+    public static final int SUCCESS_INSTALLED = 2;   //安装成功
+    public static final int SUCCESS_LOADED = 3;      //插件加载成功
+    /* 插件下载，校验等错误，应用层定义，区间字段：0~3000 */
 
-    /***
-     * 成功
-     */
-    public static final int SUCCESS = 0x0000;
+    /** 安装错误，asset下文件不存在 */
+    public static final int INSTALL_ERROR_ASSET_APK_NOT_FOUND = 4000;
+    /** 安装错误，插件apk不存在 */
+    public static final int INSTALL_ERROR_APK_NOT_EXIST = 4001;
+    /** 安装错误，插件apk读取IOException */
+    public static final int INSTALL_ERROR_FILE_IOEXCEPTION = 4002;
+    /** 安装错误，插件apk从Asset目录拷贝到内置存储区失败 */
+    public static final int INSTALL_ERROR_ASSET_APK_COPY_FAILED = 4003;
+    /** 安装错误，插件apk拷贝操作失败，比如安装到sdcard */
+    public static final int INSTALL_ERROR_APK_COPY_FAILED = 4004;
+    /** 安装错误，插件apk的路径无效 */
+    public static final int INSTALL_ERROR_FILE_PATH_ILLEGAL = 4005;
+    /** 安装错误，插件apk解析失败 */
+    public static final int INSTALL_ERROR_APK_PARSE_FAILED = 4006;
+    /** 安装错误，插件包名与apk里包名不一致 */
+    public static final int INSTALL_ERROR_PKG_NAME_NOT_MATCH = 4007;
+    /** 安装错误，插件重命名失败 */
+    public static final int INSTALL_ERROR_RENAME_FAILED = 4008;
+    /** 安装错误，插件安装目录创建失败 */
+    public static final int INSTALL_ERROR_MKDIR_FAILED = 4009;
+    /** 安装错误，插件apk未签名 */
+    public static final int INSTALL_ERROR_APK_NO_SIGNATURE = 4010;
+    /** 安装错误，插件apk签名不一致 */
+    public static final int INSTALL_ERROR_APK_SIGNATURE_NOT_MATCH = 4011;
+    /** 安装错误，安装so库不存在 */
+    public static final int INSTALL_ERROR_SO_NOT_EXIST = 4100;
+    /** 安装错误，安装so库拷贝失败 */
+    public static final int INSTALL_ERROR_SO_COPY_FAILED = 4101;
+    /** 安装错误，安装so库时解压失败 */
+    public static final int INSTALL_ERROR_SO_UNZIP_FAILED = 4102;
+    /** 安装错误，安装dex文件不存在 */
+    public static final int INSTALL_ERROR_DEX_NOT_EXIST = 4200;
+    /** 安装错误，安装dex文件拷贝失败 */
+    public static final int INSTALL_ERROR_DEX_COPY_FAILED = 4201;
+    /** 安装错误，远程Service超时 */
+    public static final int INSTALL_ERROR_CLIENT_TIME_OUT = 4300;
+
+
 
     /***
      * 下载成功

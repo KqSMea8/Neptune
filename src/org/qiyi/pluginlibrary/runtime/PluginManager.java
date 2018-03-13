@@ -19,7 +19,7 @@ import android.os.RemoteException;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
@@ -28,7 +28,6 @@ import org.qiyi.pluginlibrary.listenter.IPluginLoadListener;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.constant.IMsgConstant;
-import org.qiyi.pluginlibrary.exception.PluginStartupException;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
@@ -244,7 +243,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext()).packageAction(refInfo,
                         new IInstallCallBack.Stub() {
                             @Override
-                            public void onPacakgeInstalled(PluginLiteInfo packageInfo) {
+                            public void onPackageInstalled(PluginLiteInfo packageInfo) {
                                 count.getAndDecrement();
                                 PluginDebugLog.runtimeLog(TAG, "check installation success pkgName: " + refInfo.packageName);
                                 if (count.get() == 0) {
@@ -256,9 +255,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                             }
 
                             @Override
-                            public void onPackageInstallFail(String pName, int failReason) throws RemoteException {
+                            public void onPackageInstallFail(PluginLiteInfo info, int failReason) throws RemoteException {
                                 PluginDebugLog.runtimeLog(TAG,
-                                        "check installation failed pkgName: " + pName + " failReason: " + failReason);
+                                        "check installation failed pkgName: " + info.packageName + " failReason: " + failReason);
                                 count.set(-1);
                             }
                         });
@@ -548,17 +547,8 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                                                       final String mProcessName) {
         PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext()).packageAction(packageInfo,
                 new IInstallCallBack.Stub() {
-
                     @Override
-                    public void onPackageInstallFail(String packageName, int failReason) {
-                        PluginDebugLog.runtimeLog(TAG, "checkPkgInstallationAndLaunch failed packageName: " + packageName
-                                + " failReason: " + failReason);
-                        PActivityStackSupervisor.clearLoadingIntent(packageName);
-                        deliver(mHostContext, false, packageName, failReason);
-                    }
-
-                    @Override
-                    public void onPacakgeInstalled(PluginLiteInfo info) {
+                    public void onPackageInstalled(PluginLiteInfo info) {
                         //install done ,load async
                         PluginDebugLog.runtimeLog(TAG,
                                 "checkPkgInstallationAndLaunch installed packageName: " + info.packageName);
@@ -584,6 +574,16 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                                         }
                                     }
                                 }, mProcessName);
+                    }
+
+
+                    @Override
+                    public void onPackageInstallFail(PluginLiteInfo info, int failReason) throws RemoteException {
+                        String packageName = info.packageName;
+                        PluginDebugLog.runtimeLog(TAG, "checkPkgInstallationAndLaunch failed packageName: " + packageName
+                                + " failReason: " + failReason);
+                        PActivityStackSupervisor.clearLoadingIntent(packageName);
+                        deliver(mHostContext, false, packageName, failReason);
                     }
                 });
     }
@@ -720,13 +720,8 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                if (e instanceof PluginStartupException) {
-                    PluginStartupException ex = (PluginStartupException) e;
-                    deliver(mHostContext, false, mPackageName, ex.getCode());
-                } else {
-                    deliver(mHostContext, false, mPackageName,
-                            ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
-                }
+                deliver(mHostContext, false, mPackageName,
+                        ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
             }
         }
 

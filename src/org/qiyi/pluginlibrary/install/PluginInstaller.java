@@ -4,10 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
-import android.os.AsyncTask;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
@@ -25,7 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * 负责插件插件安装,卸载，数据删除
+ * 负责插件插件安装，卸载，数据删除
  */
 public class PluginInstaller {
     public static final String TAG = "PluginInstaller";
@@ -60,35 +56,63 @@ public class PluginInstaller {
     public synchronized static void installBuildinApps(final Context context,
                                                        final PluginLiteInfo info) {
         registerInstallderReceiver(context);
-        new AsyncTask<Void, Void, Void>() {
-
-            @Override
-            protected Void doInBackground(Void... params) {
-                AssetManager am = context.getAssets();
-                try {
-                    String files[] = am.list(PLUGIN_PATH);
-                    String temp_file = "";
-                    if (info.packageName != null) {
-                        temp_file = info.packageName + APK_SUFFIX;
-                    }
-                    for (String file : files) {
-                        if (!file.endsWith(APK_SUFFIX) || (!TextUtils.isEmpty(info.packageName) && !TextUtils.equals(file, temp_file))) {
-                            // 如果外面传递的packagename 为空则全部安装
-                            continue;
-                        }
-                        PluginDebugLog.installFormatLog(TAG,"InstallBuildInPlugin:%s", info.packageName);
-                        String buildInPath = PluginPackageManager.SCHEME_ASSETS + PLUGIN_PATH + "/" + file;
-                        startInstall(context, buildInPath, info);
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return null;
-            }
-
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        String pluginApk = info.packageName + APK_SUFFIX;
+        String buildInPath = PluginPackageManager.SCHEME_ASSETS + PLUGIN_PATH + "/" + pluginApk;
+        startInstall(context, buildInPath, info);
+//        new AsyncTask<Void, Void, Void>() {
+//
+//            @Override
+//            protected Void doInBackground(Void... params) {
+//                AssetManager am = context.getAssets();
+//                try {
+//                    String files[] = am.list(PLUGIN_PATH);
+//                    String temp_file = "";
+//                    if (info.packageName != null) {
+//                        temp_file = info.packageName + APK_SUFFIX;
+//                    }
+//                    for (String file : files) {
+//                        if (!file.endsWith(APK_SUFFIX) || (!TextUtils.isEmpty(info.packageName) && !TextUtils.equals(file, temp_file))) {
+//                            // 如果外面传递的packagename 为空则全部安装
+//                            continue;
+//                        }
+//                        PluginDebugLog.installFormatLog(TAG,"InstallBuildInPlugin:%s", info.packageName);
+//                        String buildInPath = PluginPackageManager.SCHEME_ASSETS + PLUGIN_PATH + "/" + file;
+//                        startInstall(context, buildInPath, info);
+//                    }
+//
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//                return null;
+//            }
+//
+//        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
+
+    /**
+     * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。 安装完会有
+     * {@link PluginPackageManager ＃ACTION_PACKAGE_INSTALLED} 广播。
+     *
+     * @param context
+     * @param filePath apk 文件目录 比如 /sdcard/xxxx.apk
+     * @param pluginInfo 插件信息
+     */
+    public static void installApkFile(Context context, String filePath, PluginLiteInfo pluginInfo) {
+        if (TextUtils.isEmpty(filePath)) {
+            PluginDebugLog.installLog(TAG, "filePath is empty and installApkFile return!");
+            return;
+        }
+
+        registerInstallderReceiver(context);
+        if (filePath.endsWith(SO_SUFFIX)) {
+            startInstall(context, PluginPackageManager.SCHEME_SO + filePath, pluginInfo);
+        } else if (filePath.endsWith(DEX_SUFFIX)) {
+            startInstall(context, PluginPackageManager.SCHEME_DEX + filePath, pluginInfo);
+        } else {
+            startInstall(context, PluginPackageManager.SCHEME_FILE + filePath, pluginInfo);
+        }
+    }
+
 
     /**
      * 调用 {@link PluginInstallerService} 进行实际的安装过程。采用独立进程异步操作。
@@ -100,8 +124,8 @@ public class PluginInstaller {
      */
     private static void startInstall(Context context, String filePath, PluginLiteInfo info) {
         /*
-         * 获取packagename 1、内置app，要求必须以 packagename.apk 命名，处于效率考虑。
-         * 2、外部文件的安装，直接从file中获取packagename, 消耗100ms级别，可以容忍。
+         * 获取packageName 1、内置app，要求必须以 packageName.apk 命名，处于效率考虑。
+         * 2、外部文件的安装，直接从file中获取packageName, 消耗100ms级别，可以容忍。
          */
         boolean isBuildin = false;
         PluginDebugLog.installFormatLog(TAG, "startInstall with file path:%s and plugin pkgName:%s"
@@ -109,7 +133,6 @@ public class PluginInstaller {
 
         if (filePath.startsWith(PluginPackageManager.SCHEME_ASSETS)) {
             isBuildin = true;
-
         }
 
         if (!TextUtils.isEmpty(info.packageName)) {
@@ -119,7 +142,7 @@ public class PluginInstaller {
                 sBuildinAppList.add(info.packageName); // 添加到内置app安装列表中
             }
         }else{
-            PluginDebugLog.installLog(TAG, "startInstall PluginLiteInfo.packagename is null, just return!");
+            PluginDebugLog.installLog(TAG, "startInstall PluginLiteInfo.packageName is null, just return!");
             return;
         }
 
@@ -141,29 +164,7 @@ public class PluginInstaller {
         }
     }
 
-    /**
-     * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。 安装完会有
-     * {@link PluginPackageManager ＃ACTION_PACKAGE_INSTALLED} broadcast。
-     *
-     * @param context
-     * @param filePath apk 文件目录 比如 /sdcard/xxxx.apk
-     * @param pluginInfo 插件信息
-     */
-    public static void installApkFile(Context context, String filePath, PluginLiteInfo pluginInfo) {
-        if (TextUtils.isEmpty(filePath)) {
-            PluginDebugLog.installLog(TAG, "filePath is empty and installApkFile return!");
-            return;
-        }
 
-        registerInstallderReceiver(context);
-        if (filePath.endsWith(SO_SUFFIX)) {
-            startInstall(context, PluginPackageManager.SCHEME_SO + filePath, pluginInfo);
-        } else if (filePath.endsWith(DEX_SUFFIX)) {
-            startInstall(context, PluginPackageManager.SCHEME_DEX + filePath, pluginInfo);
-        } else {
-            startInstall(context, PluginPackageManager.SCHEME_FILE + filePath, pluginInfo);
-        }
-    }
 
     /**
      * 获取安装插件的apk文件目录
@@ -218,13 +219,13 @@ public class PluginInstaller {
             return;
         }
         sInstallerReceiverRegistered = true;
-        Context appcontext = context.getApplicationContext();
+        Context appContext = context.getApplicationContext();
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(PluginPackageManager.ACTION_PACKAGE_INSTALLED);
         filter.addAction(PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-        appcontext.registerReceiver(sApkInstallerReceiver, filter);
+        appContext.registerReceiver(sApkInstallerReceiver, filter);
     }
 
     /**
@@ -241,8 +242,6 @@ public class PluginInstaller {
     }
 
 
-
-
     /**
      * 删除已经安装插件的apk,dex,so库等文件
      *
@@ -251,22 +250,42 @@ public class PluginInstaller {
      */
     public static void deleteInstallerPackage(
             Context context, String apkPath, String packageName) {
-        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage:%s",packageName);
-        if (context == null || TextUtils.isEmpty(apkPath) || TextUtils.isEmpty(packageName)) {
+        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage:%s", packageName);
+        if (context == null || TextUtils.isEmpty(packageName)) {
             return;
         }
 
         File dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
-        File apk = new File(apkPath);
         File dexPath = getInstalledDexFile(context, packageName);
-        if (apk.exists()) {
-            boolean result = apk.delete();
-            if(result){
-                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage apk  %s succcess!",packageName);
-            }else{
+        if (dexPath.exists()) {
+            // 删除dex文件
+            if (dexPath.delete()) {
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage dex  %s success!",packageName);
+            } else {
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage prof  %s fail!",packageName);
+            }
+        }
+
+        File lib = new File(dataDir, "lib");
+        try {
+            // 删除lib目录下的so库
+            Util.deleteDirectory(lib);
+            PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage lib %s success!",packageName);
+        } catch (IOException e) {
+            PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage lib %s fail!",packageName);
+            e.printStackTrace();
+        }
+
+        File apk = null;
+        if (!TextUtils.isEmpty(apkPath)) {
+            apk = new File(apkPath);  //删除旧的apk
+            if (apk.exists() && apk.delete()) {
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage apk  %s success!",packageName);
+            } else {
                 PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage apk  %s fail!",packageName);
             }
-
+        } else {
+            apk = new File(PluginInstaller.getPluginappRootPath(context), packageName + PluginInstaller.APK_SUFFIX);
         }
 
         if(ContextUtils.isAndroidO()){
@@ -278,70 +297,35 @@ public class PluginInstaller {
             }else{
                 PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage prof  %s fail!",packageName);
             }
-        }
-
-
-
-        if (dexPath.exists()) {
-            boolean result = dexPath.delete();
-            if(result){
-                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage dex  %s succcess!",packageName);
-            }else{
-                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage dex  %s fail!",packageName);
-            }
-        }else{
-            try{
-                if(ContextUtils.isAndroidO()){
-                    String currentInstructionSet = "";
-                    try {
-                        currentInstructionSet =  Util.getCurrentInstructionSet();
-                    } catch (Exception e) {
-                        currentInstructionSet = "arm";
-                        e.printStackTrace();
-                    }
-
-                    String pathPrefix = apk.getParent() + "/oat/"
-                            + currentInstructionSet + "/" + packageName;
-
-                    String oPath = pathPrefix + ".odex";
-                    String vPath = pathPrefix + ".vdex";
-
-                    File oPathFile = new File(oPath);
-                    File vPathFile = new File(vPath);
-                    PluginDebugLog.installFormatLog(TAG,"odex path:%s",oPathFile.getAbsolutePath());
-                    PluginDebugLog.installFormatLog(TAG,"vdex path:%s",vPathFile.getAbsolutePath());
-                    if(oPathFile.exists() && oPathFile.delete()){
-                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage odex  %s succcess!",packageName);
-                    }else{
-                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage odex  %s fail!",packageName);
-                    }
-
-                    if(vPathFile.exists() && vPathFile.delete()){
-                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage vdex  %s succcess!",packageName);
-                    }else{
-                        PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage vdex  %s fail!",packageName);
-                    }
-
-
-
-
-                }
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-
-        }
-
-
-        File lib = new File(dataDir, "lib");
-
-        if (lib != null) {
+            //删除odex和vdex文件
+            String currentInstructionSet = "";
             try {
-                Util.deleteDirectory(lib);
-                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage lib %s success!",packageName);
-            } catch (IOException e) {
-                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage lib %s fail!",packageName);
+                currentInstructionSet =  Util.getCurrentInstructionSet();
+            } catch (Exception e) {
+                currentInstructionSet = "arm";
                 e.printStackTrace();
+            }
+
+            String pathPrefix = apk.getParent() + "/oat/"
+                    + currentInstructionSet + "/" + packageName;
+
+            String oPath = pathPrefix + ".odex";
+            String vPath = pathPrefix + ".vdex";
+
+            File oPathFile = new File(oPath);
+            File vPathFile = new File(vPath);
+            PluginDebugLog.installFormatLog(TAG,"odex path:%s",oPathFile.getAbsolutePath());
+            PluginDebugLog.installFormatLog(TAG,"vdex path:%s",vPathFile.getAbsolutePath());
+            if(oPathFile.exists() && oPathFile.delete()){
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage odex  %s succcess!",packageName);
+            }else{
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage odex  %s fail!",packageName);
+            }
+
+            if(vPathFile.exists() && vPathFile.delete()){
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage vdex  %s succcess!",packageName);
+            }else{
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage vdex  %s fail!",packageName);
             }
         }
     }
@@ -353,8 +337,7 @@ public class PluginInstaller {
      * @param packageName
      */
     public static void deletePluginData(Context context, String packageName) {
-        File dataDir = null;
-        dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
+        File dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
         File db = new File(dataDir, "databases");
         File sharedPreference = new File(dataDir, "shared_prefs");
         File file = new File(dataDir, "files");
@@ -410,5 +393,25 @@ public class PluginInstaller {
         return sInstallList.contains(packageName);
     }
 
+    /**
+     * 从插件文件名中提取插件的包名，在没有正确获取包名的情况下使用
+     * 插件命名规范： {pkgName}.apk
+     *
+     * @param filePath  插件路径
+     * @return
+     */
+    public static String extractPkgNameFromPath(String filePath) {
 
+        int start = filePath.lastIndexOf("/");
+        int end = filePath.length();
+        if (filePath.endsWith(PluginInstaller.SO_SUFFIX)) {
+            end = filePath.lastIndexOf(PluginInstaller.SO_SUFFIX);
+        } else if (filePath.endsWith(PluginInstaller.DEX_SUFFIX)) {
+            end = filePath.lastIndexOf(PluginInstaller.DEX_SUFFIX);
+        } else if (filePath.contains(PluginInstaller.APK_SUFFIX)) {
+            end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
+        }
+        String mapPackagename = filePath.substring(start + 1, end);
+        return mapPackagename;
+    }
 }

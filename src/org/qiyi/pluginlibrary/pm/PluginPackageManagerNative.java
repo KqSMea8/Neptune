@@ -11,7 +11,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.ErrorType.ErrorType;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
@@ -148,16 +148,16 @@ public class PluginPackageManagerNative {
 
         @Override
         public String toString() {
-            StringBuilder infoBuider = new StringBuilder();
-            infoBuider.append("PluginInstallAction: ");
-            infoBuider.append("filePath: ").append(filePath);
-            infoBuider.append(" has IInstallCallBack: ").append(listener != null);
+            StringBuilder infoBuilder = new StringBuilder();
+            infoBuilder.append("PluginInstallAction: ");
+            infoBuilder.append("filePath: ").append(filePath);
+            infoBuilder.append(" has IInstallCallBack: ").append(listener != null);
             if (info != null) {
-                infoBuider.append(" packagename: ").append(info.packageName);
-                infoBuider.append(" plugin_ver: ").append(info.mPluginVersion);
-                infoBuider.append(" plugin_gray_version: ").append(info.mPluginGrayVersion);
+                infoBuilder.append(" packageName: ").append(info.packageName);
+                infoBuilder.append(" plugin_ver: ").append(info.mPluginVersion);
+                infoBuilder.append(" plugin_gray_version: ").append(info.mPluginGrayVersion);
             }
-            return infoBuider.toString();
+            return infoBuilder.toString();
         }
 
         @Override
@@ -177,8 +177,7 @@ public class PluginPackageManagerNative {
             } else if (mService == null) {
                 // set canMeetCondition to true in case of
                 // PluginPackageManagerService
-                // is not connected, so that the action can be added in action
-                // list.
+                // is not connected, so that the action can be added in action list.
                 canMeetCondition = true;
             }
             if (info != null) {
@@ -228,7 +227,7 @@ public class PluginPackageManagerNative {
             infoBuilder.append(
                     " has IPackageDeleteObserver: ").append(observer != null);
             if (info != null) {
-                infoBuilder.append(" packagename: ").append(info.packageName);
+                infoBuilder.append(" packageName: ").append(info.packageName);
                 infoBuilder.append(" plugin_ver: ").append(info.mPluginVersion);
                 infoBuilder.append(" plugin_gray_ver: ").append(info.mPluginGrayVersion);
             }
@@ -450,7 +449,7 @@ public class PluginPackageManagerNative {
     }
 
     /**
-     * 根据应用包名，获取插件信息，通过aidl到CMPackageManagerService中获取值，如果service不存在，
+     * 根据应用包名，获取插件信息，通过aidl到PackageManagerService中获取值，如果service不存在，
      * 直接在sharedPreference中读取值，并且启动service
      *
      * @param pkg 插件包名
@@ -712,8 +711,8 @@ public class PluginPackageManagerNative {
                     PluginDebugLog.runtimeLog(TAG, "packageAction is expired, remove it");
                     if (action != null && action.callBack != null) {
                         try {
-                            action.callBack.onPackageInstallFail(action.packageInfo.packageName,
-                                    ErrorType.ERROR_CLIENT_TIME_OUT);
+                            action.callBack.onPackageInstallFail(action.packageInfo,
+                                    ErrorType.INSTALL_ERROR_CLIENT_TIME_OUT);
                         } catch (RemoteException e) {
                             e.printStackTrace();
                         }
@@ -876,6 +875,4 @@ public class PluginPackageManagerNative {
             installApkFile(mApkFile.getAbsolutePath(), mInstallCallback, mPluginLiteInfo);
         }
     }
-
-
 }

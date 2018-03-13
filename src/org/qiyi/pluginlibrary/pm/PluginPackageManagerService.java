@@ -14,6 +14,8 @@ import java.util.List;
 
 /**
  * 插件安装service管理，正常情况下此Service会持续存在，
+ * 该Service运行在主进程，所有的操作都代理给PluginPackageManager实现
+ *
  * Created by xiepengchong on 15/10/29.
  */
 public class PluginPackageManagerService extends Service {
@@ -58,17 +60,26 @@ public class PluginPackageManagerService extends Service {
 
             @Override
             public boolean isPackageInstalled(String pkg) throws RemoteException {
-                return !(mManager == null || TextUtils.isEmpty(pkg)) && mManager.isPackageInstalled(pkg);
+                if (mManager == null || TextUtils.isEmpty(pkg)) {
+                    return false;
+                }
+                return mManager.isPackageInstalled(pkg);
             }
 
             @Override
             public boolean canInstallPackage(PluginLiteInfo info) throws RemoteException {
-                return mManager != null && info != null && mManager.canInstallPackage(info);
+                if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
+                    return false;
+                }
+                return mManager.canInstallPackage(info);
             }
 
             @Override
             public boolean canUninstallPackage(PluginLiteInfo info) throws RemoteException {
-                return mManager != null && info != null && mManager.canUninstallPackage(info);
+                if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
+                    return false;
+                }
+                return mManager.canUninstallPackage(info);
             }
 
             @Override
@@ -81,9 +92,9 @@ public class PluginPackageManagerService extends Service {
             }
 
             @Override
-            public void installBuildinApps(PluginLiteInfo info,IInstallCallBack listener)
+            public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener)
                     throws RemoteException {
-                if (mManager == null || TextUtils.isEmpty(info.packageName)) {
+                if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
                     return;
                 }
                 mManager.installBuildinApps(info, listener);
@@ -137,7 +148,6 @@ public class PluginPackageManagerService extends Service {
                 }
                 return null;
             }
-
         };
     }
 }
