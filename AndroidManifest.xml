@@ -96,8 +96,9 @@
         <service
             android:name="org.qiyi.pluginlibrary.component.ServiceProxy2"
             android:process=":plugin2" />
-
-
+        <service
+            android:name="org.qiyi.pluginlibrary.component.ServiceProxy3"
+            android:process=":downloader" />
 
     </application>
 
