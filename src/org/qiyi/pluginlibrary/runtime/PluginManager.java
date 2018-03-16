@@ -38,6 +38,7 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -83,6 +84,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * 处理插件退出时的善后逻辑
      */
     private static IAppExitStuff sExitStuff;
+
 
 
     /**
@@ -1005,44 +1007,139 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
     }
 
+
+    private static ArrayList<PluginActivityLifeCycleCallback> mActivityLifecycleCallbacks =
+            new ArrayList<PluginActivityLifeCycleCallback>();
+
+    public static void registerActivityLifecycleCallbacks(PluginActivityLifeCycleCallback callback) {
+        synchronized (mActivityLifecycleCallbacks) {
+            mActivityLifecycleCallbacks.add(callback);
+        }
+    }
+
+    public static void unregisterActivityLifecycleCallbacks(PluginActivityLifeCycleCallback callback) {
+        synchronized (mActivityLifecycleCallbacks) {
+            mActivityLifecycleCallbacks.remove(callback);
+        }
+    }
+
+
+    public static void dispatchPluginActivityCreated(String pluginPkgName, Activity activity, Bundle savedInstanceState) {
+        Object[] callbacks = collectActivityLifecycleCallbacks();
+        if (callbacks != null) {
+            for (int i=0; i<callbacks.length; i++) {
+                ((PluginActivityLifeCycleCallback)callbacks[i]).onPluginActivityCreated(pluginPkgName, activity,
+                        savedInstanceState);
+            }
+        }
+    }
+
+    public static void dispatchPluginActivityStarted(String pluginPkgName, Activity activity) {
+        Object[] callbacks = collectActivityLifecycleCallbacks();
+        if (callbacks != null) {
+            for (int i=0; i<callbacks.length; i++) {
+                ((PluginActivityLifeCycleCallback)callbacks[i]).onPluginActivityStarted(pluginPkgName, activity);
+            }
+        }
+    }
+
+    public static void dispatchPluginActivityResumed(String pluginPkgName, Activity activity) {
+        Object[] callbacks = collectActivityLifecycleCallbacks();
+        if (callbacks != null) {
+            for (int i=0; i<callbacks.length; i++) {
+                ((PluginActivityLifeCycleCallback)callbacks[i]).onPluginActivityResumed(pluginPkgName, activity);
+            }
+        }
+    }
+
+    public static void dispatchPluginActivityPaused(String pluginPkgName, Activity activity) {
+        Object[] callbacks = collectActivityLifecycleCallbacks();
+        if (callbacks != null) {
+            for (int i=0; i<callbacks.length; i++) {
+                ((PluginActivityLifeCycleCallback)callbacks[i]).onPluginActivityPaused(pluginPkgName, activity);
+            }
+        }
+    }
+
+    public static void dispatchPluginActivityStopped(String pluginPkgName, Activity activity) {
+        Object[] callbacks = collectActivityLifecycleCallbacks();
+        if (callbacks != null) {
+            for (int i=0; i<callbacks.length; i++) {
+                ((PluginActivityLifeCycleCallback)callbacks[i]).onPluginActivityStopped(pluginPkgName, activity);
+            }
+        }
+    }
+
+    public static void dispatchPluginActivitySaveInstanceState(String pluginPkgName, Activity activity, Bundle outState) {
+        Object[] callbacks = collectActivityLifecycleCallbacks();
+        if (callbacks != null) {
+            for (int i=0; i<callbacks.length; i++) {
+                ((PluginActivityLifeCycleCallback)callbacks[i]).onPluginActivitySaveInstanceState(pluginPkgName, activity,
+                        outState);
+            }
+        }
+    }
+
+    public static void dispatchPluginActivityDestroyed(String pluginPkgName, Activity activity) {
+        Object[] callbacks = collectActivityLifecycleCallbacks();
+        if (callbacks != null) {
+            for (int i=0; i<callbacks.length; i++) {
+                ((PluginActivityLifeCycleCallback)callbacks[i]).onPluginActivityDestroyed(pluginPkgName, activity);
+            }
+        }
+    }
+
+    private static Object[] collectActivityLifecycleCallbacks() {
+        Object[] callbacks = null;
+        synchronized (mActivityLifecycleCallbacks) {
+            if (mActivityLifecycleCallbacks.size() > 0) {
+                callbacks = mActivityLifecycleCallbacks.toArray();
+            }
+        }
+        return callbacks;
+    }
+
+
+
+
     /**
      * 插件调试日志
      **/
-    public static Application.ActivityLifecycleCallbacks sActivityLifecycleCallback = new Application.ActivityLifecycleCallbacks() {
+    public static Application.ActivityLifecycleCallbacks sActivityLifecycleCallback = new PluginActivityLifeCycleCallback() {
 
         @Override
-        public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-            PluginDebugLog.runtimeLog(TAG, "onActivityCreated: " + activity);
+        public void onPluginActivityCreated(String pluginPkgName, Activity activity, Bundle savedInstanceState) {
+            PluginDebugLog.runtimeLog(TAG, "onPluginActivityCreated: " + activity + ", pluginName: " + pluginPkgName);
         }
 
         @Override
-        public void onActivityStarted(Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onActivityStarted: " + activity);
+        public void onPluginActivityStarted(String pluginPkgName, Activity activity) {
+            PluginDebugLog.runtimeLog(TAG, "onPluginActivityStarted: " + activity + ", pluginName: " + pluginPkgName);
         }
 
         @Override
-        public void onActivityResumed(Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onActivityResumed: " + activity);
+        public void onPluginActivityResumed(String pluginPkgName, Activity activity) {
+            PluginDebugLog.runtimeLog(TAG, "onPluginActivityResumed: " + activity + ", pluginName: " + pluginPkgName);
         }
 
         @Override
-        public void onActivityPaused(Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onActivityPaused: " + activity);
+        public void onPluginActivityPaused(String pluginPkgName, Activity activity) {
+            PluginDebugLog.runtimeLog(TAG, "onPluginActivityPaused: " + activity + ", pluginName: " + pluginPkgName);
         }
 
         @Override
-        public void onActivityStopped(Activity activity) {
-            PluginDebugLog.log(TAG, "onActivityStopped: " + activity);
+        public void onPluginActivityStopped(String pluginPkgName, Activity activity) {
+            PluginDebugLog.runtimeLog(TAG, "onPluginActivityStopped: " + activity + ", pluginName: " + pluginPkgName);
         }
 
         @Override
-        public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
-            PluginDebugLog.runtimeLog(TAG, "onActivitySaveInstanceState: " + activity);
+        public void onPluginActivitySaveInstanceState(String pluginPkgName, Activity activity, Bundle outState) {
+            PluginDebugLog.runtimeLog(TAG, "onPluginActivitySaveInstanceState: " + activity + ", pluginName: " + pluginPkgName);
         }
 
         @Override
-        public void onActivityDestroyed(Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onActivityDestroyed: " + activity);
+        public void onPluginActivityDestroyed(String pluginPkgName, Activity activity) {
+            PluginDebugLog.runtimeLog(TAG, "onPluginActivityDestroyed: " + activity + ", pluginName: " + pluginPkgName);
         }
     };
 
