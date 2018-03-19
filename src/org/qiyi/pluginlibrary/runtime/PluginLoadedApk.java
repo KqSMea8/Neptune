@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.res.AssetManager;
@@ -247,7 +248,9 @@ public class PluginLoadedApk implements IIntentConstant {
                     mPluginMapping.getnativeLibraryDir(), mHostContext.getClassLoader());
 
             // 把插件 classloader 注入到host程序中，方便host app 能够找到 插件 中的class
-            if (mPluginMapping.getMetaData() != null && mPluginMapping.isClassNeedInject()) {
+            if (!isSharePluginInjectClassLoader()) {
+                PluginDebugLog.runtimeLog(TAG, "share plugin: " + mPluginMapping.getPackageName() + " no need to inject into host classloader");
+            } else if (mPluginMapping.getMetaData() != null && mPluginMapping.isClassNeedInject()) {
                 if (!sPluginDependences.containsKey(mPluginPackageName)) {
                     ClassLoaderInjectHelper.inject(mHostContext.getClassLoader(), mPluginClassLoader,
                             mPluginMapping.getPackageName() + ".R");
@@ -256,6 +259,8 @@ public class PluginLoadedApk implements IIntentConstant {
                     PluginDebugLog.runtimeLog(TAG,
                             "--- Class injecting @ " + mPluginMapping.getPackageName() + " already injected!");
                 }
+            } else {
+                PluginDebugLog.runtimeLog(TAG, "plugin: " + mPluginMapping.getPackageName() + " no need to inject to host classloader");
             }
             return true;
         } else {
@@ -710,4 +715,32 @@ public class PluginLoadedApk implements IIntentConstant {
         this.isLaunchingIntent = isLaunchingIntent;
     }
 
+    /**
+     * 分享插件是否注入到主ClassLoader里
+     * 临时方案，因为插件sdk无法访问基线的类
+     *
+     * @return  false不注入，true维持线上逻辑
+     */
+    private boolean isSharePluginInjectClassLoader() {
+
+        if (!TextUtils.equals("com.iqiyi.share", mPluginPackageName)) {
+            // 不是分享插件，维持现状
+            return true;
+        }
+
+        if (mPluginMapping.getMetaData() == null || !mPluginMapping.isClassNeedInject()) {
+            // meta配置不需要处理
+            return false;
+        }
+
+        SharedPreferences sp = mHostContext.getSharedPreferences("default_sharePreference", Context.MODE_MULTI_PROCESS);
+        String pluginSwitch = sp.getString("WEIBO_SHARE_ENABLE", "0");  // 0维持线上逻辑，1去掉ClassLoader注入
+        if ("1".equals(pluginSwitch)) {
+            // 云控关闭ClassLoader注入
+            PluginDebugLog.runtimeLog(TAG, "disable share plugin inject into host classloader by fusion switch");
+            return false;
+        }
+        // 维持现状
+        return true;
+    }
 }
