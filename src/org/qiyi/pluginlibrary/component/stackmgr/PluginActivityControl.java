@@ -39,10 +39,9 @@ public class PluginActivityControl implements PluginActivityCallback {
     Instrumentation mHostInstr;
 
     /**
-     *
-     * @param proxy 代理Activity
+     * @param proxy  代理Activity
      * @param plugin 插件Activity
-     * @param app 分派给插件的Application
+     * @param app    分派给插件的Application
      * @throws Exception
      */
     public PluginActivityControl(Activity proxy, Activity plugin, Application app, Instrumentation pluginInstr) throws Exception {
@@ -66,193 +65,29 @@ public class PluginActivityControl implements PluginActivityCallback {
             return;
         }
         try {
-            //Android O的attach方法在之前的参数基础上增加了android.view.ViewRootImpl$ActivityConfigCallback这样一个参数，
-            //目前还不能拿到源码，不清楚这个参数怎么获取，所以暂时传递一个null,待后续完善
             if (ContextUtils.isAndroidO()) {
-                mPluginRef.call(
-                        // 方法名
-                        "attach",
-                        sMethods,
-                        // Context context
-                        // contextWrapper,
-                        mProxy,
-                        // ActivityThread aThread
-                        mProxyRef.get("mMainThread"),
-                        // Instrumentation instr
-                        pluginInstr,
-                        // IBinder token
-                        mProxyRef.get("mToken"),
-                        // int ident
-                        mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
-                        // Application application
-                        mApplication == null ? mProxy.getApplication() : mApplication,
-                        // Intent intent
-                        mProxy.getIntent(),
-                        // ActivityInfo info
-                        mProxyRef.get("mActivityInfo"),
-                        // CharSequence title
-                        mProxy.getTitle(),
-                        // Activity parent
-                        mProxy.getParent(),
-                        // String id
-                        mProxyRef.get("mEmbeddedID"),
-                        // NonConfigurationInstances
-                        // lastNonConfigurationInstances
-                        mProxy.getLastNonConfigurationInstance(),
-                        // Configuration config
-                        mProxyRef.get("mCurrentConfig"),
-                        // String mReferrer
-                        mProxyRef.get("mReferrer"),
-                        // IVoiceInteractor mVoiceInteractor
-                        mProxyRef.get("mVoiceInteractor"),
-                        mProxy.getWindow(),
-                        //android.view.ViewRootImpl$ActivityConfigCallback,这个参数暂时传递null
-                        null);
+                // Android O的attach方法在7.0的参数基础上增加了android.view.ViewRootImpl$ActivityConfigCallback这样一个参数，这个参数是PhoneWindow的成员变量
+                // 8.0, android.os.Build.VERSION_CODES.O
+                callAttachV26(pluginInstr);
             } else if (ContextUtils.isAndroidN()) {
-                mPluginRef.call(
-                        // 方法名
-                        "attach",
-                        sMethods,
-                        // Context context
-                        // contextWrapper,
-                        mProxy,
-                        // ActivityThread aThread
-                        mProxyRef.get("mMainThread"),
-                        // Instrumentation instr
-                        pluginInstr,
-                        // IBinder token
-                        mProxyRef.get("mToken"),
-                        // int ident
-                        mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
-                        // Application application
-                        mApplication == null ? mProxy.getApplication() : mApplication,
-                        // Intent intent
-                        mProxy.getIntent(),
-                        // ActivityInfo info
-                        mProxyRef.get("mActivityInfo"),
-                        // CharSequence title
-                        mProxy.getTitle(),
-                        // Activity parent
-                        mProxy.getParent(),
-                        // String id
-                        mProxyRef.get("mEmbeddedID"),
-                        // NonConfigurationInstances
-                        // lastNonConfigurationInstances
-                        mProxy.getLastNonConfigurationInstance(),
-                        // Configuration config
-                        mProxyRef.get("mCurrentConfig"),
-                        // String mReferrer
-                        mProxyRef.get("mReferrer"),
-                        // IVoiceInteractor mVoiceInteractor
-                        mProxyRef.get("mVoiceInteractor"),
-                        mProxy.getWindow());
-            } else if (android.os.Build.VERSION.SDK_INT > 21) {
-                // android.os.Build.VERSION_CODES.LOLLIPOP
-                mPluginRef.call(
-                        // 方法名
-                        "attach",
-                        sMethods,
-                        // Context context
-                        // contextWrapper,
-                        mProxy,
-                        // ActivityThread aThread
-                        mProxyRef.get("mMainThread"),
-                        // Instrumentation instr
-                        pluginInstr,
-                        // IBinder token
-                        mProxyRef.get("mToken"),
-                        // int ident
-                        mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
-                        // Application application
-                        mApplication == null ? mProxy.getApplication() : mApplication,
-                        // Intent intent
-                        mProxy.getIntent(),
-                        // ActivityInfo info
-                        mProxyRef.get("mActivityInfo"),
-                        // CharSequence title
-                        mProxy.getTitle(),
-                        // Activity parent
-                        mProxy.getParent(),
-                        // String id
-                        mProxyRef.get("mEmbeddedID"),
-                        // NonConfigurationInstances
-                        // lastNonConfigurationInstances
-                        mProxy.getLastNonConfigurationInstance(),
-                        // Configuration config
-                        mProxyRef.get("mCurrentConfig"),
-                        // String mReferrer
-                        mProxyRef.get("mReferrer"),
-                        // IVoiceInteractor mVoiceInteractor
-                        mProxyRef.get("mVoiceInteractor"));
-            } else if (android.os.Build.VERSION.SDK_INT > 20) {
-                // android.os.Build.VERSION_CODES.KITKAT_WATCH;
-                mPluginRef.call(
-                        // 方法名
-                        "attach",
-                        sMethods,
-                        // Context context
-                        // contextWrapper,
-                        mProxy,
-                        // ActivityThread aThread
-                        mProxyRef.get("mMainThread"),
-                        // Instrumentation instr
-                        pluginInstr,
-                        // IBinder token
-                        mProxyRef.get("mToken"),
-                        // int ident
-                        mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
-                        // Application application
-                        mApplication == null ? mProxy.getApplication() : mApplication,
-                        // Intent intent
-                        mProxy.getIntent(),
-                        // ActivityInfo info
-                        mProxyRef.get("mActivityInfo"),
-                        // CharSequence title
-                        mProxy.getTitle(),
-                        // Activity parent
-                        mProxy.getParent(),
-                        // String id
-                        mProxyRef.get("mEmbeddedID"),
-                        // NonConfigurationInstances
-                        // lastNonConfigurationInstances
-                        mProxy.getLastNonConfigurationInstance(),
-                        // Configuration config
-                        mProxyRef.get("mCurrentConfig"),
-                        // IVoiceInteractor mVoiceInteractor
-                        mProxyRef.get("mVoiceInteractor"));
+                // Android N的attach方法在6.0的参数基础上增加了一个Window的参数
+                // 7.0, android.os.Build.VERSION_CODES.N
+                callAttachV24(pluginInstr);
+            } else if (android.os.Build.VERSION.SDK_INT >= 22) {
+                // Android 5.1的attach方法在5.0基础上增加了一个String mReferrer参数
+                // 5.1 and 6.0, android.os.Build.VERSION_CODES.LOLLIPOP_MR1
+                // android.os.Build.VERSION_CODES.M
+                callAttachV22(pluginInstr);
+            } else if (android.os.Build.VERSION.SDK_INT >= 21) {
+                // Android 5.0的attach方法在4.x基础上增加了一个IVoiceInteractor mVoiceInteractor参数
+                // 5.0, android.os.Build.VERSION_CODES.LOLLIPOP;
+                callAttachV21(pluginInstr);
+            } else if (android.os.Build.VERSION.SDK_INT >= 14){
+                // 4.x, android.os.Build.VERSION_CODES.ICE_CREAM_SANDWICH~KITKAT
+                callAttachV14(pluginInstr);
             } else {
-                mPluginRef.call(
-                        // 方法名
-                        "attach",
-                        sMethods,
-                        // Context context
-                        // contextWrapper,
-                        mProxy,
-                        // ActivityThread aThread
-                        mProxyRef.get("mMainThread"),
-                        // Instrumentation instr
-                        pluginInstr,
-                        // IBinder token
-                        mProxyRef.get("mToken"),
-                        // int ident
-                        mProxyRef.get("mEmbeddedID") == null ? 0 : mProxyRef.get("mEmbeddedID"),
-                        // Application application
-                        mApplication == null ? mProxy.getApplication() : mApplication,
-                        // Intent intent
-                        mProxy.getIntent(),
-                        // ActivityInfo info
-                        mProxyRef.get("mActivityInfo"),
-                        // CharSequence title
-                        mProxy.getTitle(),
-                        // Activity parent
-                        mProxy.getParent(),
-                        // String id
-                        mProxyRef.get("mEmbeddedID"),
-                        // NonConfigurationInstances
-                        // lastNonConfigurationInstances
-                        mProxy.getLastNonConfigurationInstance(),
-                        // Configuration config
-                        mProxyRef.get("mCurrentConfig"));
+                // 2.x, android.os.Build.VERSION_CODES.GINGERBREAD
+                callAttachV4(pluginInstr);
             }
 
             mPluginRef.set("mWindow", mProxy.getWindow());
@@ -265,6 +100,297 @@ public class PluginActivityControl implements PluginActivityCallback {
             e.printStackTrace();
         }
 
+    }
+
+
+    /**
+     * 反射调用Android O上的Activity#attach()方法
+     * Android O的attach方法在7.0的参数基础上增加了android.view.ViewRootImpl$ActivityConfigCallback参数
+     * <p>
+     * <href>http://androidxref.com/8.0.0_r4/xref/frameworks/base/core/java/android/app/Activity.java#6902</href>
+     */
+    private void callAttachV26(Instrumentation pluginInstr) {
+        try {
+            mPluginRef.call(
+                    // 方法名
+                    "attach",
+                    sMethods,
+                    // Context context
+                    // contextWrapper,
+                    mProxy,
+                    // ActivityThread aThread
+                    mProxyRef.get("mMainThread"),
+                    // Instrumentation instr
+                    pluginInstr,
+                    // IBinder token
+                    mProxyRef.get("mToken"),
+                    // int ident
+                    mProxyRef.get("mIdent"),
+                    // Application application
+                    mApplication == null ? mProxy.getApplication() : mApplication,
+                    // Intent intent
+                    mProxy.getIntent(),
+                    // ActivityInfo info
+                    mProxyRef.get("mActivityInfo"),
+                    // CharSequence title
+                    mProxy.getTitle(),
+                    // Activity parent
+                    mProxy.getParent(),
+                    // String id
+                    mProxyRef.get("mEmbeddedID"),
+                    // NonConfigurationInstances
+                    // lastNonConfigurationInstances
+                    mProxy.getLastNonConfigurationInstance(),
+                    // Configuration config
+                    mProxyRef.get("mCurrentConfig"),
+                    // String mReferrer
+                    mProxyRef.get("mReferrer"),
+                    // IVoiceInteractor mVoiceInteractor
+                    mProxyRef.get("mVoiceInteractor"),
+                    // Window window
+                    mProxy.getWindow(),
+                    // android.view.ViewRootImpl$ActivityConfigCallback activityConfigCallback, 这个参数在PhoneWindow中
+                    // 由于后面会替换插件Activity的Window对象，此处可以传null
+                    null);
+        } catch (ReflectException re) {
+            re.printStackTrace();
+            callAttachV24(pluginInstr);
+        }
+    }
+
+    /**
+     * 反射调用Android N上的Activity#attach()方法
+     * Android N的attach方法在6.0的参数基础上增加了一个Window的参数
+     * <p>
+     * <href>http://androidxref.com/7.0.0_r1/xref/frameworks/base/core/java/android/app/Activity.java#6593</href>
+     */
+    private void callAttachV24(Instrumentation pluginInstr) {
+        try {
+            mPluginRef.call(
+                    // 方法名
+                    "attach",
+                    sMethods,
+                    // Context context
+                    // contextWrapper,
+                    mProxy,
+                    // ActivityThread aThread
+                    mProxyRef.get("mMainThread"),
+                    // Instrumentation instr
+                    pluginInstr,
+                    // IBinder token
+                    mProxyRef.get("mToken"),
+                    // int ident
+                    mProxyRef.get("mIdent"),
+                    // Application application
+                    mApplication == null ? mProxy.getApplication() : mApplication,
+                    // Intent intent
+                    mProxy.getIntent(),
+                    // ActivityInfo info
+                    mProxyRef.get("mActivityInfo"),
+                    // CharSequence title
+                    mProxy.getTitle(),
+                    // Activity parent
+                    mProxy.getParent(),
+                    // String id
+                    mProxyRef.get("mEmbeddedID"),
+                    // NonConfigurationInstances
+                    // lastNonConfigurationInstances
+                    mProxy.getLastNonConfigurationInstance(),
+                    // Configuration config
+                    mProxyRef.get("mCurrentConfig"),
+                    // String mReferrer
+                    mProxyRef.get("mReferrer"),
+                    // IVoiceInteractor mVoiceInteractor
+                    mProxyRef.get("mVoiceInteractor"),
+                    // Window window
+                    mProxy.getWindow());
+        } catch (ReflectException re) {
+            re.printStackTrace();
+            callAttachV22(pluginInstr);
+        }
+    }
+
+    /**
+     * 反射调用Android 5.1 and 6.0上的Activity#attach()方法
+     * Android 5.1的attach方法在5.0基础上增加了一个String mReferrer参数
+     * <p>
+     * <href>http://androidxref.com/5.1.0_r1/xref/frameworks/base/core/java/android/app/Activity.java#5922</href>
+     */
+    private void callAttachV22(Instrumentation pluginInstr) {
+        try {
+            mPluginRef.call(
+                    // 方法名
+                    "attach",
+                    sMethods,
+                    // Context context
+                    // contextWrapper,
+                    mProxy,
+                    // ActivityThread aThread
+                    mProxyRef.get("mMainThread"),
+                    // Instrumentation instr
+                    pluginInstr,
+                    // IBinder token
+                    mProxyRef.get("mToken"),
+                    // int ident
+                    mProxyRef.get("mIdent"),
+                    // Application application
+                    mApplication == null ? mProxy.getApplication() : mApplication,
+                    // Intent intent
+                    mProxy.getIntent(),
+                    // ActivityInfo info
+                    mProxyRef.get("mActivityInfo"),
+                    // CharSequence title
+                    mProxy.getTitle(),
+                    // Activity parent
+                    mProxy.getParent(),
+                    // String id
+                    mProxyRef.get("mEmbeddedID"),
+                    // NonConfigurationInstances
+                    // lastNonConfigurationInstances
+                    mProxy.getLastNonConfigurationInstance(),
+                    // Configuration config
+                    mProxyRef.get("mCurrentConfig"),
+                    // String mReferrer
+                    mProxyRef.get("mReferrer"),
+                    // IVoiceInteractor mVoiceInteractor
+                    mProxyRef.get("mVoiceInteractor"));
+        } catch (ReflectException re) {
+            re.printStackTrace();
+            callAttachV21(pluginInstr);
+        }
+    }
+
+    /**
+     * 反射调用Android 5.0上的Activity#attach()方法
+     * Android 5.0的attach方法在4.x基础上增加了一个IVoiceInteractor mVoiceInteractor参数
+     * <p>
+     * <href>http://androidxref.com/5.0.0_r2/xref/frameworks/base/core/java/android/app/Activity.java#5866</href>
+     */
+    private void callAttachV21(Instrumentation pluginInstr) {
+        try {
+            mPluginRef.call(
+                    // 方法名
+                    "attach",
+                    sMethods,
+                    // Context context
+                    // contextWrapper,
+                    mProxy,
+                    // ActivityThread aThread
+                    mProxyRef.get("mMainThread"),
+                    // Instrumentation instr
+                    pluginInstr,
+                    // IBinder token
+                    mProxyRef.get("mToken"),
+                    // int ident
+                    mProxyRef.get("mIdent"),
+                    // Application application
+                    mApplication == null ? mProxy.getApplication() : mApplication,
+                    // Intent intent
+                    mProxy.getIntent(),
+                    // ActivityInfo info
+                    mProxyRef.get("mActivityInfo"),
+                    // CharSequence title
+                    mProxy.getTitle(),
+                    // Activity parent
+                    mProxy.getParent(),
+                    // String id
+                    mProxyRef.get("mEmbeddedID"),
+                    // NonConfigurationInstances
+                    // lastNonConfigurationInstances
+                    mProxy.getLastNonConfigurationInstance(),
+                    // Configuration config
+                    mProxyRef.get("mCurrentConfig"),
+                    // IVoiceInteractor mVoiceInteractor
+                    mProxyRef.get("mVoiceInteractor"));
+        } catch (ReflectException re) {
+            re.printStackTrace();
+            callAttachV14(pluginInstr);
+        }
+    }
+
+    /**
+     * 反射调用4.x上的Activity#attach()方法
+     * <p>
+     * <href>http://androidxref.com/4.0.3_r1/xref/frameworks/base/core/java/android/app/Activity.java#4409</href>
+     */
+    private void callAttachV14(Instrumentation pluginInstr) {
+        try {
+            mPluginRef.call(
+                    // 方法名
+                    "attach",
+                    sMethods,
+                    // Context context
+                    // contextWrapper,
+                    mProxy,
+                    // ActivityThread aThread
+                    mProxyRef.get("mMainThread"),
+                    // Instrumentation instr
+                    pluginInstr,
+                    // IBinder token
+                    mProxyRef.get("mToken"),
+                    // int ident
+                    mProxyRef.get("mIdent"),
+                    // Application application
+                    mApplication == null ? mProxy.getApplication() : mApplication,
+                    // Intent intent
+                    mProxy.getIntent(),
+                    // ActivityInfo info
+                    mProxyRef.get("mActivityInfo"),
+                    // CharSequence title
+                    mProxy.getTitle(),
+                    // Activity parent
+                    mProxy.getParent(),
+                    // String id
+                    mProxyRef.get("mEmbeddedID"),
+                    // NonConfigurationInstances
+                    // lastNonConfigurationInstances
+                    mProxy.getLastNonConfigurationInstance(),
+                    // Configuration config
+                    mProxyRef.get("mCurrentConfig"));
+        } catch (ReflectException re) {
+            re.printStackTrace();
+            callAttachV4(pluginInstr);
+        }
+    }
+
+    /**
+     * 反射调用2.x上的Activity#attach()方法
+     * <href>http://androidxref.com/2.3.6/xref/frameworks/base/core/java/android/app/Activity.java#3739</href>
+     */
+    private void callAttachV4(Instrumentation pluginInstr) {
+        mPluginRef.call(
+                // 方法名
+                "attach",
+                sMethods,
+                // Context context
+                // contextWrapper,
+                mProxy,
+                // ActivityThread aThread
+                mProxyRef.get("mMainThread"),
+                // Instrumentation instr
+                pluginInstr,
+                // IBinder token
+                mProxyRef.get("mToken"),
+                // int ident
+                mProxyRef.get("mIdent"),
+                // Application application
+                mApplication == null ? mProxy.getApplication() : mApplication,
+                // Intent intent
+                mProxy.getIntent(),
+                // ActivityInfo info
+                mProxyRef.get("mActivityInfo"),
+                // CharSequence title
+                mProxy.getTitle(),
+                // Activity parent
+                mProxy.getParent(),
+                // String id
+                mProxyRef.get("mEmbeddedID"),
+                // Object lastNonConfigurationInstances
+                mProxy.getLastNonConfigurationInstance(),
+                // HashMap<String, Object> lastNonConfigurationChildInstances
+                null,
+                // Configuration config
+                mProxyRef.get("mCurrentConfig"));
     }
 
     /**
@@ -311,7 +437,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     }
 
     /**
-     *
      * @return 插件Activity的反射工具类
      */
     public ReflectionUtils getPluginRef() {
@@ -321,8 +446,8 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onCreate方法
      *
-     * @see android.app.Activity#onCreate(android.os.Bundle)
      * @param saveInstance
+     * @see android.app.Activity#onCreate(android.os.Bundle)
      */
     @Override
     public void callOnCreate(Bundle saveInstance) {
@@ -406,8 +531,8 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onSaveInstanceState方法
      *
-     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
      * @param outState
+     * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
      */
     @Override
     public void callOnSaveInstanceState(Bundle outState) {
@@ -419,8 +544,8 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onRestoreInstanceState方法
      *
-     * @see android.app.Activity#onRestoreInstanceState(android.os.Bundle)
      * @param savedInstanceState
+     * @see android.app.Activity#onRestoreInstanceState(android.os.Bundle)
      */
     @Override
     public void callOnRestoreInstanceState(Bundle savedInstanceState) {
@@ -458,10 +583,10 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onKeyDown方法
      *
-     * @see android.app.Activity#onKeyDown(int, android.view.KeyEvent)
      * @param keyCode
      * @param event
      * @return
+     * @see android.app.Activity#onKeyDown(int, android.view.KeyEvent)
      */
     @Override
     public boolean callOnKeyDown(int keyCode, KeyEvent event) {
