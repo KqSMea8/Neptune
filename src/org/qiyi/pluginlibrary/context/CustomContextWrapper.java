@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.context;
 
+import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -41,8 +42,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +54,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     private static final String S_SHARED_PREFS =
             ContextUtils.isAndroidN() || ContextUtils.isAndroidO() ? "sSharedPrefsCache" : "sSharedPrefs";
+    private static final String M_SHARED_PREFS_PATHS = "mSharedPrefsPaths";
 
     protected static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(2);
 
@@ -108,7 +108,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         PluginDebugLog.log(getLogTag(), "startService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
-            ComponetFinder.switchToServiceProxy(mLoadedApk,service);
+            ComponetFinder.switchToServiceProxy(mLoadedApk, service);
         }
         return super.startService(service);
     }
@@ -119,11 +119,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
             String actServiceClsName = "";
-            if(name.getComponent() != null){
+            if (name.getComponent() != null) {
                 actServiceClsName = name.getComponent().getClassName();
-            }else{
+            } else {
                 ServiceInfo mServiceInfo = getPluginPackageInfo().resolveService(name);
-                if(mServiceInfo != null){
+                if (mServiceInfo != null) {
                     actServiceClsName = mServiceInfo.name;
                 }
             }
@@ -144,7 +144,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         PluginDebugLog.log(getLogTag(), "bindService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
-            ComponetFinder.switchToServiceProxy(mLoadedApk,service);
+            ComponetFinder.switchToServiceProxy(mLoadedApk, service);
         }
         if (conn != null) {
             if (mLoadedApk != null && service != null) {
@@ -290,7 +290,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     }
 
-    private static void setFilePermissionsForDb(String dbPath,int perms) {
+    private static void setFilePermissionsForDb(String dbPath, int perms) {
         //int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
         FileUtils.setPermissions(dbPath, perms, -1, -1);
     }
@@ -310,20 +310,20 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             if (mLoadedApk == null) {
                 return super.getDatabasePath(name);
             }
-            File tmpDir = new File(getPluginPackageInfo().getDataDir()+ "/databases/");
-            if(!tmpDir.exists()){
+            File tmpDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
+            if (!tmpDir.exists()) {
                 tmpDir.mkdirs();
             }
-            if(tmpDir.exists() && VersionUtils.hasOreo_MR1()){
-                int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR |FileUtils.S_IXUSR
-                        | FileUtils.S_IRGRP | FileUtils.S_IWGRP| FileUtils.S_IXGRP
-                        |FileUtils.S_IXOTH;
-                setFilePermissionsForDb(tmpDir.getAbsolutePath(),perms);
+            if (tmpDir.exists() && VersionUtils.hasOreo_MR1()) {
+                int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IXUSR
+                        | FileUtils.S_IRGRP | FileUtils.S_IWGRP | FileUtils.S_IXGRP
+                        | FileUtils.S_IXOTH;
+                setFilePermissionsForDb(tmpDir.getAbsolutePath(), perms);
 
             }
             f = new File(tmpDir, name);
-            if(VersionUtils.hasOreo_MR1()){
-                if(!f.exists()){
+            if (VersionUtils.hasOreo_MR1()) {
+                if (!f.exists()) {
                     try {
                         f.createNewFile();
                     } catch (IOException e) {
@@ -331,7 +331,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                     }
                 }
                 int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
-                setFilePermissionsForDb(f.getAbsolutePath(),perms);
+                setFilePermissionsForDb(f.getAbsolutePath(), perms);
             }
         }
 
@@ -458,8 +458,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     }
 
     private File getSharedPrefsFile(String name) {
-        File base = null;
-        base = new File(getPluginPackageInfo().getDataDir() + "/shared_prefs/");
+        File base = new File(getPluginPackageInfo().getDataDir() + "/shared_prefs/");
         if (!base.exists()) {
             base.mkdir();
         }
@@ -470,158 +469,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return new File(prefsFile.getPath() + ".bak");
     }
 
-    private SharedPreferences getSharedPreferecesForPlugin(String name, int mode) {
-        try {
-            Object sp = null;
-            if (android.os.Build.VERSION.SDK_INT <= 10) {
-                // now the plugin don't support 2.3,but if it will support in
-                // the furture,we can use this.
-                Class<?> SharedPreferencesImpl = Class.forName("android.app.ContextImpl$SharedPreferencesImpl");
-                Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
-                constructor.setAccessible(true);
-                Class<?> clazz = Class.forName("android.app.ContextImpl");
-                Field sSharedPrefs = clazz.getDeclaredField(S_SHARED_PREFS);
-                File prefsFile;
-                sSharedPrefs.setAccessible(true);
-                boolean needInitialLoad = false;
-                HashMap<String, Object> oSharedPrefs = (HashMap<String, Object>) sSharedPrefs.get(this.getBaseContext());
-                synchronized (oSharedPrefs) {
-                    sp = oSharedPrefs.get(name);
-                    Method hasFileChangedUnexpectedly = SharedPreferencesImpl.getDeclaredMethod("hasFileChangedUnexpectedly");
-                    boolean mHasFileChangedUnexpectedly = (Boolean) hasFileChangedUnexpectedly.invoke(sp);
-                    if (sp != null && !mHasFileChangedUnexpectedly) {
-                        return (SharedPreferences) sp;
-                    }
-                    prefsFile = getSharedPrefsFile(name);
-                    if (sp == null) {
-                        sp = constructor.newInstance(prefsFile, mode);
-                        oSharedPrefs.put(name, sp);
-                        needInitialLoad = true;
-                    }
-                }
-                synchronized (sp) {
-                    Method isLoaded = SharedPreferencesImpl.getDeclaredMethod("isLoaded");
-                    boolean isLoadResult = (Boolean) isLoaded.invoke(sp);
-                    if (needInitialLoad && isLoadResult) {
-                        return (SharedPreferences) sp;
-                    }
-                    File backup = makeBackupFile(prefsFile);
-                    if (backup.exists()) {
-                        prefsFile.delete();
-                        backup.renameTo(prefsFile);
-                    }
-
-                    Map map = null;
-                    Class<?> fileUtilsClass = Class.forName("android.os.FileUtils");
-
-                    Class<?> fileStatusClass = Class.forName("android.os.FileUtils$FileStatus");
-                    Constructor<?> fileStatusConstructor = fileStatusClass.getConstructor();
-                    Object FileStatus = fileStatusConstructor.newInstance();
-
-                    Method getFileStatus = fileUtilsClass.getDeclaredMethod("getFileStatus", String.class, fileStatusClass);
-                    boolean getFileStatusResult = (Boolean) getFileStatus.invoke(FileStatus, prefsFile.getPath(), FileStatus);
-                    FileInputStream str = null;
-                    if (getFileStatusResult && prefsFile.canRead()) {
-                        try {
-                            str = new FileInputStream(prefsFile);
-                            Class<?> xmlUtilClass = Class.forName("com.android.internal.util.XmlUtils");
-                            map = (Map) xmlUtilClass.getDeclaredMethod("readMapXml", FileInputStream.class)
-                                    .invoke(xmlUtilClass.newInstance(), str);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        } finally {
-                            if (null != str) {
-                                try {
-                                    str.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-                    }
-                    SharedPreferencesImpl.getMethod("replace", Map.class, fileStatusClass).invoke(sp, map, FileStatus);
-                }
-                return (SharedPreferences) sp;
-            } else if (android.os.Build.VERSION.SDK_INT <= 18) {
-
-                Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
-                Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
-                constructor.setAccessible(true);
-                HashMap<String, Object> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
-                        .<HashMap<String, Object>> get(S_SHARED_PREFS);
-                // HashMap<String, Object> oSharedPrefs = ()
-                // JavaCalls.getField(this.getBaseContext(), "sSharedPrefs");
-
-                synchronized (oSharedPrefs) {
-                    sp = oSharedPrefs.get(name);
-                    if (sp == null) {
-                        File prefsFile = getSharedPrefsFile(name);
-                        sp = constructor.newInstance(prefsFile, mode);
-                        oSharedPrefs.put(name, sp);
-                    }
-                }
-                if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
-                        .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                    ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
-                    // JavaCalls.invokeMethod(sp,
-                    // "startReloadIfChangedUnexpectedly", null, null);
-                }
-            } else {
-                Class<?> clazz = Class.forName("android.app.ContextImpl");
-                Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
-                Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
-                constructor.setAccessible(true);
-                // ArrayMap<String, ArrayMap<String, Object>> oSharedPrefs =
-                // (ArrayMap<String, ArrayMap<String, Object>>)
-                // JavaCalls.getField(this.getBaseContext(), "sSharedPrefs");
-                ArrayMap<String, ArrayMap<String, Object>> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
-                        .<ArrayMap<String, ArrayMap<String, Object>>> get(S_SHARED_PREFS);
-                synchronized (clazz) {
-                    if (oSharedPrefs == null) {
-                        oSharedPrefs = new ArrayMap<String, ArrayMap<String, Object>>();
-                    }
-
-                    final String packageName = getPackageName();
-                    ArrayMap<String, Object> packagePrefs = oSharedPrefs.get(packageName);
-                    if (packagePrefs == null) {
-                        packagePrefs = new ArrayMap<String, Object>();
-                        oSharedPrefs.put(packageName, packagePrefs);
-                    }
-
-                    sp = packagePrefs.get(name);
-                    if (sp == null) {
-                        File prefsFile = getSharedPrefsFile(name);
-                        sp = constructor.newInstance(prefsFile, mode);
-                        packagePrefs.put(name, sp);
-                        return (SharedPreferences) sp;
-                    }
-                    if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
-                            .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                        ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
-                        // JavaCalls.invokeMethod(sp,
-                        // "startReloadIfChangedUnexpectedly", null, null);
-                    }
-                }
-            }
-
-            return (SharedPreferences) sp;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 
     /**
      * Override Oppo method in Context Resolve cann't start plugin on oppo
@@ -637,7 +484,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     public SharedPreferences getSharedPreferences(String name, int mode) {
         if (getPluginLoadedApk() != null && getPluginPackageInfo() != null) {
             backupSharedPreference(name);
-            SharedPreferences sp = getSharedPreferecesForPlugin(name, mode);
+            SharedPreferences sp = getSharedPreferencesForPlugin(name, mode);
             if (sp != null) {
                 return sp;
             }
@@ -662,6 +509,258 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
     }
 
+    /**
+     * 获取插件的SharedPreference对象
+     *
+     * @param name
+     * @param mode
+     * @return
+     */
+    private SharedPreferences getSharedPreferencesForPlugin(String name, int mode) {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 24) {
+                // Android 7.0+
+                return getSharedPreferencesV24(name, mode);
+            } else if (android.os.Build.VERSION.SDK_INT >= 19) {
+                // Android 4.4~6.0
+                return getSharedPreferencesV19(name, mode);
+            } else if (android.os.Build.VERSION.SDK_INT >= 14) {
+                // Android 4.0~4.3
+                return getSharedPreferencesV14(name, mode);
+            } else {
+                // Android 2.3
+                return getSharedPreferencesV4(name, mode);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Android 7.0+系统，
+     * <href>http://androidxref.com/7.0.0_r1/xref/frameworks/base/core/java/android/app/ContextImpl.java#141</href>
+     * ContextImpl.java
+     * private static ArrayMap<String, ArrayMap<File, SharedPreferencesImpl>> sSharedPrefsCache;
+     * private ArrayMap<String, File> mSharedPrefsPaths;
+     *
+     * @param name
+     * @param mode
+     * @return
+     */
+    @TargetApi(Build.VERSION_CODES.N)
+    private SharedPreferences getSharedPreferencesV24(String name, int mode) throws Exception {
+        Object sp = null;
+        Class<?> clazz = Class.forName("android.app.ContextImpl");
+        Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
+        Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
+        constructor.setAccessible(true);
+        ArrayMap<String, ArrayMap<File, Object>> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
+                .<ArrayMap<String, ArrayMap<File, Object>>>get(S_SHARED_PREFS);
+        ArrayMap<String, File> oSharedPrefsPaths = ReflectionUtils.on(this.getBaseContext())
+                .<ArrayMap<String, File>>get(M_SHARED_PREFS_PATHS);
+        synchronized (clazz) {
+            if (oSharedPrefsPaths == null) {
+                oSharedPrefsPaths = new ArrayMap<String, File>();
+            }
+            final PluginLoadedApk mLoadedApk = getPluginLoadedApk();
+            final String packageName = mLoadedApk != null ? mLoadedApk.getPluginPackageName() : getPackageName();
+            final String fileKey = packageName + "_" + name;
+            File prefsFile = oSharedPrefsPaths.get(fileKey);
+            if (prefsFile == null) {
+                prefsFile = getSharedPrefsFile(name);
+                oSharedPrefsPaths.put(fileKey, prefsFile);
+            }
+
+            if (oSharedPrefs == null) {
+                oSharedPrefs = new ArrayMap<String, ArrayMap<File, Object>>();
+            }
+
+            ArrayMap<File, Object> packagePrefs = oSharedPrefs.get(packageName);
+            if (packagePrefs == null) {
+                packagePrefs = new ArrayMap<File, Object>();
+                oSharedPrefs.put(packageName, packagePrefs);
+            }
+
+            sp = packagePrefs.get(prefsFile);
+            if (sp == null) {
+                sp = constructor.newInstance(prefsFile, mode);
+                packagePrefs.put(prefsFile, sp);
+                return (SharedPreferences) sp;
+            }
+            if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
+                    .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
+                ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
+            }
+        }
+        return (SharedPreferences) sp;
+    }
+
+    /**
+     * Android 4.4-6.0
+     * <herf>http://androidxref.com/4.4_r1/xref/frameworks/base/core/java/android/app/ContextImpl.java#184</herf>
+     * <href>http://androidxref.com/6.0.0_r1/xref/frameworks/base/core/java/android/app/ContextImpl.java#132</href>
+     * ContextImpl.java
+     * private static ArrayMap<String, ArrayMap<String, SharedPreferencesImpl>> sSharedPrefs;
+     *
+     * @param name
+     * @param mode
+     * @return
+     */
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    private SharedPreferences getSharedPreferencesV19(String name, int mode)
+            throws Exception {
+        Object sp = null;
+        Class<?> clazz = Class.forName("android.app.ContextImpl");
+        Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
+        Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
+        constructor.setAccessible(true);
+        ArrayMap<String, ArrayMap<String, Object>> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
+                .<ArrayMap<String, ArrayMap<String, Object>>>get(S_SHARED_PREFS);
+        synchronized (clazz) {
+            if (oSharedPrefs == null) {
+                oSharedPrefs = new ArrayMap<String, ArrayMap<String, Object>>();
+            }
+
+            final PluginLoadedApk mLoadedApk = getPluginLoadedApk();
+            final String packageName = mLoadedApk != null ? mLoadedApk.getPluginPackageName() : getPackageName();
+            ArrayMap<String, Object> packagePrefs = oSharedPrefs.get(packageName);
+            if (packagePrefs == null) {
+                packagePrefs = new ArrayMap<String, Object>();
+                oSharedPrefs.put(packageName, packagePrefs);
+            }
+
+            sp = packagePrefs.get(name);
+            if (sp == null) {
+                File prefsFile = getSharedPrefsFile(name);
+                sp = constructor.newInstance(prefsFile, mode);
+                packagePrefs.put(name, sp);
+                return (SharedPreferences) sp;
+            }
+            if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
+                    .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
+                ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
+            }
+        }
+        return (SharedPreferences) sp;
+    }
+
+    /**
+     * Android 4.0-4.3
+     * <href>http://androidxref.com/4.0.3_r1/xref/frameworks/base/core/java/android/app/ContextImpl.java#142</href>
+     * <href>http://androidxref.com/4.3_r2.1/xref/frameworks/base/core/java/android/app/ContextImpl.java#172</href>
+     * ContextImpl.java
+     * private static final HashMap<String, SharedPreferencesImpl> sSharedPrefs
+     *
+     * @param name
+     * @param mode
+     * @return
+     */
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    private SharedPreferences getSharedPreferencesV14(String name, int mode)
+            throws Exception {
+        Object sp = null;
+        Class<?> SharedPreferencesImpl = Class.forName("android.app.SharedPreferencesImpl");
+        Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
+        constructor.setAccessible(true);
+        HashMap<String, Object> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
+                .<HashMap<String, Object>>get(S_SHARED_PREFS);
+
+        final PluginLoadedApk mLoadedApk = getPluginLoadedApk();
+        final String packageName = mLoadedApk != null ? mLoadedApk.getPluginPackageName() : getPackageName();
+        final String nameKey = packageName + "_" + name;
+        synchronized (oSharedPrefs) {
+            sp = oSharedPrefs.get(nameKey);
+            if (sp == null) {
+                File prefsFile = getSharedPrefsFile(name);
+                sp = constructor.newInstance(prefsFile, mode);
+                oSharedPrefs.put(nameKey, sp);
+                return (SharedPreferences) sp;
+            }
+        }
+        if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
+                .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
+            ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
+        }
+        return (SharedPreferences) sp;
+    }
+
+    /**
+     * Android 4.0以下系统
+     *
+     * @param name
+     * @param mode
+     * @return
+     */
+    private SharedPreferences getSharedPreferencesV4(String name, int mode) throws Exception {
+        // now the plugin don't support 2.3,but if it will support in
+        // the furture,we can use this.
+        Object sp = null;
+        Class<?> SharedPreferencesImpl = Class.forName("android.app.ContextImpl$SharedPreferencesImpl");
+        Constructor<?> constructor = SharedPreferencesImpl.getDeclaredConstructor(File.class, int.class);
+        constructor.setAccessible(true);
+        Class<?> clazz = Class.forName("android.app.ContextImpl");
+        File prefsFile;
+        boolean needInitialLoad = false;
+        HashMap<String, Object> oSharedPrefs = ReflectionUtils.on(this.getBaseContext()).get(S_SHARED_PREFS);
+        synchronized (oSharedPrefs) {
+            sp = oSharedPrefs.get(name);
+            Method hasFileChangedUnexpectedly = SharedPreferencesImpl.getDeclaredMethod("hasFileChangedUnexpectedly");
+            boolean mHasFileChangedUnexpectedly = (Boolean) hasFileChangedUnexpectedly.invoke(sp);
+            if (sp != null && !mHasFileChangedUnexpectedly) {
+                return (SharedPreferences) sp;
+            }
+            prefsFile = getSharedPrefsFile(name);
+            if (sp == null) {
+                sp = constructor.newInstance(prefsFile, mode);
+                oSharedPrefs.put(name, sp);
+                needInitialLoad = true;
+            }
+        }
+        synchronized (sp) {
+            Method isLoaded = SharedPreferencesImpl.getDeclaredMethod("isLoaded");
+            boolean isLoadResult = (Boolean) isLoaded.invoke(sp);
+            if (needInitialLoad && isLoadResult) {
+                return (SharedPreferences) sp;
+            }
+            File backup = makeBackupFile(prefsFile);
+            if (backup.exists()) {
+                prefsFile.delete();
+                backup.renameTo(prefsFile);
+            }
+
+            Map map = null;
+            Class<?> fileUtilsClass = Class.forName("android.os.FileUtils");
+
+            Class<?> fileStatusClass = Class.forName("android.os.FileUtils$FileStatus");
+            Constructor<?> fileStatusConstructor = fileStatusClass.getConstructor();
+            Object FileStatus = fileStatusConstructor.newInstance();
+
+            Method getFileStatus = fileUtilsClass.getDeclaredMethod("getFileStatus", String.class, fileStatusClass);
+            boolean getFileStatusResult = (Boolean) getFileStatus.invoke(FileStatus, prefsFile.getPath(), FileStatus);
+            FileInputStream str = null;
+            if (getFileStatusResult && prefsFile.canRead()) {
+                try {
+                    str = new FileInputStream(prefsFile);
+                    Class<?> xmlUtilClass = Class.forName("com.android.internal.util.XmlUtils");
+                    map = (Map) xmlUtilClass.getDeclaredMethod("readMapXml", FileInputStream.class)
+                            .invoke(xmlUtilClass.newInstance(), str);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (null != str) {
+                        try {
+                            str.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            SharedPreferencesImpl.getMethod("replace", Map.class, fileStatusClass).invoke(sp, map, FileStatus);
+        }
+        return (SharedPreferences) sp;
+    }
 
     /**
      * Get the context which start this plugin
@@ -709,9 +808,9 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return null;
     }
 
-    public PluginPackageInfo getPluginPackageInfo(){
+    public PluginPackageInfo getPluginPackageInfo() {
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
-        if(mLoadedApk != null){
+        if (mLoadedApk != null) {
             return mLoadedApk.getPluginPackageInfo();
         }
         return null;
