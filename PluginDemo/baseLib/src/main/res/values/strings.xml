@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">baseLib</string>
+    <string name="baselib">Hello Library</string>
+</resources>

@@ -1,0 +1,56 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'com.qiyi.plugin'
+
+def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
+
+qyplugin {
+    pluginMode = isPluginBuild
+    packageId = 0x30
+    hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
+}
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
+    defaultConfig {
+        applicationId "com.iqiyi.ishow"
+        minSdkVersion 14
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+}
+
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    if (isPluginBuild) {
+        provided ('com.qiyi.video.allclasses:support_lib:latest.release')   //support_lib
+        provided ('com.qiyi.video.allclasses:basecore_lib:latest.release')  // basecore_lib
+        compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
+        compile "com.qiyi.video.allclasses:commonres_lib:9.4.0"    // commonres_lib
+    } else {
+        compile "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
+        compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
+        compile "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
+        compile "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
+        compile 'com.facebook.fresco:fresco:1.2.0'
+    }
+    compile project(":baseLib")
+}
