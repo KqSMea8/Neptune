@@ -41,7 +41,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
 
-import com.android.builder.Version
+import com.android.builder.model.Version
 def isHigherAGP = compareVersion(Version.ANDROID_GRADLE_PLUGIN_VERSION, "3.0.0") >= 0
 
 afterEvaluate {

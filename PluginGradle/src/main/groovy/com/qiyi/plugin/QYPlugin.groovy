@@ -2,7 +2,7 @@ package com.qiyi.plugin
 
 
 import com.android.build.gradle.api.ApkVariant
-import com.android.builder.Version
+import com.android.builder.model.Version
 import com.qiyi.plugin.hooker.TaskHookerManager
 import com.qiyi.plugin.utils.Utils
 import org.gradle.api.GradleException

@@ -5,11 +5,13 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApkVariant
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.api.BaseVariant
+import com.android.build.gradle.internal.api.ApplicationVariantImpl
 import com.android.build.gradle.tasks.MergeResources
 import com.android.build.gradle.tasks.ProcessAndroidResources
 import com.android.sdklib.BuildToolInfo
 import com.google.common.collect.ListMultimap
 import com.google.common.io.Files
+import com.qiyi.plugin.QYPlugin
 import com.qiyi.plugin.QYPluginExtension
 import com.qiyi.plugin.aapt.Aapt
 import com.qiyi.plugin.collector.ResourceCollector
@@ -26,18 +28,28 @@ class TaskHookerManager {
     /** Android Config information */
     private AppExtension android
 
+    private QYPluginExtension qyplugin
+
     public TaskHookerManager(Project project) {
         this.project = project
         android = project.extensions.findByType(AppExtension)
+        qyplugin = project.extensions.findByType(QYPluginExtension)
     }
 
 
     public void registerTaskHooker() {
         project.afterEvaluate {
-            android.applicationVariants.all { ApplicationVariant appVariant ->
+            android.applicationVariants.all { ApplicationVariantImpl appVariant ->
+
                 def scope = appVariant.getVariantData().getScope()
-                String mergeTaskName = scope.getMergeResourcesTask().name
-                MergeResources mergeResTask = project.tasks.getByName(mergeTaskName) as MergeResources
+                MergeResources mergeResTask
+                if (pluginExt.isHigherAGP) {
+                    mergeResTask = appVariant.getVariantData().mergeResourcesTask
+                } else {
+                    String mergeTaskName = scope.getMergeResourcesTask().name
+                    mergeResTask = project.tasks.getByName(mergeTaskName) as MergeResources
+                }
+
                 String processResTaskName = pluginExt.isHigherAGP ?
                         scope.getProcessResourcesTask().name : scope.getGenerateRClassTask().name
                 ProcessAndroidResources processResTask = project.tasks.getByName(processResTaskName) as ProcessAndroidResources
@@ -123,7 +135,8 @@ class TaskHookerManager {
         def resIdMap = resourceCollector.resIdMap
 
         def rSymbolFile = pluginExt.isHigherAGP ? par.textSymbolOutputFile : new File(par.textSymbolOutputDir, 'R.txt')
-        def libRefTable = ["${pluginExt.packageId}": par.packageForR]
+        def libRefTable = ["${pluginExt.packageId}": (pluginExt.isHigherAGP ? par.originalApplicationId : par.packageForR)]
+
         def filteredResources = [] as HashSet<String>
         def updatedResources = [] as HashSet<String>
 

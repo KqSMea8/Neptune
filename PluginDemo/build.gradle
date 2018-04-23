@@ -8,10 +8,13 @@ buildscript {
         maven {
             url="http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
         }
+        maven {
+            url="E://repo"
+        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.3'
-        classpath 'com.iqiyi.tools.build:plugin-gradle:1.0.0'
+        classpath 'com.iqiyi.tools.build:plugin-gradle:1.0.1'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
