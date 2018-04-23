@@ -25,11 +25,12 @@ uploadArchives {
 dependencies {
     provided files('libs/android-support-v4.jar')
     provided files('libs/fileutil.jar')
+    provided project(':AndroidStub')
 }
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    compileSdkVersion COMPILE_SDK_VERSION
+    buildToolsVersion BUILD_TOOLS_VERSION
     lintOptions {
         abortOnError false
     }
@@ -59,22 +60,12 @@ android {
     }
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 23
+        targetSdkVersion TARGET_SDK_VERSION
     }
     dexOptions {
         javaMaxHeapSize "2g"
         jumboMode true
     }
-//    buildTypes {
-//        debug {
-//            minifyEnabled false
-//            proguardFile('proguard.cfg')
-//        }
-//        release {
-//            minifyEnabled true
-//            proguardFile('proguard.cfg')
-//        }
-//    }
     packagingOptions {
         exclude('META-INF/DEPENDENCIES')
         exclude('META-INF/NOTICE')
@@ -86,7 +77,7 @@ android {
         // but continue the build even when errors are found:
         abortOnError false
     }
-    def target = new File(project.buildDir.toString()+"/libs");
+    def target = new File(project.buildDir.toString()+"/libs")
 
     task clearJar(type: Delete) {
         delete "${target}/libplugin.jar"

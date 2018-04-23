@@ -1,2 +1,2 @@
 
-include ':SdkLibrary'
+include ':SdkLibrary', ':AndroidStub'
