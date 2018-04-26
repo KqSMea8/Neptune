@@ -23,8 +23,8 @@ import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.plugin.PluginActivityCallback;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.exception.ReflectException;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 /**
  * 插件的控制器<br> 派发插件事件和控制插件生命周期
@@ -65,11 +65,11 @@ public class PluginActivityControl implements PluginActivityCallback {
             return;
         }
         try {
-            if (ContextUtils.isAndroidO()) {
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
                 // Android O的attach方法在7.0的参数基础上增加了android.view.ViewRootImpl$ActivityConfigCallback这样一个参数，这个参数是PhoneWindow的成员变量
                 // 8.0, android.os.Build.VERSION_CODES.O
                 callAttachV26(pluginInstr);
-            } else if (ContextUtils.isAndroidN()) {
+            } else if (android.os.Build.VERSION.SDK_INT >= 24) {
                 // Android N的attach方法在6.0的参数基础上增加了一个Window的参数
                 // 7.0, android.os.Build.VERSION_CODES.N
                 callAttachV24(pluginInstr);
@@ -507,7 +507,7 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnStop() {
         if (null != getPluginRef()) {
-            if (ContextUtils.isAndroidN() || ContextUtils.isAndroidO()) {
+            if (VersionUtils.hasNougat()) {
                 // 此处强制写false可能带来一些风险，暂时没有其他的方法处理
                 getPluginRef().call("performStop", sMethods, false);
             } else {

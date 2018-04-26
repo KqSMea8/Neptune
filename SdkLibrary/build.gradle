@@ -25,7 +25,8 @@ uploadArchives {
 dependencies {
     provided files('libs/android-support-v4.jar')
     provided files('libs/fileutil.jar')
-    provided project(':AndroidStub')
+    //provided files('libs/android-27.jar')
+    //provided project(':AndroidStub')
 }
 
 android {
@@ -96,6 +97,26 @@ android {
 
     }
     makeJar.dependsOn(clearJar, build)
+}
+
+import groovy.xml.XmlUtil
+// 调整Android SDK的依赖顺序，放到SdkLibrary.iml文件的最后面
+preBuild.doLast {
+    def imlFile = file(project.name + ".iml")
+    println "Change ${project.name} .iml orderEntry"
+    try {
+        def parsedXml = (new XmlParser()).parse(imlFile)
+        def jdkNode = parsedXml.component[1].orderEntry.find {
+            it.'@type' == 'jdk'
+        }
+        parsedXml.component[1].remove(jdkNode)
+        def sdkver = "Android API " + android.compileSdkVersion.substring("android-".length())  + " Platform"
+        new Node(parsedXml.component[1], 'orderEntry', ['type': 'jdk', 'jdkName': sdkver, 'jdkType': 'Android SDK'])
+        XmlUtil.serialize(parsedXml, new FileOutputStream(imlFile))
+    } catch (FileNotFoundException e) {
+        // nop, iml not found
+        e.printStackTrace()
+    }
 }
 
 /**

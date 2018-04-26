@@ -35,7 +35,6 @@ import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,6 @@ import dalvik.system.DexClassLoader;
 
 public class PluginLoadedApk implements IIntentConstant {
     private static final String TAG = "PluginLoadedApk";
-
     /**
      * 保存插件的依赖关系
      */
@@ -141,7 +139,7 @@ public class PluginLoadedApk implements IIntentConstant {
      * @param mHostContext       主工程的上下文
      * @param mPluginFile        需要加载的插件apk文件
      * @param mPluginPackageName 插件的包名
-     * @param mProcessName 插件运行的进程名称
+     * @param mProcessName       插件运行的进程名称
      * @throws Exception 当以上参数有一个为Null时，可能抛出{@link NullPointerException}
      *                   当创建ClassLoader失败时，会抛出异常
      */
@@ -163,7 +161,7 @@ public class PluginLoadedApk implements IIntentConstant {
         extraPluginPackageInfo(this.mPluginPackageName);
         this.mProcessName = mProcessName;
         if (!createClassLoader()) {
-            throw new Exception("ProxyEnvironmentNew init failed for createClassLoader failed:" + " apkFile: " + mPluginFile.getAbsolutePath() + " pluginPakName: " + mPluginPackageName);
+            throw new RuntimeException("ProxyEnvironmentNew init failed for createClassLoader failed:" + " apkFile: " + mPluginFile.getAbsolutePath() + " pluginPakName: " + mPluginPackageName);
         }
 
         createPluginResource();
@@ -214,6 +212,8 @@ public class PluginLoadedApk implements IIntentConstant {
             AssetManager am = AssetManager.class.newInstance();
             ReflectionUtils.on(am)
                     .call("addAssetPath", PluginActivityControl.sMethods, mPluginFile.getAbsolutePath());
+//            AssetManager am = new AssetManager();
+//            am.addAssetPath(mPluginFile.getAbsolutePath());
             mPluginAssetManager = am;
         } catch (Exception e) {
             PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
@@ -230,22 +230,23 @@ public class PluginLoadedApk implements IIntentConstant {
         mResourceTool = new ResourcesToolForPlugin(mHostContext);
     }
 
+
     /**
      * 创建插件的ClassLoader
      *
      * @return true:创建成功，false:创建失败
      */
     private boolean createClassLoader() {
-        boolean dependence = handleDependences();
-        PluginDebugLog.runtimeLog(TAG, "handleDependences: " + dependence);
+        boolean dependence = handleDependencies();
+        PluginDebugLog.runtimeLog(TAG, "handleDependencies: " + dependence);
         if (!dependence) {
-            return dependence;
+            return false;
         }
         PluginDebugLog.runtimeLog(TAG, "createClassLoader");
-        File optimizedDirectory = new File(getDataDir(mHostContext, mPluginPackageName).getAbsolutePath());
-        if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
+        File optimizedDirectory = getDataDir(mHostContext, mPluginPackageName);
+        //if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
             mPluginClassLoader = new DexClassLoader(mPluginFile.getAbsolutePath(), optimizedDirectory.getAbsolutePath(),
-                    mPluginMapping.getnativeLibraryDir(), mHostContext.getClassLoader());
+                    mPluginMapping.getNativeLibraryDir(), mHostContext.getClassLoader());
 
             // 把插件 classloader 注入到host程序中，方便host app 能够找到 插件 中的class
             if (!isSharePluginInjectClassLoader()) {
@@ -263,13 +264,13 @@ public class PluginLoadedApk implements IIntentConstant {
                 PluginDebugLog.runtimeLog(TAG, "plugin: " + mPluginMapping.getPackageName() + " no need to inject to host classloader");
             }
             return true;
-        } else {
-            PluginDebugLog.runtimeLog(TAG,
-                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
-                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
-                            + " can write: " + optimizedDirectory.canWrite());
-            return false;
-        }
+//        } else {
+//            PluginDebugLog.runtimeLog(TAG,
+//                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
+//                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
+//                            + " can write: " + optimizedDirectory.canWrite());
+//            return false;
+//        }
     }
 
     /**
@@ -293,6 +294,20 @@ public class PluginLoadedApk implements IIntentConstant {
     boolean makeApplication() {
         if (!isPluginInit || mPluginApplication == null) {
             String className = mPluginMapping.getApplicationClassName();
+
+//            if (TextUtils.isEmpty(className)) {
+//                className = "android.app.Application";
+//            }
+//            hookInstrumentation();
+//            this.mAppWrapper = new PluginContextWrapper(((Application) mHostContext)
+//                    .getBaseContext(), mPluginPackageName);
+//            try {
+//                this.mPluginApplication = mPluginInstrument.newApplication(mPluginClassLoader, className, mAppWrapper);
+//            } catch (Exception e) {
+//                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
+//                return false;
+//            }
+
             if (TextUtils.isEmpty(className) || Application.class.getName().equals(className)) {
                 // 创建默认的虚拟Application
                 mPluginApplication = new Application();
@@ -305,10 +320,11 @@ public class PluginLoadedApk implements IIntentConstant {
                     return false;
                 }
             }
-
             invokeApplicationAttach();
+
             try {
                 mPluginApplication.onCreate();
+                //mPluginInstrument.callApplicationOnCreate(mPluginApplication);
             } catch (Throwable t) {
                 PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
                 PluginDebugLog.runtimeLog(TAG, "launchIntent application oncreate failed!");
@@ -316,6 +332,7 @@ public class PluginLoadedApk implements IIntentConstant {
                 System.exit(0);
                 return false;
             }
+
             hookInstrumentation();
             isPluginInit = true;
             PluginManager.deliver(mHostContext, true, mPluginPackageName, ErrorType.SUCCESS);
@@ -333,10 +350,15 @@ public class PluginLoadedApk implements IIntentConstant {
     private void hookInstrumentation() {
         try {
             Context contextImpl = ((ContextWrapper) mHostContext).getBaseContext();
-            Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
-            Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
-            instrumentationF.setAccessible(true);
-            mPluginInstrument = new PluginInstrument((Instrumentation) instrumentationF.get(activityThread), mPluginPackageName);
+            Object activityThread = ReflectionUtils.on(contextImpl).get("mMainThread");
+            Instrumentation hostInstr = ReflectionUtils.on(activityThread).get("mInstrumentation");
+
+//            Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
+//            Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
+//            instrumentationF.setAccessible(true);
+//            Instrumentation hostInstr = (Instrumentation) instrumentationF.get(activityThread);
+            hostInstr = PluginInstrument.unwrap(hostInstr);
+            mPluginInstrument = new PluginInstrument(hostInstr, mPluginPackageName);
         } catch (Exception e) {
             PluginManager.deliver(mHostContext, false, mPluginPackageName,
                     ErrorType.ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL);
@@ -379,7 +401,7 @@ public class PluginLoadedApk implements IIntentConstant {
                 .getPackageInfo(mPluginPackage);
         if (pkgInfo != null) {
             mPluginMapping = PluginPackageManagerNative.getInstance(mHostContext)
-                    .getPluginPackageInfo(mHostContext,pkgInfo); //pkgInfo.getTargetMapping(mHostContext);
+                    .getPluginPackageInfo(mHostContext, pkgInfo); //pkgInfo.getTargetMapping(mHostContext);
             if (null == mPluginMapping || null == mPluginMapping.getPackageInfo()) {
                 throw new Exception("Exception case targetMapping init failed!");
             }
@@ -394,10 +416,8 @@ public class PluginLoadedApk implements IIntentConstant {
      * @param mConfiguration 新的资源配置信息
      */
     public void updateConfiguration(Configuration mConfiguration) {
-        if (mPluginResource != null) {
-            mPluginResource.updateConfiguration(mConfiguration,
-                    mHostResource != null ? mHostResource.getDisplayMetrics() : null);
-        }
+        mPluginResource.updateConfiguration(mConfiguration,
+                mHostResource != null ? mHostResource.getDisplayMetrics() : null);
     }
 
     /**
@@ -405,7 +425,7 @@ public class PluginLoadedApk implements IIntentConstant {
      *
      * @return true:处理成功，false：处理失败
      */
-    private boolean handleDependences() {
+    private boolean handleDependencies() {
         List<String> dependencies = PluginPackageManagerNative
                 .getInstance(mHostContext).getPluginRefs(mPluginPackageName); //pkgInfo.pluginInfo.getPluginResfs();
         if (null != dependencies) {
@@ -463,18 +483,21 @@ public class PluginLoadedApk implements IIntentConstant {
      */
     public File getDataDir(Context context, String packageName) {
         PluginDebugLog.runtimeLog(TAG, "packageName:" + packageName + " context:" + context);
-        File file = null;
+        File dataDir = null;
         try {
             if (TextUtils.isEmpty(packageName)) {
                 PluginManager.deliver(context, false, context.getPackageName(),
                         ErrorType.ERROR_CLIENT_LOAD_CREATE_FILE_NULL);
                 return null;
             }
-            file = new File(mPluginMapping.getDataDir());
+            dataDir = new File(mPluginMapping.getDataDir());
+            if (!dataDir.exists()) {
+                dataDir.mkdirs();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return file;
+        return dataDir;
     }
 
     /**
@@ -581,10 +604,10 @@ public class PluginLoadedApk implements IIntentConstant {
 
     /**
      * 获取插件的Instrumentation
-     * @return
-     *      返回插件中使用的Instrumentation
+     *
+     * @return 返回插件中使用的Instrumentation
      */
-    public PluginInstrument getPluginInstrument(){
+    public PluginInstrument getPluginInstrument() {
         return mPluginInstrument;
     }
 
@@ -597,8 +620,8 @@ public class PluginLoadedApk implements IIntentConstant {
         return mPluginMapping;
     }
 
-    public PackageInfo getPackageInfo(){
-        if(mPluginMapping != null){
+    public PackageInfo getPackageInfo() {
+        if (mPluginMapping != null) {
             return mPluginMapping.getPackageInfo();
         }
         return null;
@@ -633,9 +656,10 @@ public class PluginLoadedApk implements IIntentConstant {
 
     /**
      * 返回基线资源工具
+     *
      * @return
      */
-    public ResourcesToolForPlugin getHostResourceTool(){
+    public ResourcesToolForPlugin getHostResourceTool() {
         return mResourceTool;
     }
 
@@ -651,8 +675,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 获取插件运行的进程名称(package:pluin or package:plugin1)
      *
-     * @return
-     *      返回插件进程的名称，可以在Application的process中指定插件运行的进程
+     * @return 返回插件进程的名称，可以在Application的process中指定插件运行的进程
      */
     public String getProcessName() {
         return mProcessName;
@@ -660,17 +683,17 @@ public class PluginLoadedApk implements IIntentConstant {
 
     /**
      * 获取当前插件的自定义Context
+     *
      * @return
      */
-    public PluginContextWrapper getAppWrapper(){
+    public PluginContextWrapper getAppWrapper() {
         return mAppWrapper;
     }
 
     /**
      * 获取主工程的包名
      *
-     * @return
-     *      主工程的包名
+     * @return 主工程的包名
      */
     public String getHostPackageName() {
         return mHostPackageName;
@@ -679,8 +702,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 获取插件的主题资源
      *
-     * @return
-     *      插件的主题
+     * @return 插件的主题
      */
     public Resources.Theme getPluginTheme() {
         return mPluginTheme;
@@ -689,8 +711,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 获取插件的Resource
      *
-     * @return
-     *      插件的Resource,通过此Resource插件可以访问主工程和插件的资源
+     * @return 插件的Resource, 通过此Resource插件可以访问主工程和插件的资源
      */
     public Resources getPluginResource() {
         return mPluginResource;
@@ -699,8 +720,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 获取插件的AssetManager
      *
-     * @return
-     *      插件的AssetManager
+     * @return 插件的AssetManager
      */
     public AssetManager getPluginAssetManager() {
         return mPluginAssetManager;
@@ -710,8 +730,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 跟新插件是否有正在启动的页面 状态
      *
-     * @param isLaunchingIntent
-     *      true:有正在启动的intent,false:没有正在启动的intent
+     * @param isLaunchingIntent true:有正在启动的intent,false:没有正在启动的intent
      */
     void changeLaunchingIntentStatus(boolean isLaunchingIntent) {
         this.isLaunchingIntent = isLaunchingIntent;
@@ -721,7 +740,7 @@ public class PluginLoadedApk implements IIntentConstant {
      * 分享插件是否注入到主ClassLoader里
      * 临时方案，因为插件sdk无法访问基线的类
      *
-     * @return  false不注入，true维持线上逻辑
+     * @return false不注入，true维持线上逻辑
      */
     private boolean isSharePluginInjectClassLoader() {
 

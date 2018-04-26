@@ -12,6 +12,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import android.text.TextUtils;
 
@@ -158,30 +160,38 @@ public class ReflectionUtils {
     }
 
     /**
+     * 包装起一个对象 <p/> 当你需要访问实例或其父类的字段和方法时可以使用此方法 {@link Object}
+     *
+     * @param object  需要被包装的对象
+     * @param clazz   被包装类自身或其父类
+     * @return
+     */
+    public static ReflectionUtils on(Object object, Class<?> clazz) {
+        return new ReflectionUtils(object, clazz);
+    }
+
+    /**
      * 使受访问权限限制的对象转为不受限制。 一般情况下， 一个类的私有字段和方法是无法获取和调用的， 原因在于调用前Java会检查是否具有可访问权限，
      * 当调用此方法后， 访问权限检查机制将被关闭。
      *
      * @param accessible 受访问限制的对象
      * @return 不受访问限制的对象
      */
-    public static <T extends AccessibleObject> T accessible(T accessible) {
-        if (accessible == null) {
-            return null;
-        }
-
-        if (accessible instanceof Member) {
-            Member member = (Member) accessible;
-
-            if (Modifier.isPublic(member.getModifiers()) && Modifier.isPublic(member.getDeclaringClass().getModifiers())) {
-
-                return accessible;
-            }
-        }
+    private static <T extends AccessibleObject> T accessible(T accessible) {
 
         // 默认为false,即反射时检查访问权限，
         // 设为true时不检查访问权限,可以访问private字段和方法
         if (!accessible.isAccessible()) {
             accessible.setAccessible(true);
+        }
+
+        if (accessible instanceof Member) {
+            Member member = (Member) accessible;
+
+            if (Modifier.isPublic(member.getModifiers())
+                    && Modifier.isPublic(member.getDeclaringClass().getModifiers())) {
+                return accessible;
+            }
         }
 
         return accessible;
@@ -190,12 +200,14 @@ public class ReflectionUtils {
     // ---------------------------------------------------------------------
     // 成员
     // ---------------------------------------------------------------------
-
     /**
-     * 被包装的对象
+     * 被包装的对象，访问一个实例的方法和字段
      */
     private final Object object;
-
+    /**
+     * 被访问的实例的方法或者字段所在的类
+     */
+    private final Class<?> clazz;
     /**
      * 反射的是一个Class还是一个Object实例?
      */
@@ -207,11 +219,19 @@ public class ReflectionUtils {
 
     private ReflectionUtils(Class<?> type) {
         this.object = type;
+        this.clazz = type;
         this.isClass = true;
     }
 
     private ReflectionUtils(Object object) {
         this.object = object;
+        this.clazz = object != null ? object.getClass() : null;
+        this.isClass = false;
+    }
+
+    private ReflectionUtils(Object object, Class<?> type) {
+        this.object = object;
+        this.clazz = type;
         this.isClass = false;
     }
 
@@ -224,8 +244,7 @@ public class ReflectionUtils {
 
     /**
      * 修改一个字段的值 <p/> 等价于
-     * {@link java.lang.ReflectionUtils.Field#set(Object, Object)}. 如果包装的对象是一个
-     * {@link Class}, 那么修改的将是一个静态字段， 如果包装的对象是一个{@link Object}, 那么修改的就是一个实例字段。
+     * 如果包装的对象是一个{@link Class}, 那么修改的将是一个静态字段， 如果包装的对象是一个{@link Object}, 那么修改的就是一个实例字段。
      *
      * @param name 字段名
      * @param value 字段的值
@@ -245,7 +264,23 @@ public class ReflectionUtils {
     }
 
     /**
-     * 得到字段对值
+     * 修改一个字段的值，不抛出异常
+     *
+     * @param name
+     * @param value
+     * @return
+     */
+    public ReflectionUtils setNoException(String name, Object value) {
+        try {
+            set(name, value);
+        } catch (ReflectException re) {
+            re.printStackTrace();
+        }
+        return this;
+    }
+
+    /**
+     * 反射获取字段的值
      *
      * @param name 字段名
      * @return The field value
@@ -256,6 +291,24 @@ public class ReflectionUtils {
         return field(name).<T> get();
     }
 
+
+    /**
+     * 反射获取字段的值，不抛出异常
+     *
+     * @param name
+     * @param <T>
+     * @return
+     */
+    public <T> T getNoException(String name) {
+        try {
+            return get(name);
+        } catch (ReflectException re) {
+            re.printStackTrace();
+        }
+        return (T)null;
+    }
+
+
     /**
      * 取得字段
      *
@@ -263,7 +316,7 @@ public class ReflectionUtils {
      * @return 字段
      * @throws ReflectException
      */
-    public ReflectionUtils field(String name) throws ReflectException {
+    private ReflectionUtils field(String name) throws ReflectException {
         try {
             Field field = field0(name);
             return on(field.get(object));
@@ -272,22 +325,27 @@ public class ReflectionUtils {
         }
     }
 
+    /**
+     * 反射得到Field
+     * @param name  字段名
+     * @return
+     * @throws ReflectException
+     */
     private Field field0(String name) throws ReflectException {
         Class<?> type = type();
 
         // 尝试作为公有字段处理
         try {
-            return type.getField(name);
+            return accessible(type.getField(name));
         }
-
         // 尝试以私有方式处理
         catch (NoSuchFieldException e) {
             do {
                 try {
                     return accessible(type.getDeclaredField(name));
                 } catch (NoSuchFieldException ignore) {
+                    /* ignore */
                 }
-
                 type = type.getSuperclass();
             } while (type != null);
 
@@ -333,9 +391,7 @@ public class ReflectionUtils {
     }
 
     /**
-     * 给定方法名和参数，调用一个方法。 <p/> 封装自
-     * {@link java.lang.ReflectionUtils.Method#invoke(Object, Object...)},
-     * 可以接受基本类型
+     * 给定方法名和参数，调用一个方法。
      *
      * @param name 方法名
      * @param args 方法参数
@@ -346,6 +402,15 @@ public class ReflectionUtils {
         return call(name, null, args);
     }
 
+    /**
+     * 给定方法名参数，以及Cache，调用一个方法
+     *
+     * @param name
+     * @param methodCache
+     * @param args
+     * @return
+     * @throws ReflectException
+     */
     public ReflectionUtils call(String name, Map<String, Vector<Method>> methodCache, Object... args) throws ReflectException {
         Class<?>[] types = types(args);
 
@@ -412,14 +477,13 @@ public class ReflectionUtils {
 
         // 先尝试直接调用
         try {
-            return type.getMethod(name, types);
+            return accessible(type.getMethod(name, types));
         }
-
         // 也许这是一个私有方法
         catch (NoSuchMethodException e) {
             do {
                 try {
-                    return type.getDeclaredMethod(name, types);
+                    return accessible(type.getDeclaredMethod(name, types));
                 } catch (NoSuchMethodException ignore) {
                 }
 
@@ -439,7 +503,7 @@ public class ReflectionUtils {
         // 对于公有方法:
         for (Method method : type.getMethods()) {
             if (isSimilarSignature(method, name, types)) {
-                return method;
+                return accessible(method);
             }
         }
 
@@ -447,7 +511,7 @@ public class ReflectionUtils {
         do {
             for (Method method : type.getDeclaredMethods()) {
                 if (isSimilarSignature(method, name, types)) {
-                    return method;
+                    return accessible(method);
                 }
             }
 
@@ -695,7 +759,11 @@ public class ReflectionUtils {
      *
      * @see Object#getClass()
      */
-    public Class<?> type() {
+    private Class<?> type() {
+        if (clazz != null) {
+            return clazz;
+        }
+
         if (isClass) {
             return (Class<?>) object;
         } else {

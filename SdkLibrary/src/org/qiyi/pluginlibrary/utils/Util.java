@@ -544,6 +544,7 @@ public final class Util {
         if (currentInstructionSet != null) {
             return currentInstructionSet;
         }
+
         Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
         Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
 

@@ -53,7 +53,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     private static final String TAG = "CustomContextWrapper";
 
     private static final String S_SHARED_PREFS =
-            ContextUtils.isAndroidN() || ContextUtils.isAndroidO() ? "sSharedPrefsCache" : "sSharedPrefs";
+            VersionUtils.hasNougat() ? "sSharedPrefsCache" : "sSharedPrefs";
     private static final String M_SHARED_PREFS_PATHS = "mSharedPrefsPaths";
 
     protected static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(2);
@@ -81,10 +81,10 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             PluginLoadedApk mLoadedApk = getPluginLoadedApk();
             if (mLoadedApk != null && getPluginPackageInfo() != null) {
                 PluginPackageInfo targetMapping = getPluginPackageInfo();
-                if (targetMapping.ismUsePluginAppInfo()) {
+                if (targetMapping.isUsePluginAppInfo()) {
                     mApplicationInfo.dataDir = targetMapping.getDataDir();
                     PluginDebugLog.log(TAG, "change data dir: " + mApplicationInfo.dataDir);
-                    mApplicationInfo.nativeLibraryDir = targetMapping.getnativeLibraryDir();
+                    mApplicationInfo.nativeLibraryDir = targetMapping.getNativeLibraryDir();
                     PluginDebugLog.log(TAG, "change native lib path: " +
                             mApplicationInfo.nativeLibraryDir);
                 }
@@ -457,7 +457,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return databaseDir.list();
     }
 
-    private File getSharedPrefsFile(String name) {
+    public File getSharedPrefsFile(String name) {
         File base = new File(getPluginPackageInfo().getDataDir() + "/shared_prefs/");
         if (!base.exists()) {
             base.mkdir();
@@ -537,6 +537,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return null;
     }
 
+
     /**
      * Android 7.0+系统，
      * <href>http://androidxref.com/7.0.0_r1/xref/frameworks/base/core/java/android/app/ContextImpl.java#141</href>
@@ -557,8 +558,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         constructor.setAccessible(true);
         ArrayMap<String, ArrayMap<File, Object>> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
                 .<ArrayMap<String, ArrayMap<File, Object>>>get(S_SHARED_PREFS);
-        ArrayMap<String, File> oSharedPrefsPaths = ReflectionUtils.on(this.getBaseContext())
-                .<ArrayMap<String, File>>get(M_SHARED_PREFS_PATHS);
+        ArrayMap<String, File> oSharedPrefsPaths = ContextUtils.isAndroidP() ? null :
+                ReflectionUtils.on(this.getBaseContext()).<ArrayMap<String, File>>get(M_SHARED_PREFS_PATHS);
         synchronized (clazz) {
             if (oSharedPrefsPaths == null) {
                 oSharedPrefsPaths = new ArrayMap<String, File>();
@@ -781,7 +782,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
         if (getPluginLoadedApk() != null) {
             PluginPackageInfo targetMapping = getPluginPackageInfo();
-            if (targetMapping != null && targetMapping.ismUsePluginCodePath()) {
+            if (targetMapping != null && targetMapping.isUsePluginCodePath()) {
                 PackageInfo packageInfo = targetMapping.getPackageInfo();
                 if (packageInfo != null && packageInfo.applicationInfo != null) {
                     String sourceDir = packageInfo.applicationInfo.sourceDir;
