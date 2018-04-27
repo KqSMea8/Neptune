@@ -11,6 +11,9 @@ import java.util.List;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
+
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 
@@ -22,6 +25,7 @@ import dalvik.system.PathClassLoader;
  * 但是 插件中通过Intent .put serialize extra 无法找到对应的类。只能通过此方法。
  */
 public class ClassLoaderInjectHelper {
+    private static final String TAG = "ClassLoaderInjectHelper";
     /**
      * 注入jar
      *
@@ -85,7 +89,7 @@ public class ClassLoaderInjectHelper {
     private static InjectResult injectInAliyunOs(Context context, String dexPath, String soPath) {
         InjectResult result = null;
         PathClassLoader localClassLoader = (PathClassLoader) context.getClassLoader();
-        new DexClassLoader(dexPath, context.getDir("dex", 0).getAbsolutePath(), soPath, localClassLoader);
+        new DexClassLoader(dexPath, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(), soPath, localClassLoader);
         String lexFileName = new File(dexPath).getName();
         lexFileName = lexFileName.replaceAll("\\.[a-zA-Z0-9]+", ".lex");
         try {
@@ -93,7 +97,7 @@ public class ClassLoaderInjectHelper {
             Constructor<?> constructorLexClassLoader = classLexClassLoader.getConstructor(String.class, String.class, String.class,
                     ClassLoader.class);
             Object localLexClassLoader = constructorLexClassLoader.newInstance(
-                    context.getDir("dex", 0).getAbsolutePath() + File.separator + lexFileName, context.getDir("dex", 0).getAbsolutePath(),
+                    PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath() + File.separator + lexFileName, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(),
                     soPath, localClassLoader);
             setField(localClassLoader, PathClassLoader.class, "mPaths",
                     appendArray(getField(localClassLoader, PathClassLoader.class, "mPaths"),
@@ -149,7 +153,7 @@ public class ClassLoaderInjectHelper {
     private static InjectResult injectBelowApiLevel14(Context context, String dexPath, String someClass, String soPath) {
         InjectResult result = null;
         PathClassLoader pathClassLoader = (PathClassLoader) context.getClassLoader();
-        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, context.getDir("dex", 0).getAbsolutePath(), soPath,
+        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(), soPath,
                 context.getClassLoader());
 
         result = injectBelowApiLevel14(pathClassLoader, dexClassLoader, someClass);
@@ -217,7 +221,7 @@ public class ClassLoaderInjectHelper {
      */
     private static InjectResult injectAboveEqualApiLevel14(Context context, String dexPath, String soPath) {
         PathClassLoader pathClassLoader = (PathClassLoader) context.getClassLoader();
-        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, context.getDir("dex", 0).getAbsolutePath(), soPath,
+        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(), soPath,
                 context.getClassLoader());
         InjectResult result = null;
 

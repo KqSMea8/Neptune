@@ -428,6 +428,8 @@ public class PluginLoadedApk implements IIntentConstant {
                                     "Apk file not exist!");
                             return false;
                         }
+                        PluginDebugLog.runtimeLog(TAG,
+                                "handleDependences src apk path : " + libraryInfo.srcApkPath);
                         injectResult = ClassLoaderInjectHelper.inject(mHostContext,
                                 libraryInfo.srcApkPath, null, null);
                         if (null != injectResult && injectResult.mIsSuccessful) {

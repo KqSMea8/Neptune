@@ -27,6 +27,7 @@ public class PluginInstaller {
     public static final String TAG = "PluginInstaller";
 
     public static final String PLUGIN_PATH = "pluginapp";
+    public static final String PLUGIN_INJECT_PATH = "dex";
     public static final String APK_SUFFIX = ".apk";
     public static final String NATIVE_LIB_PATH = "lib";
     public static final String SO_SUFFIX = ".so";
@@ -44,6 +45,19 @@ public class PluginInstaller {
             repoDir.mkdir();
         }
         PluginDebugLog.installFormatLog(TAG, "getPluginappRootPath:%s" , repoDir);
+        return repoDir;
+    }
+
+    /**
+     * 插件classloader注入到parent classloader时，指定的optimizedDirectory路径,保存解析后的dex
+     * API >= 26时，该参数已废弃 @see <a href="https://android.googlesource.com/platform/libcore/+/master/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java"</a>
+     */
+    public static File getPluginInjectRootPath(Context context){
+        File repoDir = context.getDir(PLUGIN_INJECT_PATH, 0);
+        if (!repoDir.exists()) {
+            repoDir.mkdir();
+        }
+        PluginDebugLog.installFormatLog(TAG, "getPluginInjectRootPath:%s" , repoDir);
         return repoDir;
     }
 
@@ -257,6 +271,7 @@ public class PluginInstaller {
 
         File dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
         File dexPath = getInstalledDexFile(context, packageName);
+        File injectDexPath = new File(PluginInstaller.getPluginInjectRootPath(context),packageName+DEX_SUFFIX);
         if (dexPath.exists()) {
             // 删除dex文件
             if (dexPath.delete()) {
@@ -286,6 +301,15 @@ public class PluginInstaller {
             }
         } else {
             apk = new File(PluginInstaller.getPluginappRootPath(context), packageName + PluginInstaller.APK_SUFFIX);
+        }
+
+        if (injectDexPath.exists()){
+            // 删除dex文件
+            if (injectDexPath.delete()) {
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage inject dex  %s success!",packageName);
+            } else {
+                PluginDebugLog.installFormatLog(TAG,"deleteInstallerPackage inject dex  %s fail!",packageName);
+            }
         }
 
         if(ContextUtils.isAndroidO()){
