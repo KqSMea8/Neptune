@@ -150,7 +150,9 @@ class ResourceCollector {
                         mavenCoordinates.artifactId,
                         mavenCoordinates.version,
                         it)
-                stripDependencies.add(aarDependenceInfo.fixAarManifest(project, apkVariant))
+                aarDependenceInfo = aarDependenceInfo.fixAarManifest(project, apkVariant)
+                aarDependenceInfo = aarDependenceInfo.fixRSymbol(project, apkVariant)
+                stripDependencies.add(aarDependenceInfo)
             } else {
                 println "retained Aar: ${mavenCoordinates.groupId}:${mavenCoordinates.artifactId}:${mavenCoordinates.version}"
                 AarDependenceInfo aarDependenceInfo = new AarDependenceInfo(
@@ -158,7 +160,9 @@ class ResourceCollector {
                         mavenCoordinates.artifactId,
                         mavenCoordinates.version,
                         it)
-                retainedAarLibs.add(aarDependenceInfo.fixAarManifest(project, apkVariant))
+                aarDependenceInfo = aarDependenceInfo.fixAarManifest(project, apkVariant)
+                aarDependenceInfo = aarDependenceInfo.fixRSymbol(project, apkVariant)
+                retainedAarLibs.add(aarDependenceInfo)
             }
         }
     }
