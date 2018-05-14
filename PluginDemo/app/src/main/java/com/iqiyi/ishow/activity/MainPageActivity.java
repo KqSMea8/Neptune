@@ -1,22 +1,18 @@
 package com.iqiyi.ishow.activity;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.Toast;
 
 import com.facebook.common.logging.FLog;
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.iqiyi.ishow.R;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,7 +20,7 @@ import java.util.List;
  * author: liuchun
  * date: 2018/1/26
  */
-public class MainPageActivity extends Activity {
+public class MainPageActivity extends AppCompatActivity {
     private static final String TAG = "ISHOW_PLUGIN";
 
     private static final String[] URL_LINKS = {
