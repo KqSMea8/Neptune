@@ -18,42 +18,71 @@ import android.os.IBinder;
 
 /**
  * 负责转移插件的跳转目标<br>
+ * 用于Hook插件Activity中Instrumentation
  *
  * @see android.app.Activity#startActivity(android.content.Intent)
  */
 public class PluginInstrument extends Instrumentation {
+    private static final String TAG = "PluginInstrument";
+
     private static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(5);
 
     private String mPkgName;
     Instrumentation mHostInstr;
-    ReflectionUtils mInstrumentRef;
+    private ReflectionUtils mInstrumentRef;
 
-    public PluginInstrument(Instrumentation pluginIn, String pkgName) {
-        this.mHostInstr = pluginIn;
-        mInstrumentRef = ReflectionUtils.on(pluginIn);
+    /**
+     * 插件的Instrumentation
+     */
+    public PluginInstrument(Instrumentation hostInstr) {
+        this(hostInstr, "");
+    }
+
+    public PluginInstrument(Instrumentation hostInstr, String pkgName) {
+        mHostInstr = hostInstr;
+        mInstrumentRef = ReflectionUtils.on(hostInstr);
         mPkgName = pkgName;
     }
 
-    /** @Override */
-    public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
-            int requestCode, Bundle options) {
+    /**
+     * 如果是PluginInstrumentation，拆装出原始的HostInstr
+     *
+     * @param instrumentation
+     * @return
+     */
+    public static Instrumentation unwrap(Instrumentation instrumentation) {
+        if (instrumentation instanceof PluginInstrument) {
+            return ((PluginInstrument)instrumentation).mHostInstr;
+        }
+        return instrumentation;
+    }
+
+    /**
+     * @Override
+     */
+    public ActivityResult execStartActivity(
+            Context who, IBinder contextThread, IBinder token, Activity target,
+            Intent intent, int requestCode, Bundle options) {
 
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        try{
+        try {
             return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    /** @Override */
-    public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
-            int requestCode) {
+    /**
+     * @Override
+     */
+    public ActivityResult execStartActivity(
+            Context who, IBinder contextThread, IBinder token, Activity target,
+            Intent intent, int requestCode) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        try{
+        try {
             return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode).get();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -62,13 +91,14 @@ public class PluginInstrument extends Instrumentation {
     /**
      * @Override For below android 6.0
      */
-    public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
-            int requestCode, Bundle options, int userId) {
+    public ActivityResult execStartActivityAsCaller(
+            Context who, IBinder contextThread, IBinder token, Activity target,
+            Intent intent, int requestCode, Bundle options, int userId) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        try{
+        try {
             return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options, userId)
                     .get();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -77,59 +107,63 @@ public class PluginInstrument extends Instrumentation {
     /**
      * @Override For android 6.0
      */
-    public ActivityResult execStartActivityAsCaller(Context who, IBinder contextThread, IBinder token, Activity target, Intent intent,
-            int requestCode, Bundle options, boolean ignoreTargetSecurity, int userId) {
+    public ActivityResult execStartActivityAsCaller(
+            Context who, IBinder contextThread, IBinder token, Activity target,
+            Intent intent, int requestCode, Bundle options,
+            boolean ignoreTargetSecurity, int userId) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        try{
+        try {
             return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options,
                     ignoreTargetSecurity, userId).get();
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return  null;
+        return null;
     }
 
-    /** @Override */
-    public void execStartActivitiesAsUser(Context who, IBinder contextThread, IBinder token, Activity target, Intent[] intents,
-            Bundle options, int userId) {
+    /**
+     * @Override
+     */
+    public void execStartActivitiesAsUser(
+            Context who, IBinder contextThread, IBinder token, Activity target,
+            Intent[] intents, Bundle options, int userId) {
         for (Intent intent : intents) {
             ComponetFinder.switchToActivityProxy(mPkgName, intent, 0, who);
         }
-        try{
+        try {
             mInstrumentRef.call("execStartActivitiesAsUser", sMethods, who, contextThread, token, target, intents, options, userId);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     /**
      * @Override For below android 6.0, start activity from Fragment
      */
-    public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Fragment target, Intent intent,
-            int requestCode, Bundle options) {
+    public ActivityResult execStartActivity(
+            Context who, IBinder contextThread, IBinder token, Fragment target,
+            Intent intent, int requestCode, Bundle options) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        try{
+        try {
             return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return  null;
-
+        return null;
     }
 
     /**
      * @Override For android 6.0, start activity from Fragment
      */
-    public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, String target, Intent intent,
-            int requestCode, Bundle options) {
+    public ActivityResult execStartActivity(
+            Context who, IBinder contextThread, IBinder token, String target,
+            Intent intent, int requestCode, Bundle options) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
-        try{
+        try {
             return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
-
     }
 }

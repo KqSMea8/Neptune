@@ -11,9 +11,9 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -312,7 +312,7 @@ public class PluginInstaller {
             }
         }
 
-        if(ContextUtils.isAndroidO()){
+        if(VersionUtils.hasOreo()){
             //删除prof文件
             File mProf = new File(apk.getAbsolutePath()+".prof");
             PluginDebugLog.installFormatLog(TAG,"prof path:%s",mProf.getAbsolutePath());

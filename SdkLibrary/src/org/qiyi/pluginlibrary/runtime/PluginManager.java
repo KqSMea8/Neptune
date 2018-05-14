@@ -2,6 +2,7 @@ package org.qiyi.pluginlibrary.runtime;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.Instrumentation;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -18,6 +19,9 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.component.wraper.PluginHookedInstrument;
+import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
+import org.qiyi.pluginlibrary.exception.ReflectException;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
@@ -35,6 +39,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -86,6 +91,54 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
     private static IAppExitStuff sExitStuff;
 
 
+    /**
+     * 初始化，hook Instrumentation
+     * @param appContext
+     * @param hookInstr
+     */
+    public static void init(Context appContext, boolean hookInstr) {
+        if (!hookInstr) {
+            PluginDebugLog.log(TAG, "hookInstr is false, no need to hook ActivityThread#Instrumentation");
+            return;
+        }
+
+        Object activityThread = getActivityThread();
+        Instrumentation hostInstr;
+        try {
+            hostInstr = ReflectionUtils.on(activityThread).call("getInstrumentation").get();
+        } catch (ReflectException e) {
+            hostInstr = ReflectionUtils.on(activityThread).get("mInstrumentation");
+        }
+
+        if (hostInstr != null) {
+            PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
+            ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
+            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
+        } else {
+            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed");
+        }
+    }
+
+    /**
+     * 反射获取ActivityThread对象
+     */
+    private static Object getActivityThread() {
+        ReflectionUtils ref = ReflectionUtils.on("android.app.ActivityThread");
+        Object obj = null;
+        try {
+            obj = ref.call("currentActivityThread").get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (obj == null) {
+            obj = ref.get("sCurrentActivityThread");
+        }
+        if (obj == null) {
+            obj = ((ThreadLocal<?>)ref.get("sThreadLocal")).get();
+        }
+        //return ActivityThread.currentActivityThread();
+        return obj;
+    }
 
     /**
      * 通过包名获取{@link PluginLoadedApk}对象
@@ -303,7 +356,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
         BroadcastReceiver recv = new BroadcastReceiver() {
             public void onReceive(Context ctx, Intent intent) {
-                String curPkg = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY);
+                String curPkg = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
                 if (IIntentConstant.ACTION_PLUGIN_INIT.equals(intent.getAction()) && TextUtils.equals(packageName, curPkg)) {
                     PluginDebugLog.runtimeLog(TAG, "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
                     mListener.onInitFinished(packageName);
@@ -446,7 +499,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             if (BroadcastReceiver.class.isAssignableFrom(targetClass)) {
                 Intent newIntent = new Intent(mIntent);
                 newIntent.setComponent(null);
-                newIntent.putExtra(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY,
+                newIntent.putExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY,
                         mLoadedApk.getPluginPackageName());
                 newIntent.setPackage(mHostContext.getPackageName());
                 mHostContext.sendBroadcast(newIntent);

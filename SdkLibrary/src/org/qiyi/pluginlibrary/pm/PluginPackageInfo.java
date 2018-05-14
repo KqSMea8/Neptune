@@ -153,29 +153,24 @@ public class PluginPackageInfo implements Parcelable {
             nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
             if (metaData != null) {
                 mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
-                if (metaData != null) {
-                    mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
-                    String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
-                    if (!TextUtils.isEmpty(applicationMetaData)) {
-                        if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
-                            mUsePluginAppInfo = true;
-                        }
+                String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
+                if (!TextUtils.isEmpty(applicationMetaData)) {
+                    if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
+                        mUsePluginAppInfo = true;
+                    }
 
-                        if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
-                            packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
-                            PluginDebugLog.log("PluginPackageInfo",
-                                    "change sourceDir dir: " + packageInfo.applicationInfo.sourceDir);
-                            mUsePluginCodePath = true;
-                        }
+                    if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
+                        packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
+                        PluginDebugLog.log("PluginPackageInfo",
+                                "change sourceDir dir: " + packageInfo.applicationInfo.sourceDir);
+                        mUsePluginCodePath = true;
                     }
                 }
-
             }
             ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
         } catch (RuntimeException e) {
             PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
-            return;
         } catch (Throwable e) {
             // java.lang.VerifyError: android/content/pm/PackageParser
             // java.lang.NoSuchMethodError: android.content.pm.PackageParser
@@ -191,7 +186,7 @@ public class PluginPackageInfo implements Parcelable {
         return dataDir;
     }
 
-    public String getnativeLibraryDir() {
+    public String getNativeLibraryDir() {
         return nativeLibraryDir;
     }
 
@@ -336,11 +331,11 @@ public class PluginPackageInfo implements Parcelable {
         return mIsClassInject;
     }
 
-    public boolean ismUsePluginAppInfo() {
+    public boolean isUsePluginAppInfo() {
         return mUsePluginAppInfo;
     }
 
-    public boolean ismUsePluginCodePath() {
+    public boolean isUsePluginCodePath() {
         return mUsePluginCodePath;
     }
 

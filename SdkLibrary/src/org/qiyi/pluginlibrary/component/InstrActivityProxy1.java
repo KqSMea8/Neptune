@@ -46,6 +46,7 @@ import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -210,7 +211,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         final Bundle pluginMessage = mIntent.getExtras();
         String[] result = new String[2];
         if (null != pluginMessage) {
-            result[0] = pluginMessage.getString(IIntentConstant.EXTRA_TARGET_PACKAGNAME_KEY);
+            result[0] = pluginMessage.getString(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
             result[1] = pluginMessage.getString(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
             if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
                 PluginDebugLog.runtimeFormatLog(TAG,"pluginPkg:%s,pluginCls:%s",result[0],result[1]);
@@ -255,7 +256,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     @Override
     public void setTheme(int resid) {
-        if (ContextUtils.isAndroidN() || ContextUtils.isAndroidO()) {
+        if (VersionUtils.hasNougat()) {
             String[] temp = parsePkgAndClsFromIntent();
             if (mNeedUpdateConfiguration && (temp != null || mLoadedApk != null)) {
                 if (null != temp) {

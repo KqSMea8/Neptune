@@ -83,14 +83,15 @@ public class ComponetFinder implements IIntentConstant {
         if (null == mLoadedApk
                 || null == mIntent
                 || TextUtils.isEmpty(targetService)
-                || mLoadedApk.getPluginPackageInfo()==null
+                || mLoadedApk.getPluginPackageInfo() == null
                 || mLoadedApk.getPluginPackageInfo().getServiceInfo(targetService) == null) {
             return;
         }
         mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
-        mIntent.putExtra(EXTRA_TARGET_CLASS_KEY, targetService);
-        mIntent.putExtra(EXTRA_TARGET_PACKAGNAME_KEY, mLoadedApk.getPluginPackageName());
-        mIntent.addCategory(EXTRA_TARGET_CATEGORY + System.currentTimeMillis());
+        mIntent.addCategory(EXTRA_TARGET_CATEGORY + System.currentTimeMillis())
+                .putExtra(EXTRA_TARGET_IS_PLUGIN_KEY, true)
+                .putExtra(EXTRA_TARGET_CLASS_KEY, targetService)
+                .putExtra(EXTRA_TARGET_PACKAGE_KEY, mLoadedApk.getPluginPackageName());
         try {
             mIntent.setClass(mLoadedApk.getHostContext(),
                     Class.forName(matchServiceProxyByFeature(mLoadedApk.getProcessName())));
@@ -109,7 +110,8 @@ public class ComponetFinder implements IIntentConstant {
 
 
     /**
-     *  在插件中查找可以处理mIntent的Activity组件,找到之后为其分配合适的Proxy
+     * 在插件中查找可以处理mIntent的Activity组件,找到之后为其分配合适的Proxy
+     *
      * @param mPluginPackageName
      * @param mIntent
      * @param requestCode
@@ -133,39 +135,62 @@ public class ComponetFinder implements IIntentConstant {
                     "handleStartActivityIntent has change the intent just return");
             return mIntent;
         }
+
         ActivityInfo targetActivity = null;
+        if (TextUtils.isEmpty(mPluginPackageName)) {
+            PluginDebugLog.runtimeLog(TAG,
+                    "handleStartActivityIntent mPluginPackageName is null");
+            List<PluginLiteInfo> packageList =
+                    PluginPackageManagerNative.getInstance(context).getInstalledApps();
+            if (packageList != null) {
+                for (PluginLiteInfo pkgInfo : packageList) {
+                    if (pkgInfo != null) {
+                        PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
+                                .getPluginPackageInfo(context, pkgInfo);
+                        if (null != target) {
+                            targetActivity = target.resolveActivity(mIntent);
+                            if (targetActivity != null) {
+                                PluginDebugLog.runtimeFormatLog(TAG,
+                                        "switchToActivityProxy find targetActivity in plugin %s!", pkgInfo.packageName);
+                                mPluginPackageName = pkgInfo.packageName;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(mPluginPackageName);
         if (mIntent.getComponent() != null
                 && !TextUtils.isEmpty(mIntent.getComponent().getClassName())) {
             // action 为空，但是指定了包名和 activity类名
-            ComponentName compname = mIntent.getComponent();
-            String pkg = compname.getPackageName();
-            String toActName = compname.getClassName();
+            ComponentName compName = mIntent.getComponent();
+            String pkg = compName.getPackageName();
+            String toActName = compName.getClassName();
             if (mLoadedApk != null) {
                 if (TextUtils.equals(pkg, mPluginPackageName)
                         || TextUtils.equals(pkg, mLoadedApk.getHostPackageName())) {
                     PluginPackageInfo thisPlugin = mLoadedApk.getPluginPackageInfo();
                     targetActivity = thisPlugin.getActivityInfo(toActName);
-                    if(targetActivity != null){
+                    if (targetActivity != null) {
                         PluginDebugLog.runtimeLog(TAG,
                                 "switchToActivityProxy find targetActivity in current currentPlugin!");
                     }
                 }
-            }else{
-                if(!TextUtils.isEmpty(pkg) && targetActivity == null){
+            } else {
+                if (!TextUtils.isEmpty(pkg) && targetActivity == null) {
                     PluginLiteInfo mLiteInfo = new PluginLiteInfo();
                     mLiteInfo.packageName = pkg;
                     PluginPackageInfo otherPluginInfo = PluginPackageManagerNative.getInstance(context)
-                            .getPluginPackageInfo(context,mLiteInfo);
-                    if(otherPluginInfo != null){
+                            .getPluginPackageInfo(context, mLiteInfo);
+                    if (otherPluginInfo != null) {
                         targetActivity = otherPluginInfo.getActivityInfo(toActName);
-                        if(targetActivity != null){
+                        if (targetActivity != null) {
                             PluginDebugLog.runtimeFormatLog(TAG,
-                                    "switchToActivityProxy find targetActivity in plugin %s!",pkg);
+                                    "switchToActivityProxy find targetActivity in plugin %s!", pkg);
                         }
                     }
-
-
                 }
             }
         } else {
@@ -182,14 +207,12 @@ public class ComponetFinder implements IIntentConstant {
                         for (PluginLiteInfo pkgInfo : packageList) {
                             if (pkgInfo != null) {
                                 PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
-                                .getPluginPackageInfo(context,pkgInfo);
+                                        .getPluginPackageInfo(context, pkgInfo);
                                 if (null != target) {
                                     targetActivity = target.resolveActivity(mIntent);
-                                    if(targetActivity != null){
-                                        if(targetActivity != null){
-                                            PluginDebugLog.runtimeFormatLog(TAG,
-                                                    "switchToActivityProxy find targetActivity in plugin %s!",pkgInfo.packageName);
-                                        }
+                                    if (targetActivity != null) {
+                                        PluginDebugLog.runtimeFormatLog(TAG,
+                                                "switchToActivityProxy find targetActivity in plugin %s!", pkgInfo.packageName);
                                         break;
                                     }
                                 }
@@ -208,12 +231,9 @@ public class ComponetFinder implements IIntentConstant {
         if (mLoadedApk != null) {
             mLoadedApk.getActivityStackSupervisor().dealLaunchMode(mIntent);
         }
-        String intentInfo = "";
-        if (null != mIntent) {
-            intentInfo = mIntent.toString();
-            if (null != mIntent.getExtras()) {
-                intentInfo = intentInfo + mIntent.getExtras().toString();
-            }
+        String intentInfo = mIntent.toString();
+        if (null != mIntent.getExtras()) {
+            intentInfo = intentInfo + mIntent.getExtras().toString();
         }
         PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
                 PluginCenterDebugHelper.getInstance().getCurrentSystemTime(), intentInfo);
@@ -224,15 +244,13 @@ public class ComponetFinder implements IIntentConstant {
     /**
      * 判断Intent代表的Activity组件是否已经设置代理，如果已经设置，直接返回
      *
-     * @param mIntent
-     *      Activity对应的Intent
-     * @return
-     *      true:已经设置代理，false：没有设置
+     * @param mIntent Activity对应的Intent
+     * @return true:已经设置代理，false：没有设置
      */
     private static boolean hasProxyActivity(Intent mIntent) {
         if (mIntent != null && mIntent.getComponent() != null
                 && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_CLASS_KEY))
-                && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_PACKAGNAME_KEY))) {
+                && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_PACKAGE_KEY))) {
             if (mIntent.getComponent().getClassName().startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
                 return true;
             }
@@ -242,12 +260,10 @@ public class ComponetFinder implements IIntentConstant {
 
     /**
      * 为插件中的Activity 设置代理
-     * @param mIntent
-     *          需要设置代理的Activity的Intent
-     * @param mPackageName
-     *          插件的包名
-     * @param activityName
-     *          需要设置代理的Activity的类名
+     *
+     * @param mIntent      需要设置代理的Activity的Intent
+     * @param mPackageName 插件的包名
+     * @param activityName 需要设置代理的Activity的类名
      */
     private static void setActivityProxy(Intent mIntent, String mPackageName, String activityName) {
         PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(mPackageName);
@@ -264,25 +280,25 @@ public class ComponetFinder implements IIntentConstant {
                     activityName);
             return;
         }
-        ComponentName compname = new ComponentName(mLoadedApk.getHostPackageName(),
-                findActivityProxy(mLoadedApk,info));
-        mIntent.setComponent(compname)
+        ComponentName compName = new ComponentName(mLoadedApk.getHostPackageName(),
+                findActivityProxy(mLoadedApk, info));
+        mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
+        mIntent.setComponent(compName)
                 .addCategory(activityName)
-                .putExtra(EXTRA_TARGET_PACKAGNAME_KEY, mPackageName)
+                .putExtra(EXTRA_TARGET_IS_PLUGIN_KEY, true)
+                .putExtra(EXTRA_TARGET_PACKAGE_KEY, mPackageName)
                 .putExtra(EXTRA_TARGET_CLASS_KEY, activityName);
         IntentUtils.setProxyInfo(mIntent, mPackageName);
-
     }
 
     /**
      * 为插件中的Activity分配代理
-     * @param mLoadedApk
-     *        插件的实例
-     * @param actInfo
-     *        插件Activity对应的ActivityInfo
+     *
+     * @param mLoadedApk 插件的实例
+     * @param actInfo    插件Activity对应的ActivityInfo
      * @return
      */
-    public static String findActivityProxy(PluginLoadedApk mLoadedApk,ActivityInfo actInfo) {
+    public static String findActivityProxy(PluginLoadedApk mLoadedApk, ActivityInfo actInfo) {
         boolean isTranslucent = false;
         boolean isHandleConfigChange = false;
         boolean isLandscape = false;
@@ -295,22 +311,22 @@ public class ComponetFinder implements IIntentConstant {
         });
         boolean attr_0 = array.getBoolean(0, false);
         array.recycle();
-        try{
+        try {
             TypedValue tv = new TypedValue();
             mTheme.resolveAttribute(android.R.attr.windowBackground, tv, true);
             if (tv.type >= TypedValue.TYPE_FIRST_COLOR_INT && tv.type <= TypedValue.TYPE_LAST_COLOR_INT) {
-                PluginDebugLog.runtimeFormatLog(TAG,"windowBackground is color and is translucent:%s",
-                        (tv.data==TRANSLUCENTCOLOR));
+                PluginDebugLog.runtimeFormatLog(TAG, "windowBackground is color and is translucent:%s",
+                        (tv.data == TRANSLUCENTCOLOR));
                 isTranslucent = attr_0 && (tv.data == TRANSLUCENTCOLOR);
-            }else{
-                PluginDebugLog.runtimeFormatLog(TAG,"windowBackground is drawable!");
+            } else {
+                PluginDebugLog.runtimeFormatLog(TAG, "windowBackground is drawable!");
                 isTranslucent = false;
             }
-        }catch (Exception e){
-            PluginDebugLog.runtimeFormatLog(TAG,"windowBackground read exception!");
+        } catch (Exception e) {
+            PluginDebugLog.runtimeFormatLog(TAG, "windowBackground read exception!");
             isTranslucent = attr_0;
         }
-        if(!isTranslucent){
+        if (!isTranslucent) {
             //兼容遗留逻辑
             if (actInfo != null && actInfo.metaData != null) {
                 String special_cfg = actInfo.metaData.getString(META_KEY_ACTIVITY_SPECIAL);
@@ -344,64 +360,60 @@ public class ComponetFinder implements IIntentConstant {
         }
 
         return matchActivityProxyByFeature(isTranslucent, isLandscape,
-                isHandleConfigChange,mLoadedApk.getProcessName());
+                isHandleConfigChange, mLoadedApk.getProcessName());
     }
 
     /**
      * 根据被代理的Activity的Feature和进程名称选择代理
-     * @param isTranslucent
-     *          是否透明
-     * @param isLandscape
-     *          是否横屏
-     * @param isHandleConfig
-     *          配置变化是否仅仅执行onConfiguration方法
-     * @param mProcessName
-     *          当前插件运行的进程名称
+     *
+     * @param isTranslucent  是否透明
+     * @param isLandscape    是否横屏
+     * @param isHandleConfig 配置变化是否仅仅执行onConfiguration方法
+     * @param mProcessName   当前插件运行的进程名称
      * @return
      */
     public static String matchActivityProxyByFeature(boolean isTranslucent,
-                                              boolean isLandscape,
-                                              boolean isHandleConfig,
-                                              String mProcessName){
+                                                     boolean isLandscape,
+                                                     boolean isHandleConfig,
+                                                     String mProcessName) {
         int index = ProcessManger.getProcessIndex(mProcessName);
-        if(index <0 || index >2){
+        if (index < 0 || index > 2) {
             //越界检查
-            PluginDebugLog.log(TAG,"matchActivityProxyByFeature index is out of bounds!");
+            PluginDebugLog.log(TAG, "matchActivityProxyByFeature index is out of bounds!");
             index = 1;
         }
 
         if (isTranslucent) {
-            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX +index);
-            return ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX +index;
+            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
+                    ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index);
+            return ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
         } else if (isLandscape) {
-            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX +index);
-            return ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX +index;
+            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
+                    ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index);
+            return ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index;
         }
         if (isHandleConfig) {
-            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX +index);
-            return ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX +index;
+            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
+                    ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index);
+            return ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index;
         } else {
-            PluginDebugLog.runtimeFormatLog(TAG,"matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX +index);
-            return ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX +index;
+            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
+                    ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index);
+            return ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
         }
 
     }
 
     /**
      * 通过进程名称匹配ServiceProxy
-     * @param processName
-     *          进程名称
-     * @return
-     *          Service代理名称
+     *
+     * @param processName 进程名称
+     * @return Service代理名称
      */
-    public static String matchServiceProxyByFeature(String processName){
+    public static String matchServiceProxyByFeature(String processName) {
         String proxyServiceName =
                 DEFAULT_SERVICE_PROXY_PREFIX + ProcessManger.getProcessIndex(processName);
-        PluginDebugLog.runtimeFormatLog(TAG,"matchServiceProxyByFeature:%s",proxyServiceName);
+        PluginDebugLog.runtimeFormatLog(TAG, "matchServiceProxyByFeature:%s", proxyServiceName);
         return proxyServiceName;
     }
 }

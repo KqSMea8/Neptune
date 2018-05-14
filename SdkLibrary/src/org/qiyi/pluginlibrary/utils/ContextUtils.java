@@ -26,6 +26,7 @@ public class ContextUtils {
     private static final String TAG = ContextUtils.class.getSimpleName();
 
     //定义Android系统
+    private static final String ANDROID_P = "P";
     private static final String ANDROID_N = "N";
     private static final String ANDROID_O = "O";
 
@@ -279,6 +280,13 @@ public class ContextUtils {
     }
 
     /**
+     * 判断是否Android P系统
+     */
+    public static boolean isAndroidP() {
+        return isParticularAndroidVersion(ANDROID_P);
+    }
+
+    /**
      * 判断当前系统是否是Android N或者Android O
      *
      * @param sdk       Android SDK名（“N”或者“O”）
@@ -293,11 +301,15 @@ public class ContextUtils {
             compareSDKName = "N";
         } else if (TextUtils.equals(ANDROID_O, sdk)){
             minSDKValue = 26;
+            maxSDKValue = 27;
             compareSDKName = "O";
+        } else if (TextUtils.equals(ANDROID_P, sdk)) {
+            minSDKValue = 27;
+            compareSDKName = "P";
         }
         return (Build.VERSION.SDK_INT >= minSDKValue && Build.VERSION.SDK_INT <= maxSDKValue)
-                || TextUtils.equals(Build.VERSION.CODENAME, compareSDKName)
-                || TextUtils.equals(Build.VERSION.RELEASE, compareSDKName);
+                && TextUtils.equals(Build.VERSION.CODENAME, compareSDKName)
+                && TextUtils.equals(Build.VERSION.RELEASE, compareSDKName);
     }
 
     /**

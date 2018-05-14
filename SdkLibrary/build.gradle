@@ -25,11 +25,13 @@ uploadArchives {
 dependencies {
     provided files('libs/android-support-v4.jar')
     provided files('libs/fileutil.jar')
+    //provided files('libs/android-27.jar')
+    //provided project(':AndroidStub')
 }
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    compileSdkVersion COMPILE_SDK_VERSION
+    buildToolsVersion BUILD_TOOLS_VERSION
     lintOptions {
         abortOnError false
     }
@@ -59,22 +61,12 @@ android {
     }
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 23
+        targetSdkVersion TARGET_SDK_VERSION
     }
     dexOptions {
         javaMaxHeapSize "2g"
         jumboMode true
     }
-//    buildTypes {
-//        debug {
-//            minifyEnabled false
-//            proguardFile('proguard.cfg')
-//        }
-//        release {
-//            minifyEnabled true
-//            proguardFile('proguard.cfg')
-//        }
-//    }
     packagingOptions {
         exclude('META-INF/DEPENDENCIES')
         exclude('META-INF/NOTICE')
@@ -86,7 +78,7 @@ android {
         // but continue the build even when errors are found:
         abortOnError false
     }
-    def target = new File(project.buildDir.toString()+"/libs");
+    def target = new File(project.buildDir.toString()+"/libs")
 
     task clearJar(type: Delete) {
         delete "${target}/libplugin.jar"
@@ -105,6 +97,26 @@ android {
 
     }
     makeJar.dependsOn(clearJar, build)
+}
+
+import groovy.xml.XmlUtil
+// 调整Android SDK的依赖顺序，放到SdkLibrary.iml文件的最后面
+preBuild.doLast {
+    def imlFile = file(project.name + ".iml")
+    println "Change ${project.name} .iml orderEntry"
+    try {
+        def parsedXml = (new XmlParser()).parse(imlFile)
+        def jdkNode = parsedXml.component[1].orderEntry.find {
+            it.'@type' == 'jdk'
+        }
+        parsedXml.component[1].remove(jdkNode)
+        def sdkver = "Android API " + android.compileSdkVersion.substring("android-".length())  + " Platform"
+        new Node(parsedXml.component[1], 'orderEntry', ['type': 'jdk', 'jdkName': sdkver, 'jdkType': 'Android SDK'])
+        XmlUtil.serialize(parsedXml, new FileOutputStream(imlFile))
+    } catch (FileNotFoundException e) {
+        // nop, iml not found
+        e.printStackTrace()
+    }
 }
 
 /**
