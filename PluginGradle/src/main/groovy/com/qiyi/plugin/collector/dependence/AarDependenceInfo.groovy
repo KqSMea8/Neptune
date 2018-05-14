@@ -8,6 +8,7 @@ import com.google.common.collect.ListMultimap
 import com.google.common.collect.Lists
 import com.qiyi.plugin.collector.res.ResourceEntry
 import com.qiyi.plugin.collector.res.StyleableEntry
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 
 /**
@@ -34,10 +35,13 @@ class AarDependenceInfo extends DependenceInfo {
 
     File aarManifestFile
 
+    File aarRSymbolFile
+
     AarDependenceInfo(String group, String artifact, String version, AndroidDependency dependency) {
         super(group, artifact, version)
         this.dependency = dependency
         this.aarManifestFile = manifest
+        this.aarRSymbolFile = symbolFile
     }
 
     @Override
@@ -58,7 +62,7 @@ class AarDependenceInfo extends DependenceInfo {
 
         def resKeys = [] as Set<String>
 
-        def rSymbol = symbolFile
+        def rSymbol = aarRSymbolFile
         if (rSymbol.exists()) {
             rSymbol.eachLine { line ->
                 if (!line.empty) {
@@ -107,6 +111,41 @@ class AarDependenceInfo extends DependenceInfo {
                 return this
             }
             aarManifestFile = subProject.android.sourceSets.main.manifest.srcFile
+
+            if (!aarManifestFile.exists()) {
+                throw new GradleException("Android Library Project ${projectName} R.txt not found")
+            }
+        }
+
+        return this
+    }
+
+    /**
+     * 修复AGP 3.1.0+, bundle目录不存在R.txt文件找不到的问题
+     */
+    public AarDependenceInfo fixRSymbol(Project project, ApkVariant apkVariant) {
+        if (symbolFile.exists()) {
+            aarRSymbolFile = symbolFile
+            return this
+        }
+
+        String projectName = artifact
+        Project subProject = project.rootProject.findProject(projectName)
+        if (subProject != null) {
+            File symbolDir = new File(subProject.buildDir, "intermediates/symbols")
+            File targetSymbol = FileUtils.join(symbolDir, apkVariant.buildType.name)
+            if (apkVariant.flavorName != null && apkVariant.flavorName != "") {
+                targetSymbol = FileUtils.join(targetSymbol, apkVariant.flavorName)
+            }
+            targetSymbol = FileUtils.join(targetSymbol, "R.txt")
+            if (targetSymbol.exists()) {
+                aarRSymbolFile = targetSymbol
+                return this
+            }
+
+            if (!aarRSymbolFile.exists()) {
+                throw new GradleException("Android Library Project ${projectName} R.txt not found")
+            }
         }
 
         return this
