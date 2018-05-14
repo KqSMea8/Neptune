@@ -86,7 +86,16 @@ public class PluginHookedInstrument extends PluginInstrument {
             IntentUtils.resetAction(intent);  //恢复Action
             ContextUtils.notifyHostPluginStarted(activity, intent);
         }
-        mHostInstr.callActivityOnCreate(activity, icicle);
+
+        try {
+            mHostInstr.callActivityOnCreate(activity, icicle);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (PluginDebugLog.isDebug()) {
+                throw e;
+            }
+            activity.finish();
+        }
     }
 
     /**

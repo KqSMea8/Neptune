@@ -31,7 +31,8 @@ import android.text.TextUtils;
  */
 public class PluginPackageInfo implements Parcelable {
     private static final String TAG = "PluginPackageInfo";
-    static final String META_KEY_CLASSINJECT = "pluginapp_class_inject";
+    static final String META_KEY_CLASS_INJECT = "pluginapp_class_inject";
+    static final String META_KEY_MERGE_RES = "pluginapp_res_merge";
     static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
     static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
     static final String PLUGIN_APPLICATION_CODE_PATH = "Hanlde_plugin_code_path";
@@ -51,6 +52,8 @@ public class PluginPackageInfo implements Parcelable {
 
     // 是否需要把插件class注入进入父classloader
     private boolean mIsClassInject = false;
+    // 是否需要把宿主的Resource合并进插件的Resource
+    private boolean mIsMergeResource = false;
 
     private boolean mUsePluginAppInfo = false;
 
@@ -91,6 +94,7 @@ public class PluginPackageInfo implements Parcelable {
         dataDir = in.readString();
         nativeLibraryDir = in.readString();
         mIsClassInject = in.readByte() != 0;
+        mIsMergeResource = in.readByte() != 0;
         mUsePluginAppInfo = in.readByte() != 0;
         mUsePluginCodePath = in.readByte() != 0;
 
@@ -152,7 +156,8 @@ public class PluginPackageInfo implements Parcelable {
             dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName).getAbsolutePath();
             nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
             if (metaData != null) {
-                mIsClassInject = metaData.getBoolean(META_KEY_CLASSINJECT);
+                mIsClassInject = metaData.getBoolean(META_KEY_CLASS_INJECT);
+                mIsMergeResource = metaData.getBoolean(META_KEY_MERGE_RES);
                 String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
                 if (!TextUtils.isEmpty(applicationMetaData)) {
                     if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
@@ -168,6 +173,14 @@ public class PluginPackageInfo implements Parcelable {
                 }
             }
             ResolveInfoUtil.parseResolveInfo(apkFile.getAbsolutePath(), this);
+
+            Intent launchIntent = new Intent(Intent.ACTION_MAIN);
+            launchIntent.addCategory(Intent.CATEGORY_DEFAULT);
+            ActivityInfo actInfo = resolveActivity(launchIntent);
+            if (actInfo != null) {
+                defaultActivityName = actInfo.name;
+            }
+
         } catch (RuntimeException e) {
             PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
             e.printStackTrace();
@@ -331,6 +344,10 @@ public class PluginPackageInfo implements Parcelable {
         return mIsClassInject;
     }
 
+    public boolean isResourceNeedMerge() {
+        return mIsMergeResource;
+    }
+
     public boolean isUsePluginAppInfo() {
         return mUsePluginAppInfo;
     }
@@ -446,6 +463,7 @@ public class PluginPackageInfo implements Parcelable {
         parcel.writeString(dataDir);
         parcel.writeString(nativeLibraryDir);
         parcel.writeByte((byte) (mIsClassInject ? 1 : 0));
+        parcel.writeByte((byte) (mIsMergeResource ? 1 : 0));
         parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
         parcel.writeByte((byte) (mUsePluginCodePath ? 1 : 0));
 

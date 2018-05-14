@@ -209,9 +209,15 @@ public class PluginLoadedApk implements IIntentConstant {
      */
     private void createPluginResource() {
         try {
+            // Android 5.0以下AssetManager不支持扩展资源表，始终新建一个，避免污染宿主的AssetManager
             AssetManager am = AssetManager.class.newInstance();
-            ReflectionUtils.on(am)
-                    .call("addAssetPath", PluginActivityControl.sMethods, mPluginFile.getAbsolutePath());
+            if (mPluginMapping.getMetaData() != null && mPluginMapping.isResourceNeedMerge()) {
+                // 先加入的资源表后被搜索，所以先添加宿主的资源
+                ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mHostContext.getApplicationInfo().sourceDir);
+                PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginMapping.getPackageName());
+            }
+            // 添加插件的资源
+            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mPluginFile.getAbsolutePath());
 //            AssetManager am = new AssetManager();
 //            am.addAssetPath(mPluginFile.getAbsolutePath());
             mPluginAssetManager = am;
@@ -244,7 +250,7 @@ public class PluginLoadedApk implements IIntentConstant {
         }
         PluginDebugLog.runtimeLog(TAG, "createClassLoader");
         File optimizedDirectory = getDataDir(mHostContext, mPluginPackageName);
-        //if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
+        if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
             mPluginClassLoader = new DexClassLoader(mPluginFile.getAbsolutePath(), optimizedDirectory.getAbsolutePath(),
                     mPluginMapping.getNativeLibraryDir(), mHostContext.getClassLoader());
 
@@ -264,13 +270,13 @@ public class PluginLoadedApk implements IIntentConstant {
                 PluginDebugLog.runtimeLog(TAG, "plugin: " + mPluginMapping.getPackageName() + " no need to inject to host classloader");
             }
             return true;
-//        } else {
-//            PluginDebugLog.runtimeLog(TAG,
-//                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
-//                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
-//                            + " can write: " + optimizedDirectory.canWrite());
-//            return false;
-//        }
+        } else {
+            PluginDebugLog.runtimeLog(TAG,
+                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
+                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
+                            + " can write: " + optimizedDirectory.canWrite());
+            return false;
+        }
     }
 
     /**
@@ -403,10 +409,10 @@ public class PluginLoadedApk implements IIntentConstant {
             mPluginMapping = PluginPackageManagerNative.getInstance(mHostContext)
                     .getPluginPackageInfo(mHostContext, pkgInfo); //pkgInfo.getTargetMapping(mHostContext);
             if (null == mPluginMapping || null == mPluginMapping.getPackageInfo()) {
-                throw new Exception("Exception case targetMapping init failed!");
+                throw new Exception("Exception case targetMapping init failed for plugin " + mPluginPackage);
             }
         } else {
-            throw new Exception("Havn't install pkgName");
+            throw new Exception("Haven't install pkgName " + mPluginPackage);
         }
     }
 
