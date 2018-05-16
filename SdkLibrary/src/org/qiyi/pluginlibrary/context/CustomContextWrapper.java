@@ -539,11 +539,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      */
     private SharedPreferences getSharedPreferencesForPlugin(String name, int mode) {
         try {
-            if (ContextUtils.isAndroidP()) {
+            /*if (ContextUtils.isAndroidP()) {
                 // Android P, SharedPreferenceImpl in dark list
                 backupSharedPreferenceV28(name);  // OTA系统升级的迁移数据
                 return getSharedPreferencesV28(name, mode);
-            } else if (android.os.Build.VERSION.SDK_INT >= 24) {
+            } else */if (android.os.Build.VERSION.SDK_INT >= 24) {
                 // Android 7.0+
                 return getSharedPreferencesV24(name, mode);
             } else if (android.os.Build.VERSION.SDK_INT >= 19) {

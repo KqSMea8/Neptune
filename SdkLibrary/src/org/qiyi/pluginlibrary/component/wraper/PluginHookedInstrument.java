@@ -47,11 +47,13 @@ public class PluginHookedInstrument extends PluginInstrument {
             PluginDebugLog.runtimeLog(TAG, "newActivity: " + className + ", targetClass: " + targetClass);
             if (!TextUtils.isEmpty(packageName) && !TextUtils.isEmpty(targetClass)) {
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
-                Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
-                activity.setIntent(intent);
+                if (loadedApk != null) {
+                    Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
+                    activity.setIntent(intent);
 
-                ReflectionUtils.on(activity).set("mResources", loadedApk.getPluginResource());
-                return activity;
+                    ReflectionUtils.on(activity).set("mResources", loadedApk.getPluginResource());
+                    return activity;
+                }
             }
         }
 
@@ -68,19 +70,21 @@ public class PluginHookedInstrument extends PluginInstrument {
             if (!TextUtils.isEmpty(packageName)) {
                 PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate: " + packageName);
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
-                try {
-                    ReflectionUtils activityRef = ReflectionUtils.on(activity);
-                    activityRef.set("mResources", loadedApk.getPluginResource());
-                    activityRef.set("mApplication", loadedApk.getPluginApplication());
-                    Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
-                    ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
-                    ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);
-                    ReflectionUtils.on(activity).setNoException("mInstrumentation", loadedApk.getPluginInstrument());
+                if (loadedApk != null) {
+                    try {
+                        ReflectionUtils activityRef = ReflectionUtils.on(activity);
+                        activityRef.set("mResources", loadedApk.getPluginResource());
+                        activityRef.set("mApplication", loadedApk.getPluginApplication());
+                        Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
+                        ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
+                        ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);
+                        ReflectionUtils.on(activity).setNoException("mInstrumentation", loadedApk.getPluginInstrument());
 
-                    changeActivityInfo(activity, targetClass, loadedApk);
-                } catch (Exception e) {
-                    PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate with exception: " + e.getMessage());
-                    e.printStackTrace();
+                        changeActivityInfo(activity, targetClass, loadedApk);
+                    } catch (Exception e) {
+                        PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate with exception: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
             IntentUtils.resetAction(intent);  //恢复Action
@@ -177,9 +181,9 @@ public class PluginHookedInstrument extends PluginInstrument {
 
         if (actInfo != null) {
             // copy from VirtualApk, is it really need?
-//            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-//                activity.setRequestedOrientation(actInfo.screenOrientation);
-//            }
+            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+                activity.setRequestedOrientation(actInfo.screenOrientation);
+            }
             PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +
                     actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
                     + ", logo = " + actInfo.logo + ", labelRes=" + actInfo.labelRes);
