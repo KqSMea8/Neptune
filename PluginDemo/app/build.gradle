@@ -44,6 +44,8 @@ dependencies {
         provided ('com.qiyi.video.allclasses:support_lib:latest.release')   //support_lib
         provided ('com.qiyi.video.allclasses:basecore_lib:latest.release')  // basecore_lib
         compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
+        provided ('android.app.fw:fw_jar:latest.release')  // fw, butter knife
+        annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
         compile "com.qiyi.video.allclasses:commonres_lib:9.5.0"    // commonres_lib
         //compile project(":baseRes")
     } else {

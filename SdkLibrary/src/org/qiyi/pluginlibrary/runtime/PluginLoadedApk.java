@@ -16,6 +16,8 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.error.ErrorType;
@@ -36,6 +38,8 @@ import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,10 +59,15 @@ import dalvik.system.DexClassLoader;
 public class PluginLoadedApk implements IIntentConstant {
     private static final String TAG = "PluginLoadedApk";
     /**
-     * 保存插件的依赖关系
+     * 保存注入到宿主ClassLoader的插件
      */
-    private static ConcurrentHashMap<String, PluginLiteInfo> sPluginDependences
-            = new ConcurrentHashMap<>();
+    private static Set<String> sInjectedPlugins = Collections.synchronizedSet(new HashSet<String>());
+    /**
+     * 保存所有的插件ClassLoader
+     */
+    private static Map<String, DexClassLoader> sAllPluginClassLoader = new ConcurrentHashMap<>();
+    /** 使用新的ClassLoader模型 */
+    private static boolean sUseNewClassLoader = false;
     /**
      * 主工程的Resource对象
      */
@@ -160,8 +169,15 @@ public class PluginLoadedApk implements IIntentConstant {
         this.mActivityStackSupervisor = new PActivityStackSupervisor(this);
         extraPluginPackageInfo(this.mPluginPackageName);
         this.mProcessName = mProcessName;
-        if (!createClassLoader()) {
-            throw new RuntimeException("ProxyEnvironmentNew init failed for createClassLoader failed:" + " apkFile: " + mPluginFile.getAbsolutePath() + " pluginPakName: " + mPluginPackageName);
+
+        if (!sUseNewClassLoader) {
+            if (!createClassLoader()) {
+                throw new RuntimeException("ProxyEnvironmentNew init failed for createClassLoader failed:" + " apkFile: " + mPluginFile.getAbsolutePath() + " pluginPakName: " + mPluginPackageName);
+            }
+        } else {
+            if (!createNewClassLoader()) {
+                throw new RuntimeException("ProxyEnvironmentNew init failed for createNewClassLoader failed:" + " apkFile: " + mPluginFile.getAbsolutePath() + " pluginPakName: " + mPluginPackageName);
+            }
         }
 
         createPluginResource();
@@ -258,10 +274,16 @@ public class PluginLoadedApk implements IIntentConstant {
             if (!isSharePluginInjectClassLoader()) {
                 PluginDebugLog.runtimeLog(TAG, "share plugin: " + mPluginMapping.getPackageName() + " no need to inject into host classloader");
             } else if (mPluginMapping.getMetaData() != null && mPluginMapping.isClassNeedInject()) {
-                if (!sPluginDependences.containsKey(mPluginPackageName)) {
-                    ClassLoaderInjectHelper.inject(mHostContext.getClassLoader(), mPluginClassLoader,
-                            mPluginMapping.getPackageName() + ".R");
+                if (!sInjectedPlugins.contains(mPluginPackageName)) {
+                    ClassLoaderInjectHelper.InjectResult injectResult = ClassLoaderInjectHelper.inject(mHostContext.getClassLoader(),
+                            mPluginClassLoader, mPluginMapping.getPackageName() + ".R");
                     PluginDebugLog.runtimeLog(TAG, "--- Class injecting @ " + mPluginMapping.getPackageName());
+                    if (injectResult != null && injectResult.mIsSuccessful) {
+                        sInjectedPlugins.add(mPluginPackageName);
+                        PluginDebugLog.runtimeLog(TAG, "inject class result success for " + mPluginPackageName);
+                    } else {
+                        PluginDebugLog.runtimeLog(TAG, "inject class result failed for " + mPluginPackageName);
+                    }
                 } else {
                     PluginDebugLog.runtimeLog(TAG,
                             "--- Class injecting @ " + mPluginMapping.getPackageName() + " already injected!");
@@ -270,6 +292,29 @@ public class PluginLoadedApk implements IIntentConstant {
                 PluginDebugLog.runtimeLog(TAG, "plugin: " + mPluginMapping.getPackageName() + " no need to inject to host classloader");
             }
             return true;
+        } else {
+            PluginDebugLog.runtimeLog(TAG,
+                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
+                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
+                            + " can write: " + optimizedDirectory.canWrite());
+            return false;
+        }
+    }
+
+    /**
+     * 创建插件新的ClassLoader，不使用注入Host ClassLoader
+     */
+    private boolean createNewClassLoader() {
+
+        PluginDebugLog.runtimeLog(TAG, "createClassLoader");
+        File optimizedDirectory = getDataDir(mHostContext, mPluginPackageName);
+        if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
+            mPluginClassLoader = new PluginClassLoader(mPluginPackageName, mPluginFile.getAbsolutePath(),
+                    optimizedDirectory.getAbsolutePath(), mPluginMapping.getNativeLibraryDir(), mHostContext.getClassLoader());
+            PluginDebugLog.runtimeLog(TAG, "createClassLoader success for plugin " + mPluginPackageName);
+            sAllPluginClassLoader.put(mPluginPackageName, mPluginClassLoader);
+
+            return handleNewDependencies();
         } else {
             PluginDebugLog.runtimeLog(TAG,
                     "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
@@ -441,7 +486,7 @@ public class PluginLoadedApk implements IIntentConstant {
                 libraryInfo = PluginPackageManagerNative.getInstance(mHostContext)
                         .getPackageInfo(dependencies.get(i));
                 if (null != libraryInfo && !TextUtils.isEmpty(libraryInfo.packageName)) {
-                    if (!sPluginDependences.containsKey(libraryInfo.packageName)) {
+                    if (!sInjectedPlugins.contains(libraryInfo.packageName)) {
                         PluginDebugLog.runtimeLog(TAG, "handleDependences inject " + libraryInfo.packageName);
                         PluginPackageManager.updateSrcApkPath(mHostContext, libraryInfo);
                         File apkFile = new File(libraryInfo.srcApkPath);
@@ -456,13 +501,15 @@ public class PluginLoadedApk implements IIntentConstant {
                         }
                         PluginDebugLog.runtimeLog(TAG,
                                 "handleDependences src apk path : " + libraryInfo.srcApkPath);
+                        File dataDir = new File(PluginInstaller.getPluginappRootPath(mHostContext), libraryInfo.packageName);
+                        String nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
                         injectResult = ClassLoaderInjectHelper.inject(mHostContext,
-                                libraryInfo.srcApkPath, null, null);
+                                libraryInfo.srcApkPath, null, nativeLibraryDir);
                         if (null != injectResult && injectResult.mIsSuccessful) {
                             PluginDebugLog.runtimeLog(TAG,
                                     "handleDependences injectResult success for "
                                             + libraryInfo.packageName);
-                            sPluginDependences.put(libraryInfo.packageName, libraryInfo);
+                            sInjectedPlugins.add(libraryInfo.packageName);
                         } else {
                             PluginDebugLog.runtimeLog(TAG,
                                     "handleDependences injectResult faild for "
@@ -479,6 +526,70 @@ public class PluginLoadedApk implements IIntentConstant {
         }
         return true;
     }
+
+    /**
+     * 处理当前插件的依赖关系
+     *
+     * @return true:处理成功，false：处理失败
+     */
+    private boolean handleNewDependencies() {
+        List<String> dependencies = PluginPackageManagerNative
+                .getInstance(mHostContext).getPluginRefs(mPluginPackageName); //pkgInfo.pluginInfo.getPluginResfs();
+        if (null != dependencies) {
+            PluginLiteInfo libraryInfo;
+            DexClassLoader dependency;
+            ClassLoaderInjectHelper.InjectResult injectResult;
+            for (int i = 0; i < dependencies.size(); i++) {
+                libraryInfo = PluginPackageManagerNative.getInstance(mHostContext)
+                        .getPackageInfo(dependencies.get(i));
+                if (null != libraryInfo && !TextUtils.isEmpty(libraryInfo.packageName)) {
+                    dependency = sAllPluginClassLoader.get(libraryInfo.packageName);
+                    if (dependency == null) {
+                        PluginDebugLog.runtimeLog(TAG, "handleNewDependencies not contain in cache " + libraryInfo.packageName);
+                        PluginPackageManager.updateSrcApkPath(mHostContext, libraryInfo);
+                        File apkFile = new File(libraryInfo.srcApkPath);
+                        if (!apkFile.exists()) {
+                            PluginDebugLog.runtimeLog(TAG,
+                                    "Special case apkFile not exist, notify client! packageName: "
+                                            + libraryInfo.packageName);
+                            PluginPackageManager.notifyClientPluginException(mHostContext,
+                                    libraryInfo.packageName,
+                                    "Apk file not exist!");
+                            return false;
+                        }
+
+                        PluginDebugLog.runtimeLog(TAG,
+                                "handleNewDependencies src apk path : " + libraryInfo.srcApkPath);
+                        File dataDir = new File(PluginInstaller.getPluginappRootPath(mHostContext), libraryInfo.packageName);
+                        String nativeLibraryDir = new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
+
+                        dependency = new PluginClassLoader(libraryInfo.packageName, libraryInfo.srcApkPath,
+                                PluginInstaller.getPluginInjectRootPath(mHostContext).getAbsolutePath(), nativeLibraryDir,
+                                mHostContext.getClassLoader());
+                        sAllPluginClassLoader.put(libraryInfo.packageName, dependency);
+                    }
+                    // 把依赖插件的ClassLoader添加到当前的ClassLoader
+                    if (mPluginClassLoader instanceof PluginClassLoader) {
+                        ((PluginClassLoader)mPluginClassLoader).addDependency(dependency);
+                        PluginDebugLog.runtimeFormatLog(TAG, "handleNewDependencies addDependency success " + mPluginPackageName);
+                    } else {
+                        // 注入到PluginClassLoader
+                        injectResult = ClassLoaderInjectHelper.inject(mPluginClassLoader, dependency, null);
+                        if (injectResult != null && injectResult.mIsSuccessful) {
+                            PluginDebugLog.runtimeFormatLog(TAG, "handleNewDependencies inject into %s success", mPluginPackageName);
+                        } else {
+                            PluginDebugLog.runtimeFormatLog(TAG, "handleNewDependencies inject into %s failed", mPluginPackageName);
+                        }
+                            return false;
+                        }
+                    }
+                libraryInfo = null;
+                injectResult = null;
+            }
+        }
+        return true;
+    }
+
 
     /**
      * 获取插件的数据目录

@@ -496,12 +496,33 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         String sharePath = "/data/data/" + this.getPackageName() + "/shared_prefs/";
         File sFile = new File(sharePath);
         String[] fileList = sFile.list();
-        if (fileList == null)
+        if (fileList == null) {
             return;
+        }
         for (String file : fileList) {
             if (file != null && (file.equals(name + ".xml") || file.contains("_" + name + ".xml"))) {
                 File oriFile = new File(sharePath + file);
                 File tarFile = getSharedPrefsFile(name);
+                if (oriFile.exists() && !tarFile.exists()) {
+                    Util.moveFile(oriFile, tarFile, false);
+                }
+            }
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private void backupSharedPreferenceV28(String name) {
+        File pluginSharePath = new File(getPluginPackageInfo().getDataDir() + "/shared_prefs/");
+        File sharePath = new File("/data/data/" + this.getPackageName() + "/shared_prefs/");
+        String[] fileList = pluginSharePath.list();
+        if (fileList == null) {
+            return;
+        }
+        final String packageName = getPluginPackageName();
+        for (String file : fileList) {
+            if (file != null) {
+                File oriFile = new File(pluginSharePath, file);
+                File tarFile = new File(sharePath, packageName + "_" + file);
                 if (oriFile.exists() && !tarFile.exists()) {
                     Util.moveFile(oriFile, tarFile, false);
                 }
@@ -518,7 +539,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      */
     private SharedPreferences getSharedPreferencesForPlugin(String name, int mode) {
         try {
-            if (android.os.Build.VERSION.SDK_INT >= 24) {
+            if (ContextUtils.isAndroidP()) {
+                // Android P, SharedPreferenceImpl in dark list
+                backupSharedPreferenceV28(name);  // OTA系统升级的迁移数据
+                return getSharedPreferencesV28(name, mode);
+            } else if (android.os.Build.VERSION.SDK_INT >= 24) {
                 // Android 7.0+
                 return getSharedPreferencesV24(name, mode);
             } else if (android.os.Build.VERSION.SDK_INT >= 19) {
@@ -537,6 +562,21 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return null;
     }
 
+
+    /**
+     * Android P，增加了非SDK接口限制，SharedPreferenceImpl进入了dark名单
+     * 因此无法反射SharedPreferenceImpl修改插件的sp目录了，统一把插件的sp目录放到宿主的sp目录下
+     * 通过修改插件sp的name追加上插件的包名进行隔离
+     *
+     * @param name
+     * @param mode
+     * @return
+     */
+    private SharedPreferences getSharedPreferencesV28(String name, int mode) {
+        final String packageName = getPluginPackageName();
+        final String fileName = packageName + "_" + name;  //追加上插件的包名，进行隔离
+        return super.getSharedPreferences(fileName, mode);
+    }
 
     /**
      * Android 7.0+系统，
@@ -564,8 +604,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             if (oSharedPrefsPaths == null) {
                 oSharedPrefsPaths = new ArrayMap<String, File>();
             }
-            final PluginLoadedApk mLoadedApk = getPluginLoadedApk();
-            final String packageName = mLoadedApk != null ? mLoadedApk.getPluginPackageName() : getPackageName();
+            final String packageName = getPluginPackageName();
             final String fileKey = packageName + "_" + name;
             File prefsFile = oSharedPrefsPaths.get(fileKey);
             if (prefsFile == null) {
@@ -623,8 +662,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 oSharedPrefs = new ArrayMap<String, ArrayMap<String, Object>>();
             }
 
-            final PluginLoadedApk mLoadedApk = getPluginLoadedApk();
-            final String packageName = mLoadedApk != null ? mLoadedApk.getPluginPackageName() : getPackageName();
+            final String packageName = getPluginPackageName();
             ArrayMap<String, Object> packagePrefs = oSharedPrefs.get(packageName);
             if (packagePrefs == null) {
                 packagePrefs = new ArrayMap<String, Object>();
@@ -667,8 +705,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         HashMap<String, Object> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
                 .<HashMap<String, Object>>get(S_SHARED_PREFS);
 
-        final PluginLoadedApk mLoadedApk = getPluginLoadedApk();
-        final String packageName = mLoadedApk != null ? mLoadedApk.getPluginPackageName() : getPackageName();
+        final String packageName = getPluginPackageName();
         final String nameKey = packageName + "_" + name;
         synchronized (oSharedPrefs) {
             sp = oSharedPrefs.get(nameKey);

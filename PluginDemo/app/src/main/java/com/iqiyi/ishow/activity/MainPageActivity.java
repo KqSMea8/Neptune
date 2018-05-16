@@ -2,12 +2,15 @@ package com.iqiyi.ishow.activity;
 
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 
 import com.facebook.common.logging.FLog;
 import com.facebook.drawee.backends.pipeline.Fresco;
@@ -59,6 +62,8 @@ public class MainPageActivity extends AppCompatActivity {
     private RecyclerView mRecyclerView;
     private ImageAdapter mAdapter;
 
+    private TextView mGoButter;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,6 +76,16 @@ public class MainPageActivity extends AppCompatActivity {
         Log.i(TAG, "ManiPageActivity onCreate() called");
 
         dumpContext();
+
+        mGoButter = (TextView) findViewById(R.id.go_butter);
+        mGoButter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainPageActivity.this, ButterActivity.class);
+                startActivity(intent);
+            }
+        });
+
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
 

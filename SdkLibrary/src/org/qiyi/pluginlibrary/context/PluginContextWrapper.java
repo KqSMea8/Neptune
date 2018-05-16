@@ -12,7 +12,7 @@ import android.content.res.Resources.Theme;
  */
 public class PluginContextWrapper extends CustomContextWrapper {
     /** 插件包名 */
-    private String mPackagename = null;
+    private String mPackagename = "";
 
     // 插件自己保存一个theme，不用父类创建的，为了兼容OPPO手机上的bug
     private Resources.Theme mTargetTheme;
