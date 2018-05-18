@@ -1,8 +1,10 @@
 package org.qiyi.pluginlibrary.utils;
 
+import android.os.Process;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 /**
@@ -25,10 +27,15 @@ public class PluginDebugLog {
 
     private static final String GENERAL_TAG = "general_plugin";
 
+    private static SimpleDateFormat formatter = new SimpleDateFormat("MM-dd HH:mm:ss:SSS");
+
+    public static final int SINGLE_LOG_SIZE_LIMIT = 512;
+
     private static boolean sIsDebug = false;
 
     public static void setIsDebug(boolean b) {
         sIsDebug = b;
+        LogCacheHelper.getInstance().addToCache(null);
     }
 
     /**
@@ -44,13 +51,16 @@ public class PluginDebugLog {
     private static void logInternal(String tag, Object msg) {
         if (!TextUtils.isEmpty(tag) && null != msg) {
             Log.i(tag, String.valueOf(msg));
+            LogCacheHelper.getInstance().addToCache(buildPersistLog(tag,String.valueOf(msg)));
         }
     }
 
     public static void log(String tag, String identify, Object msg) {
         if (isDebug()) {
             if (!TextUtils.isEmpty(tag) && null != msg) {
-                Log.i(tag, "[INFO " + identify + "] " + String.valueOf(msg));
+                String log = "[INFO " + identify + "] " + String.valueOf(msg);
+                Log.i(tag, log);
+                LogCacheHelper.getInstance().addToCache(buildPersistLog(tag,String.valueOf(log)));
             }
         }
     }
@@ -174,4 +184,26 @@ public class PluginDebugLog {
         }
     }
 
+    public static String buildPersistLog(String tag, String msg){
+        long time = System.currentTimeMillis();
+        int pid = Process.myPid();
+        int tid = Process.myTid();
+
+        StringBuilder sb = new StringBuilder();
+        String logTime = formatter.format(time);
+        sb.append(logTime);
+        sb.append(" ");
+        sb.append(pid);
+        sb.append(" ");
+        sb.append(tid);
+        sb.append(" ");
+        sb.append(tag);
+        sb.append(" ");
+        sb.append(msg);
+        if(sb.length() > SINGLE_LOG_SIZE_LIMIT){
+            return sb.toString().substring(0, SINGLE_LOG_SIZE_LIMIT);
+        }
+        sb.append("\n");
+        return sb.toString();
+    }
 }

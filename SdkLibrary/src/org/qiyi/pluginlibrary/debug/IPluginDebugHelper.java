@@ -123,4 +123,8 @@ public interface IPluginDebugHelper {
      */
     String getCurrentSystemTime();
 
+    /**
+     * 保存部分log信息
+     */
+    void savePluginLogInfo(Context context, final String time, final StringBuffer logInfo);
 }
