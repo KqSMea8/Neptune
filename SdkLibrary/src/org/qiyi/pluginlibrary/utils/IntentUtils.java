@@ -1,8 +1,10 @@
 package org.qiyi.pluginlibrary.utils;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -43,6 +45,21 @@ public class IntentUtils {
             PluginDebugLog.log(TAG, "setProxyInfo mLast Action is:" + mBuilder.toString());
         }
         mIntent.setAction(mBuilder.toString());
+    }
+
+    /**
+     * 从Activity中解析插件的包名
+     */
+    public static String parsePkgNameFromActivity(Activity activity) {
+        String pkgName = "";
+        if (activity instanceof InstrActivityProxy1) {
+            pkgName = ((InstrActivityProxy1)activity).getPluginPackageName();
+        }
+        if (TextUtils.isEmpty(pkgName) && activity.getIntent() != null) {
+            String[] result = parsePkgAndClsFromIntent(activity.getIntent());
+            pkgName = result[0];
+        }
+        return pkgName;
     }
 
     /**
@@ -116,5 +133,27 @@ public class IntentUtils {
             action = null;
         }
         intent.setAction(action);
+    }
+
+    /**
+     * 从Activity中dump优先的插件信息
+     * @param activity
+     * @return
+     */
+    public static String dump(Activity activity) {
+        String info = "";
+        if (activity instanceof InstrActivityProxy1) {
+            info = ((InstrActivityProxy1)activity).dump();
+        } else {
+            Intent intent = activity.getIntent();
+            String[] pkgCls = parsePkgAndClsFromIntent(intent);
+            if (pkgCls != null && pkgCls.length == 2) {
+                info = "Package&Cls is: " + activity + " " + (pkgCls[0] + " " + pkgCls[1]) + " flg=0x"
+                        + Integer.toHexString(intent.getFlags());
+            } else {
+                info = "Package&Cls is: " + activity + " flg=0x" + Integer.toHexString(intent.getFlags());
+            }
+        }
+        return info;
     }
 }

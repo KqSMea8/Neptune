@@ -14,9 +14,9 @@
             <!--android:name="pluginapp_class_inject"-->
             <!--android:value="true"/>-->
 
-        <meta-data
-            android:name="pluginapp_res_merge"
-            android:value="true" />
+        <!--<meta-data-->
+            <!--android:name="pluginapp_res_merge"-->
+            <!--android:value="true" />-->
 
         <activity android:name=".activity.MainPageActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
@@ -24,6 +24,15 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity android:name=".activity.ButterActivity">
+
+        </activity>
+
+        <activity android:name=".activity.SingleActivity"
+            android:launchMode="singleTask">
+
         </activity>
     </application>
 </manifest>

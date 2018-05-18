@@ -5,7 +5,7 @@ apply plugin: 'com.qiyi.plugin'
 def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
 qyplugin {
-    pluginMode = isPluginBuild
+    pluginMode = false
     packageId = 0x30
     hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
 }

@@ -23,7 +23,7 @@ import java.util.List;
  * author: liuchun
  * date: 2018/1/26
  */
-public class MainPageActivity extends AppCompatActivity {
+public class MainPageActivity extends AppCompatActivity implements View.OnClickListener{
     private static final String TAG = "ISHOW_PLUGIN";
 
     private static final String[] URL_LINKS = {
@@ -63,6 +63,7 @@ public class MainPageActivity extends AppCompatActivity {
     private ImageAdapter mAdapter;
 
     private TextView mGoButter;
+    private TextView mGoSingle;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -78,22 +79,30 @@ public class MainPageActivity extends AppCompatActivity {
         dumpContext();
 
         mGoButter = (TextView) findViewById(R.id.go_butter);
-        mGoButter.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainPageActivity.this, ButterActivity.class);
-                startActivity(intent);
-            }
-        });
+        mGoButter.setOnClickListener(this);
 
+        mGoSingle = (TextView) findViewById(R.id.go_single);
+        mGoSingle.setOnClickListener(this);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-
         List<String> mImageUrls = Arrays.asList(URL_LINKS);
         mAdapter = new ImageAdapter(this, mImageUrls);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         //mRecyclerView.addItemDecoration(new ImageItemDecoration());
         mRecyclerView.setAdapter(mAdapter);
+    }
+
+
+    @Override
+    public void onClick(View v) {
+
+        if (v.getId() == R.id.go_butter) {
+            Intent intent = new Intent(MainPageActivity.this, ButterActivity.class);
+            startActivity(intent);
+        } else if (v.getId() == R.id.go_single) {
+            Intent intent = new Intent(MainPageActivity.this, SingleActivity.class);
+            startActivity(intent);
+        }
     }
 
     private void dumpContext() {

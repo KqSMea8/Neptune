@@ -1,8 +1,10 @@
 package com.iqiyi.ishow.activity;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -18,6 +20,7 @@ import butterknife.ButterKnife;
  * date: 2018/5/14
  */
 public class ButterActivity extends Activity {
+    private static final String TAG = "ButterActivity";
 
     @BindView(R.id.butter_title) TextView mTitle;
     @BindView(R.id.butter_display) Button mDisplay;
@@ -36,5 +39,13 @@ public class ButterActivity extends Activity {
                 Toast.makeText(ButterActivity.this, "Share Button is Clicked", Toast.LENGTH_SHORT).show();
             }
         });
+
+        Log.i(TAG, "onCreate() called");
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        Log.i(TAG, "onNewIntent() called");
     }
 }

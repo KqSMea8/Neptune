@@ -10,6 +10,7 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class PActivityStackSupervisor {
     private static CopyOnWriteArrayList<Activity> sAllActivityStack = new CopyOnWriteArrayList<Activity>();
 
     // 插件的Activity栈
-    private LinkedList<Activity> mActivityStack;
+    private final LinkedList<Activity> mActivityStack;
     private PluginLoadedApk mLoadedApk;
 
     public PActivityStackSupervisor(PluginLoadedApk mLoadedApk) {
@@ -64,7 +65,7 @@ public class PActivityStackSupervisor {
             if (null != mActivityStack && mActivityStack.size() > 0) {
                 for (Activity ac : mActivityStack) {
                     PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack: " + ac + " source: "
-                            + ((InstrActivityProxy1) ac).dump());
+                            + IntentUtils.dump(ac));
                 }
             } else {
                 PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack is empty");
@@ -104,13 +105,17 @@ public class PActivityStackSupervisor {
                 activity = mActivityStack.getFirst();
             }
             boolean hasSameActivity = false;
-            String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk,info);
-            if (activity != null && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
-                String key = getActivityStackKey(activity);
+            String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk, info);
+            if (activity != null) {
+                // 栈内有实例, 可能是ProxyActivity，也可能是插件真实的Activity
+                if (TextUtils.equals(proxyClsName, activity.getClass().getName())
+                        || TextUtils.equals(targetActivity, activity.getClass().getName())) {
+                    String key = getActivityStackKey(activity);
 
-                if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                    hasSameActivity = true;
+                    if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        hasSameActivity = true;
+                    }
                 }
             }
             if (hasSameActivity) {
@@ -125,14 +130,16 @@ public class PActivityStackSupervisor {
             synchronized (mActivityStack) {
                 // 遍历已经起过的activity
                 for (Activity activity : mActivityStack) {
-                    String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk,info);
-                    if (activity != null
-                            && TextUtils.equals(proxyClsName, activity.getClass().getName())) {
-                        String key = getActivityStackKey(activity);
-                        if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
-                            PluginDebugLog.runtimeLog(TAG,"dealLaunchMode found:"+((InstrActivityProxy1)activity).dump());
-                            found = activity;
-                            break;
+                    String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk, info);
+                    if (activity != null) {
+                        if (TextUtils.equals(proxyClsName, activity.getClass().getName())
+                                || TextUtils.equals(targetActivity, activity.getClass().getName())) {
+                            String key = getActivityStackKey(activity);
+                            if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
+                                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode found:" + IntentUtils.dump(activity));
+                                found = activity;
+                                break;
+                            }
                         }
                     }
                 }
@@ -148,10 +155,10 @@ public class PActivityStackSupervisor {
                     for (Activity activity : mActivityStack) {
                         if (activity == found) {
                             if (isSingleTask || isSingleTop) {
-                                PluginDebugLog.runtimeLog(TAG,"dealLaunchMode add single top flag!");
+                                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add single top flag!");
                                 intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                             }
-                            PluginDebugLog.runtimeLog(TAG,"dealLaunchMode add clear top flag!");
+                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add clear top flag!");
                             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                             break;
                         }
@@ -159,13 +166,13 @@ public class PActivityStackSupervisor {
                     }
                     for (Activity act : popActivities) {
                         if (!mActivityStack.isEmpty()) {
-                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode mActivityStack remove " + ((InstrActivityProxy1)act).dump());
+                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode mActivityStack remove " + IntentUtils.dump(act));
                             mActivityStack.remove(act);
                         }
                     }
                 }
                 for (Activity act : popActivities) {
-                    PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + ((InstrActivityProxy1)act).dump());
+                    PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + IntentUtils.dump(act));
                     act.finish();
                 }
                 mLoadedApk.quitApp(false);
@@ -263,22 +270,23 @@ public class PActivityStackSupervisor {
                 if (null != temp && act == temp) {
                     break;
                 }
+                String pkgName = IntentUtils.parsePkgNameFromActivity(temp);
                 if (temp != null && !TextUtils.equals(mLoadedApk.getPluginPackageName(),
-                        ((InstrActivityProxy1) temp).getPluginPackageName())) {
+                        pkgName)) {
                     needRemove.add(temp);
                 }
             }
             PluginLoadedApk mLoadedApk = null;
             for (Activity removeItem : needRemove) {
                 if (null != removeItem) {
-                    mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(
-                            ((InstrActivityProxy1) removeItem).getPluginPackageName());
+                    String pkgName = IntentUtils.parsePkgNameFromActivity(removeItem);
+                    mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
                     if (null != mLoadedApk
                             && null != mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
                         synchronized (mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
                             try {
                                 PluginDebugLog.runtimeLog(TAG,
-                                        "finish: " + ((InstrActivityProxy1) removeItem).dump());
+                                        "finish: " + IntentUtils.dump(act));
                                 removeItem.finish();
                             } catch (Exception ex) {
                                 ex.printStackTrace();
@@ -291,9 +299,16 @@ public class PActivityStackSupervisor {
         }
     }
 
+    /**
+     * 把插件Activity压入堆栈
+     * 旧的插件方案：压入的是代理的Activity
+     * hook Instr方案：压入的是插件真实的Activity
+     *
+     * @param activity
+     */
     public void pushActivityToStack(Activity activity) {
         PluginDebugLog.runtimeLog(TAG, "pushActivityToStack activity: " + activity + " "
-                + ((InstrActivityProxy1) activity).dump());
+                + IntentUtils.dump(activity));
         sAllActivityStack.add(activity);
         removeLoadingIntent(mLoadedApk.getPluginPackageName(), activity.getIntent());
         synchronized (mActivityStack) {
@@ -307,7 +322,7 @@ public class PActivityStackSupervisor {
         synchronized (mActivityStack) {
             if (!mActivityStack.isEmpty()) {
                 PluginDebugLog.runtimeLog(TAG, "popActivityFromStack activity: " + activity + " "
-                        + ((InstrActivityProxy1) activity).dump());
+                        + IntentUtils.dump(activity));
                 result = mActivityStack.remove(activity);
             }
         }
@@ -406,16 +421,14 @@ public class PActivityStackSupervisor {
 
     private static String getActivityStackKey(Activity activity) {
         String key = "";
-        InstrActivityProxy1 lActivityProxy = null;
-        try {
-            lActivityProxy = (InstrActivityProxy1) activity;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return key;
-        }
-        PluginActivityControl ctl = lActivityProxy.getController();
-        if (ctl != null && ctl.getPlugin() != null) {
-            key = ctl.getPlugin().getClass().getName();
+        if (activity instanceof InstrActivityProxy1) {
+            InstrActivityProxy1 lActivityProxy = (InstrActivityProxy1) activity;
+            PluginActivityControl ctl = lActivityProxy.getController();
+            if (ctl != null && ctl.getPlugin() != null) {
+                key = ctl.getPlugin().getClass().getName();
+            }
+        } else {
+            key = activity.getClass().getName();
         }
         return key;
     }

@@ -85,6 +85,10 @@ public class PluginHookedInstrument extends PluginInstrument {
                         PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate with exception: " + e.getMessage());
                         e.printStackTrace();
                     }
+
+                    if (activity.getParent() == null) {
+                        loadedApk.getActivityStackSupervisor().pushActivityToStack(activity);
+                    }
                 }
             }
             IntentUtils.resetAction(intent);  //恢复Action
@@ -99,6 +103,27 @@ public class PluginHookedInstrument extends PluginInstrument {
                 throw e;
             }
             activity.finish();
+        }
+    }
+
+    @Override
+    public void callActivityOnDestroy(Activity activity) {
+        super.callActivityOnDestroy(activity);
+        if (activity.getParent() != null) {
+            return;
+        }
+
+        final Intent intent = activity.getIntent();
+        String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
+        if (IntentUtils.isIntentForPlugin(intent)) {
+            String packageName = result[0];
+            if (!TextUtils.isEmpty(packageName)) {
+                PluginDebugLog.runtimeLog(TAG, "callActivityOnDestroy: " + packageName);
+                PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
+                if (loadedApk != null) {
+                    loadedApk.getActivityStackSupervisor().popActivityFromStack(activity);
+                }
+            }
         }
     }
 
