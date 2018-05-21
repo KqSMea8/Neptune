@@ -35,7 +35,7 @@ public class PluginDebugLog {
 
     public static void setIsDebug(boolean b) {
         sIsDebug = b;
-        LogCacheHelper.getInstance().addToCache(null);
+        LogCacheHelper.getInstance().pollAllCacheToFile();
     }
 
     /**
