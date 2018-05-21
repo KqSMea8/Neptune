@@ -224,9 +224,9 @@ public class PluginCenterDebugHelper {
         }
     }
 
-    public void savePluginLogInfo(final String time, final StringBuffer logInfo) {
+    public void savePluginLogInfo(final StringBuffer logInfo) {
         if (iPluginDebugHelper != null) {
-            iPluginDebugHelper.savePluginLogInfo(context, time, logInfo);
+            iPluginDebugHelper.savePluginLogInfo(context,logInfo);
         }
     }
 }

@@ -37,7 +37,7 @@ public class LogCacheHelper {
                 stringBuffer.append(mLogCache.poll());
             }
             if (stringBuffer.length() != 0) {
-                PluginCenterDebugHelper.getInstance().savePluginLogInfo(PluginCenterDebugHelper.getInstance().getCurrentSystemTime(), stringBuffer);
+                PluginCenterDebugHelper.getInstance().savePluginLogInfo(stringBuffer);
             }
         }
     }
@@ -52,7 +52,7 @@ public class LogCacheHelper {
                 stringBuffer.append(mLogCache.poll());
             }
             if (stringBuffer.length() != 0) {
-                PluginCenterDebugHelper.getInstance().savePluginLogInfo(PluginCenterDebugHelper.getInstance().getCurrentSystemTime(), stringBuffer);
+                PluginCenterDebugHelper.getInstance().savePluginLogInfo(stringBuffer);
             }
         }
     }
