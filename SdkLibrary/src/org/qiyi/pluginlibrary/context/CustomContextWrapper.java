@@ -539,11 +539,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      */
     private SharedPreferences getSharedPreferencesForPlugin(String name, int mode) {
         try {
-            /*if (ContextUtils.isAndroidP()) {
-                // Android P, SharedPreferenceImpl in dark list
-                backupSharedPreferenceV28(name);  // OTA系统升级的迁移数据
-                return getSharedPreferencesV28(name, mode);
-            } else */if (android.os.Build.VERSION.SDK_INT >= 24) {
+            if (android.os.Build.VERSION.SDK_INT >= 24) {
                 // Android 7.0+
                 return getSharedPreferencesV24(name, mode);
             } else if (android.os.Build.VERSION.SDK_INT >= 19) {
@@ -562,21 +558,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return null;
     }
 
-
-    /**
-     * Android P，增加了非SDK接口限制，SharedPreferenceImpl进入了dark名单
-     * 因此无法反射SharedPreferenceImpl修改插件的sp目录了，统一把插件的sp目录放到宿主的sp目录下
-     * 通过修改插件sp的name追加上插件的包名进行隔离
-     *
-     * @param name
-     * @param mode
-     * @return
-     */
-    private SharedPreferences getSharedPreferencesV28(String name, int mode) {
-        final String packageName = getPluginPackageName();
-        final String fileName = packageName + "_" + name;  //追加上插件的包名，进行隔离
-        return super.getSharedPreferences(fileName, mode);
-    }
 
     /**
      * Android 7.0+系统，

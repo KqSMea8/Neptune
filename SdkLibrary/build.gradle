@@ -23,11 +23,10 @@ uploadArchives {
 }
 
 dependencies {
+    provided files('libs/android-26.jar')
     provided files('libs/android-support-v4.jar')
-    provided files('libs/fileutil.jar')
-    //provided files('libs/android-27.jar')
-    //provided project(':AndroidStub')
 }
+
 
 android {
     compileSdkVersion COMPILE_SDK_VERSION
@@ -113,9 +112,17 @@ preBuild.doLast {
         def sdkver = "Android API " + android.compileSdkVersion.substring("android-".length())  + " Platform"
         new Node(parsedXml.component[1], 'orderEntry', ['type': 'jdk', 'jdkName': sdkver, 'jdkType': 'Android SDK'])
         XmlUtil.serialize(parsedXml, new FileOutputStream(imlFile))
+
+        println "Modify ${project.name} ${imlFile} success"
     } catch (FileNotFoundException e) {
         // nop, iml not found
         e.printStackTrace()
+    }
+}
+// 依赖本地的android-26.jar
+gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs.add('-Xbootclasspath/p:libs/android-26.jar')
     }
 }
 

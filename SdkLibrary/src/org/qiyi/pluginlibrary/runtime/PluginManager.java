@@ -1,6 +1,7 @@
 package org.qiyi.pluginlibrary.runtime;
 
 import android.app.Activity;
+import android.app.ActivityThread;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.app.Service;
@@ -21,7 +22,6 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.wraper.PluginHookedInstrument;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
-import org.qiyi.pluginlibrary.exception.ReflectException;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
@@ -97,26 +97,41 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * @param hookInstr
      */
     public static void init(Context appContext, boolean hookInstr) {
+
+        hookInstr = ContextUtils.isAndroidP() || hookInstr;  // Android P force enable hook instr mode
         if (!hookInstr) {
             PluginDebugLog.log(TAG, "hookInstr is false, no need to hook ActivityThread#Instrumentation");
             return;
         }
 
-        Object activityThread = getActivityThread();
-        Instrumentation hostInstr;
-        try {
-            hostInstr = ReflectionUtils.on(activityThread).call("getInstrumentation").get();
-        } catch (ReflectException e) {
-            hostInstr = ReflectionUtils.on(activityThread).get("mInstrumentation");
-        }
+        ActivityThread activityThread = ActivityThread.currentActivityThread();
+        Instrumentation hostInstr = activityThread.getInstrumentation();
 
-        if (hostInstr != null) {
+        if (hostInstr instanceof PluginHookedInstrument) {
+            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread already be hooked, just return");
+        } else if (hostInstr != null) {
             PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
             ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
             PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
         } else {
-            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed");
+            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed, hostInstr==null");
         }
+
+//        Object activityThread = getActivityThread();
+//        Instrumentation hostInstr;
+//        try {
+//            hostInstr = ReflectionUtils.on(activityThread).call("getInstrumentation").get();
+//        } catch (ReflectException e) {
+//            hostInstr = ReflectionUtils.on(activityThread).get("mInstrumentation");
+//        }
+//
+//        if (hostInstr != null) {
+//            PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
+//            ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
+//            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
+//        } else {
+//            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed");
+//        }
     }
 
     /**
@@ -136,7 +151,6 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         if (obj == null) {
             obj = ((ThreadLocal<?>)ref.get("sThreadLocal")).get();
         }
-        //return ActivityThread.currentActivityThread();
         return obj;
     }
 

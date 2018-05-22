@@ -226,16 +226,17 @@ public class PluginLoadedApk implements IIntentConstant {
     private void createPluginResource() {
         try {
             // Android 5.0以下AssetManager不支持扩展资源表，始终新建一个，避免污染宿主的AssetManager
-            AssetManager am = AssetManager.class.newInstance();
+            //AssetManager am = AssetManager.class.newInstance();
+            AssetManager am = new AssetManager();
             if (mPluginMapping.getMetaData() != null && mPluginMapping.isResourceNeedMerge()) {
                 // 先加入的资源表后被搜索，所以先添加宿主的资源
-                ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mHostContext.getApplicationInfo().sourceDir);
+                //ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mHostContext.getApplicationInfo().sourceDir);
+                am.addAssetPath(mHostContext.getApplicationInfo().sourceDir);
                 PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginMapping.getPackageName());
             }
             // 添加插件的资源
-            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mPluginFile.getAbsolutePath());
-//            AssetManager am = new AssetManager();
-//            am.addAssetPath(mPluginFile.getAbsolutePath());
+            //ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mPluginFile.getAbsolutePath());
+            am.addAssetPath(mPluginFile.getAbsolutePath());
             mPluginAssetManager = am;
         } catch (Exception e) {
             PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
@@ -302,7 +303,7 @@ public class PluginLoadedApk implements IIntentConstant {
     }
 
     /**
-     * 创建插件新的ClassLoader，不使用注入Host ClassLoader
+     * 创建插件新的ClassLoader，不使用注入Host ClassLoader方案
      */
     private boolean createNewClassLoader() {
 
