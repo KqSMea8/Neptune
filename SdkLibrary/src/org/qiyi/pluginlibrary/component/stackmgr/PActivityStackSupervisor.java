@@ -59,8 +59,14 @@ public class PActivityStackSupervisor {
         if (null == intent) {
             return;
         }
+
+        String targetActivity = IntentUtils.getTargetClass(intent);
+        if (TextUtils.isEmpty(targetActivity)) {
+            return;
+        }
+
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode target activity: " + intent + " source: "
-                + intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY));
+                + targetActivity);
         if (PluginDebugLog.isDebug()) {
             if (null != mActivityStack && mActivityStack.size() > 0) {
                 for (Activity ac : mActivityStack) {
@@ -70,10 +76,6 @@ public class PActivityStackSupervisor {
             } else {
                 PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack is empty");
             }
-        }
-        String targetActivity = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
-        if (TextUtils.isEmpty(targetActivity)) {
-            return;
         }
 
         // 不支持LAUNCH_SINGLE_INSTANCE
@@ -209,8 +211,7 @@ public class PActivityStackSupervisor {
                     while (loadingRecordIterator.hasNext()) {
                         Intent record = loadingRecordIterator.next();
                         if (null != record) {
-                            notLaunchTargetClassName = record
-                                    .getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+                            notLaunchTargetClassName = IntentUtils.getTargetClass(record);
                             if (TextUtils.equals(notLaunchTargetClassName, targetActivity)) {
                                 PluginDebugLog.runtimeLog(TAG,
                                         "sIntentLoadingMap found: " + targetActivity);
@@ -228,7 +229,7 @@ public class PActivityStackSupervisor {
             }
         }
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode end: " + intent + " "
-                + intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY));
+                + targetActivity);
     }
 
     private void handleOtherPluginActivityStack(Activity act) {

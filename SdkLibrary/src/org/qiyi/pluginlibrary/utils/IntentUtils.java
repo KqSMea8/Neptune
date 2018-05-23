@@ -78,8 +78,8 @@ public class IntentUtils {
             }
         }
         String[] result = new String[2];
-        result[0] = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
-        result[1] = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+        result[0] = getTargetPackage(intent);
+        result[1] = getTargetClass(intent);
         PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
         return result;
     }
@@ -105,15 +105,30 @@ public class IntentUtils {
     }
 
     public static boolean isIntentForPlugin(Intent intent) {
-        return intent.getBooleanExtra(IIntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
+//        try {
+            return intent.getBooleanExtra(IIntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
+//        } catch (Exception e) { // ClassNotFoundException
+//            e.printStackTrace();
+//        }
+//        return false;
     }
 
     public static String getTargetPackage(Intent intent) {
-        return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
+//        try {
+            return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
+//        } catch (Exception e) {  // ClassNotFoundException
+//            e.printStackTrace();
+//        }
+//        return "";
     }
 
     public static String getTargetClass(Intent intent) {
-        return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+//        try {
+            return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+//        } catch (Exception e) {
+//            e.printStackTrace();  // ClassNotFoundException
+//        }
+//        return "";
     }
 
     /**

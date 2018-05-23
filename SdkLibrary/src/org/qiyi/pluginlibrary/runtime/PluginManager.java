@@ -31,13 +31,13 @@ import org.qiyi.pluginlibrary.listenter.IPluginInitListener;
 import org.qiyi.pluginlibrary.listenter.IPluginLoadListener;
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.constant.IMsgConstant;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
@@ -62,7 +62,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Email:yuanzeyao@qiyi.com
  */
 
-public class PluginManager implements IMsgConstant, IIntentConstant {
+public class PluginManager implements IIntentConstant {
     public static final String TAG = "PluginManager";
     /**
      * 已经加载了的插件
@@ -370,7 +370,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
 
         BroadcastReceiver recv = new BroadcastReceiver() {
             public void onReceive(Context ctx, Intent intent) {
-                String curPkg = intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
+                String curPkg = IntentUtils.getTargetPackage(intent);
                 if (IIntentConstant.ACTION_PLUGIN_INIT.equals(intent.getAction()) && TextUtils.equals(packageName, curPkg)) {
                     PluginDebugLog.runtimeLog(TAG, "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
                     mListener.onInitFinished(packageName);
@@ -508,7 +508,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         String action = mIntent.getAction();
         if (TextUtils.equals(action, IIntentConstant.ACTION_PLUGIN_INIT)
                 || TextUtils.equals(targetClassName, EXTRA_VALUE_LOADTARGET_STUB)) {
-            PluginDebugLog.runtimeLog(TAG, "launchIntent loadtarget stub!");
+            PluginDebugLog.runtimeLog(TAG, "launchIntent load target stub!");
             //通知插件初始化完毕
             if (BroadcastReceiver.class.isAssignableFrom(targetClass)) {
                 Intent newIntent = new Intent(mIntent);
@@ -623,11 +623,12 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                                 "checkPkgInstallationAndLaunch installed packageName: " + info.packageName);
                         loadPluginAsync(mHostContext.getApplicationContext(), packageInfo.packageName,
                                 new IPluginLoadListener() {
+
                                     @Override
-                                    public void onLoadFinished(String packageName) {
+                                    public void onLoadSuccess(String packageName) {
                                         try {
                                             PluginDebugLog.runtimeLog(TAG,
-                                                    "checkPkgInstallationAndLaunch loadPluginAsync callback onLoadFinished pkgName: " + packageName);
+                                                    "checkPkgInstallationAndLaunch loadPluginAsync callback onLoadSuccess pkgName: " + packageName);
                                             //load done,start plugin
                                             readyToStartSpecifyPlugin(mHostContext, mServiceConnection, mIntent, false);
                                             if (sPluginStatusListener != null) {
@@ -640,6 +641,18 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                                                 mPlugin.changeLaunchingIntentStatus(false);
                                             }
                                             e.printStackTrace();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onLoadFailed(String packageName) {
+                                        PluginDebugLog.runtimeLog(TAG,
+                                                "checkPkgInstallationAndLaunch loadPluginAsync callback onLoadFailed pkgName: " + packageName);
+                                        //load failed, clear launching intent
+                                        PActivityStackSupervisor.clearLoadingIntent(packageName);
+                                        PluginLoadedApk mPlugin = sPluginsMap.get(packageName);
+                                        if (null != mPlugin) {
+                                            mPlugin.changeLaunchingIntentStatus(false);
                                         }
                                     }
                                 }, mProcessName);
@@ -761,7 +774,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         private String mPackageName;
         private Context mHostContext;
         private String mProcessName;
-        private IPluginLoadListener mListener;
+        private PluginLoadedApkHandler mHandler;
 
         public LoadPluginTask(Context mHostContext,
                               String mPackageName,
@@ -770,20 +783,19 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             this.mHostContext = mHostContext;
             this.mPackageName = mPackageName;
             this.mProcessName = mProcessName;
-            this.mListener = mListener;
+            this.mHandler = new PluginLoadedApkHandler(mListener, mPackageName, Looper.getMainLooper());
         }
 
         @Override
         public void run() {
+            boolean loaded = false;
             try {
                 PluginLiteInfo packageInfo =
                         PluginPackageManagerNative.getInstance(mHostContext).getPackageInfo(mPackageName);
                 if (packageInfo != null) {
                     PluginDebugLog.runtimeLog("plugin",
                             "doInBackground:" + mPackageName);
-                    createPluginLoadedApkInstance(mHostContext, packageInfo, mProcessName);
-
-                    new PluginLoadedApkHandler(mListener, mPackageName, Looper.getMainLooper()).sendEmptyMessage(PLUGIN_LOADED_APK_CREATE_FINISH);
+                    loaded = createPluginLoadedApkInstance(mHostContext, packageInfo, mProcessName);
                 } else {
                     PluginDebugLog.runtimeLog("plugin", "packageInfo is null before initProxyEnvironment");
                 }
@@ -791,7 +803,10 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                 e.printStackTrace();
                 deliver(mHostContext, false, mPackageName,
                         ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
+                loaded = false;
             }
+            int what = loaded ? PluginLoadedApkHandler.PLUGIN_LOADED_APK_CREATE_SUCCESS : PluginLoadedApkHandler.PLUGIN_LOADED_APK_CREATE_FAILED;
+            mHandler.sendEmptyMessage(what);
         }
 
 
@@ -801,7 +816,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
          * @param context
          * @param packageInfo
          */
-        private void createPluginLoadedApkInstance(Context context,
+        private boolean createPluginLoadedApkInstance(Context context,
                                                    PluginLiteInfo packageInfo,
                                                    String mProcessName) {
             if (packageInfo != null) {
@@ -811,7 +826,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                     PluginDebugLog.runtimeLog(TAG, "sPluginsMap.containsKey(" + packageName + "):"
                             + loaded);
                     if (loaded) {
-                        return;
+                        return true;
                     }
                     PluginLoadedApk mLoadedApk = null;
                     PluginPackageManager.updateSrcApkPath(context, packageInfo);
@@ -821,7 +836,7 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                             PluginDebugLog.runtimeLog(TAG,
                                     "Special case apkFile not exist, notify client! packageName: " + packageName);
                             PluginPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist!");
-                            return;
+                            return false;
                         }
                         try {
                             mLoadedApk = new PluginLoadedApk(context, apkFile, packageName, mProcessName);
@@ -834,10 +849,14 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
                         if (mLoadedApk != null) {
                             addPluginLoadedApk(packageName, mLoadedApk);
                             PluginDebugLog.runtimeLog(TAG, "plugin loaded success! packageName: " + packageName);
+                            return true;
                         }
                     }
                 }
+                PluginDebugLog.runtimeLog(TAG, "plugin loaded failed! packageName: " + packageName);
             }
+
+            return false;
         }
     }
 
@@ -908,6 +927,9 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
      * 加载插件线程和主线程通信Handler
      */
     static class PluginLoadedApkHandler extends Handler {
+        public static final int PLUGIN_LOADED_APK_CREATE_SUCCESS = 0x10;
+        public static final int PLUGIN_LOADED_APK_CREATE_FAILED = 0x20;
+
         IPluginLoadListener mListener;
         String mPackageName;
 
@@ -920,12 +942,16 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case PLUGIN_LOADED_APK_CREATE_FINISH:
+                case PLUGIN_LOADED_APK_CREATE_SUCCESS:
                     if (mListener != null) {
-                        mListener.onLoadFinished(mPackageName);
+                        mListener.onLoadSuccess(mPackageName);
                     }
                     break;
-
+                case PLUGIN_LOADED_APK_CREATE_FAILED:
+                    if (mListener != null) {
+                        mListener.onLoadFailed(mPackageName);
+                    }
+                    break;
                 default:
                     break;
             }
@@ -1166,9 +1192,6 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
         return callbacks;
     }
 
-
-
-
     /**
      * 插件调试日志
      **/
@@ -1209,6 +1232,4 @@ public class PluginManager implements IMsgConstant, IIntentConstant {
             PluginDebugLog.runtimeLog(TAG, "onPluginActivityDestroyed: " + activity + ", pluginName: " + pluginPkgName);
         }
     };
-
-
 }

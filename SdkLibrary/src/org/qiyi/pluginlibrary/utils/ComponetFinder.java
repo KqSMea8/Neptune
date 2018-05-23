@@ -249,8 +249,8 @@ public class ComponetFinder implements IIntentConstant {
      */
     private static boolean hasProxyActivity(Intent mIntent) {
         if (mIntent != null && mIntent.getComponent() != null
-                && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_CLASS_KEY))
-                && !TextUtils.isEmpty(mIntent.getStringExtra(EXTRA_TARGET_PACKAGE_KEY))) {
+                && !TextUtils.isEmpty(IntentUtils.getTargetClass(mIntent))
+                && !TextUtils.isEmpty(IntentUtils.getTargetPackage(mIntent))) {
             if (mIntent.getComponent().getClassName().startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
                 return true;
             }

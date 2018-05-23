@@ -208,15 +208,13 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
             }
         }
-        final Bundle pluginMessage = mIntent.getExtras();
+
         String[] result = new String[2];
-        if (null != pluginMessage) {
-            result[0] = pluginMessage.getString(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
-            result[1] = pluginMessage.getString(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
-            if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
-                PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s,pluginCls:%s", result[0], result[1]);
-                return result;
-            }
+        result[0] = IntentUtils.getTargetPackage(mIntent);
+        result[1] = IntentUtils.getTargetClass(mIntent);
+        if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
+            PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
+            return result;
         }
         return null;
     }

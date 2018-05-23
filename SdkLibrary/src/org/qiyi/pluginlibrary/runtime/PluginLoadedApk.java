@@ -843,7 +843,7 @@ public class PluginLoadedApk implements IIntentConstant {
 
 
     /**
-     * 跟新插件是否有正在启动的页面 状态
+     * 更新插件是否有正在启动的页面 状态
      *
      * @param isLaunchingIntent true:有正在启动的intent,false:没有正在启动的intent
      */

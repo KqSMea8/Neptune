@@ -23,13 +23,13 @@ import android.util.ArrayMap;
 
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
@@ -148,7 +148,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
         if (conn != null) {
             if (mLoadedApk != null && service != null) {
-                String serviceClass = service.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+                String serviceClass = IntentUtils.getTargetClass(service);
                 String packageName = mLoadedApk.getPluginPackageName();
                 if (!TextUtils.isEmpty(serviceClass) && !TextUtils.isEmpty(packageName)) {
                     PServiceSupervisor.addServiceConnectionByIdentifer(packageName + "." + serviceClass, conn);
