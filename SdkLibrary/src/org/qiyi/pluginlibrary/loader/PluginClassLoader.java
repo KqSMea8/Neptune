@@ -1,12 +1,16 @@
 package org.qiyi.pluginlibrary.loader;
 
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
+import org.qiyi.pluginlibrary.utils.MultiDex;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import dalvik.system.DexClassLoader;
 
 /**
- * 插件的ClassLoader，支持添加依赖
+ * 插件的DexClassLoader，用来做一些"更高级"的特性，
+ * 比如添加插件依赖，支持multidex
  *
  * author: liuchun
  * date: 2018/5/15
@@ -17,11 +21,13 @@ public class PluginClassLoader extends DexClassLoader{
     // 依赖的插件的ClassLoader
     private List<DexClassLoader> dependencies;
 
-    public PluginClassLoader(String packageName, String dexPath, String optimizedDirectory,
+    public PluginClassLoader(PluginPackageInfo packageInfo, String dexPath, String optimizedDirectory,
                              String librarySearchPath, ClassLoader parent) {
         super(dexPath, optimizedDirectory, librarySearchPath, parent);
-        this.pkgName = packageName;
+        this.pkgName = packageInfo.getPackageName();
         this.dependencies = new ArrayList<>();
+
+        MultiDex.install(packageInfo, dexPath, this);
     }
 
     @Override

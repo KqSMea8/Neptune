@@ -49,9 +49,32 @@ public class PluginDebugLog {
     }
 
     private static void logInternal(String tag, Object msg) {
+        logInternal(tag, msg, Log.INFO);
+    }
+
+    private static void logInternal(String tag, Object msg, int logLevel) {
         if (!TextUtils.isEmpty(tag) && null != msg) {
-            Log.i(tag, String.valueOf(msg));
-            LogCacheHelper.getInstance().addToCache(buildPersistLog(tag,String.valueOf(msg)));
+
+            String content = String.valueOf(msg);
+            switch (logLevel) {
+                case Log.ERROR:
+                    Log.e(tag, content);
+                    break;
+                case Log.WARN:
+                    Log.w(tag, content);
+                    break;
+                case Log.INFO:
+                    Log.i(tag, content);
+                    break;
+                case Log.DEBUG:
+                    Log.d(tag, content);
+                    break;
+                default:
+                    Log.v(tag, content);
+                    break;
+            }
+
+            LogCacheHelper.getInstance().addToCache(buildPersistLog(tag,content));
         }
     }
 
@@ -152,7 +175,36 @@ public class PluginDebugLog {
                 e.printStackTrace();
             }
         }
+    }
 
+    /**
+     * 插件中心warning级别log
+     *
+     * @param tag
+     * @param msg
+     */
+    public static void warningLog(String tag, Object msg) {
+        if (isDebug()) {
+            logInternal(RUNTIME_TAG, "[ " + tag + " ] : " + msg);
+        }
+    }
+
+    /**
+     * 插件中心warning级别日志
+     *
+     * @param tag
+     * @param format
+     * @param args
+     */
+    public static void warningFormatLog(String tag, String format, Object... args) {
+        if (isDebug()) {
+            try {
+                String msg = (args == null) ? format : String.format(Locale.US, format, args);
+                warningLog(tag, msg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**

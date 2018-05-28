@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.pm;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -26,7 +27,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 负责安装卸载app，获取安装列表等工作.<br> 负责安装插件的一些方法 功能类似系统中的PackageManager
+ * 负责安装卸载app，获取安装列表等工作.<br>
+ * 提供安装插件的一些方法 功能类似系统中的PackageManager
  */
 public class PluginPackageManager {
 
@@ -59,7 +61,7 @@ public class PluginPackageManager {
     public static final String SCHEME_DEX = "dex://";
 
     private Context mContext;
-
+    @SuppressLint("StaticFieldLeak")
     private static PluginPackageManager sInstance;// 安装对象
 
     private ConcurrentHashMap<String, IActionFinishCallback> mActionFinishCallbacks =
@@ -95,7 +97,7 @@ public class PluginPackageManager {
 
     private PluginPackageManager(Context context) {
         mContext = context.getApplicationContext();
-        registerInstallderReceiver();
+        registerInstallReceiver();
     }
 
     public static void setVerifyPluginInfoImpl(IVerifyPluginInfo packageInfoManager) {
@@ -109,8 +111,13 @@ public class PluginPackageManager {
      * @return
      */
     synchronized static PluginPackageManager getInstance(Context context) {
+
         if (sInstance == null) {
-            sInstance = new PluginPackageManager(context);
+            synchronized (PluginPackageManager.class) {
+                if (sInstance == null) {
+                    sInstance = new PluginPackageManager(context);
+                }
+            }
         }
         return sInstance;
     }
@@ -234,7 +241,7 @@ public class PluginPackageManager {
     /**
      * 监听安装列表变化.
      */
-    private void registerInstallderReceiver() {
+    private void registerInstallReceiver() {
         try {
             IntentFilter filter = new IntentFilter();
             filter.addAction(ACTION_PACKAGE_INSTALLED);

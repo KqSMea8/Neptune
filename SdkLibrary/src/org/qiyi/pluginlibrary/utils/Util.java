@@ -3,6 +3,7 @@ package org.qiyi.pluginlibrary.utils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -551,5 +552,26 @@ public final class Util {
         currentInstructionSet = (String) currentGet.invoke(null);
         Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
         return currentInstructionSet;
+    }
+
+
+    public static void closeQuietly(Closeable c) {
+        try {
+            if (c != null) {
+                c.close();
+            }
+        } catch (IOException e) {
+            // ignore
+        }
+    }
+
+    public static void closeQuietly(ZipFile c) {
+        try {
+            if (c != null) {
+                c.close();
+            }
+        } catch (Exception e) {
+            // ignore
+        }
     }
 }

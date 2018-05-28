@@ -839,7 +839,7 @@ public class PluginManager implements IIntentConstant {
                             return false;
                         }
                         try {
-                            mLoadedApk = new PluginLoadedApk(context, apkFile, packageName, mProcessName);
+                            mLoadedApk = new PluginLoadedApk(context, packageInfo.srcApkPath, packageName, mProcessName);
                         } catch (Exception e) {
                             e.printStackTrace();
                             PActivityStackSupervisor.clearLoadingIntent(packageName);

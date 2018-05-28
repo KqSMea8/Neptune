@@ -3,11 +3,8 @@
     android:versionCode="1"
     android:versionName="1.0" >
 
-    <uses-sdk
-        android:minSdkVersion="14"
-        android:targetSdkVersion="18" />
-
     <application>
+        <!-- 插件安装Service，独立进程 -->
         <service
             android:name="org.qiyi.pluginlibrary.install.PluginInstallerService"
             android:exported="false"
@@ -17,6 +14,7 @@
             </intent-filter>
         </service>
 
+        <!-- 主进程Service -->
         <service android:name="org.qiyi.pluginlibrary.pm.PluginPackageManagerService" />
 
 

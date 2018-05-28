@@ -826,6 +826,22 @@ public class PluginPackageManagerNative {
 
     /**
      * 获取插件的{@link android.content.pm.PackageInfo}
+     * @param packageName
+     * @return
+     */
+    public PluginPackageInfo getPluginPackageInfo(String packageName) {
+        PluginLiteInfo pluginLiteInfo = getPackageInfo(packageName);
+        PluginPackageInfo target = null;
+        if (pluginLiteInfo != null) {
+            target = getPluginPackageInfo(mContext, pluginLiteInfo);
+        }
+
+        return target;
+    }
+
+
+    /**
+     * 获取插件的{@link android.content.pm.PackageInfo}
      *
      * @param context
      * @param mPackageInfo

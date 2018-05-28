@@ -58,8 +58,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     protected static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(2);
 
-    protected ApplicationInfo mApplicationInfo = null;
-
     public CustomContextWrapper(Context base) {
         super(base);
     }
@@ -76,21 +74,12 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public ApplicationInfo getApplicationInfo() {
-        if (mApplicationInfo == null) {
-            mApplicationInfo = super.getApplicationInfo();
-            PluginLoadedApk mLoadedApk = getPluginLoadedApk();
-            if (mLoadedApk != null && getPluginPackageInfo() != null) {
-                PluginPackageInfo targetMapping = getPluginPackageInfo();
-                if (targetMapping.isUsePluginAppInfo()) {
-                    mApplicationInfo.dataDir = targetMapping.getDataDir();
-                    PluginDebugLog.log(TAG, "change data dir: " + mApplicationInfo.dataDir);
-                    mApplicationInfo.nativeLibraryDir = targetMapping.getNativeLibraryDir();
-                    PluginDebugLog.log(TAG, "change native lib path: " +
-                            mApplicationInfo.nativeLibraryDir);
-                }
-            }
+
+        PluginPackageInfo targetMapping = getPluginPackageInfo();
+        if (targetMapping != null) {
+            return targetMapping.getApplicationInfo();
         }
-        return mApplicationInfo;
+        return super.getApplicationInfo();
     }
 
     @Override
@@ -540,6 +529,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     private SharedPreferences getSharedPreferencesForPlugin(String name, int mode) {
         try {
             if (android.os.Build.VERSION.SDK_INT >= 24) {
+
+                if (useNewSpPath()) {
+                    backupSharedPreferenceV28(name);  // 迁移数据
+                    return getSharedPreferencesV28(name, mode);
+                }
                 // Android 7.0+
                 return getSharedPreferencesV24(name, mode);
             } else if (android.os.Build.VERSION.SDK_INT >= 19) {
@@ -558,6 +552,34 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return null;
     }
 
+
+    /**
+     * 是否使用新的sp路径，跟宿主放在相同的目录下
+     * @return
+     */
+    private boolean useNewSpPath() {
+        if (Build.VERSION.SDK_INT < 26) {
+            return false;
+        }
+        String pkgName = getPluginPackageName();
+        return TextUtils.equals(pkgName, "org.qiyi.videotransfer");  //写死零流量传片功能
+    }
+
+
+    /**
+     * Android P，增加了非SDK接口限制，SharedPreferenceImpl进入了dark名单
+     * 因此无法反射SharedPreferenceImpl修改插件的sp目录了，统一把插件的sp目录放到宿主的sp目录下
+     * 通过修改插件sp的name追加上插件的包名进行隔离
+     *
+     * @param name
+     * @param mode
+     * @return
+     */
+    private SharedPreferences getSharedPreferencesV28(String name, int mode) {
+        final String packageName = getPluginPackageName();
+        final String fileName = packageName + "_" + name;  //追加上插件的包名，进行隔离
+        return super.getSharedPreferences(fileName, mode);
+    }
 
     /**
      * Android 7.0+系统，
@@ -797,16 +819,13 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public String getPackageCodePath() {
-
-        if (getPluginLoadedApk() != null) {
-            PluginPackageInfo targetMapping = getPluginPackageInfo();
-            if (targetMapping != null && targetMapping.isUsePluginCodePath()) {
-                PackageInfo packageInfo = targetMapping.getPackageInfo();
-                if (packageInfo != null && packageInfo.applicationInfo != null) {
-                    String sourceDir = packageInfo.applicationInfo.sourceDir;
-                    if (!TextUtils.isEmpty(sourceDir)) {
-                        return sourceDir;
-                    }
+        PluginPackageInfo targetMapping = getPluginPackageInfo();
+        if (targetMapping != null) {
+            PackageInfo packageInfo = targetMapping.getPackageInfo();
+            if (packageInfo != null && packageInfo.applicationInfo != null) {
+                String sourceDir = packageInfo.applicationInfo.sourceDir;
+                if (!TextUtils.isEmpty(sourceDir)) {
+                    return sourceDir;
                 }
             }
         }
