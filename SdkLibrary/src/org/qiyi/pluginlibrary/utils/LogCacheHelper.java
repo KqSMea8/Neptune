@@ -7,9 +7,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class LogCacheHelper {
 
     private static ConcurrentLinkedQueue<String> mLogCache = new ConcurrentLinkedQueue<String>();
-    private static final int MAX_LENGTH = 20;
-
+    private static final int MAX_LENGTH = 30;
     private static LogCacheHelper instance;
+    private boolean isNeedPersistence = false;
+
 
     public static LogCacheHelper getInstance() {
         if (instance == null) {
@@ -22,12 +23,17 @@ public class LogCacheHelper {
         return instance;
     }
 
+    public void setIsNeedPersistence(boolean isNeedPersistence){
+        this.isNeedPersistence = isNeedPersistence;
+    }
+
     /**
      * 将log日志加入cache，cache栈满后持久化
      *
      * @param log 逐条日志
      */
     public void addToCache(String log) {
+        if (!isNeedPersistence) return;
         if (log != null) {
             mLogCache.add(log);
         }
