@@ -499,7 +499,7 @@ public class PluginLoadedApk implements IIntentConstant {
     }
 
     /**
-     * 跟新资源配置
+     * 更新资源配置
      *
      * @param mConfiguration 新的资源配置信息
      */
