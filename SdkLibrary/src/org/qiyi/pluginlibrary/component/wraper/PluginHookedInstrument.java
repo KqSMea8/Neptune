@@ -64,6 +64,7 @@ public class PluginHookedInstrument extends PluginInstrument {
     public void callActivityOnCreate(Activity activity, Bundle icicle) {
         final Intent intent = activity.getIntent();
         String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
+        boolean isLaunchPlugin = false;
         if (IntentUtils.isIntentForPlugin(intent)) {
             String packageName = result[0];
             String targetClass = result[1];
@@ -89,6 +90,7 @@ public class PluginHookedInstrument extends PluginInstrument {
                     if (activity.getParent() == null) {
                         loadedApk.getActivityStackSupervisor().pushActivityToStack(activity);
                     }
+                    isLaunchPlugin = true;
                 }
             }
             IntentUtils.resetAction(intent);  //恢复Action
@@ -97,6 +99,10 @@ public class PluginHookedInstrument extends PluginInstrument {
 
         try {
             mHostInstr.callActivityOnCreate(activity, icicle);
+
+            if (isLaunchPlugin) {
+                PluginManager.sendPluginLoadedBroadcast(activity);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             if (PluginDebugLog.isDebug()) {
