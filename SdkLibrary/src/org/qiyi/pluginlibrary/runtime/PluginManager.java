@@ -94,16 +94,23 @@ public class PluginManager implements IIntentConstant {
     /**
      * 初始化，hook Instrumentation
      * @param appContext
-     * @param hookInstr
+     * @param pluginConfig
      */
-    public static void init(Context appContext, boolean hookInstr) {
+    public static void init(Context appContext, PluginSdkConfig pluginConfig) {
 
-        hookInstr = ContextUtils.isAndroidP() || hookInstr;  // Android P force enable hook instr mode
-        if (!hookInstr) {
-            PluginDebugLog.log(TAG, "hookInstr is false, no need to hook ActivityThread#Instrumentation");
-            return;
+        boolean hookInstr = ContextUtils.isAndroidP() || pluginConfig.getSdkMode() == 1;
+        if (hookInstr) {
+            hookInstrumentation();
         }
 
+        PluginLoadedApk.sUseNewClassLoader = pluginConfig.shouldUseNewCLMode();
+        PluginLoadedApk.sUseNewResCreator = pluginConfig.shouldUseNewResGen();
+    }
+
+
+    private static void hookInstrumentation() {
+
+        PluginDebugLog.runtimeLog(TAG, "need to hook Instrumentation for plugin framework");
         ActivityThread activityThread = ActivityThread.currentActivityThread();
         Instrumentation hostInstr = activityThread.getInstrumentation();
 

@@ -68,9 +68,9 @@ public class PluginLoadedApk implements IIntentConstant {
      */
     private static Map<String, DexClassLoader> sAllPluginClassLoader = new ConcurrentHashMap<>();
     /** 使用新的ClassLoader模型 */
-    private static boolean sUseNewClassLoader = true;
+    public static boolean sUseNewClassLoader = false;
     /** 使用新的Resource构造方法 */
-    private static boolean sUseNewResCreator = true;
+    public static boolean sUseNewResCreator = false;
 
     /** 宿主的Context */
     private final Context mHostContext;
