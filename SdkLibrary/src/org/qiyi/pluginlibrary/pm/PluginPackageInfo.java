@@ -62,6 +62,10 @@ public class PluginPackageInfo implements Parcelable {
     // 是否运行在独立空间，插件完全不依赖基线的类和资源
     private boolean mIsIndividualMode = false;
 
+    private boolean mUsePluginAppInfo = false;
+
+    private boolean mUsePluginCodePath = false;
+
     /** Save all activity's resolve info */
     private Map<String, ActivityIntentInfo> mActivityIntentInfos = new HashMap<String, ActivityIntentInfo>(0);
 
@@ -112,19 +116,16 @@ public class PluginPackageInfo implements Parcelable {
                 mIsClassInject = metaData.getBoolean(META_KEY_CLASS_INJECT);
                 mIsMergeResource = metaData.getBoolean(META_KEY_MERGE_RES);
                 mIsIndividualMode = metaData.getBoolean(META_KEY_INDIVIDUAL);
-//                String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
-//                if (!TextUtils.isEmpty(applicationMetaData)) {
-//                    if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
-//                        mUsePluginAppInfo = true;
-//                    }
-//
-//                    if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
-//                        packageInfo.applicationInfo.sourceDir = apkFile.getAbsolutePath();
-//                        PluginDebugLog.log("PluginPackageInfo",
-//                                "change sourceDir dir: " + packageInfo.applicationInfo.sourceDir);
-//                        mUsePluginCodePath = true;
-//                    }
-//                }
+                String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
+                if (!TextUtils.isEmpty(applicationMetaData)) {
+                    if (applicationMetaData.contains(PLUGIN_APPLICATION_INFO)) {
+                        mUsePluginAppInfo = true;
+                    }
+
+                    if (applicationMetaData.contains(PLUGIN_APPLICATION_CODE_PATH)) {
+                        mUsePluginCodePath = true;
+                    }
+                }
             }
             ResolveInfoUtil.parseResolveInfo(apkPath, this);
 
@@ -373,6 +374,14 @@ public class PluginPackageInfo implements Parcelable {
 
     public boolean isIndividualMode() {
         return mIsIndividualMode;
+    }
+
+    public boolean isUsePluginAppInfo() {
+        return mUsePluginAppInfo;
+    }
+
+    public boolean isUsePluginCodePath() {
+        return mUsePluginCodePath;
     }
 
     public String getPackageName() {

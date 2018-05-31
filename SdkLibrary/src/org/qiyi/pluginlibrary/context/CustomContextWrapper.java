@@ -58,6 +58,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     protected static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(2);
 
+    private ApplicationInfo mApplicationInfo = null;
+
     public CustomContextWrapper(Context base) {
         super(base);
     }
@@ -75,11 +77,15 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     @Override
     public ApplicationInfo getApplicationInfo() {
 
-        PluginPackageInfo targetMapping = getPluginPackageInfo();
-        if (targetMapping != null) {
-            return targetMapping.getApplicationInfo();
+        if (mApplicationInfo == null) {
+            mApplicationInfo = new ApplicationInfo(super.getApplicationInfo());
+            PluginPackageInfo targetMapping = getPluginPackageInfo();
+            if (targetMapping != null && targetMapping.isUsePluginAppInfo()) {
+                mApplicationInfo.dataDir = targetMapping.getDataDir();
+                mApplicationInfo.nativeLibraryDir = targetMapping.getNativeLibraryDir();
+            }
         }
-        return super.getApplicationInfo();
+        return mApplicationInfo;
     }
 
     @Override
@@ -820,7 +826,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     @Override
     public String getPackageCodePath() {
         PluginPackageInfo targetMapping = getPluginPackageInfo();
-        if (targetMapping != null) {
+        if (targetMapping != null && targetMapping.isUsePluginCodePath()) {
             PackageInfo packageInfo = targetMapping.getPackageInfo();
             if (packageInfo != null && packageInfo.applicationInfo != null) {
                 String sourceDir = packageInfo.applicationInfo.sourceDir;

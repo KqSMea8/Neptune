@@ -14,9 +14,9 @@
             <!--android:name="pluginapp_class_inject"-->
             <!--android:value="true"/>-->
 
-        <!--<meta-data-->
-            <!--android:name="pluginapp_res_merge"-->
-            <!--android:value="true" />-->
+        <meta-data
+            android:name="pluginapp_res_merge"
+            android:value="true" />
 
         <activity android:name=".activity.MainPageActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
