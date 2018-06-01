@@ -163,6 +163,8 @@ public class PluginPackageInfo implements Parcelable {
         mIsClassInject = in.readByte() != 0;
         mIsMergeResource = in.readByte() != 0;
         mIsIndividualMode = in.readByte() != 0;
+        mUsePluginAppInfo = in.readByte() != 0;
+        mUsePluginCodePath = in.readByte() != 0;
 
         applicationInfo = packageInfo.applicationInfo;
 
@@ -490,6 +492,8 @@ public class PluginPackageInfo implements Parcelable {
         parcel.writeByte((byte) (mIsClassInject ? 1 : 0));
         parcel.writeByte((byte) (mIsMergeResource ? 1 : 0));
         parcel.writeByte((byte) (mIsIndividualMode ? 1 : 0));
+        parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
+        parcel.writeByte((byte) (mUsePluginCodePath ? 1 : 0));
 
         final Bundle activityStates = new Bundle();
         for (String uri : mActivityIntentInfos.keySet()) {

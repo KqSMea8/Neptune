@@ -158,6 +158,7 @@ public class PluginLoadedApk implements IIntentConstant {
                 throw new RuntimeException("ProxyEnvironmentNew init failed for createClassLoader failed:" + " apkFile: " + mPluginPath + " pluginPakName: " + mPluginPackageName);
             }
         }
+        PluginDebugLog.runtimeFormatLog(TAG, "plugin %s, class loader: %s", mPluginPackageName, mPluginClassLoader.toString());
         // 创建插件资源
         if (sUseNewResCreator) {
             createNewPluginResource();
