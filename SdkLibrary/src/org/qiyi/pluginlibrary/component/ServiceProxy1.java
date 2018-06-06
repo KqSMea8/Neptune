@@ -12,6 +12,7 @@ import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
@@ -205,7 +206,8 @@ public class ServiceProxy1 extends Service {
                 return START_NOT_STICKY;
             }
         }
-        ContextUtils.notifyHostPluginStarted(this, paramIntent);
+        NotifyCenter.notifyPluginStarted(this, paramIntent);
+
         String targetClassName = IntentUtils.getTargetClass(paramIntent);
         String targetPackageName = IntentUtils.getTargetPackage(paramIntent);
         PluginServiceWrapper currentPlugin = loadTargetService(targetPackageName, targetClassName);

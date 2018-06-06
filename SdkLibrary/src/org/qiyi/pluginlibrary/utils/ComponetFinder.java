@@ -61,7 +61,6 @@ public class ComponetFinder implements IIntentConstant {
             if (mServiceInfo != null) {
                 switchToServiceProxy(mLoadedApk, mIntent, mServiceInfo.name);
             }
-            return;
         } else {
             //显示启动
             String targetService = mIntent.getComponent().getClassName();
@@ -171,8 +170,8 @@ public class ComponetFinder implements IIntentConstant {
             if (mLoadedApk != null) {
                 if (TextUtils.equals(pkg, mPluginPackageName)
                         || TextUtils.equals(pkg, mLoadedApk.getHostPackageName())) {
-                    PluginPackageInfo thisPlugin = mLoadedApk.getPluginPackageInfo();
-                    targetActivity = thisPlugin.getActivityInfo(toActName);
+                    PluginPackageInfo mPlugin = mLoadedApk.getPluginPackageInfo();
+                    targetActivity = mPlugin.getActivityInfo(toActName);
                     if (targetActivity != null) {
                         PluginDebugLog.runtimeLog(TAG,
                                 "switchToActivityProxy find targetActivity in current currentPlugin!");
@@ -180,10 +179,8 @@ public class ComponetFinder implements IIntentConstant {
                 }
             } else {
                 if (!TextUtils.isEmpty(pkg) && targetActivity == null) {
-                    PluginLiteInfo mLiteInfo = new PluginLiteInfo();
-                    mLiteInfo.packageName = pkg;
                     PluginPackageInfo otherPluginInfo = PluginPackageManagerNative.getInstance(context)
-                            .getPluginPackageInfo(context, mLiteInfo);
+                            .getPluginPackageInfo(pkg);
                     if (otherPluginInfo != null) {
                         targetActivity = otherPluginInfo.getActivityInfo(toActName);
                         if (targetActivity != null) {

@@ -1,6 +1,7 @@
 package org.qiyi.pluginlibrary.pm;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.Map;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
 
@@ -20,6 +22,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
+import android.content.pm.ProviderInfo;
+import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
@@ -75,6 +79,9 @@ public class PluginPackageInfo implements Parcelable {
     /** Save all receiver's resolve info */
     private Map<String, ReceiverIntentInfo> mReceiverIntentInfos = new HashMap<String, ReceiverIntentInfo>(0);
 
+    /** Save all provider's resolve info */
+    private Map<String, ProviderIntentInfo> mProviderIntentInfos = new HashMap<String, ProviderIntentInfo>(0);
+
     public PluginPackageInfo(Context context, File apkFile) {
         try {
             final String apkPath = apkFile.getAbsolutePath();
@@ -127,7 +134,7 @@ public class PluginPackageInfo implements Parcelable {
                     }
                 }
             }
-            ResolveInfoUtil.parseResolveInfo(apkPath, this);
+            ResolveInfoUtil.parseResolveInfo(context, apkPath, this);
 
             Intent launchIntent = new Intent(Intent.ACTION_MAIN);
             launchIntent.addCategory(Intent.CATEGORY_DEFAULT);
@@ -137,16 +144,16 @@ public class PluginPackageInfo implements Parcelable {
             }
 
         } catch (RuntimeException e) {
+            ErrorUtil.throwErrorIfNeed(e);
             PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
-            e.printStackTrace();
         } catch (Throwable e) {
             // java.lang.VerifyError: android/content/pm/PackageParser
             // java.lang.NoSuchMethodError: android.content.pm.PackageParser
             // java.lang.NoSuchFieldError:
             // com.android.internal.R$styleable.AndroidManifest
             // java.lang.NoSuchMethodError: android.graphics.PixelXorXfermode
+            ErrorUtil.throwErrorIfNeed(e);
             PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
-            e.printStackTrace();
         }
     }
 
@@ -259,6 +266,17 @@ public class PluginPackageInfo implements Parcelable {
         return null;
     }
 
+    public ProviderInfo findProviderByClassName(String className) {
+        if (packageInfo == null || packageInfo.providers == null) {
+            return null;
+        }
+        for (ProviderInfo provider : packageInfo.providers) {
+            if (provider.name.equals(className)) {
+                return provider;
+            }
+        }
+        return null;
+    }
 
     /**
      * 查找能够响应这个Intent的Activity
@@ -282,7 +300,7 @@ public class PluginPackageInfo implements Parcelable {
                 for (ActivityIntentInfo info : mActivityIntentInfos.values()) {
                     if (info != null && info.mFilter != null) {
                         for (IntentFilter filter : info.mFilter) {
-                            if (filter.match(intent.getAction(), null, intent.getScheme(), intent.getData(),
+                            if (filter.match(intent.getAction(), intent.getType(), intent.getScheme(), intent.getData(),
                                     intent.getCategories(), TAG) > 0) {
                                 return info.mInfo;
                             }
@@ -318,7 +336,7 @@ public class PluginPackageInfo implements Parcelable {
                     if (info != null && info.mFilter != null) {
                         for (IntentFilter filter : info.mFilter) {
                             if (filter.match(intent.getAction(), null, intent.getScheme(), intent.getData(),
-                                    intent.getCategories(), "TAG") > 0) {
+                                    intent.getCategories(), TAG) > 0) {
                                 return info.mInfo;
                             }
                         }
@@ -353,7 +371,7 @@ public class PluginPackageInfo implements Parcelable {
                     if (info != null && info.mFilter != null) {
                         for (IntentFilter filter : info.mFilter) {
                             if (filter.match(mIntent.getAction(), null, null, null,
-                                    null, "TAG") > 0) {
+                                    null, TAG) > 0) {
                                 return info.mInfo;
                             }
                         }
@@ -471,6 +489,13 @@ public class PluginPackageInfo implements Parcelable {
             mServiceIntentInfos = new HashMap<String, ServiceIntentInfo>(0);
         }
         mServiceIntentInfos.put(service.mInfo.name, service);
+    }
+
+    public void addProvider(ProviderIntentInfo provider) {
+        if (mProviderIntentInfos == null) {
+            mProviderIntentInfos = new HashMap<String, ProviderIntentInfo>(0);
+        }
+        mProviderIntentInfos.put(provider.mInfo.name, provider);
     }
 
     @Override
@@ -616,6 +641,44 @@ public class PluginPackageInfo implements Parcelable {
             @Override
             public ReceiverIntentInfo[] newArray(int size) {
                 return new ReceiverIntentInfo[size];
+            }
+        };
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel parcel, int i) {
+            super.writeToParcel(parcel, i);
+            if (mInfo != null) {
+                mInfo.writeToParcel(parcel, i);
+            }
+        }
+    }
+
+    public final static class ProviderIntentInfo extends IntentInfo implements Parcelable {
+        public final ProviderInfo mInfo;
+
+        public ProviderIntentInfo(final ProviderInfo info) {
+            mInfo = info;
+        }
+
+        protected ProviderIntentInfo(Parcel in) {
+            super(in);
+            mInfo = ProviderInfo.CREATOR.createFromParcel(in);
+        }
+
+        public static final Creator<ProviderIntentInfo> CREATOR = new Creator<ProviderIntentInfo>() {
+            @Override
+            public ProviderIntentInfo createFromParcel(Parcel in) {
+                return new ProviderIntentInfo(in);
+            }
+
+            @Override
+            public ProviderIntentInfo[] newArray(int size) {
+                return new ProviderIntentInfo[size];
             }
         };
 

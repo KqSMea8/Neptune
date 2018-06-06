@@ -14,6 +14,7 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
@@ -94,14 +95,14 @@ public class PluginHookedInstrument extends PluginInstrument {
                 }
             }
             IntentUtils.resetAction(intent);  //恢复Action
-            ContextUtils.notifyHostPluginStarted(activity, intent);
+            NotifyCenter.notifyPluginStarted(activity, intent);
         }
 
         try {
             mHostInstr.callActivityOnCreate(activity, icicle);
 
             if (isLaunchPlugin) {
-                PluginManager.sendPluginLoadedBroadcast(activity);
+                NotifyCenter.notifyPluginActivityLoaded(activity);
             }
         } catch (Exception e) {
             e.printStackTrace();

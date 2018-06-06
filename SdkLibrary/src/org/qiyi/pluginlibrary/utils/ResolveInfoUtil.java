@@ -9,9 +9,12 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ActivityIntentInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ReceiverIntentInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ServiceIntentInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ProviderIntentInfo;
 
+import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.util.DisplayMetrics;
@@ -26,10 +29,11 @@ public class ResolveInfoUtil {
     /**
      * Get activity/receiver/service's resolve info
      *
+     * @param context
      * @param dexPath apk path
      * @param target
      */
-    public static void parseResolveInfo(String dexPath, PluginPackageInfo target) {
+    public static void parseResolveInfo(Context context, String dexPath, PluginPackageInfo target) {
 
         try { // 先得到解析类PackageParser并实例化
             Class<?> packageParserClass = Class.forName("android.content.pm.PackageParser");
@@ -39,17 +43,22 @@ public class ResolveInfoUtil {
             } else {
                 packageParser = packageParserClass.getConstructor(String.class).newInstance(dexPath);
             }
-            // 构建参数
-            DisplayMetrics metrics = new DisplayMetrics();
-            metrics.setToDefaults();
+            //
             File sourceFile = new File(dexPath);
-            Object pkg = null;
+            Object pkg = null;  // PackageParser$Package
             // 调用PackageParser的parsePackage解析数据
             if (Build.VERSION.SDK_INT >= 21) {
                 Method method = packageParserClass.getDeclaredMethod("parsePackage", File.class, int.class);
                 method.setAccessible(true);
                 pkg = method.invoke(packageParser, sourceFile, 0);
             } else {
+                DisplayMetrics metrics;  //构造参数
+                if (context != null) {
+                    metrics = context.getResources().getDisplayMetrics();
+                } else {
+                    metrics = new DisplayMetrics();
+                    metrics.setToDefaults();
+                }
                 Method method = packageParserClass.getDeclaredMethod("parsePackage", File.class, String.class, DisplayMetrics.class,
                         int.class);
                 method.setAccessible(true);
@@ -57,7 +66,7 @@ public class ResolveInfoUtil {
             }
 
             if (null != pkg) {
-                // 获取Activity
+                // 获取Activity信息
                 Field activities = pkg.getClass().getDeclaredField("activities");
                 activities.setAccessible(true);
                 ArrayList<?> activityFilters = (ArrayList<?>) activities.get(pkg);
@@ -67,6 +76,12 @@ public class ResolveInfoUtil {
                     intentsClassName.setAccessible(true);
                     String className = (String) intentsClassName.get(activity);
                     ActivityInfo info = target.findActivityByClassName(className);
+                    if (info == null) {
+                        // 反射info字段
+                        Field actInfoField = activity.getClass().getField("info");
+                        actInfoField.setAccessible(true);
+                        info = (ActivityInfo)actInfoField.get(activity);
+                    }
                     if (null != info) {
                         ActivityIntentInfo actInfo = new ActivityIntentInfo(info);
                         Field intentsField = activity.getClass().getField("intents");
@@ -89,6 +104,13 @@ public class ResolveInfoUtil {
                     intentsClassName.setAccessible(true);
                     String className = (String) intentsClassName.get(receiver);
                     ActivityInfo info = target.findReceiverByClassName(className);
+                    if (info == null) {
+                        // 反射info字段
+                        Field actInfoField = receiver.getClass().getField("info");
+                        actInfoField.setAccessible(true);
+                        info = (ActivityInfo)actInfoField.get(receiver);
+                    }
+
                     if (null != info) {
                         ReceiverIntentInfo receiverInfo = new ReceiverIntentInfo(info);
                         Field intentsField = receiver.getClass().getField("intents");
@@ -111,6 +133,13 @@ public class ResolveInfoUtil {
                     intentsClassName.setAccessible(true);
                     String className = (String) intentsClassName.get(service);
                     ServiceInfo info = target.findServiceByClassName(className);
+                    if (info == null) {
+                        // 反射info字段
+                        Field serInfoField = service.getClass().getField("info");
+                        serInfoField.setAccessible(true);
+                        info = (ServiceInfo)serInfoField.get(service);
+                    }
+
                     if (null != info) {
                         ServiceIntentInfo serviceInfo = new ServiceIntentInfo(info);
                         Field intentsField = service.getClass().getField("intents");
@@ -119,6 +148,35 @@ public class ResolveInfoUtil {
                         ArrayList<IntentFilter> intents = (ArrayList<IntentFilter>) intentsField.get(service);
                         serviceInfo.setFilter(intents);
                         target.addService(serviceInfo);
+                    }
+                }
+
+                // 获取Provider
+                Field providers = pkg.getClass().getDeclaredField("providers");
+                providers.setAccessible(true);
+                ArrayList<?> providerFilters = (ArrayList<?>) providers.get(pkg);
+                for (int i = 0; i < providerFilters.size(); i++) {
+                    Object provider = providerFilters.get(i);
+
+                    Field intentsClassName = provider.getClass().getField("className");
+                    intentsClassName.setAccessible(true);
+                    String className = (String) intentsClassName.get(provider);
+                    ProviderInfo info = target.findProviderByClassName(className);
+                    if (info == null) {
+                        // 反射info字段
+                        Field serInfoField = provider.getClass().getField("info");
+                        serInfoField.setAccessible(true);
+                        info = (ProviderInfo) serInfoField.get(provider);
+                    }
+
+                    if (null != info) {
+                        ProviderIntentInfo providerInfo = new ProviderIntentInfo(info);
+                        Field intentsField = provider.getClass().getField("intents");
+                        intentsField.setAccessible(true);
+                        @SuppressWarnings("unchecked")
+                        ArrayList<IntentFilter> intents = (ArrayList<IntentFilter>) intentsField.get(provider);
+                        providerInfo.setFilter(intents);
+                        target.addProvider(providerInfo);
                     }
                 }
             }

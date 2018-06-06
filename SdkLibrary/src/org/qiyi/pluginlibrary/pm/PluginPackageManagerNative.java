@@ -1,27 +1,22 @@
 package org.qiyi.pluginlibrary.pm;
 
-import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageInfo;
 import android.os.IBinder;
-import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
-import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.Util;
 
-import java.io.BufferedReader;
+
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,16 +28,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * 此类的功能和{@link PluginPackageManager}基本一致<br/>
  * 只不过同一个功能这个类可以在任何进程使用<br>
  * {@link PluginPackageManager}只能在主进程使用
+ * <p>
+ * 该类通过IPC与{@link PluginPackageManagerService}进行交互，
+ * 实现插件的安装和卸载功能
  */
 public class PluginPackageManagerNative {
-    private static final String TAG = PluginInstaller.TAG + "_Native";
-
-    private static final int STATUS_PACKAGE_INSTALLED = 0x00;
-    private static final int STATUS_PACKAGE_INSTALLING = 0x01;
-    private static final int STATUS_PACAKGE_UPDATING = 0x02;
-    private static final int STATUS_PACKAGE_DELETING = 0x03;
-    private static final int STATUS_PACKAGE_NOT_INSTALLED = 0x04;
-
+    private static final String TAG = "PluginPackageManagerNative";
 
     private interface Action {
         String getPackageName();
@@ -50,8 +41,6 @@ public class PluginPackageManagerNative {
         boolean meetCondition();
 
         void doAction();
-
-        int getStatus();
     }
 
     /**
@@ -67,7 +56,7 @@ public class PluginPackageManagerNative {
 
         @Override
         public void onActionComplete(String packageName, int errorCode) throws RemoteException {
-            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s,errorCode:%d", packageName, errorCode);
+            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, errorCode:%d", packageName, errorCode);
             if (mActionMap.containsKey(packageName)) {
                 CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
                 if (null == list) {
@@ -76,15 +65,6 @@ public class PluginPackageManagerNative {
                 synchronized (list) {
                     PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!", packageName, list.size());
                     if (list.size() > 0) {
-                        if (PluginDebugLog.isDebug()) {
-                            for (int index = 0; index < list.size(); index++) {
-                                Action action = list.get(index);
-                                if (action != null) {
-                                    PluginDebugLog.installFormatLog(TAG,
-                                            "index %d action :%s", index, action.toString());
-                                }
-                            }
-                        }
 
                         Action finishedAction = list.remove(0);
                         if (finishedAction != null) {
@@ -96,7 +76,7 @@ public class PluginPackageManagerNative {
                             PluginDebugLog.installFormatLog(TAG,
                                     "this is PluginUninstallAction  for :%s", packageName);
                             PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
-                            if (uninstallAction != null && uninstallAction.observer != null && uninstallAction.info != null
+                            if (uninstallAction.observer != null && uninstallAction.info != null
                                     && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
                                 PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", packageName);
                                 uninstallAction.observer.onPluginUnintall(uninstallAction.info.packageName, errorCode);
@@ -139,9 +119,12 @@ public class PluginPackageManagerNative {
         }
     }
 
+
+    /**
+     * 插件安装的Action
+     */
     private static class PluginInstallAction implements Action {
 
-        public String filePath;
         public IInstallCallBack listener;
         public PluginLiteInfo info;
         public PluginPackageManagerNative callbackHost;
@@ -150,12 +133,11 @@ public class PluginPackageManagerNative {
         public String toString() {
             StringBuilder infoBuilder = new StringBuilder();
             infoBuilder.append("PluginInstallAction: ");
-            infoBuilder.append("filePath: ").append(filePath);
             infoBuilder.append(" has IInstallCallBack: ").append(listener != null);
             if (info != null) {
                 infoBuilder.append(" packageName: ").append(info.packageName);
-                infoBuilder.append(" plugin_ver: ").append(info.mPluginVersion);
-                infoBuilder.append(" plugin_gray_version: ").append(info.mPluginGrayVersion);
+                infoBuilder.append(" plugin_ver: ").append(info.pluginVersion);
+                infoBuilder.append(" plugin_gray_version: ").append(info.pluginGrayVersion);
             }
             return infoBuilder.toString();
         }
@@ -190,25 +172,24 @@ public class PluginPackageManagerNative {
         @Override
         public void doAction() {
             if (callbackHost != null) {
-                callbackHost.installApkFileInternal(filePath, listener, info);
-            }
-        }
-
-        @Override
-        public int getStatus() {
-            return STATUS_PACKAGE_INSTALLING;
-        }
-    }
-
-    private static class BuildinPluginInstallAction extends PluginInstallAction {
-        @Override
-        public void doAction() {
-            if (callbackHost != null) {
-                callbackHost.installBuildinAppsInternal(info, listener);
+                //callbackHost.installApkFileInternal(filePath, listener, info);
+                callbackHost.installInternal(info, listener);
             }
         }
     }
 
+//    private static class BuildinPluginInstallAction extends PluginInstallAction {
+//        @Override
+//        public void doAction() {
+//            if (callbackHost != null) {
+//                callbackHost.installBuildinAppsInternal(info, listener);
+//            }
+//        }
+//    }
+
+    /**
+     * 插件卸载的Action
+     */
     private static class PluginUninstallAction implements Action {
 
         IPluginUninstallCallBack observer;
@@ -228,8 +209,8 @@ public class PluginPackageManagerNative {
                     " has IPackageDeleteObserver: ").append(observer != null);
             if (info != null) {
                 infoBuilder.append(" packageName: ").append(info.packageName);
-                infoBuilder.append(" plugin_ver: ").append(info.mPluginVersion);
-                infoBuilder.append(" plugin_gray_ver: ").append(info.mPluginGrayVersion);
+                infoBuilder.append(" plugin_ver: ").append(info.pluginVersion);
+                infoBuilder.append(" plugin_gray_ver: ").append(info.pluginGrayVersion);
             }
 
             return infoBuilder.toString();
@@ -264,23 +245,20 @@ public class PluginPackageManagerNative {
                 callbackHost.uninstallInternal(info);
             }
         }
-
-        @Override
-        public int getStatus() {
-            return STATUS_PACKAGE_DELETING;
-        }
     }
 
-
+    // 插件安装/卸载Action的mapping
     private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> mActionMap =
             new ConcurrentHashMap<String, CopyOnWriteArrayList<Action>>();
 
-
+    /**
+     * 与{@link PluginPackageManagerService}交互的ServiceConnection
+     */
     private static class PluginPackageManagerServiceConnection implements ServiceConnection {
 
         private Context mContext;
 
-        public PluginPackageManagerServiceConnection(Context context) {
+        PluginPackageManagerServiceConnection(Context context) {
             mContext = context;
         }
 
@@ -317,7 +295,7 @@ public class PluginPackageManagerNative {
     private static String mProcessName = null;
 
     /**
-     * 安装包任务队列。
+     * 安装包任务队列，目前仅处理插件依赖时使用
      */
     private static ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions =
             new ConcurrentLinkedQueue<ExecutionPackageAction>();
@@ -336,46 +314,26 @@ public class PluginPackageManagerNative {
 
     private PluginPackageManagerNative(Context context) {
         mContext = context.getApplicationContext();
-        mProcessName = getCurrentProcessName(mContext);
+        mProcessName = Util.getCurrentProcesName(context);
     }
 
     private void init() {
         onBindService(mContext);
     }
 
-
-    public void setPackageInfoManager(IVerifyPluginInfo packageInfoManager) {
-        PluginPackageManager.setVerifyPluginInfoImpl(packageInfoManager);
-    }
-
     private void onBindService(Context context) {
-        if (null == context) {
-            PluginDebugLog.log(TAG, "onBindService context is null return!");
-            return;
-        }
-
         Intent intent = new Intent(context, PluginPackageManagerService.class);
         try {
+            context.startService(intent);
             context.bindService(intent, getConnection(context), Context.BIND_AUTO_CREATE);
         } catch (Exception e) {
-            // 灰度时出现binder，从系统代码查不可能出现这个异常，添加保护
-            // Caused by: java.lang.NullPointerException
-            // at android.os.Parcel.readException(Parcel.java:1437)
-            // at android.os.Parcel.readException(Parcel.java:1385)
-            // at
-            // android.app.ActivityManagerProxy.bindService(ActivityManagerNative.java:2801)
-            // at
-            // android.app.ContextImpl.bindServiceAsUser(ContextImpl.java:1489)
-            // at android.app.ContextImpl.bindService(ContextImpl.java:1464)
-            // at
-            // android.content.ContextWrapper.bindService(ContextWrapper.java:496)
-            // at
-            // org.qiyi.pluginlibrary.pm.PluginPackageManagerNative.onBindService(Unknown
-            // Source)
             e.printStackTrace();
         }
     }
 
+    /**
+     * 执行等待中的Action
+     */
     private static void executePendingAction() {
         PluginDebugLog.runtimeLog(TAG, "executePendingAction start....");
         for (Map.Entry<String, CopyOnWriteArrayList<Action>> entry : mActionMap.entrySet()) {
@@ -405,7 +363,7 @@ public class PluginPackageManagerNative {
     }
 
     /**
-     * 执行之前为执行的操做
+     * 执行之前未执行的PacakgeAction操作
      */
     private static void executePackageAction(Context context) {
         if (context != null) {
@@ -428,91 +386,6 @@ public class PluginPackageManagerNative {
         }
     }
 
-    /**
-     * 获取已经安装的插件列表，通过aidl到{@link PluginPackageManager}中获取值，
-     * 如果service不存在，直接在sharedPreference中读取值，并且启动service
-     *
-     * @return 返回所有安装插件信息
-     */
-    public List<PluginLiteInfo> getInstalledApps() {
-        if (mService != null) {
-            try {
-                return mService.getInstalledApps();
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-        List<PluginLiteInfo> installedList =
-                PluginPackageManager.getInstance(mContext).getInstalledPackagesDirectly();
-        onBindService(mContext);
-        return installedList;
-    }
-
-    /**
-     * 根据应用包名，获取插件信息，通过aidl到PackageManagerService中获取值，如果service不存在，
-     * 直接在sharedPreference中读取值，并且启动service
-     *
-     * @param pkg 插件包名
-     * @return 返回插件信息
-     */
-    public PluginLiteInfo getPackageInfo(String pkg) {
-        if (mService != null) {
-            try {
-                PluginDebugLog.runtimeLog(TAG, "getPackageInfo service is connected and not null, call remote service");
-                return mService.getPackageInfo(pkg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-
-        PluginDebugLog.runtimeLog(TAG, "getPackageInfo, service is disconnected, need rebind");
-        PluginLiteInfo info =
-                PluginPackageManager.getInstance(mContext).getPackageInfoDirectly(pkg);
-        onBindService(mContext);
-        return info;
-
-    }
-
-    /**
-     * 获取插件依赖关系
-     *
-     * @param pkgName
-     * @return
-     */
-    public List<String> getPluginRefs(String pkgName) {
-        if (mService != null) {
-            try {
-                return mService.getPluginRefs(pkgName);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-        onBindService(mContext);
-        return PluginPackageManager.getInstance(mContext).getPluginRefsDirectly(pkgName);
-    }
-
-
-    /**
-     * 判断某个插件是否已经安装，通过aidl到CMPackageManagerService中获取值，如果service不存在，
-     * 直接在sharedPreference中读取值，并且启动service
-     *
-     * @param pkg 插件包名
-     * @return 返回是否安装
-     */
-    public boolean isPackageInstalled(String pkg) {
-        if (mService != null) {
-            try {
-                return mService.isPackageInstalled(pkg);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-
-        boolean isInstalled =
-                PluginPackageManager.getInstance(mContext).isPackageInstalledDirectly(pkg);
-        onBindService(mContext);
-        return isInstalled;
-    }
 
     private static boolean actionIsReady(Action action) {
         if (action != null) {
@@ -550,88 +423,65 @@ public class PluginPackageManagerNative {
     }
 
     /**
+     * 提交一个PluginInstallAction安装插件任务
+     *
+     * @param info
+     * @param listener
+     */
+    public void install(PluginLiteInfo info, IInstallCallBack listener) {
+        PluginInstallAction action = new PluginInstallAction();
+        action.listener = listener;
+        action.info = info;
+        action.callbackHost = this;
+        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
+            action.doAction();
+        }
+    }
+
+    /**
+     * 通过aidl调用{@link PluginPackageManagerService}进行安装
+     *
+     * @param info
+     * @param listener
+     */
+    private void installInternal(PluginLiteInfo info, IInstallCallBack listener) {
+        if (mService != null) {
+            try {
+                //mService.deletePackage(info, null);
+                mService.install(info, listener);
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        onBindService(mContext);
+    }
+
+
+    /**
      * 通知安装插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
      *
      * @param filePath
      * @param listener
      * @param info
      */
-    public void installApkFile(String filePath, IInstallCallBack listener, PluginLiteInfo info) {
-        PluginInstallAction action = new PluginInstallAction();
-        action.filePath = filePath;
-        action.listener = listener;
-        action.info = info;
-        action.callbackHost = this;
-        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
-            action.doAction();
-        }
-    }
-
-    void installApkFileInternal(String filePath, IInstallCallBack listener, PluginLiteInfo info) {
-        if (mService != null) {
-            try {
-                mService.deletePackage(info, null);
-                mService.installApkFile(filePath, listener, info);
-                return;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        onBindService(mContext);
-    }
-
-    /**
-     * 通知安装再asset中的插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
-     *
-     * @param listener
-     * @param info
-     */
-    public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener) {
-        if (info == null) {
-            PluginDebugLog.installLog(TAG, "installBuildInApps but PluginLiteInfo is null!");
-            return;
-        }
-        BuildinPluginInstallAction action = new BuildinPluginInstallAction();
-        action.listener = listener;
-        action.info = info;
-        action.callbackHost = this;
-        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
-            action.doAction();
-        }
-    }
-
-    private void installBuildinAppsInternal(PluginLiteInfo info, IInstallCallBack listener) {
-        if (mService != null) {
-            try {
-                mService.deletePackage(getPackageInfo(info.packageName), null);
-                mService.installBuildinApps(info, listener);
-                return;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        onBindService(mContext);
-    }
-
-//    /**
-//     * 删除某个插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
-//     *
-//     * @param observer 删除成功回调监听
-//     */
-//    public void deletePackage(PluginLiteInfo info, IPackageDeleteObserver observer) {
-//        PluginDeleteAction action = new PluginDeleteAction();
+//    @Deprecated
+//    public void installApkFile(String filePath, IInstallCallBack listener, PluginLiteInfo info) {
+//        PluginInstallAction action = new PluginInstallAction();
+//        action.listener = listener;
 //        action.info = info;
 //        action.callbackHost = this;
-//        action.observer = observer;
 //        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
 //            action.doAction();
 //        }
 //    }
 
-//    private void deletePackageInternal(PluginLiteInfo info, IPackageDeleteObserver observer) {
+//    @Deprecated
+//    void installApkFileInternal(String filePath, IInstallCallBack listener, PluginLiteInfo info) {
 //        if (mService != null) {
 //            try {
-//                mService.deletePackage(info, observer);
+//                mService.deletePackage(info, null);
+//                mService.installApkFile(filePath, listener, info);
 //                return;
 //            } catch (Exception e) {
 //                e.printStackTrace();
@@ -640,6 +490,47 @@ public class PluginPackageManagerNative {
 //        onBindService(mContext);
 //    }
 
+    /**
+     * 通知安装再asset中的插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
+     *
+     * @param listener
+     * @param info
+     */
+//    @Deprecated
+//    public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener) {
+//        if (info == null) {
+//            PluginDebugLog.installLog(TAG, "installBuildInApps but PluginLiteInfo is null!");
+//            return;
+//        }
+//        BuildinPluginInstallAction action = new BuildinPluginInstallAction();
+//        action.listener = listener;
+//        action.info = info;
+//        action.callbackHost = this;
+//        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
+//            action.doAction();
+//        }
+//    }
+
+//    @Deprecated
+//    private void installBuildinAppsInternal(PluginLiteInfo info, IInstallCallBack listener) {
+//        if (mService != null) {
+//            try {
+//                mService.deletePackage(getPackageInfo(info.packageName), null);
+//                mService.installBuildinApps(info, listener);
+//                return;
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        onBindService(mContext);
+//    }
+
+    /**
+     * 提交一个PluginUninstallAction卸载插件的Action
+     *
+     * @param info
+     * @param observer
+     */
     public void uninstall(PluginLiteInfo info, IPluginUninstallCallBack observer) {
         PluginUninstallAction action = new PluginUninstallAction();
         action.info = info;
@@ -651,8 +542,7 @@ public class PluginPackageManagerNative {
     }
 
     /**
-     * 卸载插件，如果service不存在，则判断apk是否存在，如果存在，我们假设删除apk成功，暂时未考虑因内存不足或文件占用等原因导致的删除失败（
-     * 此case概率较小）
+     * 通过aidl调用{@link PluginPackageManagerService}进行卸载
      *
      * @param info PluginLiteInfo
      * @return
@@ -730,50 +620,16 @@ public class PluginPackageManagerNative {
 
         ActionType type;// 类型：
         long time;// 时间；
-        String filePath;
         IInstallCallBack callBack;// 安装回调
         PluginLiteInfo packageInfo;//包名
-        IPluginUninstallCallBack observer;
     }
 
     enum ActionType {
         INSTALL_APK_FILE, // installApkFile
-        INSTALL_BUILD_IN_APPS, // installBuildinApps
+        INSTALL_BUILD_IN_APPS, // installBuiltinApps
         DELETE_PACKAGE, // deletePackage
         PACKAGE_ACTION, // packageAction
         UNINSTALL_ACTION,// uninstall
-    }
-
-
-    private String getCurrentProcessName(Context context) {
-        int pid = android.os.Process.myPid();
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
-            if (process.pid == pid) {
-                return process.processName;
-            }
-        }
-
-        // try to read process name in /proc/pid/cmdline if no result from
-        // activity manager
-        String cmdline = null;
-        BufferedReader processFileReader = null;
-        try {
-            processFileReader = new BufferedReader(new FileReader(String.format("/proc/%d/cmdline", Process.myPid())));
-            cmdline = processFileReader.readLine().trim();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            if (null != processFileReader) {
-                try {
-                    processFileReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return cmdline;
     }
 
     public ServiceConnection getConnection(Context context) {
@@ -783,29 +639,96 @@ public class PluginPackageManagerNative {
         return mServiceConnection;
     }
 
-    public void exit() {
-        if (mContext != null) {
-            Context applicationContext = mContext.getApplicationContext();
-            if (applicationContext != null) {
-                if (mServiceConnection != null) {
-                    try {
-                        applicationContext.unbindService(mServiceConnection);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+    public void release() {
+        Context applicationContext = mContext.getApplicationContext();
+        if (applicationContext != null) {
+            if (mServiceConnection != null) {
+                try {
+                    applicationContext.unbindService(mServiceConnection);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                mService = null;
-                Intent intent = new Intent(applicationContext, PluginPackageManagerService.class);
-                applicationContext.stopService(intent);
             }
+            mService = null;
+            Intent intent = new Intent(applicationContext, PluginPackageManagerService.class);
+            applicationContext.stopService(intent);
         }
     }
 
-    public boolean isPackageAvailable(String packageName) {
-        if (mActionMap.contains(packageName) && !TextUtils.isEmpty(packageName)) {
-            List<Action> actions = mActionMap.get(packageName);
+
+    /**
+     * 获取已经安装的插件列表，通过aidl到{@link PluginPackageManager}中获取值，
+     * 如果service不存在，直接在sharedPreference中读取值，并且启动service
+     *
+     * @return 返回所有安装插件信息
+     */
+    public List<PluginLiteInfo> getInstalledApps() {
+        if (mService != null) {
+            try {
+                return mService.getInstalledApps();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+        List<PluginLiteInfo> installedList =
+                PluginPackageManager.getInstance(mContext).getInstalledPackagesDirectly();
+        onBindService(mContext);
+        return installedList;
+    }
+
+
+    /**
+     * 获取插件依赖关系
+     *
+     * @param pkgName
+     * @return
+     */
+    public List<String> getPluginRefs(String pkgName) {
+        if (mService != null) {
+            try {
+                return mService.getPluginRefs(pkgName);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+        onBindService(mContext);
+        return PluginPackageManager.getInstance(mContext).getPluginRefsDirectly(pkgName);
+    }
+
+
+    /**
+     * 判断某个插件是否已经安装，通过aidl到{@link PluginPackageManagerService}中获取值，如果service不存在，
+     * 直接在sharedPreference中读取值，并且启动service
+     *
+     * @param pkgName 插件包名
+     * @return 返回是否安装
+     */
+    public boolean isPackageInstalled(String pkgName) {
+        if (mService != null) {
+            try {
+                return mService.isPackageInstalled(pkgName);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+
+        boolean isInstalled = PluginPackageManager.getInstance(mContext).isPackageInstalledDirectly(pkgName);
+        onBindService(mContext);
+        return isInstalled;
+    }
+
+    /**
+     * 判断某个插件是否可用，如果插件正在执行安装/卸载操作，则认为不可用
+     *
+     * @param pkgName
+     * @return
+     */
+    public boolean isPackageAvailable(String pkgName) {
+
+        if (mActionMap.containsKey(pkgName) && !TextUtils.isEmpty(pkgName)) {
+            List<Action> actions = mActionMap.get(pkgName);
             if (actions != null && actions.size() > 0) {
-                PluginDebugLog.log(TAG, actions.size() + " actions in action list for " + packageName + " isPackageAvailable : true");
+                PluginDebugLog.log(TAG, actions.size() + " actions in action list for " + pkgName + " isPackageAvailable : true");
                 if (PluginDebugLog.isDebug()) {
                     for (int index = 0; index < actions.size(); index++) {
                         Action action = actions.get(index);
@@ -818,14 +741,41 @@ public class PluginPackageManagerNative {
             }
         }
 
-        boolean available = isPackageInstalled(packageName);
-        PluginDebugLog.log(TAG, packageName + " isPackageAvailable : " + available);
+        boolean available = isPackageInstalled(pkgName);
+        PluginDebugLog.log(TAG, pkgName + " isPackageAvailable : " + available);
         return available;
     }
 
 
     /**
+     * 根据应用包名，获取插件信息，通过aidl到PackageManagerService中获取值，如果service不存在，
+     * 直接在sharedPreference中读取值，并且启动service
+     *
+     * @param pkg 插件包名
+     * @return 返回插件信息
+     */
+    public PluginLiteInfo getPackageInfo(String pkg) {
+        if (mService != null) {
+            try {
+                PluginDebugLog.runtimeLog(TAG, "getPackageInfo service is connected and not null, call remote service");
+                return mService.getPackageInfo(pkg);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+
+        PluginDebugLog.runtimeLog(TAG, "getPackageInfo, service is disconnected, need rebind");
+        PluginLiteInfo info =
+                PluginPackageManager.getInstance(mContext).getPackageInfoDirectly(pkg);
+        onBindService(mContext);
+        return info;
+
+    }
+
+
+    /**
      * 获取插件的{@link android.content.pm.PackageInfo}
+     *
      * @param packageName
      * @return
      */
@@ -876,19 +826,19 @@ public class PluginPackageManagerNative {
      * @param mContext
      * @param mApkFile
      */
-    public void installStrangeApkFile(Context mContext, File mApkFile, IInstallCallBack mInstallCallback) {
-        if (mContext == null || mApkFile == null) {
-            PluginDebugLog.installLog(TAG, "installStrangeApkFile mContext == null or mApkFile ==null");
-            return;
-        }
-
-        PluginLiteInfo mPluginLiteInfo = new PluginLiteInfo();
-        PackageInfo mPackageInfo = mContext.getPackageManager()
-                .getPackageArchiveInfo(mApkFile.getAbsolutePath(), 0);
-        if (mPackageInfo != null) {
-            mPluginLiteInfo.packageName = mPackageInfo.packageName;
-            mPluginLiteInfo.mPluginVersion = mPackageInfo.versionName;
-            installApkFile(mApkFile.getAbsolutePath(), mInstallCallback, mPluginLiteInfo);
-        }
-    }
+//    public void installStrangeApkFile(Context mContext, File mApkFile, IInstallCallBack mInstallCallback) {
+//        if (mContext == null || mApkFile == null) {
+//            PluginDebugLog.installLog(TAG, "installStrangeApkFile mContext == null or mApkFile ==null");
+//            return;
+//        }
+//
+//        PluginLiteInfo mPluginLiteInfo = new PluginLiteInfo();
+//        PackageInfo mPackageInfo = mContext.getPackageManager()
+//                .getPackageArchiveInfo(mApkFile.getAbsolutePath(), 0);
+//        if (mPackageInfo != null) {
+//            mPluginLiteInfo.packageName = mPackageInfo.packageName;
+//            mPluginLiteInfo.pluginVersion = mPackageInfo.versionName;
+//            installApkFile(mApkFile.getAbsolutePath(), mInstallCallback, mPluginLiteInfo);
+//        }
+//    }
 }

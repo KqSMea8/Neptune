@@ -2,12 +2,14 @@ package org.qiyi.pluginlibrary.utils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -17,14 +19,18 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.os.Build;
+import android.os.Process;
+import android.text.TextUtils;
 import android.util.Log;
 
 /**
@@ -200,39 +206,36 @@ public final class Util {
      * @param apkFilePath
      * @param libDir lib目录。
      */
-    @SuppressWarnings("resource")
-    @SuppressLint("NewApi")
     public static boolean installNativeLibrary(String apkFilePath, String libDir) {
-        PluginDebugLog.log("plugin", "apkFilePath: " + apkFilePath + " libDir: " + libDir);
+        PluginDebugLog.installFormatLog("plugin", "apkFilePath: %s, libDir: %s", apkFilePath, libDir);
         boolean installResult = false;
         ZipFile zipFile = null;
         try {
             zipFile = new ZipFile(apkFilePath);
+
+            if (installNativeLibrary(zipFile, libDir, Build.CPU_ABI) || installNativeLibrary(zipFile, libDir, Build.CPU_ABI2)) {
+                installResult = true;
+            } else {
+                PluginDebugLog.installFormatLog("plugin", "can't install native lib of %s as no matched ABI", apkFilePath);
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            if (zipFile != null) {
+                try {
+                    zipFile.close();
+                } catch (IOException ioe) {
+                    // ignore
+                }
+            }
         }
 
-        if (zipFile == null) {
-            PluginDebugLog.log("plugin", "apkfile: " + apkFilePath + "doesn't exist when try to install native lib");
-            return false;
-        }
-
-        if (installNativeLibrary(zipFile, libDir, Build.CPU_ABI) || installNativeLibrary(zipFile, libDir, Build.CPU_ABI2)) {
-            installResult = true;
-        } else {
-            PluginDebugLog.log("plugin", "can't install native lib of " + apkFilePath + "as no matched ABI");
-        }
-
-        try {
-            zipFile.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         return installResult;
     }
 
     private static boolean installNativeLibrary(ZipFile apk, String libDir, String abi) {
-        PluginDebugLog.log("plugin", "start to extract native lib for ABI: " + abi);
+        PluginDebugLog.installFormatLog(TAG, "start to extract native lib for ABI: %s", abi);
         boolean installResult = false;
         Enumeration<? extends ZipEntry> entries = apk.entries();
         ZipEntry entry;
@@ -248,9 +251,16 @@ public final class Util {
             try {
                 entryInputStream = apk.getInputStream(entry);
                 String soFileName = name.substring(lastSlash);
-                PluginDebugLog.log("plugin", "libDir: " + libDir + " soFileName: " + soFileName);
-                installResult = copyToFile(entryInputStream, new File(libDir, soFileName));
+                PluginDebugLog.installFormatLog(TAG, "libDir: %s, soFileName: %s", libDir, soFileName);
+                File targetSo = new File(libDir, soFileName);
+                if (targetSo.exists()) {
+                    PluginDebugLog.installFormatLog(TAG, "soFileName: %s already exist", soFileName);
+                } else {
+                    installResult = copyToFile(entryInputStream, targetSo);
+                }
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ArrayIndexOutOfBoundsException e) {
                 e.printStackTrace();
             } finally {
                 try {
@@ -337,21 +347,27 @@ public final class Util {
      * @param directory directory to delete
      * @throws IOException in case deletion is unsuccessful
      */
-    public static void deleteDirectory(File directory) throws IOException {
+    public static boolean deleteDirectory(File directory) {
         if (directory == null) {
             PluginDebugLog.log(TAG, "deleteDirectory pkgName is empty return");
-            return;
+            return true;
         }
 
         if (!directory.exists()) {
-            return;
+            return true;
         }
 
-        cleanDirectory(directory);
-        if (!directory.delete()) {
-            String message = "Unable to delete directory " + directory + ".";
-            throw new IOException(message);
+        boolean deleted = false;
+        try {
+            cleanDirectory(directory);
+            deleted = true;
+        } catch (Exception e) {
+            // ignore
         }
+        if (!directory.delete()) {
+            return false;
+        }
+        return deleted;
     }
 
     /**
@@ -552,6 +568,38 @@ public final class Util {
         currentInstructionSet = (String) currentGet.invoke(null);
         Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
         return currentInstructionSet;
+    }
+
+    /**
+     * 获取当前进程名
+     */
+    private static String currentProcessName = null;
+    public static String getCurrentProcesName(Context context) {
+        if (!TextUtils.isEmpty(currentProcessName)) {
+            return currentProcessName;
+        }
+
+        int pid = android.os.Process.myPid();
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
+            if (process.pid == pid) {
+                return process.processName;
+            }
+        }
+
+        // try to read process name in /proc/pid/cmdline if no result from activity manager
+        String cmdline = null;
+        BufferedReader processFileReader = null;
+        try {
+            processFileReader = new BufferedReader(new FileReader(String.format(Locale.getDefault(), "/proc/%d/cmdline", Process.myPid())));
+            cmdline = processFileReader.readLine().trim();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            closeQuietly(processFileReader);
+        }
+
+        return cmdline;
     }
 
 

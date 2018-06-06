@@ -16,7 +16,6 @@ public interface IIntentConstant {
     /**主动加载插件的广播*/
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "target_stub";
     /**通知插件启动完毕(用于快捷方式) */
-    @Deprecated
     public static final String ACTION_PLUGIN_LOADED = "org.qiyi.pluginapp.ACTION_PLUGIN_LOADED";
 
     /**插件初始化完毕*/
@@ -26,8 +25,6 @@ public interface IIntentConstant {
     public static final String EXTRA_TARGET_CATEGORY = "pluginapp_service_category";
     /**bind Service时读取flag值的key*/
     public static final String BIND_SERVICE_FLAGS = "bind_service_flags";
-
-
 
     @Deprecated
     public static final String META_KEY_ACTIVITY_SPECIAL = "pluginapp_activity_special";
