@@ -265,6 +265,7 @@ public class PluginInstaller {
      */
     private static List<File> getInstalledDexFile(Context context, final String packageName) {
 
+        List<File> dexFiles = new ArrayList<>();
         File dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
         FileFilter fileFilter = new FileFilter() {
             @Override
@@ -275,11 +276,18 @@ public class PluginInstaller {
         };
 
         File[] files = dataDir.listFiles(fileFilter);
-        List<File> dexFiles = Arrays.asList(files);
-
+        if (files != null) {
+            for (File file : files) {
+                dexFiles.add(file);
+            }
+        }
         File dexDir = PluginInstaller.getPluginInjectRootPath(context);
         files = dexDir.listFiles(fileFilter);
-        dexFiles.addAll(Arrays.asList(files));
+        if (files != null) {
+            for (File file : files) {
+                dexFiles.add(file);
+            }
+        }
 
         return dexFiles;
     }

@@ -9,6 +9,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
+import android.content.pm.ServiceInfo;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -301,24 +303,22 @@ public class PluginManager implements IIntentConstant {
                                        final String packageName,
                                        final String processName,
                                        final IPluginInitListener mListener) {
-
-        if (mListener == null) {
-            return;
-        }
-
         // 插件已经加载
         if (PluginManager.isPluginLoadedAndInit(packageName)) {
-            mListener.onInitFinished(packageName);
+            if (mListener != null) {
+                mListener.onInitFinished(packageName);
+            }
             return;
         }
-
 
         BroadcastReceiver recv = new BroadcastReceiver() {
             public void onReceive(Context ctx, Intent intent) {
                 String curPkg = IntentUtils.getTargetPackage(intent);
                 if (IIntentConstant.ACTION_PLUGIN_INIT.equals(intent.getAction()) && TextUtils.equals(packageName, curPkg)) {
                     PluginDebugLog.runtimeLog(TAG, "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
-                    mListener.onInitFinished(packageName);
+                    if (mListener != null) {
+                        mListener.onInitFinished(packageName);
+                    }
                     mHostContext.getApplicationContext().unregisterReceiver(this);
                 }
             }
@@ -336,7 +336,7 @@ public class PluginManager implements IIntentConstant {
 
 
     /**
-     * 准备启动指定插件
+     * 准备启动指定插件组件
      *
      * @param mContext      主工程Context
      * @param mConnection  bindService时需要的ServiceConnection,如果不是bindService的方式启动组件，传入Null
@@ -378,8 +378,9 @@ public class PluginManager implements IIntentConstant {
         }
 
         PluginDebugLog.runtimeLog(TAG, "launchIntent_cacheIntents: " + cacheIntents);
-        if (!mLoadedApk.hasLaunchIngIntent()) {
-            doRealLaunch(mContext, mLoadedApk, (Intent) cacheIntents.poll(), mConnection);
+        Intent intent = cacheIntents.poll();
+        if (!mLoadedApk.hasLaunchIngIntent() && intent != null) {
+            doRealLaunch(mContext, mLoadedApk, intent, mConnection);
             PluginDebugLog.runtimeLog(TAG, "launchIntent no launching intnet... and launch end!");
         } else {
             PluginDebugLog.runtimeLog(TAG, "launchIntent has launching intent.... so return directly!");
@@ -460,7 +461,7 @@ public class PluginManager implements IIntentConstant {
         mLoadedApk.changeLaunchingIntentStatus(true);
         PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClass: " + targetClass);
         if (targetClass != null && Service.class.isAssignableFrom(targetClass)) {
-            //处理的是Service, 宿主启动插件Service只能通过显示启动
+            //处理的是Service, 宿主启动插件Service只能通过显式启动
             ComponetFinder.switchToServiceProxy(mLoadedApk, mIntent, targetClassName);
             if (mConnection == null) {
                 mHostContext.startService(mIntent);
@@ -624,6 +625,9 @@ public class PluginManager implements IIntentConstant {
 
     /**
      * 从mIntent里面解析插件包名
+     * 1. 从Intent的package获取
+     * 2. 从Intent的ComponentName获取
+     * 3. 隐式Intent，从已安装插件列表中查找可以响应的插件
      *
      * @param mHostContext 主工程Context
      * @param mIntent      需要启动的组件
@@ -633,26 +637,53 @@ public class PluginManager implements IIntentConstant {
         if (mIntent == null || mHostContext == null) {
             return "";
         }
+
+        String pkgName = mIntent.getPackage();
+        if (!TextUtils.isEmpty(pkgName) && !TextUtils.equals(pkgName, mHostContext.getPackageName())) {
+            // 与宿主pkgName不同
+            return pkgName;
+        }
+
         ComponentName cpn = mIntent.getComponent();
-        if (cpn == null || TextUtils.isEmpty(cpn.getPackageName())) {
+        if (cpn != null && !TextUtils.isEmpty(cpn.getPackageName())) {
+            // 显式启动插件
+            return cpn.getPackageName();
+        } else {
+            // 隐式启动插件
             List<PluginLiteInfo> packageList =
                     PluginPackageManagerNative.getInstance(mHostContext).getInstalledApps();
             if (packageList != null) {
-                // Here, loop all installed packages to get pkgName.
+                // Here, loop all installed packages to get pkgName for this intent
+                String packageName = "";
+                ActivityInfo activityInfo = null;
+                ServiceInfo serviceInfo = null;
                 for (PluginLiteInfo info : packageList) {
                     if (info != null) {
                         PluginPackageInfo target = PluginPackageManagerNative.getInstance(mHostContext)
                                 .getPluginPackageInfo(mHostContext, info);
-                        if (null != target) {
-                            if (target.resolveActivity(mIntent) != null) {
-                                return info.packageName;
-                            }
+                        if (target != null && (activityInfo = target.resolveActivity(mIntent)) != null) {
+                            // 优先查找Activity, 这里转成显式Intent，后面不用二次resolve了
+                            mIntent.setComponent(new ComponentName(info.packageName, activityInfo.name));
+                            return info.packageName;
+                        }
+                        // resolve隐式Service
+                        if (!TextUtils.isEmpty(packageName) && serviceInfo != null) {
+                            continue;
+                        }
+                        if (target != null && (serviceInfo = target.resolveService(mIntent)) != null) {
+                            packageName = info.packageName;
                         }
                     }
                 }
+                // Here, No Activity can handle this intent, we check service fallback
+                if (!TextUtils.isEmpty(packageName)) {
+                    if (serviceInfo != null) {
+                        // 插件框架后面的逻辑只支持显式Service处理，这里需要更新Intent的信息
+                        mIntent.setComponent(new ComponentName(packageName, serviceInfo.name));
+                    }
+                    return packageName;
+                }
             }
-        } else {
-            return cpn.getPackageName();
         }
 
         return "";

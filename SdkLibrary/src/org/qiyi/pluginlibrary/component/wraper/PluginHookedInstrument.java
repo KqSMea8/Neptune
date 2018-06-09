@@ -40,7 +40,7 @@ public class PluginHookedInstrument extends PluginInstrument {
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
 
         if (className.startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
-            // 插件代理Activity，替换会插件真实的Activity
+            // 插件代理Activity，替换回插件真实的Activity
             String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
             String packageName = result[0];
             String targetClass = result[1];
@@ -52,7 +52,7 @@ public class PluginHookedInstrument extends PluginInstrument {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
                     activity.setIntent(intent);
 
-                    ReflectionUtils.on(activity).set("mResources", loadedApk.getPluginResource());
+                    ReflectionUtils.on(activity).setNoException("mResources", loadedApk.getPluginResource());
                     return activity;
                 }
             }
@@ -75,8 +75,8 @@ public class PluginHookedInstrument extends PluginInstrument {
                 if (loadedApk != null) {
                     try {
                         ReflectionUtils activityRef = ReflectionUtils.on(activity);
-                        activityRef.set("mResources", loadedApk.getPluginResource());
-                        activityRef.set("mApplication", loadedApk.getPluginApplication());
+                        activityRef.setNoException("mResources", loadedApk.getPluginResource());
+                        activityRef.setNoException("mApplication", loadedApk.getPluginApplication());
                         Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
                         ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
                         ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);
