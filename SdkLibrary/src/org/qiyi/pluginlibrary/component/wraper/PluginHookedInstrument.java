@@ -51,7 +51,7 @@ public class PluginHookedInstrument extends PluginInstrument {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
                     activity.setIntent(intent);
 
-                    ReflectionUtils.on(activity).set("mResources", loadedApk.getPluginResource());
+                    ReflectionUtils.on(activity).setNoException("mResources", loadedApk.getPluginResource());
                     return activity;
                 }
             }
@@ -74,8 +74,8 @@ public class PluginHookedInstrument extends PluginInstrument {
                 if (loadedApk != null) {
                     try {
                         ReflectionUtils activityRef = ReflectionUtils.on(activity);
-                        activityRef.set("mResources", loadedApk.getPluginResource());
-                        activityRef.set("mApplication", loadedApk.getPluginApplication());
+                        activityRef.setNoException("mResources", loadedApk.getPluginResource());
+                        activityRef.setNoException("mApplication", loadedApk.getPluginApplication());
                         Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
                         ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
                         ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);

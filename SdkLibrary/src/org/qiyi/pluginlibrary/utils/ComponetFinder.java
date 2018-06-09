@@ -127,6 +127,12 @@ public class ComponetFinder implements IIntentConstant {
             PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent intent is null!");
             return mIntent;
         }
+        if (TextUtils.isEmpty(mPluginPackageName)) {
+            // 宿主Instrumentation调进来，没有传包名，不做替换
+            PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent plugin packageName is empty");
+            return mIntent;
+        }
+
         PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent: pluginId: "
                 + mPluginPackageName + ", intent: " + mIntent
                 + ", requestCode: " + requestCode);
@@ -137,30 +143,6 @@ public class ComponetFinder implements IIntentConstant {
         }
 
         ActivityInfo targetActivity = null;
-        if (TextUtils.isEmpty(mPluginPackageName)) {
-            PluginDebugLog.runtimeLog(TAG,
-                    "handleStartActivityIntent mPluginPackageName is null");
-            List<PluginLiteInfo> packageList =
-                    PluginPackageManagerNative.getInstance(context).getInstalledApps();
-            if (packageList != null) {
-                for (PluginLiteInfo pkgInfo : packageList) {
-                    if (pkgInfo != null) {
-                        PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
-                                .getPluginPackageInfo(context, pkgInfo);
-                        if (null != target) {
-                            targetActivity = target.resolveActivity(mIntent);
-                            if (targetActivity != null) {
-                                PluginDebugLog.runtimeFormatLog(TAG,
-                                        "switchToActivityProxy find targetActivity in plugin %s!", pkgInfo.packageName);
-                                mPluginPackageName = pkgInfo.packageName;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(mPluginPackageName);
         if (mIntent.getComponent() != null
                 && !TextUtils.isEmpty(mIntent.getComponent().getClassName())) {
@@ -179,7 +161,7 @@ public class ComponetFinder implements IIntentConstant {
                     }
                 }
             } else {
-                if (!TextUtils.isEmpty(pkg) && targetActivity == null) {
+                if (!TextUtils.isEmpty(pkg)) {
                     PluginLiteInfo mLiteInfo = new PluginLiteInfo();
                     mLiteInfo.packageName = pkg;
                     PluginPackageInfo otherPluginInfo = PluginPackageManagerNative.getInstance(context)
