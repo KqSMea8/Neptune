@@ -321,6 +321,11 @@ public class PluginPackageManagerNative {
         onBindService(mContext);
     }
 
+
+    public void setPackageInfoManager(IVerifyPluginInfo packageInfoManager) {
+        PluginPackageManager.setVerifyPluginInfoImpl(packageInfoManager);
+    }
+
     private void onBindService(Context context) {
         Intent intent = new Intent(context, PluginPackageManagerService.class);
         try {

@@ -55,8 +55,8 @@ public class HybirdPlugin {
 
         PluginLoadedApk.sUseNewClassLoader = sGlobalConfig.shouldUseNewCLMode();
         PluginLoadedApk.sUseNewResCreator = sGlobalConfig.shouldUseNewResGen();
-
-        PluginPackageManager.setVerifyPluginInfoImpl(sGlobalConfig.getVerifyPluginInfo());
+        // 调用getInstance()方法会初始化bindService
+        PluginPackageManagerNative.getInstance(app).setPackageInfoManager(sGlobalConfig.getVerifyPluginInfo());
     }
 
 
