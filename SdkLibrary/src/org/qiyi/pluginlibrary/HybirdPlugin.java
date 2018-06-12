@@ -53,8 +53,6 @@ public class HybirdPlugin {
             hookInstrumentation();
         }
 
-        PluginLoadedApk.sUseNewClassLoader = sGlobalConfig.shouldUseNewCLMode();
-        PluginLoadedApk.sUseNewResCreator = sGlobalConfig.shouldUseNewResGen();
         // 调用getInstance()方法会初始化bindService
         PluginPackageManagerNative.getInstance(app).setPackageInfoManager(sGlobalConfig.getVerifyPluginInfo());
     }

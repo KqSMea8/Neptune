@@ -93,7 +93,7 @@ public class ResolveInfoUtil {
                     }
                 }
 
-                // 获取Receivers
+                // 获取Receivers信息
                 Field receivers = pkg.getClass().getDeclaredField("receivers");
                 receivers.setAccessible(true);
                 ArrayList<?> receiverFilters = (ArrayList<?>) receivers.get(pkg);
@@ -122,7 +122,7 @@ public class ResolveInfoUtil {
                     }
                 }
 
-                // 获取Service
+                // 获取Service信息
                 Field services = pkg.getClass().getDeclaredField("services");
                 services.setAccessible(true);
                 ArrayList<?> serviceFilters = (ArrayList<?>) services.get(pkg);
@@ -151,7 +151,7 @@ public class ResolveInfoUtil {
                     }
                 }
 
-                // 获取Provider
+                // 获取Provider信息
                 Field providers = pkg.getClass().getDeclaredField("providers");
                 providers.setAccessible(true);
                 ArrayList<?> providerFilters = (ArrayList<?>) providers.get(pkg);
@@ -182,6 +182,56 @@ public class ResolveInfoUtil {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * 使用自定义的ManifestParser解析组件信息
+     *
+     * @param context
+     * @param dexPath
+     * @param target
+     */
+    public static void parseNewResolveInfo(Context context, String dexPath, PluginPackageInfo target) {
+
+        // 解析组件信息
+        ManifestParser parser = new ManifestParser(context, dexPath);
+        // 获取Activity信息
+        for (ManifestParser.ComponentBean activity : parser.activities) {
+            ActivityInfo info = target.findActivityByClassName(activity.className);
+            if (info != null) {
+                ActivityIntentInfo actInfo = new ActivityIntentInfo(info);
+                actInfo.setFilter(activity.intentFilters);
+                target.addActivity(actInfo);
+            }
+        }
+        // 获取Receiver信息
+        for (ManifestParser.ComponentBean receiver : parser.receivers) {
+            ActivityInfo info = target.findReceiverByClassName(receiver.className);
+            if (info != null) {
+                ReceiverIntentInfo recInfo = new ReceiverIntentInfo(info);
+                recInfo.setFilter(receiver.intentFilters);
+                target.addReceiver(recInfo);
+            }
+        }
+        // 获取Service信息
+        for (ManifestParser.ComponentBean service : parser.services) {
+            ServiceInfo info = target.findServiceByClassName(service.className);
+            if (info != null) {
+                ServiceIntentInfo serInfo = new ServiceIntentInfo(info);
+                serInfo.setFilter(service.intentFilters);
+                target.addService(serInfo);
+            }
+        }
+        // 获取Provider信息
+        for (ManifestParser.ComponentBean provider : parser.providers) {
+            ProviderInfo info = target.findProviderByClassName(provider.className);
+            if (info != null) {
+                ProviderIntentInfo proInfo = new ProviderIntentInfo(info);
+                proInfo.setFilter(provider.intentFilters);
+                target.addProvider(proInfo);
+            }
         }
     }
 }
