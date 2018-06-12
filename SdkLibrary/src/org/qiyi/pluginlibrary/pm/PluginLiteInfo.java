@@ -5,12 +5,13 @@ import android.os.Parcelable;
 
 /**
  * 存放插件最基本的信息：
- *  包名(必须有)
- *  版本号(可以为空)
- *  灰度版本号(可以为空)
- *  安装位置(安装完成后，将安装路径放在此字段返回给调用者)
- *  apk包AndroidManifest配置的包名
- *  apk包AndroidManifest配置的版本号
+ * 安装前的路径（必须有)
+ * 包名(必须有)
+ * 版本号(可以为空)
+ * 灰度版本号(可以为空)
+ * 安装位置(安装完成后，将安装路径放在此字段返回给调用者)
+ * apk包AndroidManifest配置的包名
+ * apk包AndroidManifest配置的版本号
  */
 public class PluginLiteInfo implements Parcelable {
     private static final String TAG = "PluginLiteInfo";
@@ -21,25 +22,46 @@ public class PluginLiteInfo implements Parcelable {
     public static final String PLUGIN_INSTALLED = "installed";
     public static final String PLUGIN_UNINSTALLED = "uninstall";
     public static final String PLUGIN_UPGRADING = "upgrading";
-
-    /**插件包名(后端吐的)*/
+    /**
+     * 插件apk路径（安装前)
+     */
+    public String mPath;
+    /**
+     * 插件包名(后端吐的)
+     */
     public String packageName;
-    /**插件的安装路径*/
+    /**
+     * 插件的安装后路径
+     */
     public String srcApkPath;
-    /**插件的安装状态*/
+    /**
+     * 插件的安装状态
+     */
     public String installStatus;
-    /**插件的正式版本*/
-    public String mPluginVersion="";
-    /**插件的灰度版本*/
-    public String mPluginGrayVersion="";
-    /**插件唯一标识符*/
+    /**
+     * 插件的正式版本
+     */
+    public String pluginVersion = "";
+    /**
+     * 插件的灰度版本
+     */
+    public String pluginGrayVersion = "";
+    /**
+     * 插件唯一标识符
+     */
     public String id = "";
-    /**控制插件启动是否投递*/
+    /**
+     * 控制插件启动是否投递
+     */
     public int mDeliverStartUp;
-    /**插件安装apk里的包名*/
+    /**
+     * 插件安装apk里的包名
+     */
     public String srcApkPkgName;
-    /**插件安装apk里的版本号*/
-    public String srcApkVersion="";
+    /**
+     * 插件安装apk里的版本号
+     */
+    public String srcApkVersion = "";
 
 
     public PluginLiteInfo() {
@@ -47,11 +69,12 @@ public class PluginLiteInfo implements Parcelable {
     }
 
     protected PluginLiteInfo(Parcel in) {
+        mPath = in.readString();
         packageName = in.readString();
         srcApkPath = in.readString();
         installStatus = in.readString();
-        mPluginVersion = in.readString();
-        mPluginGrayVersion = in.readString();
+        pluginVersion = in.readString();
+        pluginGrayVersion = in.readString();
         id = in.readString();
         mDeliverStartUp = in.readInt();
         srcApkPkgName = in.readString();
@@ -77,16 +100,23 @@ public class PluginLiteInfo implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeString(mPath);
         parcel.writeString(packageName);
         parcel.writeString(srcApkPath);
         parcel.writeString(installStatus);
-        parcel.writeString(mPluginVersion);
-        parcel.writeString(mPluginGrayVersion);
+        parcel.writeString(pluginVersion);
+        parcel.writeString(pluginGrayVersion);
         parcel.writeString(id);
         parcel.writeInt(mDeliverStartUp);
         parcel.writeString(srcApkPkgName);
         parcel.writeString(srcApkVersion);
     }
 
-
+    @Override
+    public String toString() {
+        return "mPath=" + mPath + ", packageName=" + packageName
+                + ", srcApkPath=" + srcApkPath + ", installStatus=" + installStatus
+                + ", version=" + pluginVersion + ", grayVersion=" + pluginGrayVersion
+                + ", srcApkPkgName" + srcApkPkgName + ", srcApkVersion=" + srcApkVersion;
+    }
 }

@@ -15,7 +15,6 @@ import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.Util;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
-import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -115,10 +114,6 @@ public class PluginInstallerService extends Service {
      * @param intent
      */
     private void onHandleIntent(Intent intent) {
-        if (intent == null) {
-            PluginDebugLog.installLog(TAG, "onHandleIntent intent is null");
-            return;
-        }
 
         String action = intent.getAction();
         if (ACTION_INSTALL.equals(action)) { // 插件安装
@@ -128,33 +123,41 @@ public class PluginInstallerService extends Service {
         }
     }
 
+    /**
+     * 安装插件
+     *
+     * @param srcFile 插件路径
+     * @param info
+     */
     private void handleInstall(String srcFile, PluginLiteInfo info) {
         if (null == info) {
             PluginDebugLog.installFormatLog(TAG, "Install srcFile:%s fail beacute info is null!", srcFile);
             return;
         }
 
-        PluginDebugLog.installFormatLog(TAG, "handleInstall srcFile:%s", srcFile);
-        if (srcFile.startsWith(PluginPackageManager.SCHEME_ASSETS)) {
-            installBuildinApk(srcFile, info);
-        } else if (srcFile.startsWith(PluginPackageManager.SCHEME_FILE)) {
-            installAPKFile(srcFile, info);
-        } else if (srcFile.startsWith(PluginPackageManager.SCHEME_SO)) {
+        PluginDebugLog.installFormatLog(TAG, "handleInstall srcFile:%s, info: %s", srcFile, info);
+        if (srcFile.startsWith(PluginInstaller.SCHEME_ASSETS)) {
+            installBuiltinApk(srcFile, info);
+        } else if (srcFile.startsWith(PluginInstaller.SCHEME_SO)) {
             installSoPlugin(srcFile, info);
-        } else if (srcFile.startsWith(PluginPackageManager.SCHEME_DEX)) {
+        } else if (srcFile.startsWith(PluginInstaller.SCHEME_DEX)) {
             installDexPlugin(srcFile, info);
+        } else if (srcFile.startsWith(PluginInstaller.SCHEME_FILE)){
+            installAPKFile(srcFile, info);
+        } else {
+            srcFile = PluginInstaller.SCHEME_FILE + srcFile;
+            installAPKFile(srcFile, info);
         }
-
     }
 
     /**
-     * Install so plugin, just do copy
+     * 安装so插件，只做拷贝
      *
      * @param srcFile
      * @param info
      */
     private void installSoPlugin(String srcFile, PluginLiteInfo info) {
-        String soFilePath = srcFile.substring(PluginPackageManager.SCHEME_SO.length());
+        String soFilePath = srcFile.substring(PluginInstaller.SCHEME_SO.length());
         File destFileTemp = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + ".tmp");
         File soFile = new File(soFilePath);
         if (!soFile.exists()) {
@@ -168,6 +171,7 @@ public class PluginInstallerService extends Service {
             if (destFileTemp.exists() && destFileTemp.renameTo(destFile)) {
 
                 String libDir = PluginInstaller.getPluginappRootPath(this).getAbsolutePath() + File.separator + info.packageName;
+                Util.deleteDirectory(new File(libDir));
                 boolean flag = Util.installNativeLibrary(destFile.getAbsolutePath(), libDir);
                 if (flag) {
                     setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
@@ -185,13 +189,13 @@ public class PluginInstallerService extends Service {
     }
 
     /**
-     * Install DEX plugin, just do copy
+     * 安装Dex插件，只做拷贝
      *
      * @param srcFile
      * @param info
      */
     private void installDexPlugin(String srcFile, PluginLiteInfo info) {
-        String dexFilePath = srcFile.substring(PluginPackageManager.SCHEME_DEX.length());
+        String dexFilePath = srcFile.substring(PluginInstaller.SCHEME_DEX.length());
         File destFileTemp = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + ".tmp");
         File dexFile = new File(dexFilePath);
         if (!dexFile.exists()) {
@@ -213,8 +217,14 @@ public class PluginInstallerService extends Service {
     }
 
 
-    private void installBuildinApk(String assetsPathWithScheme, PluginLiteInfo info) {
-        String assetsPath = assetsPathWithScheme.substring(PluginPackageManager.SCHEME_ASSETS.length());
+    /**
+     * 安装asset/pluginapp内置插件
+     *
+     * @param assetsPathWithScheme
+     * @param info
+     */
+    private void installBuiltinApk(String assetsPathWithScheme, PluginLiteInfo info) {
+        String assetsPath = assetsPathWithScheme.substring(PluginInstaller.SCHEME_ASSETS.length());
         PluginDebugLog.installFormatLog(TAG,
                 "PluginInstallerService installBuildInApk assetsPath" + assetsPath);
         // 先把 asset 拷贝到临时文件。
@@ -239,8 +249,14 @@ public class PluginInstallerService extends Service {
     }
 
 
+    /**
+     * 安装sd卡上的插件
+     *
+     * @param apkFilePathWithScheme
+     * @param info
+     */
     private void installAPKFile(String apkFilePathWithScheme, PluginLiteInfo info) {
-        String apkFilePath = apkFilePathWithScheme.substring(PluginPackageManager.SCHEME_FILE.length());
+        String apkFilePath = apkFilePathWithScheme.substring(PluginInstaller.SCHEME_FILE.length());
         PluginDebugLog.installFormatLog(TAG, "PluginInstallerService::installAPKFile: %s", apkFilePath);
 
         File source = new File(apkFilePath);
@@ -291,9 +307,9 @@ public class PluginInstallerService extends Service {
         PackageManager pm = this.getPackageManager();
         String apkFilePath = null;
         File tempFile = null;
-        if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_FILE)) {
-            apkFilePath = srcPathWithScheme.substring(PluginPackageManager.SCHEME_FILE.length());
-        } else if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_ASSETS)) {
+        if (srcPathWithScheme.startsWith(PluginInstaller.SCHEME_FILE)) {
+            apkFilePath = srcPathWithScheme.substring(PluginInstaller.SCHEME_FILE.length());
+        } else if (srcPathWithScheme.startsWith(PluginInstaller.SCHEME_ASSETS)) {
             // 解压拷贝Asset目录下的插件
             tempFile = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + ".tmp");
             boolean result = Util.copyToFile(is, tempFile);
@@ -345,9 +361,9 @@ public class PluginInstallerService extends Service {
                         + "toInstall apk fileName=%s, packageName in apk=%s", info.packageName, fileName, pkgInfo.packageName);
             }
             // 待安装的插件和apk里的版本号是否一致
-            if (!TextUtils.equals(info.mPluginVersion, pkgInfo.versionName)) {
+            if (!TextUtils.equals(info.pluginVersion, pkgInfo.versionName)) {
                 PluginDebugLog.installFormatLog(TAG, "doInstall with wrong apk, versionName not match, packageName=%s, "
-                        + "toInstall version=%s, versionName in apk=%s", packageName, info.mPluginVersion, pkgInfo.versionName);
+                        + "toInstall version=%s, versionName in apk=%s", packageName, info.pluginVersion, pkgInfo.versionName);
             }
         }
 
@@ -358,7 +374,7 @@ public class PluginInstallerService extends Service {
         }
 
         // 如果是内置app，检查文件名是否以包名命名，处于效率原因，要求内置app必须以包名命名.
-        if (srcPathWithScheme.startsWith(PluginPackageManager.SCHEME_ASSETS)) {
+        if (srcPathWithScheme.startsWith(PluginInstaller.SCHEME_ASSETS)) {
             int start = srcPathWithScheme.lastIndexOf("/");
             int end = srcPathWithScheme.lastIndexOf(PluginInstaller.APK_SUFFIX);
             String fileName = srcPathWithScheme.substring(start + 1, end);
@@ -372,7 +388,8 @@ public class PluginInstallerService extends Service {
             }
         }
         // 获取插件安装目录
-        File destFile = getPreferedInstallLocation(pkgInfo);
+        String apkName = packageName + "." + info.pluginVersion + PluginInstaller.APK_SUFFIX;
+        File destFile = getPreferredInstallLocation(pkgInfo, apkName);
         if (destFile.exists()) {
             destFile.delete();
         }
@@ -382,8 +399,11 @@ public class PluginInstallerService extends Service {
             PluginDebugLog.installFormatLog(TAG,
                     "doInstall:%s tmpFile and destFile in same directory!", packageName);
             if (!srcApkFile.renameTo(destFile)) {
-                setInstallFail(srcPathWithScheme, ErrorType.INSTALL_ERROR_RENAME_FAILED, info);
-                return;
+                boolean copyResult = Util.copyToFile(srcApkFile, destFile);
+                if (!copyResult) {
+                    setInstallFail(srcPathWithScheme, ErrorType.INSTALL_ERROR_RENAME_FAILED, info);
+                    return;
+                }
             }
         } else {
             // 拷贝到其他目录，比如安装到 sdcard
@@ -418,7 +438,7 @@ public class PluginInstallerService extends Service {
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService finish install lib,pkgName:%s", packageName);
         setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
-        // dexopt
+        // dexopt, 不是必须的
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService began install dex,pkgName:%s", packageName);
         installDex(destFile, packageName, PluginInstaller.getPluginappRootPath(this).getAbsolutePath());
@@ -458,24 +478,19 @@ public class PluginInstallerService extends Service {
      * @param info
      */
     private void setInstallSuccess(String pkgName, String srcPathWithScheme, String destPath, PluginLiteInfo info) {
-        try {
-            if (info != null) {
-                info.srcApkPath = destPath;
-                info.installStatus = PluginLiteInfo.PLUGIN_INSTALLED;
-            }
-            Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_INSTALLED);
-            intent.setPackage(getPackageName());
-            intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, pkgName);
-            intent.putExtra(IIntentConstant.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
-            intent.putExtra(IIntentConstant.EXTRA_DEST_FILE, destPath);        // 同时返回安装后的安装文件目录。
-            intent.putExtra(IIntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
-            sendBroadcast(intent);
-            if (info != null) {
-                PluginDebugLog.installLog(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
-            }
-        } catch (Exception e) {
-            // sendBoradCast nullException
-            e.printStackTrace();
+        if (info != null) {
+            info.srcApkPath = destPath;
+            info.installStatus = PluginLiteInfo.PLUGIN_INSTALLED;
+        }
+        Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_INSTALLED);
+        intent.setPackage(getPackageName());
+        intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, pkgName);
+        intent.putExtra(IIntentConstant.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
+        intent.putExtra(IIntentConstant.EXTRA_DEST_FILE, destPath);        // 同时返回安装后的安装文件目录。
+        intent.putExtra(IIntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
+        sendBroadcast(intent);
+        if (info != null) {
+            PluginDebugLog.installLog(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);
         }
     }
 
@@ -537,8 +552,15 @@ public class PluginInstallerService extends Service {
 //        }
     }
 
-    @SuppressLint("NewApi")
-    private File getPreferedInstallLocation(PackageInfo pkgInfo) {
+    /**
+     * 获取插件安装目录，内置目录或者SD卡目录
+     * 目前VR插件是安装在SD的/Android/data目录的
+     *
+     * @param pkgInfo
+     * @param apkName
+     * @return
+     */
+    private File getPreferredInstallLocation(PackageInfo pkgInfo, String apkName) {
 
         boolean preferExternal = false;
 
@@ -569,11 +591,11 @@ public class PluginInstallerService extends Service {
         File destFile = null;
         if (!preferExternal) {
             // 默认安装到 internal data dir
-            destFile = new File(PluginInstaller.getPluginappRootPath(this), pkgInfo.packageName + PluginInstaller.APK_SUFFIX);
+            destFile = new File(PluginInstaller.getPluginappRootPath(this), apkName);
             PluginDebugLog.installFormatLog(TAG, "install to Location %s:", destFile.getPath());
         } else {
             // 安装到外部存储器
-            destFile = new File(getExternalFilesDir(PluginInstaller.PLUGIN_PATH), pkgInfo.packageName + PluginInstaller.APK_SUFFIX);
+            destFile = new File(getExternalFilesDir(PluginInstaller.PLUGIN_ROOT_PATH), apkName);
             PluginDebugLog.installFormatLog(TAG, "install to Location %s", destFile.getPath());
         }
         return destFile;

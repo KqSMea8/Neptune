@@ -61,7 +61,6 @@ public class ComponetFinder implements IIntentConstant {
             if (mServiceInfo != null) {
                 switchToServiceProxy(mLoadedApk, mIntent, mServiceInfo.name);
             }
-            return;
         } else {
             //显示启动
             String targetService = mIntent.getComponent().getClassName();
@@ -127,9 +126,10 @@ public class ComponetFinder implements IIntentConstant {
             PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent intent is null!");
             return mIntent;
         }
+
         if (TextUtils.isEmpty(mPluginPackageName)) {
-            // 宿主Instrumentation调进来，没有传包名，不做替换
-            PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent plugin packageName is empty");
+            // Note: 宿主的Instrumentation会执行到这里, 不能做拦截, 导致本来要启动独立App的逻辑变成启动插件
+            PluginDebugLog.runtimeLog(TAG, "handleStartActivityIntent mPluginPackageName is null");
             return mIntent;
         }
 
@@ -153,8 +153,8 @@ public class ComponetFinder implements IIntentConstant {
             if (mLoadedApk != null) {
                 if (TextUtils.equals(pkg, mPluginPackageName)
                         || TextUtils.equals(pkg, mLoadedApk.getHostPackageName())) {
-                    PluginPackageInfo thisPlugin = mLoadedApk.getPluginPackageInfo();
-                    targetActivity = thisPlugin.getActivityInfo(toActName);
+                    PluginPackageInfo mPlugin = mLoadedApk.getPluginPackageInfo();
+                    targetActivity = mPlugin.getActivityInfo(toActName);
                     if (targetActivity != null) {
                         PluginDebugLog.runtimeLog(TAG,
                                 "switchToActivityProxy find targetActivity in current currentPlugin!");
@@ -162,10 +162,8 @@ public class ComponetFinder implements IIntentConstant {
                 }
             } else {
                 if (!TextUtils.isEmpty(pkg)) {
-                    PluginLiteInfo mLiteInfo = new PluginLiteInfo();
-                    mLiteInfo.packageName = pkg;
                     PluginPackageInfo otherPluginInfo = PluginPackageManagerNative.getInstance(context)
-                            .getPluginPackageInfo(context, mLiteInfo);
+                            .getPluginPackageInfo(pkg);
                     if (otherPluginInfo != null) {
                         targetActivity = otherPluginInfo.getActivityInfo(toActName);
                         if (targetActivity != null) {
@@ -177,9 +175,9 @@ public class ComponetFinder implements IIntentConstant {
             }
         } else {
             if (mLoadedApk != null) {
-                PluginPackageInfo mapping = mLoadedApk.getPluginPackageInfo();
-                if (mapping != null) {
-                    targetActivity = mapping.resolveActivity(mIntent);
+                PluginPackageInfo info = mLoadedApk.getPluginPackageInfo();
+                if (info != null) {
+                    targetActivity = info.resolveActivity(mIntent);
                 }
             } else {
                 if (null != context) {
@@ -208,7 +206,7 @@ public class ComponetFinder implements IIntentConstant {
                 + mPluginPackageName + " intent: " + mIntent.toString()
                 + " targetActivity: " + targetActivity);
         if (targetActivity != null) {
-            setActivityProxy(mIntent, targetActivity.packageName, targetActivity.name);
+            setActivityProxy(mIntent, targetActivity);
         }
         if (mLoadedApk != null) {
             mLoadedApk.getActivityStackSupervisor().dealLaunchMode(mIntent);
@@ -244,26 +242,20 @@ public class ComponetFinder implements IIntentConstant {
      * 为插件中的Activity 设置代理
      *
      * @param mIntent      需要设置代理的Activity的Intent
-     * @param mPackageName 插件的包名
-     * @param activityName 需要设置代理的Activity的类名
+     * @param targetActivity 目标的ActivityInfo，包含插件包名和跳转Activity的名称
      */
-    private static void setActivityProxy(Intent mIntent, String mPackageName, String activityName) {
-        PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(mPackageName);
+    private static void setActivityProxy(Intent mIntent, ActivityInfo targetActivity) {
+        String mPackageName = targetActivity.packageName;
+        String activityName = targetActivity.name;
+        PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(targetActivity.packageName);
         if (null == mLoadedApk) {
             PluginDebugLog.runtimeFormatLog(TAG,
                     "setActivityProxy failed, %s, PluginLoadedApk is null",
-                    mPackageName);
-            return;
-        }
-        ActivityInfo info = mLoadedApk.getPluginPackageInfo().getActivityInfo(activityName);
-        if (null == info) {
-            PluginDebugLog.formatLog(TAG,
-                    "setActivityProxy failed, activity info is null. actName: %s",
-                    activityName);
+                    targetActivity.packageName);
             return;
         }
         ComponentName compName = new ComponentName(mLoadedApk.getHostPackageName(),
-                findActivityProxy(mLoadedApk, info));
+                findActivityProxy(mLoadedApk, targetActivity));
         mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
         mIntent.setComponent(compName)
                 .addCategory(activityName)

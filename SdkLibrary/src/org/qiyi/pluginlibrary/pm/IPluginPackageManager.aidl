@@ -18,20 +18,21 @@ interface IPluginPackageManager {
 
     boolean canUninstallPackage(in PluginLiteInfo info);
 
-    oneway void installApkFile(String filePath, IInstallCallBack listener,in PluginLiteInfo pluginInfo);
+    oneway void install(in PluginLiteInfo info, IInstallCallBack listener);
 
-    oneway void installBuildinApps(in PluginLiteInfo info, IInstallCallBack listener);
+    //oneway void installApkFile(String filePath, IInstallCallBack listener,in PluginLiteInfo pluginInfo);
 
-    oneway void deletePackage(in PluginLiteInfo packageInfo, IPluginUninstallCallBack observer);
+    //oneway void installBuildinApps(in PluginLiteInfo info, IInstallCallBack listener);
 
-    boolean uninstall(in PluginLiteInfo packageInfo);
+    //oneway void deletePackage(in PluginLiteInfo info, IPluginUninstallCallBack observer);
 
-    oneway void packageAction(in PluginLiteInfo packageInfo, IInstallCallBack callBack);
+    boolean uninstall(in PluginLiteInfo info);
+
+    oneway void packageAction(in PluginLiteInfo info, IInstallCallBack callBack);
 
     oneway void setActionFinishCallback(IActionFinishCallback actionFinishCallback);
 
     PluginPackageInfo getPluginPackageInfo(in String pkgName);
 
     List<String> getPluginRefs(in String pkgName);
-
 }

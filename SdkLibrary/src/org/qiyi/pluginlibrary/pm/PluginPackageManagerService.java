@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.pm;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
@@ -13,14 +14,13 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import java.util.List;
 
 /**
- * 插件安装service管理，正常情况下此Service会持续存在，
- * 该Service运行在主进程，所有的操作都代理给PluginPackageManager实现
- *
- * Created by xiepengchong on 15/10/29.
+ * 插件安装Service管理，正常情况下此Service会一直存在，
+ * 该Service运行在主进程，所有的操作都代理给
+ * {@link PluginPackageManager}实现
  */
 public class PluginPackageManagerService extends Service {
     private static final String TAG = "PluginPackageManagerService";
-
+    @SuppressLint("StaticFieldLeak")
     private static PluginPackageManager mManager;
 
     @Override
@@ -83,46 +83,54 @@ public class PluginPackageManagerService extends Service {
             }
 
             @Override
-            public void installApkFile(String filePath, IInstallCallBack listener,
-                                       PluginLiteInfo pluginInfo) throws RemoteException {
-                if (mManager == null || TextUtils.isEmpty(filePath)) {
-                    return;
-                }
-                mManager.installApkFile(filePath, listener, pluginInfo);
-            }
-
-            @Override
-            public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener)
-                    throws RemoteException {
+            public void install(PluginLiteInfo info, IInstallCallBack listener) throws RemoteException {
                 if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
                     return;
                 }
-                mManager.installBuildinApps(info, listener);
+                mManager.install(info, listener);
             }
 
-            @Override
-            public void deletePackage(
-                    PluginLiteInfo packageInfo, IPluginUninstallCallBack observer) throws RemoteException {
-                if (mManager == null) {
-                    return;
-                }
-                mManager.deletePackage(packageInfo, observer);
-            }
+//            @Override
+//            public void installApkFile(String filePath, IInstallCallBack listener,
+//                                       PluginLiteInfo pluginInfo) throws RemoteException {
+//                if (mManager == null || TextUtils.isEmpty(filePath)) {
+//                    return;
+//                }
+//                mManager.installApkFile(filePath, listener, pluginInfo);
+//            }
+//
+//            @Override
+//            public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener)
+//                    throws RemoteException {
+//                if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
+//                    return;
+//                }
+//                mManager.installBuildinApps(info, listener);
+//            }
+
+//            @Override
+//            public void deletePackage(
+//                    PluginLiteInfo packageInfo, IPluginUninstallCallBack observer) throws RemoteException {
+//                if (mManager == null) {
+//                    return;
+//                }
+//                mManager.deletePackage(packageInfo, observer);
+//            }
 
             @Override
-            public boolean uninstall(PluginLiteInfo packageInfo) throws RemoteException {
-                return mManager != null && mManager.uninstall(packageInfo);
+            public boolean uninstall(PluginLiteInfo info) throws RemoteException {
+                return mManager != null && mManager.uninstall(info);
             }
 
             @Override
             public void packageAction(
-                    PluginLiteInfo packageInfo, IInstallCallBack callBack) throws RemoteException {
+                    PluginLiteInfo info, IInstallCallBack callBack) throws RemoteException {
                 if (mManager == null ||
-                        packageInfo == null || TextUtils.isEmpty(packageInfo.packageName)) {
+                        info == null || TextUtils.isEmpty(info.packageName)) {
                     PluginDebugLog.runtimeLog(TAG, "packageAction param error, packageInfo is null or packageName is empty");
                     return;
                 }
-                mManager.packageAction(packageInfo, callBack);
+                mManager.packageAction(info, callBack);
             }
 
             @Override

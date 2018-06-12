@@ -14,6 +14,7 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
@@ -39,7 +40,7 @@ public class PluginHookedInstrument extends PluginInstrument {
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
 
         if (className.startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
-            // 插件代理Activity，替换会插件真实的Activity
+            // 插件代理Activity，替换回插件真实的Activity
             String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
             String packageName = result[0];
             String targetClass = result[1];
@@ -94,14 +95,14 @@ public class PluginHookedInstrument extends PluginInstrument {
                 }
             }
             IntentUtils.resetAction(intent);  //恢复Action
-            ContextUtils.notifyHostPluginStarted(activity, intent);
+            NotifyCenter.notifyPluginStarted(activity, intent);
         }
 
         try {
             mHostInstr.callActivityOnCreate(activity, icicle);
 
             if (isLaunchPlugin) {
-                PluginManager.sendPluginLoadedBroadcast(activity);
+                NotifyCenter.notifyPluginActivityLoaded(activity);
             }
         } catch (Exception e) {
             e.printStackTrace();

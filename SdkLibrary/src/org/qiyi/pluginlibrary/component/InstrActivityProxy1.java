@@ -39,10 +39,12 @@ import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -98,7 +100,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                     IIntentConstant.EXTRA_VALUE_LOADTARGET_STUB));
             PluginManager.readyToStartSpecifyPlugin(this, null, intent, true);
         }
-        ContextUtils.notifyHostPluginStarted(this, getIntent());
+
+        NotifyCenter.notifyPluginStarted(this, getIntent());
         Activity mPluginActivity = loadPluginActivity(mLoadedApk, pluginActivityName);
         if (null == mPluginActivity) {
             PluginManager.deliver(this, false, pluginPkgName,
@@ -129,19 +132,14 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             // Set plugin's default theme.
             mPluginActivity.setTheme(resTheme);
 
-            // in debug mode,dot't try cacth
-            if (PluginDebugLog.isDebug()) {
+            try {
                 callProxyOnCreate(savedInstanceState);
-            } else {
-                try {
-                    callProxyOnCreate(savedInstanceState);
-                } catch (Exception e) {
-                    PluginManager.deliver(this, false, pluginPkgName,
-                            ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
-                    e.printStackTrace();
-                    this.finish();
-                    return;
-                }
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+                PluginManager.deliver(this, false, pluginPkgName,
+                        ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
+                this.finish();
+                return;
             }
             mRestartCalled = false;  // onCreate()-->onStart()
         }
@@ -159,7 +157,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         mPluginContrl.callOnCreate(savedInstanceState);
         mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
         PluginManager.dispatchPluginActivityCreated(mPluginPackage, mPluginContrl.getPlugin(), savedInstanceState);
-        PluginManager.sendPluginLoadedBroadcast(InstrActivityProxy1.this.getBaseContext());
+        NotifyCenter.notifyPluginActivityLoaded(this.getBaseContext());
     }
 
 
@@ -478,7 +476,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 getController().callOnPause();
                 PluginManager.dispatchPluginActivityPaused(mPluginPackage, mPluginContrl.getPlugin());
                 IResourchStaticsticsControllerManager.onPause(this);
-                // LCallbackManager.callAllOnPause();
             } catch (Exception e) {
                 e.printStackTrace();
             }

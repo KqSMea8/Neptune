@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
@@ -17,7 +16,6 @@ import android.app.Application;
 import android.app.Service;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.TextUtils;
@@ -310,18 +308,5 @@ public class ContextUtils {
         return (Build.VERSION.SDK_INT >= minSDKValue && Build.VERSION.SDK_INT <= maxSDKValue)
                 && TextUtils.equals(Build.VERSION.CODENAME, compareSDKName)
                 && TextUtils.equals(Build.VERSION.RELEASE, compareSDKName);
-    }
-
-    /**
-     * 通知调用方可以取消loading progress dialog
-     *
-     * @param context
-     * @param intent
-     */
-    public static void notifyHostPluginStarted(Context context, Intent intent) {
-        if (null != context && null != intent && !TextUtils.isEmpty(intent.getStringExtra(
-                IIntentConstant.EXTRA_SHOW_LOADING))) {
-            context.sendBroadcast(new Intent(IIntentConstant.EXTRA_SHOW_LOADING));
-        }
     }
 }

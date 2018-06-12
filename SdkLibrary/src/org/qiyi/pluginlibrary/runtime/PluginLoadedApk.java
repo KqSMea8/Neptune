@@ -4,8 +4,8 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentCallbacks2;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -17,6 +17,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
@@ -33,6 +34,7 @@ import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
@@ -50,8 +52,10 @@ import dalvik.system.DexClassLoader;
 
 /**
  * 插件在内存中的表现形式：
- * 每一个{@link PluginLoadedApk}代表了一个插件实例，保
- * 存当前插件的{@link android.content.res.Resources}<br/>{@link ClassLoader}等信息
+ * 每一个{@link PluginLoadedApk}代表了一个插件实例，
+ * 保存当前插件的{@link android.content.res.Resources}<br/>
+ * {@link ClassLoader}, {@link PackageInfo}等信息
+ *
  * Author:yuanzeyao
  * Date:2017/7/3 17:01
  * Email:yuanzeyao@qiyi.com
@@ -102,7 +106,7 @@ public class PluginLoadedApk implements IIntentConstant {
     /** 插件的Application */
     private Application mPluginApplication;
     /** 自定义插件Context,主要用来改写其中的一些方法从而改变插件行为*/
-    private PluginContextWrapper mAppWrapper;
+    private PluginContextWrapper mPluginAppContext;
     /** 自定义Instrumentation，对Activity跳转进行拦截 */
     private PluginInstrument mPluginInstrument;
 
@@ -112,8 +116,8 @@ public class PluginLoadedApk implements IIntentConstant {
 
     /** 当前插件的Activity栈 */
     private PActivityStackSupervisor mActivityStackSupervisor;
-    /** 插件是否已经初始化 */
-    private boolean isPluginInit = false;
+    /** 插件Application是否已经初始化 */
+    private volatile boolean isPluginInit = false;
     /** 当前是否有正在启动的Intent */
     private volatile boolean isLaunchingIntent = false;
 
@@ -165,6 +169,9 @@ public class PluginLoadedApk implements IIntentConstant {
         } else {
             createPluginResource();
         }
+        // 插件Application的base Context
+        this.mPluginAppContext = new PluginContextWrapper(((Application) mHostContext)
+                .getBaseContext(), mPluginPackageName);
         // 注册静态广播
         installStaticReceiver();
     }
@@ -225,8 +232,8 @@ public class PluginLoadedApk implements IIntentConstant {
 
             mPluginAssetManager = am;
         } catch (Exception e) {
+            ErrorUtil.throwErrorIfNeed(e);
             PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
-            e.printStackTrace();
         }
 
         Configuration config = new Configuration();
@@ -276,11 +283,9 @@ public class PluginLoadedApk implements IIntentConstant {
             mPluginTheme.setTo(mHostContext.getTheme());
             mResourceTool = new ResourcesToolForPlugin(mHostContext);
         } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
             //使用旧的反射的方案创建Resource
             createPluginResource();
         } catch (Exception e) {
-            e.printStackTrace();
             createPluginResource();
         }
     }
@@ -384,50 +389,65 @@ public class PluginLoadedApk implements IIntentConstant {
     boolean makeApplication() {
         if (!isPluginInit || mPluginApplication == null) {
             String className = mPluginPackageInfo.getApplicationClassName();
-
-//            if (TextUtils.isEmpty(className)) {
-//                className = "android.app.Application";
-//            }
-//            hookInstrumentation();
-//            this.mAppWrapper = new PluginContextWrapper(((Application) mHostContext)
-//                    .getBaseContext(), mPluginPackageName);
-//            try {
-//                this.mPluginApplication = mPluginInstrument.newApplication(mPluginClassLoader, className, mAppWrapper);
-//            } catch (Exception e) {
-//                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
-//                return false;
-//            }
-
-            if (TextUtils.isEmpty(className) || Application.class.getName().equals(className)) {
-                // 创建默认的虚拟Application
-                mPluginApplication = new Application();
-            } else {
-                try {
-                    mPluginApplication = ((Application) mPluginClassLoader.loadClass(className).asSubclass(Application.class).newInstance());
-                } catch (Exception e) {
-                    PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
-                    e.printStackTrace();
-                    return false;
-                }
-            }
-            invokeApplicationAttach();
-
-            try {
-                mPluginApplication.onCreate();
-                //mPluginInstrument.callApplicationOnCreate(mPluginApplication);
-            } catch (Throwable t) {
-                PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
-                PluginDebugLog.runtimeLog(TAG, "launchIntent application oncreate failed!");
-                t.printStackTrace();
-                System.exit(0);
-                return false;
+            if (TextUtils.isEmpty(className)) {
+                className = "android.app.Application";
             }
 
             hookInstrumentation();
-            isPluginInit = true;
-            PluginManager.deliver(mHostContext, true, mPluginPackageName, ErrorType.SUCCESS);
+            try {
+                // load plugin Application and call Application#attach()
+                this.mPluginApplication = mPluginInstrument.newApplication(mPluginClassLoader, className, mPluginAppContext);
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
+                return false;
+            }
+
+//            if (TextUtils.isEmpty(className) || Application.class.getName().equals(className)) {
+//                // 创建默认的虚拟Application
+//                mPluginApplication = new Application();
+//            } else {
+//                try {
+//                    mPluginApplication = ((Application) mPluginClassLoader.loadClass(className).asSubclass(Application.class).newInstance());
+//                } catch (Exception e) {
+//                    ErrorUtil.throwErrorIfNeed(e);
+//                    PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
+//                    return false;
+//                }
+//            }
+//            invokeApplicationAttach();
+            // 注册Application回调
+            mHostContext.registerComponentCallbacks(new ComponentCallbacks2() {
+                @Override
+                public void onTrimMemory(int level) {
+                    mPluginApplication.onTrimMemory(level);
+                }
+
+                @Override
+                public void onConfigurationChanged(Configuration configuration) {
+                    updateConfiguration(configuration);
+                }
+
+                @Override
+                public void onLowMemory() {
+                    mPluginApplication.onLowMemory();
+                }
+            });
+
+            try {
+                mPluginApplication.onCreate();
+            } catch (Throwable t) {
+                ErrorUtil.throwErrorIfNeed(t);
+                PluginDebugLog.runtimeLog(TAG, "call plugin Application#onCreate() failed, pkgName=" + mPluginPackageName);
+                PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
+                return false;
+            }
+
             mPluginApplication.registerActivityLifecycleCallbacks(PluginManager.sActivityLifecycleCallback);
+            isPluginInit = true;
             isLaunchingIntent = false;
+
+            PluginManager.deliver(mHostContext, true, mPluginPackageName, ErrorType.SUCCESS);
         }
         return true;
     }
@@ -439,20 +459,17 @@ public class PluginLoadedApk implements IIntentConstant {
      */
     private void hookInstrumentation() {
         try {
-            Context contextImpl = ((ContextWrapper) mHostContext).getBaseContext();
-            Object activityThread = ReflectionUtils.on(contextImpl).get("mMainThread");
-            Instrumentation hostInstr = ReflectionUtils.on(activityThread).get("mInstrumentation");
-
+//            Context contextImpl = ((ContextWrapper) mHostContext).getBaseContext();
 //            Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
 //            Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
 //            instrumentationF.setAccessible(true);
 //            Instrumentation hostInstr = (Instrumentation) instrumentationF.get(activityThread);
-            hostInstr = PluginInstrument.unwrap(hostInstr);
+            Instrumentation hostInstr = HybirdPlugin.getHostInstrumentation();
             mPluginInstrument = new PluginInstrument(hostInstr, mPluginPackageName);
         } catch (Exception e) {
+            ErrorUtil.throwErrorIfNeed(e);
             PluginManager.deliver(mHostContext, false, mPluginPackageName,
                     ErrorType.ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL);
-            e.printStackTrace();
         }
     }
 
@@ -465,14 +482,13 @@ public class PluginLoadedApk implements IIntentConstant {
                     mPluginPackageName);
             return;
         }
-        this.mAppWrapper = new PluginContextWrapper(((Application) mHostContext)
-                .getBaseContext(), mPluginPackageName);
+
         // attach
         Method attachMethod;
         try {
             attachMethod = Application.class.getDeclaredMethod("attach", Context.class);
             attachMethod.setAccessible(true);
-            attachMethod.invoke(mPluginApplication, mAppWrapper);
+            attachMethod.invoke(mPluginApplication, mPluginAppContext);
         } catch (Exception e) {
             PluginManager.deliver(mHostContext, false, mPluginPackageName,
                     ErrorType.ERROR_CLIENT_SET_APPLICATION_BASE_FAIL);
@@ -502,11 +518,12 @@ public class PluginLoadedApk implements IIntentConstant {
     /**
      * 更新资源配置
      *
-     * @param mConfiguration 新的资源配置信息
+     * @param newConfig 新的资源配置信息
      */
-    public void updateConfiguration(Configuration mConfiguration) {
-        mPluginResource.updateConfiguration(mConfiguration,
-                mHostResource != null ? mHostResource.getDisplayMetrics() : null);
+    public void updateConfiguration(Configuration newConfig) {
+        mPluginApplication.onConfigurationChanged(newConfig);
+        mPluginResource.updateConfiguration(newConfig,
+                mHostResource != null ? mHostResource.getDisplayMetrics() : mPluginResource.getDisplayMetrics());
     }
 
     /**
@@ -714,10 +731,10 @@ public class PluginLoadedApk implements IIntentConstant {
                         if (!TextUtils.isEmpty(identity)) {
                             PluginDebugLog.runtimeLog(TAG, mPluginPackageName + " quitapp with service: " + identity);
                             ServiceConnection connection = PServiceSupervisor.getConnection(identity);
-                            if (connection != null && mAppWrapper != null) {
+                            if (connection != null && mPluginAppContext != null) {
                                 try {
                                     PluginDebugLog.runtimeLog(TAG, "quitapp unbindService" + connection);
-                                    mAppWrapper.unbindService(connection);
+                                    mPluginAppContext.unbindService(connection);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -842,7 +859,7 @@ public class PluginLoadedApk implements IIntentConstant {
      * @return
      */
     public PluginContextWrapper getAppWrapper() {
-        return mAppWrapper;
+        return mPluginAppContext;
     }
 
     /**
