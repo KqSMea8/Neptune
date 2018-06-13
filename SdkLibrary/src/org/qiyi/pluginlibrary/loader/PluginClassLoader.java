@@ -62,7 +62,7 @@ public class PluginClassLoader extends DexClassLoader{
     @Override
     public String toString() {
         String self = super.toString();
-        StringBuilder deps = new StringBuilder("");
+        StringBuilder deps = new StringBuilder();
         for (ClassLoader classLoader : dependencies) {
             deps.append(classLoader.toString());
         }

@@ -8,7 +8,6 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -16,12 +15,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import dalvik.system.DexFile;
@@ -58,18 +55,40 @@ public class MultiDex {
             return;
         }
 
+        if (Build.VERSION.SDK_INT > MAX_SUPPORTED_SDK_VERSION) {
+            PluginDebugLog.warningLog(TAG, "MultiDex is not guaranteed to work in SDK version "
+                    + Build.VERSION.SDK_INT + ": SDK version higher than "
+                    + MAX_SUPPORTED_SDK_VERSION + " should be backed by "
+                    + "runtime with built-in multidex capabilty but it's not the "
+                    + "case here: java.vm.version=\""
+                    + System.getProperty("java.vm.version") + "\"");
+            return;
+        }
+
+        String pkgName = packageInfo.getPackageName();
         File dataDir = new File(packageInfo.getDataDir());
         String sourceApk = !TextUtils.isEmpty(apkPath) ? apkPath : packageInfo.getApplicationInfo().sourceDir;
         File dexDir = getDexDir(dataDir, SECONDARY_DEX_FOLDER_NAME);
 
-        List<File> dexFiles = getExtraDexFiles(dexDir, sourceApk);
+        MultiDexExtractor extractor = new MultiDexExtractor(pkgName, new File(sourceApk), dexDir);
         try {
-            installSecondaryDexes(classLoader, dexDir, dexFiles);
+            List<? extends File> dexFiles = extractor.load(false);
+            try {
+                installSecondaryDexes(classLoader, dexDir, dexFiles);
+            } catch (IOException e) {
+                PluginDebugLog.runtimeLog(TAG, "Failed to install extracted secondary dex files, retrying with "
+                        + "forced extraction: " + e.getMessage());
+                dexFiles = extractor.load(true);
+                installSecondaryDexes(classLoader, dexDir, dexFiles);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * 安装后续的Dex文件
+     */
     private static void installSecondaryDexes(ClassLoader loader, File dexDir, List<? extends File> dexFiles)
                         throws IllegalAccessException, NoSuchMethodException, NoSuchFieldException,
                         InvocationTargetException, IOException, ClassNotFoundException, InstantiationException{
@@ -84,47 +103,6 @@ public class MultiDex {
         }
     }
 
-    /**
-     * TODO 还可以优化Mutlidex的安装过程，不必要每次都解压dex
-     *
-     * @param dexDir
-     * @param sourceApk
-     * @return
-     */
-    private static List<File> getExtraDexFiles(File dexDir, String sourceApk) {
-        List<File> files = new LinkedList<>();
-
-        clearOldDexDir(dexDir);
-        ZipFile apkFile = null;
-        try {
-            apkFile = new ZipFile(sourceApk);
-            int secondaryNumber = 2;
-            String entryName = "classes" + secondaryNumber + ".dex";
-            ZipEntry dexEntry = apkFile.getEntry(entryName);
-            while (dexEntry != null) {
-                // dex file
-                File dexFile = new File(dexDir, entryName);
-                InputStream is = null;
-                try {
-                    is = apkFile.getInputStream(dexEntry);
-                    Util.copyToFile(is, dexFile);
-                    files.add(dexFile);
-                } finally {
-                    Util.closeQuietly(is);
-                }
-
-                secondaryNumber++;
-                entryName = "classes" + secondaryNumber + ".dex";
-                dexEntry = apkFile.getEntry(entryName);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            Util.closeQuietly(apkFile);
-        }
-        return files;
-    }
-
     private static File getDexDir(File dataDir, String dexFolderName) {
         File dexDir = new File(dataDir, dexFolderName);
         if (!dexDir.exists()) {
@@ -136,25 +114,6 @@ public class MultiDex {
 
         return dexDir;
     }
-
-
-    private static void clearOldDexDir(File dexDir) {
-        if (dexDir.isDirectory()) {
-            File[] files = dexDir.listFiles();
-            if (files == null) {
-                return;
-            }
-            for (File oldFile : files) {
-                if (!oldFile.delete()) {
-                    PluginDebugLog.warningLog(TAG, "Failed to delete old dex file " + oldFile.getPath());
-                }
-            }
-            if (!dexDir.delete()) {
-                PluginDebugLog.warningLog(TAG, "Failed to delete secondary dex dir " + dexDir.getPath());
-            }
-        }
-    }
-
 
     private static boolean isVMMultidexCapable(String versionString) {
         boolean isMultidexCapable = false;

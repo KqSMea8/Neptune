@@ -31,7 +31,7 @@ import java.io.File;
 public class HybirdPlugin {
     private static final String TAG = "HybirdPlugin";
 
-    private static Context sAppContext;
+    private static Context sHostContext;
 
     private static HybirdPluginConfig sGlobalConfig;
 
@@ -44,7 +44,7 @@ public class HybirdPlugin {
      */
     public static void init(Application app, HybirdPluginConfig config) {
 
-        sAppContext = app;
+        sHostContext = app;
         sGlobalConfig = config != null ? config
                 : new HybirdPluginConfig.HybirdPluginConfigBuilder().build();
 
@@ -57,6 +57,9 @@ public class HybirdPlugin {
         PluginPackageManagerNative.getInstance(app).setPackageInfoManager(sGlobalConfig.getVerifyPluginInfo());
     }
 
+    public static Context getHostContext() {
+        return sHostContext;
+    }
 
     public static HybirdPluginConfig getConfig() {
         return sGlobalConfig;
@@ -146,7 +149,7 @@ public class HybirdPlugin {
         }
 
         PluginLiteInfo liteInfo = new PluginLiteInfo();
-        PackageInfo packageInfo = sAppContext.getPackageManager()
+        PackageInfo packageInfo = sHostContext.getPackageManager()
                 .getPackageArchiveInfo(apkPath, 0);
         if (packageInfo != null) {
             liteInfo.mPath = apkPath;
@@ -163,7 +166,7 @@ public class HybirdPlugin {
      */
     public static void install(PluginLiteInfo info, IInstallCallBack callBack) {
         // install
-        PluginPackageManagerNative.getInstance(sAppContext).install(info, callBack);
+        PluginPackageManagerNative.getInstance(sHostContext).install(info, callBack);
     }
 
 
@@ -172,7 +175,7 @@ public class HybirdPlugin {
      * @param pkgName
      */
     public static void uninstall(String pkgName) {
-        PluginLiteInfo info = PluginPackageManagerNative.getInstance(sAppContext).getPackageInfo(pkgName);
+        PluginLiteInfo info = PluginPackageManagerNative.getInstance(sHostContext).getPackageInfo(pkgName);
         if (info != null) {
             uninstall(info, null);
         }
@@ -185,7 +188,7 @@ public class HybirdPlugin {
      */
     public static void uninstall(PluginLiteInfo info, IPluginUninstallCallBack callBack) {
         // uninstall
-        PluginPackageManagerNative.getInstance(sAppContext).uninstall(info, callBack);
+        PluginPackageManagerNative.getInstance(sHostContext).uninstall(info, callBack);
     }
 
     /**
@@ -230,7 +233,7 @@ public class HybirdPlugin {
      */
     public static boolean isPackageInstalled(String pkgName) {
 
-        return PluginPackageManagerNative.getInstance(sAppContext).isPackageInstalled(pkgName);
+        return PluginPackageManagerNative.getInstance(sHostContext).isPackageInstalled(pkgName);
     }
 
     /**
@@ -241,7 +244,7 @@ public class HybirdPlugin {
      */
     public static boolean isPackageAvailable(String pkgName) {
 
-        return PluginPackageManagerNative.getInstance(sAppContext).isPackageAvailable(pkgName);
+        return PluginPackageManagerNative.getInstance(sHostContext).isPackageAvailable(pkgName);
     }
 
     /**
@@ -252,6 +255,6 @@ public class HybirdPlugin {
      */
     public static PluginLiteInfo getPluginInfo(String pkgName) {
 
-        return PluginPackageManagerNative.getInstance(sAppContext).getPackageInfo(pkgName);
+        return PluginPackageManagerNative.getInstance(sHostContext).getPackageInfo(pkgName);
     }
 }
