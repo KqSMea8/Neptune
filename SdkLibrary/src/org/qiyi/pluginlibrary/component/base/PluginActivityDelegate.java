@@ -1,0 +1,148 @@
+package org.qiyi.pluginlibrary.component.base;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.ContextThemeWrapper;
+
+import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
+import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.IntentUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
+
+/**
+ * 插件基线PluginActivity的代理实现
+ * 每个PluginActivity持有一个PluginActivityDelegate对象，实现插件相关功能的注入
+ *
+ * author: liuchun
+ * date: 2018/6/13
+ */
+class PluginActivityDelegate implements IPluginBase{
+    private static final String TAG = "PluginActivityDelegate";
+
+    private Activity mActivity;
+    private PluginLoadedApk mPlugin;
+    /**
+     * 为插件Activity构造一个插件对应的Base Context
+     *
+     * @param activity  插件真实的Activity
+     * @param newBase  Activity原有的Base Context，一般为ContextImpl，是宿主的
+     * @return
+     */
+    Context createActivityContext(Activity activity, Context newBase) {
+        // 通过插件Activity的ClassLoader查找插件实例，这个需要配合新的ClassLoader方案
+        mActivity = activity;
+        mPlugin = PluginManager.findPluginLoadedApkByClassLoader(activity.getClass().getClassLoader());
+        if (mPlugin != null) {
+            // 生成插件的Base Context
+            newBase = new PluginContextWrapper(newBase, mPlugin.getPluginPackageName());
+        }
+
+        return newBase;
+    }
+
+    /**
+     * 在插件Activity的onCreate调用前调用该方法
+     *
+     * @param activity
+     * @param savedInstanceState
+     */
+    void handleActivityOnCreateBefore(Activity activity, Bundle savedInstanceState) {
+
+        if (mPlugin == null) {
+            // 通过插件的Intent再去查找一遍
+            String pkgName = IntentUtils.parsePkgNameFromActivity(activity);
+            if (!TextUtils.isEmpty(pkgName)) {
+                mPlugin = PluginManager.getPluginLoadedApkByPkgName(pkgName);
+            }
+        }
+
+        ClassLoader cl = mPlugin != null ? mPlugin.getPluginClassLoader() : activity.getClassLoader();
+        // 修正Intent的ClassLoader，解决序列化的问题
+        Intent intent = activity.getIntent();
+        intent.setExtrasClassLoader(cl);
+        IntentUtils.resetAction(intent); //恢复Intent的Action
+
+        // 对FragmentActivity做特殊处理
+        if (savedInstanceState != null) {
+            //
+            savedInstanceState.setClassLoader(cl);
+            try {
+                savedInstanceState.remove("android:support:fragments");
+            } catch (Throwable tr) {
+                tr.printStackTrace();
+            }
+        }
+        // 再次确保Activity的Base Context已经被替换了
+        Context mBase = activity.getBaseContext();
+        if (mBase instanceof PluginContextWrapper) {
+            PluginDebugLog.runtimeLog(TAG, "activity " + activity.getClass().getName() + " base context already be replaced");
+        } else {
+            mBase = new PluginContextWrapper(mBase, mPlugin.getPluginPackageName());
+            // 反射替换mBase成员变量
+            ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", mBase);
+            ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", mBase);
+        }
+
+        // 修改Activity的ActivityInfo和主题信息
+        PluginActivityControl.changeActivityInfo(activity, activity.getClass().getName(), mPlugin);
+    }
+
+    /**
+     * 在插件Activity#onCreate调用之后执行
+     * @param activity
+     * @param savedInstanceState
+     */
+    void handleActivityOnCreateAfter(Activity activity, Bundle savedInstanceState) {
+
+        Intent intent = activity.getIntent();
+        IntentUtils.resetAction(intent);  //恢复Action
+        NotifyCenter.notifyPluginStarted(activity, intent);
+        NotifyCenter.notifyPluginActivityLoaded(activity);
+
+        if (mPlugin != null) {
+            mPlugin.getActivityStackSupervisor().pushActivityToStack(activity);
+        }
+    }
+
+    /**
+     * 在插件Activity#onDetorty调用之后执行
+     * @param activity
+     */
+    void handleActivityOnDestory(Activity activity) {
+        if (mPlugin != null) {
+            mPlugin.getActivityStackSupervisor().popActivityFromStack(activity);
+        }
+    }
+
+    @Override
+    public Context getOriginalContext() {
+        return ContextUtils.getOriginalContext(mActivity);
+    }
+
+    @Override
+    public ResourcesToolForPlugin getHostResourceTool() {
+        return ContextUtils.getHostResourceTool(mActivity);
+    }
+
+    @Override
+    public String getPluginPackageName() {
+        return mPlugin != null ? mPlugin.getPluginPackageName() : "";
+    }
+
+    @Override
+    public void exitApp() {
+        if (mPlugin != null) {
+            mPlugin.quitApp(true);
+        }
+    }
+}

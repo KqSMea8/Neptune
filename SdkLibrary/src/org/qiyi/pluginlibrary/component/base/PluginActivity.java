@@ -1,0 +1,109 @@
+package org.qiyi.pluginlibrary.component.base;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
+
+/**
+ * 插件内的BaseActivity, 提供给插件方继承此类，
+ * 通过override方式来完成插件框架的一些功能替换和生命周期注入
+ *
+ * author: liuchun
+ * date: 2018/6/13
+ */
+public class PluginActivity extends Activity implements IPluginBase{
+
+    private PluginActivityDelegate mDelegate;
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        // 替换插件的BaseContext
+        mDelegate = new PluginActivityDelegate();
+        newBase = mDelegate.createActivityContext(this, newBase);
+
+        super.attachBaseContext(newBase);
+
+        // TODO FIXME, we need to replace the mApplication in Activity?
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        if (mDelegate != null) {
+            mDelegate.handleActivityOnCreateBefore(this, savedInstanceState);
+        }
+        super.onCreate(savedInstanceState);
+        if (mDelegate != null) {
+            mDelegate.handleActivityOnCreateAfter(this, savedInstanceState);
+        }
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mDelegate != null) {
+            mDelegate.handleActivityOnDestory(this);
+        }
+    }
+
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+    }
+
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode) {
+        // 替换成坑位Activity
+        String pkgName = getPluginPackageName();
+        intent = ComponetFinder.switchToActivityProxy(pkgName, intent, requestCode, this);
+
+        super.startActivityForResult(intent, requestCode);
+    }
+
+    // Api 16新增
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+        // 替换成坑位Activity
+        String pkgName = getPluginPackageName();
+        intent = ComponetFinder.switchToActivityProxy(pkgName, intent, requestCode, this);
+
+        super.startActivityForResult(intent, requestCode, options);
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // 以下是IPluginBase接口实现
+    ///////////////////////////////////////////////////////////////////
+
+    @Override
+    public Context getOriginalContext() {
+        return ContextUtils.getOriginalContext(this);
+    }
+
+    @Override
+    public ResourcesToolForPlugin getHostResourceTool() {
+        return ContextUtils.getHostResourceTool(this);
+    }
+
+    @Override
+    public String getPluginPackageName() {
+        String pkgName = mDelegate != null ? mDelegate.getPluginPackageName() : ContextUtils.getPluginPackageName(this);
+        if (TextUtils.isEmpty(pkgName)) {
+            pkgName = getPackageName();
+        }
+        return pkgName;
+    }
+
+    @Override
+    public void exitApp() {
+        if (mDelegate != null) {
+            mDelegate.exitApp();
+        }
+    }
+}

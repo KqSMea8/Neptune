@@ -24,7 +24,7 @@ uploadArchives {
 
 dependencies {
     provided files('libs/android-26.jar')
-    provided files('libs/android-support-v4.jar')
+    provided files('libs/android-support-26.1.0.jar')
 }
 
 
