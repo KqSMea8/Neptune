@@ -99,6 +99,7 @@ public class PluginActivityControl implements PluginActivityCallback {
             mPluginRef.set("mWindow", mProxy.getWindow());
             mPluginRef.set("mWindowManager", mProxy.getWindow().getWindowManager());
             mPlugin.getWindow().setCallback(mPlugin);
+            // 替换ContextImpl的OuterContext，插件Activity的LayoutInflater才能正常使用
             ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", sMethods, mPlugin);
 
         } catch (ReflectException e) {

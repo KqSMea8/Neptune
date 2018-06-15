@@ -165,9 +165,9 @@ public class PluginLoadedApk implements IIntentConstant {
         } else {
             createPluginResource();
         }
-        // 插件Application的base Context
+        // 插件Application的Base Context
         this.mPluginAppContext = new PluginContextWrapper(((Application) mHostContext)
-                .getBaseContext(), mPluginPackageName);
+                .getBaseContext(), mPluginPackageName, true);
         // 注册静态广播
         installStaticReceiver();
     }
