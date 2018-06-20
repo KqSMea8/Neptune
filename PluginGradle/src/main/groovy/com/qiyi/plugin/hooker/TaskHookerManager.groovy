@@ -3,24 +3,30 @@ package com.qiyi.plugin.hooker
 import com.android.build.gradle.AndroidGradleOptions
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApkVariant
-import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.internal.api.ApplicationVariantImpl
+import com.android.build.gradle.internal.scope.AndroidTask
+import com.android.build.gradle.tasks.ManifestProcessorTask
 import com.android.build.gradle.tasks.MergeResources
 import com.android.build.gradle.tasks.ProcessAndroidResources
 import com.android.sdklib.BuildToolInfo
+import com.android.utils.FileUtils
 import com.google.common.collect.ListMultimap
 import com.google.common.io.Files
-import com.qiyi.plugin.QYPlugin
 import com.qiyi.plugin.QYPluginExtension
 import com.qiyi.plugin.aapt.Aapt
 import com.qiyi.plugin.collector.ResourceCollector
 import com.qiyi.plugin.collector.res.ResourceEntry
 import com.qiyi.plugin.collector.res.StyleableEntry
+import com.qiyi.plugin.dex.DexProcessor
 import com.qiyi.plugin.utils.ZipUtil
+import groovy.xml.Namespace
+import groovy.xml.XmlUtil
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.Task
+
 
 class TaskHookerManager {
 
@@ -54,9 +60,38 @@ class TaskHookerManager {
                         scope.getProcessResourcesTask().name : scope.getGenerateRClassTask().name
                 ProcessAndroidResources processResTask = project.tasks.getByName(processResTaskName) as ProcessAndroidResources
 
+                ManifestProcessorTask manifestTask
+                if (pluginExt.isHigherAGP) {
+                    Object task = appVariant.getVariantData().getScope().manifestProcessorTask
+                    if (task instanceof ManifestProcessorTask) {
+                        manifestTask = (ManifestProcessorTask)task
+                    } else if (task instanceof AndroidTask) {
+                        // AGP 3.0.1 返回的是AndroidTask类型
+                        String manifestTaskName = task.name
+                        manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
+                    } else {
+                        throw new GradleException("ManifestProcessorTask unknown task type ${task.getClass().name}")
+                    }
+                } else {
+                    def outputScope = scope.getVariantData().getMainOutput().getScope()
+                    String manifestTaskName = outputScope.getManifestProcessorTask().name
+                    manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
+                }
+
+                String varName = appVariant.name.capitalize()
+                Task dexTask = project.tasks.findByName("transformClassesWithDexFor${varName}")
+                if (dexTask == null) {
+                    // if still null, may lower gradle
+                    dexTask = project.tasks.findByName("dex${varName}")
+                }
+
                 hookMergeResourceTask(mergeResTask, processResTask)
 
                 hookProcessResourceTask(processResTask, appVariant)
+
+                hookManifestProcessTask(manifestTask)
+
+                hookDexTask(dexTask)
             }
         }
     }
@@ -83,8 +118,8 @@ class TaskHookerManager {
      */
     private void hookProcessResourceTask(ProcessAndroidResources processResTask,
                                          ApkVariant apkVariant) {
-        if (!pluginExt.pluginMode) {
-            println "Not in plugin build mode, no need to strip host resources from plugin arsc file"
+        if (!pluginExt.stripResource) {
+            println "No need to strip host resources from plugin arsc file"
             return
         }
         // 处理资源任务
@@ -92,6 +127,71 @@ class TaskHookerManager {
             // rewrite resource
             println "${processResTask.name} doLast execute start, rewrite generated arsc file"
             reWriteArscFile(processResTask, apkVariant)
+        }
+    }
+
+    /**
+     * hook Manifest插入特定的信息
+     */
+    private void hookManifestProcessTask(ManifestProcessorTask manifestProcessorTask) {
+
+        if (!pluginExt.stripResource) {
+            println "No need to strip host resources, so do not modify manifest"
+            return
+        }
+
+        manifestProcessorTask.doLast {
+            File manifest
+            try {
+                manifest = manifestProcessorTask.manifestOutputFile
+            } catch (Throwable tr) {
+                tr.printStackTrace()
+                // AGP 3.0.0, changed
+                println manifestProcessorTask.manifestOutputDirectory
+                manifest = new File(manifestProcessorTask.manifestOutputDirectory, "AndroidManifest.xml")
+            }
+
+            def android = new Namespace('http://schemas.android.com/apk/res/android', 'android')
+
+            def root = new XmlParser().parse(manifest)
+            def app = root.application[0]
+            def meta = new Node(app, "meta-data")
+            meta.attributes().put(android.name, "pluginapp_res_merge")
+            meta.attributes().put(android.value, "true")
+            // rewrite the manifest file
+            XmlUtil.serialize(root, new FileOutputStream(manifest))
+        }
+    }
+
+    /**
+     * hook dex生成的task，重写java class文件
+     */
+    private void hookDexTask(Task dexTask) {
+        if (!pluginExt.dexModify || dexTask == null) {
+            println "dexTask is null or dexModify is disabled, ${pluginExt.dexModify}"
+            return
+        }
+
+        dexTask.doFirst {
+            println "${dexTask.name} doFirst execute start, modify Activity classes"
+            DexProcessor processor = new DexProcessor()
+            String intermediatesPath = FileUtils.join(project.buildDir, "intermediates")
+            dexTask.inputs.files.files.each { file ->
+                if (!file.absolutePath.startsWith(intermediatesPath)) {
+                    return
+                }
+
+                println "${dexTask.name} task input file: ${file}"
+                if (file.isDirectory()) {
+                    processor.processDir(file)
+                } else if (file.name.endsWith(".jar")) {
+                    processor.processJar(file)
+                } else if (file.name.endsWith(".class")) {
+                    processor.processClass(file)
+                } else {
+                    println "${dexTask.name} task, other input file ${file}"
+                }
+            }
         }
     }
 

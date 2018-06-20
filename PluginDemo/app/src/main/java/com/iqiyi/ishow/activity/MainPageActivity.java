@@ -16,6 +16,8 @@ import com.facebook.common.logging.FLog;
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.iqiyi.ishow.R;
 
+
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -94,12 +96,17 @@ public class MainPageActivity extends AppCompatActivity implements View.OnClickL
 
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+
+        //Log.i(TAG, "current login state: " + VariableCollection.isLogin());
+    }
+
+    @Override
     public void onClick(View v) {
 
-        if (v.getId() == R.id.go_butter) {
-            Intent intent = new Intent(MainPageActivity.this, ButterActivity.class);
-            startActivity(intent);
-        } else if (v.getId() == R.id.go_single) {
+        if (v.getId() == R.id.go_single) {
             Intent intent = new Intent(MainPageActivity.this, SingleActivity.class);
             startActivity(intent);
         }

@@ -8,6 +8,7 @@ qyplugin {
     pluginMode = isPluginBuild
     packageId = 0x30
     hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
+    dexModify = true
 }
 
 android {
@@ -20,6 +21,9 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    dexOptions {
+        //preDexLibraries false
     }
 
     buildTypes {
@@ -34,6 +38,20 @@ android {
             jniLibs.srcDirs = ['libs']
         }
     }
+
+    android.applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+
+            //def fileName = defaultConfig.applicationId + "-" + defaultConfig.versionName + "-" + variant.buildType.name + ".apk"
+            def fileName = defaultConfig.applicationId + ".apk"
+            // 修改apk名称
+//            def file = output.outputFile
+//            if (file != null && file.name.endsWith(".apk")) {
+//                output.outputFile = new File(file.parent, fileName)
+//            }
+            output.outputFileName = fileName
+        }
+    }
 }
 
 
@@ -44,7 +62,6 @@ dependencies {
         provided ('com.qiyi.video.allclasses:support_lib:latest.release')   //support_lib
         provided ('com.qiyi.video.allclasses:basecore_lib:latest.release')  // basecore_lib
         compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
-        provided ('android.app.fw:fw_jar:latest.release')  // fw, butter knife
         annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
         compile "com.qiyi.video.allclasses:commonres_lib:9.5.0"    // commonres_lib
         //compile project(":baseRes")
@@ -54,6 +71,9 @@ dependencies {
         compile "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
         compile "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
         compile 'com.facebook.fresco:fresco:1.2.0'
+        compile 'com.jakewharton:butterknife:8.8.1'
+        annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+        implementation 'com.airbnb.android:lottie:2.3.1'
     }
     compile project(":baseLib")
 }
