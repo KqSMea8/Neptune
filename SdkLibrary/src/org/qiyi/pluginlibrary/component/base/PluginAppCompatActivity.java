@@ -41,7 +41,7 @@ public class PluginAppCompatActivity extends AppCompatActivity implements IPlugi
     protected void onDestroy() {
         super.onDestroy();
         if (mDelegate != null) {
-            mDelegate.handleActivityOnDestory(this);
+            mDelegate.handleActivityOnDestroy(this);
         }
     }
 

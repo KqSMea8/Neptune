@@ -9,6 +9,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.ContextThemeWrapper;
 
+import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.component.base.IPluginBase;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
@@ -48,7 +50,6 @@ public class PluginHookedInstrument extends PluginInstrument {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
                     activity.setIntent(intent);
 
-                    ReflectionUtils.on(activity).setNoException("mResources", loadedApk.getPluginResource());
                     return activity;
                 }
             }
@@ -69,20 +70,25 @@ public class PluginHookedInstrument extends PluginInstrument {
                 PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate: " + packageName);
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
                 if (loadedApk != null) {
-                    try {
-                        ReflectionUtils activityRef = ReflectionUtils.on(activity);
-                        activityRef.setNoException("mResources", loadedApk.getPluginResource());
-                        activityRef.setNoException("mApplication", loadedApk.getPluginApplication());
-                        Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
-                        ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
-                        ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);
-                        ReflectionUtils.on(activity).setNoException("mInstrumentation", loadedApk.getPluginInstrument());
 
-                        // 修改插件Activity的ActivityInfo, theme, window等信息
-                        PluginActivityControl.changeActivityInfo(activity, targetClass, loadedApk);
-                    } catch (Exception e) {
-                        PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate with exception: " + e.getMessage());
-                        e.printStackTrace();
+                    if (!dispatchToBaseActivity(activity)) {
+                        // 如果分发了插件Activity的基类了，就不需要在这里反射hook替换相关成员变量了
+                        try {
+                            ReflectionUtils activityRef = ReflectionUtils.on(activity);
+                            activityRef.setNoException("mResources", loadedApk.getPluginResource());
+                            activityRef.setNoException("mApplication", loadedApk.getPluginApplication());
+                            Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
+                            ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
+                            ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);
+                            ReflectionUtils.on(activity).setNoException("mInstrumentation", loadedApk.getPluginInstrument());
+
+                            // 修改插件Activity的ActivityInfo, theme, window等信息
+                            PluginActivityControl.changeActivityInfo(activity, targetClass, loadedApk);
+                        } catch (Exception e) {
+                            PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate with exception: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+
                     }
 
                     if (activity.getParent() == null) {
@@ -92,13 +98,13 @@ public class PluginHookedInstrument extends PluginInstrument {
                 }
             }
             IntentUtils.resetAction(intent);  //恢复Action
-            NotifyCenter.notifyPluginStarted(activity, intent);
         }
 
         try {
             mHostInstr.callActivityOnCreate(activity, icicle);
 
             if (isLaunchPlugin) {
+                NotifyCenter.notifyPluginStarted(activity, intent);
                 NotifyCenter.notifyPluginActivityLoaded(activity);
             }
         } catch (Exception e) {
@@ -129,5 +135,16 @@ public class PluginHookedInstrument extends PluginInstrument {
                 }
             }
         }
+    }
+
+    /**
+     * 将Activity反射相关操作分发给插件Activity的基类
+     * @param activity
+     * @return
+     */
+    private boolean dispatchToBaseActivity(Activity activity) {
+
+        return HybirdPlugin.getConfig().getSdkMode() == 2
+                && activity instanceof IPluginBase;
     }
 }

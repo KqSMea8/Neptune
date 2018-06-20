@@ -41,7 +41,7 @@ public class PluginFragmentActivity extends FragmentActivity implements IPluginB
     protected void onDestroy() {
         super.onDestroy();
         if (mDelegate != null) {
-            mDelegate.handleActivityOnDestory(this);
+            mDelegate.handleActivityOnDestroy(this);
         }
     }
 

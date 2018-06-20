@@ -48,7 +48,7 @@ public class HybirdPlugin {
         sGlobalConfig = config != null ? config
                 : new HybirdPluginConfig.HybirdPluginConfigBuilder().build();
 
-        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() == 1;
+        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() > 0;
         if (hookInstr) {
             hookInstrumentation();
         }

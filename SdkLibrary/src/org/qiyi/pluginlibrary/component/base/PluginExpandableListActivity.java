@@ -43,7 +43,7 @@ public class PluginExpandableListActivity extends ExpandableListActivity impleme
     protected void onDestroy() {
         super.onDestroy();
         if (mDelegate != null) {
-            mDelegate.handleActivityOnDestory(this);
+            mDelegate.handleActivityOnDestroy(this);
         }
     }
 

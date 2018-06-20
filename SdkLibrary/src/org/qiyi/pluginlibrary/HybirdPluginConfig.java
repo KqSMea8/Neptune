@@ -14,7 +14,8 @@ public final class HybirdPluginConfig {
      * 插件框架运行模式
      * 0：InstrActivityProxy模式
      * 1：hook Instrumentation方案
-     * 2: 其他方案，待定
+     * 2: hook Instrumentation + Base PluginActivity方案
+     * 3: 其他, 待定
      */
     private int sdkMode;
 

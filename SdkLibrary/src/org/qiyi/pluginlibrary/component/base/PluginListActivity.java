@@ -43,7 +43,7 @@ public class PluginListActivity extends ListActivity implements IPluginBase {
     protected void onDestroy() {
         super.onDestroy();
         if (mDelegate != null) {
-            mDelegate.handleActivityOnDestory(this);
+            mDelegate.handleActivityOnDestroy(this);
         }
     }
 

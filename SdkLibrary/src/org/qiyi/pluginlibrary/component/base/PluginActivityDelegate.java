@@ -47,6 +47,10 @@ class PluginActivityDelegate implements IPluginBase{
             newBase = new PluginContextWrapper(newBase, mPlugin.getPluginPackageName());
         }
 
+        if (PluginDebugLog.isDebug()) {
+            PluginDebugLog.runtimeLog(TAG, "activity createActivityContext() is called(): " + activity.getClass().getName());
+        }
+
         return newBase;
     }
 
@@ -57,6 +61,10 @@ class PluginActivityDelegate implements IPluginBase{
      * @param savedInstanceState
      */
     void handleActivityOnCreateBefore(Activity activity, Bundle savedInstanceState) {
+
+        if (PluginDebugLog.isDebug()) {
+            PluginDebugLog.runtimeLog(TAG, "activity handleActivityOnCreateBefore() is called(): " + activity.getClass().getName());
+        }
 
         if (mPlugin == null) {
             // 通过插件的Intent再去查找一遍
@@ -104,13 +112,8 @@ class PluginActivityDelegate implements IPluginBase{
      */
     void handleActivityOnCreateAfter(Activity activity, Bundle savedInstanceState) {
 
-        Intent intent = activity.getIntent();
-        IntentUtils.resetAction(intent);  //恢复Action
-        NotifyCenter.notifyPluginStarted(activity, intent);
-        NotifyCenter.notifyPluginActivityLoaded(activity);
-
-        if (mPlugin != null) {
-            mPlugin.getActivityStackSupervisor().pushActivityToStack(activity);
+        if (PluginDebugLog.isDebug()) {
+            PluginDebugLog.runtimeLog(TAG, "activity handleActivityOnCreateAfter() is called(): " + activity.getClass().getName());
         }
     }
 
@@ -118,9 +121,10 @@ class PluginActivityDelegate implements IPluginBase{
      * 在插件Activity#onDetorty调用之后执行
      * @param activity
      */
-    void handleActivityOnDestory(Activity activity) {
-        if (mPlugin != null) {
-            mPlugin.getActivityStackSupervisor().popActivityFromStack(activity);
+    void handleActivityOnDestroy(Activity activity) {
+
+        if (PluginDebugLog.isDebug()) {
+            PluginDebugLog.runtimeLog(TAG, "activity handleActivityOnDestroy() is called(): " + activity.getClass().getName());
         }
     }
 
