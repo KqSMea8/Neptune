@@ -4,7 +4,7 @@ import com.android.build.gradle.tasks.ProcessAndroidResources
 
 apply plugin: 'com.android.library'
 
-apply from: rootProject.file("maven_push.gradle")
+apply from: 'maven_push.gradle'
 
 android {
     compileSdkVersion 26
@@ -42,6 +42,7 @@ dependencies {
 }
 
 import com.android.builder.model.Version
+
 def isHigherAGP = compareVersion(Version.ANDROID_GRADLE_PLUGIN_VERSION, "3.0.0") >= 0
 
 afterEvaluate {
@@ -53,10 +54,10 @@ afterEvaluate {
         // 拷贝public.xml
         mergeResTask.doLast {
             copy {
-                int i=0
+                int i = 0
                 from(android.sourceSets.main.res.srcDirs) {
                     include 'values/public.xml'
-                    rename 'public.xml', (i++ == 0? "public.xml": "public_${i}.xml")
+                    rename 'public.xml', (i++ == 0 ? "public.xml" : "public_${i}.xml")
                 }
 
                 into(mergeResTask.outputDir)

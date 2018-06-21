@@ -1,2 +1,12 @@
 
 include ':SdkLibrary'
+include ':PluginGradle'
+
+include 'app'
+include 'baseLib'
+include 'baseRes'
+
+project(':app').projectDir = file('PluginDemo/app')
+project(':baseLib').projectDir = file('PluginDemo/baseLib')
+project(':baseRes').projectDir = file('PluginDemo/baseRes')
+

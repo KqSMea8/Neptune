@@ -1,2 +1,0 @@
-include ':app', ':baseLib'
-include ':baseRes'

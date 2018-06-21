@@ -1,14 +1,16 @@
 apply plugin: 'com.android.application'
 
-apply plugin: 'com.qiyi.plugin'
-
 def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
-qyplugin {
-    pluginMode = isPluginBuild
-    packageId = 0x30
-    hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
-    dexModify = true
+if (isPluginBuild) {
+    apply plugin: 'com.qiyi.plugin'
+
+    qyplugin {
+        pluginMode = isPluginBuild
+        packageId = 0x30
+        hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
+        dexModify = true
+    }
 }
 
 android {
@@ -54,26 +56,25 @@ android {
     }
 }
 
-
-
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     if (isPluginBuild) {
-        provided ('com.qiyi.video.allclasses:support_lib:latest.release')   //support_lib
-        provided ('com.qiyi.video.allclasses:basecore_lib:latest.release')  // basecore_lib
+        provided('com.qiyi.video.allclasses:support_lib:latest.release')   //support_lib
+        provided('com.qiyi.video.allclasses:basecore_lib:latest.release')  // basecore_lib
         compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
-        annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
+        provided('android.app.fw:fw_jar:latest.release')  // fw
+        compile "com.jakewharton:butterknife:${BUTTER_KNIFE_VERSION}"
+        annotationProcessor "com.jakewharton:butterknife-compiler:${BUTTER_KNIFE_VERSION}"
         compile "com.qiyi.video.allclasses:commonres_lib:9.5.0"    // commonres_lib
-        //compile project(":baseRes")
     } else {
         compile "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
         compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
         compile "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
         compile "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
         compile 'com.facebook.fresco:fresco:1.2.0'
-        compile 'com.jakewharton:butterknife:8.8.1'
-        annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
-        implementation 'com.airbnb.android:lottie:2.3.1'
+        compile "com.jakewharton:butterknife:${BUTTER_KNIFE_VERSION}"
+        annotationProcessor "com.jakewharton:butterknife-compiler:${BUTTER_KNIFE_VERSION}"
+        compile 'com.airbnb.android:lottie:2.3.1'
     }
     compile project(":baseLib")
 }
