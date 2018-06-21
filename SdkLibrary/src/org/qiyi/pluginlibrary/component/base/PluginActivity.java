@@ -8,7 +8,6 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
 /**
  * 插件内的BaseActivity, 提供给插件方继承此类，
@@ -80,17 +79,6 @@ public class PluginActivity extends Activity implements IPluginBase{
     ////////////////////////////////////////////////////////////////////
     // 以下是IPluginBase接口实现
     ///////////////////////////////////////////////////////////////////
-
-    @Override
-    public Context getOriginalContext() {
-        return ContextUtils.getOriginalContext(this);
-    }
-
-    @Override
-    public ResourcesToolForPlugin getHostResourceTool() {
-        return ContextUtils.getHostResourceTool(this);
-    }
-
     @Override
     public String getPluginPackageName() {
         String pkgName = mDelegate != null ? mDelegate.getPluginPackageName() : ContextUtils.getPluginPackageName(this);
@@ -98,12 +86,5 @@ public class PluginActivity extends Activity implements IPluginBase{
             pkgName = getPackageName();
         }
         return pkgName;
-    }
-
-    @Override
-    public void exitApp() {
-        if (mDelegate != null) {
-            mDelegate.exitApp();
-        }
     }
 }

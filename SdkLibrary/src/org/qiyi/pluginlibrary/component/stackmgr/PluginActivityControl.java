@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
@@ -685,6 +686,9 @@ public class PluginActivityControl implements PluginActivityCallback {
      * @param loadedApk
      */
     public static void changeActivityInfo(Activity activity, String className, PluginLoadedApk loadedApk) {
+        if (loadedApk == null || TextUtils.isEmpty(className)) {
+            return;
+        }
 
         PluginDebugLog.runtimeFormatLog(TAG, "changeActivityInfo activity name:%s, pkgName:%s", className, loadedApk.getPluginPackageName());
         ActivityInfo origActInfo = ReflectionUtils.on(activity).get("mActivityInfo");

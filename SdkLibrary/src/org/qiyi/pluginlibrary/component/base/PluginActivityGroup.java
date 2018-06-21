@@ -1,6 +1,6 @@
 package org.qiyi.pluginlibrary.component.base;
 
-import android.app.ExpandableListActivity;
+import android.app.ActivityGroup;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,11 +11,20 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
 
 /**
  * author: liuchun
- * date: 2018/6/14
+ * date: 2018/6/21
  */
-public class PluginExpandableListActivity extends ExpandableListActivity implements IPluginBase {
+@Deprecated
+public class PluginActivityGroup extends ActivityGroup implements IPluginBase{
 
     private PluginActivityDelegate mDelegate;
+
+    public PluginActivityGroup() {
+        super();
+    }
+
+    public PluginActivityGroup(boolean singleActivityMode) {
+        super(singleActivityMode);
+    }
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -24,6 +33,8 @@ public class PluginExpandableListActivity extends ExpandableListActivity impleme
         newBase = mDelegate.createActivityContext(this, newBase);
 
         super.attachBaseContext(newBase);
+
+        // TODO FIXME, we need to replace the mApplication in Activity?
     }
 
     @Override

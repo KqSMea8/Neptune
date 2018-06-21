@@ -5,7 +5,6 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApkVariant
 import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.internal.api.ApplicationVariantImpl
-import com.android.build.gradle.internal.scope.AndroidTask
 import com.android.build.gradle.tasks.ManifestProcessorTask
 import com.android.build.gradle.tasks.MergeResources
 import com.android.build.gradle.tasks.ProcessAndroidResources
@@ -65,12 +64,19 @@ class TaskHookerManager {
                     Object task = appVariant.getVariantData().getScope().manifestProcessorTask
                     if (task instanceof ManifestProcessorTask) {
                         manifestTask = (ManifestProcessorTask)task
-                    } else if (task instanceof AndroidTask) {
-                        // AGP 3.0.1 返回的是AndroidTask类型
-                        String manifestTaskName = task.name
-                        manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
                     } else {
-                        throw new GradleException("ManifestProcessorTask unknown task type ${task.getClass().name}")
+                        // AGP 3.0.1 返回的是AndroidTask类型, AndroidTask类在3.1中被删除了，这里使用反射创建
+                        try {
+                            Class<?> clazz = Class.forName("com.android.build.gradle.internal.scope.AndroidTask")
+                            if (clazz.isInstance(task)) {
+                                String manifestTaskName = task.name
+                                manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
+                            } else  {
+                                throw new GradleException("ManifestProcessorTask unknown task type ${task.getClass().name}")
+                            }
+                        } catch (ClassNotFoundException e) {
+                            throw new GradleException("com.android.build.gradle.internal.scope.AndroidTask not found")
+                        }
                     }
                 } else {
                     def outputScope = scope.getVariantData().getMainOutput().getScope()
@@ -149,6 +155,10 @@ class TaskHookerManager {
                 // AGP 3.0.0, changed
                 println manifestProcessorTask.manifestOutputDirectory
                 manifest = new File(manifestProcessorTask.manifestOutputDirectory, "AndroidManifest.xml")
+            }
+
+            if (!manifest.exists()) {
+                throw new GradleException("AndroidManifest.xml not exist for ManifestProcessTask")
             }
 
             def android = new Namespace('http://schemas.android.com/apk/res/android', 'android')
@@ -407,7 +417,7 @@ class TaskHookerManager {
     }
 
     private File getAapt2File(ProcessAndroidResources task) {
-        def path = null
+        String path = null
         try {
             def buildToolInfo = task.getBuilder().getBuildToolInfo()
             Map paths = buildToolInfo.mPaths

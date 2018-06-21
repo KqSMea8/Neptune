@@ -1,9 +1,9 @@
 package org.qiyi.pluginlibrary.component.base;
 
-import android.app.ExpandableListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.preference.PreferenceActivity;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
@@ -11,9 +11,9 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
 
 /**
  * author: liuchun
- * date: 2018/6/14
+ * date: 2018/6/21
  */
-public class PluginExpandableListActivity extends ExpandableListActivity implements IPluginBase {
+public class PluginPreferenceActivity extends PreferenceActivity implements IPluginBase{
 
     private PluginActivityDelegate mDelegate;
 
@@ -74,6 +74,7 @@ public class PluginExpandableListActivity extends ExpandableListActivity impleme
     ////////////////////////////////////////////////////////////////////
     // 以下是IPluginBase接口实现
     ///////////////////////////////////////////////////////////////////
+
     @Override
     public String getPluginPackageName() {
         String pkgName = mDelegate != null ? mDelegate.getPluginPackageName() : ContextUtils.getPluginPackageName(this);

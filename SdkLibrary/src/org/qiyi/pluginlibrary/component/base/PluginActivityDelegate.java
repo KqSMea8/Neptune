@@ -10,10 +10,9 @@ import android.view.ContextThemeWrapper;
 
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
-import org.qiyi.pluginlibrary.runtime.NotifyCenter;
+import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -26,10 +25,9 @@ import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
  * author: liuchun
  * date: 2018/6/13
  */
-class PluginActivityDelegate implements IPluginBase{
+class PluginActivityDelegate implements InterfaceToGetHost {
     private static final String TAG = "PluginActivityDelegate";
 
-    private Activity mActivity;
     private PluginLoadedApk mPlugin;
     /**
      * 为插件Activity构造一个插件对应的Base Context
@@ -40,7 +38,6 @@ class PluginActivityDelegate implements IPluginBase{
      */
     Context createActivityContext(Activity activity, Context newBase) {
         // 通过插件Activity的ClassLoader查找插件实例，这个需要配合新的ClassLoader方案
-        mActivity = activity;
         mPlugin = PluginManager.findPluginLoadedApkByClassLoader(activity.getClass().getClassLoader());
         if (mPlugin != null) {
             // 生成插件的Base Context
@@ -94,7 +91,7 @@ class PluginActivityDelegate implements IPluginBase{
         Context mBase = activity.getBaseContext();
         if (mBase instanceof PluginContextWrapper) {
             PluginDebugLog.runtimeLog(TAG, "activity " + activity.getClass().getName() + " base context already be replaced");
-        } else {
+        } else if (mPlugin != null){
             mBase = new PluginContextWrapper(mBase, mPlugin.getPluginPackageName());
             // 反射替换mBase成员变量
             ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", mBase);
@@ -130,12 +127,20 @@ class PluginActivityDelegate implements IPluginBase{
 
     @Override
     public Context getOriginalContext() {
-        return ContextUtils.getOriginalContext(mActivity);
+
+        if (mPlugin != null) {
+            return mPlugin.getHostContext();
+        }
+        return null;
     }
 
     @Override
     public ResourcesToolForPlugin getHostResourceTool() {
-        return ContextUtils.getHostResourceTool(mActivity);
+
+        if (mPlugin != null) {
+            return mPlugin.getHostResourceTool();
+        }
+        return null;
     }
 
     @Override

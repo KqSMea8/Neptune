@@ -1,6 +1,6 @@
 package org.qiyi.pluginlibrary.component.base;
 
-import android.app.ExpandableListActivity;
+import android.app.TabActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,9 +11,10 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
 
 /**
  * author: liuchun
- * date: 2018/6/14
+ * date: 2018/6/21
  */
-public class PluginExpandableListActivity extends ExpandableListActivity implements IPluginBase {
+@Deprecated
+public class PluginTabActivity extends TabActivity implements IPluginBase{
 
     private PluginActivityDelegate mDelegate;
 
@@ -24,6 +25,8 @@ public class PluginExpandableListActivity extends ExpandableListActivity impleme
         newBase = mDelegate.createActivityContext(this, newBase);
 
         super.attachBaseContext(newBase);
+
+        // TODO FIXME, we need to replace the mApplication in Activity?
     }
 
     @Override

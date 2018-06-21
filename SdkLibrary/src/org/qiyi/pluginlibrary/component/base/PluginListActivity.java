@@ -8,7 +8,6 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
-import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
 /**
  * author: liuchun
@@ -77,28 +76,11 @@ public class PluginListActivity extends ListActivity implements IPluginBase {
     ///////////////////////////////////////////////////////////////////
 
     @Override
-    public Context getOriginalContext() {
-        return ContextUtils.getOriginalContext(this);
-    }
-
-    @Override
-    public ResourcesToolForPlugin getHostResourceTool() {
-        return ContextUtils.getHostResourceTool(this);
-    }
-
-    @Override
     public String getPluginPackageName() {
         String pkgName = mDelegate != null ? mDelegate.getPluginPackageName() : ContextUtils.getPluginPackageName(this);
         if (TextUtils.isEmpty(pkgName)) {
             pkgName = getPackageName();
         }
         return pkgName;
-    }
-
-    @Override
-    public void exitApp() {
-        if (mDelegate != null) {
-            mDelegate.exitApp();
-        }
     }
 }

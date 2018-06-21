@@ -19,6 +19,9 @@ class DexProcessor {
             'android.app.Activity'                      : 'org.qiyi.pluginlibrary.component.base.PluginActivity',
             'android.app.ListActivity'                  : 'org.qiyi.pluginlibrary.component.base.PluginListActivity',
             'android.app.ExpandableListActivity'        : 'org.qiyi.pluginlibrary.component.base.PluginExpandableListActivity',
+            'android.preference.PreferenceActivity'     : 'org.qiyi.pluginlibrary.component.base.PluginPreferenceActivity',
+            'android.app.ActivityGroup'                 : 'org.qiyi.pluginlibrary.component.base.PluginActivityGroup',
+            'android.app.TabActivity'                   : 'org.qiyi.pluginlibrary.component.base.PluginTabActivity',
             'android.support.v4.app.FragmentActivity'   : 'org.qiyi.pluginlibrary.component.base.PluginFragmentActivity',
             'android.support.v7.app.AppCompatActivity'  : 'org.qiyi.pluginlibrary.component.base.PluginAppCompatActivity'
     ]

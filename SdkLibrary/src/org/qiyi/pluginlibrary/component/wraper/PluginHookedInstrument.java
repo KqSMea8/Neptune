@@ -50,6 +50,12 @@ public class PluginHookedInstrument extends PluginInstrument {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
                     activity.setIntent(intent);
 
+                    if (!dispatchToBaseActivity(activity)) {
+                        // 这里需要替换Resources，是因为ContextThemeWrapper会缓存一个Resource对象，而在Activity#attach()和
+                        // Activity#onCreate()之间，系统会调用Activity#setTheme()初始化主题，Android 4.1+
+                        ReflectionUtils.on(activity).setNoException("mResources", loadedApk.getPluginResource());
+                    }
+
                     return activity;
                 }
             }
@@ -72,13 +78,14 @@ public class PluginHookedInstrument extends PluginInstrument {
                 if (loadedApk != null) {
 
                     if (!dispatchToBaseActivity(activity)) {
-                        // 如果分发了插件Activity的基类了，就不需要在这里反射hook替换相关成员变量了
+                        // 如果分发给插件Activity的基类了，就不需要在这里反射hook替换相关成员变量了
                         try {
                             ReflectionUtils activityRef = ReflectionUtils.on(activity);
                             activityRef.setNoException("mResources", loadedApk.getPluginResource());
                             activityRef.setNoException("mApplication", loadedApk.getPluginApplication());
                             Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
                             ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
+                            // 5.0以下ContextThemeWrapper内会保存一个mBase，也需要反射替换掉
                             ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);
                             ReflectionUtils.on(activity).setNoException("mInstrumentation", loadedApk.getPluginInstrument());
 
