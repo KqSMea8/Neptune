@@ -5,16 +5,17 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
-import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.os.PatternMatcher;
 import android.text.TextUtils;
 import android.util.Log;
 
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,21 +50,22 @@ public class ManifestParser {
     public ManifestParser(Context context, String apkPath) {
 
         final PackageManager pm = context.getPackageManager();
-        PackageInfo pi = pm.getPackageArchiveInfo(apkPath, 0);
+        PackageInfo pi = pm.getPackageArchiveInfo(apkPath, PackageManager.GET_ACTIVITIES);
         pi.applicationInfo.sourceDir = apkPath;
         pi.applicationInfo.publicSourceDir = apkPath;
 
         try {
-            Resources res = pm.getResourcesForApplication(pi.applicationInfo);
-            AssetManager am = res.getAssets();
+//            Resources res = pm.getResourcesForApplication(pi.applicationInfo);
+//            AssetManager am = res.getAssets();
+            AssetManager am = AssetManager.class.newInstance();
+            // TODO FIXME here, not use reflect
+            Method addAssetPath = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
+            addAssetPath.setAccessible(true);
+            int cookie = (int)addAssetPath.invoke(am, apkPath);
 
-            XmlResourceParser parser = am.openXmlResourceParser(ANDROID_MANIFEST_FILENAME);
+            XmlResourceParser parser = am.openXmlResourceParser(cookie, ANDROID_MANIFEST_FILENAME);
             parseManifest(parser);
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (XmlPullParserException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
