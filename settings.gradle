@@ -2,11 +2,14 @@
 include ':SdkLibrary'
 include ':PluginGradle'
 
-include 'app'
-include 'baseLib'
-include 'baseRes'
+include ':HostApp'
+project(':HostApp').projectDir = file('samples/HostApp')
 
-project(':app').projectDir = file('PluginDemo/app')
-project(':baseLib').projectDir = file('PluginDemo/baseLib')
-project(':baseRes').projectDir = file('PluginDemo/baseRes')
+include ':PluginApp'
+project(':PluginApp').projectDir = file('samples/PluginApp')
 
+
+include ':AndroidSupportSample'
+project(':AndroidSupportSample').projectDir = file('samples/AndroidSupport/app')
+include ':AndroidSupportRes'
+project(':AndroidSupportRes').projectDir = file("samples/AndroidSupport/baseres")
