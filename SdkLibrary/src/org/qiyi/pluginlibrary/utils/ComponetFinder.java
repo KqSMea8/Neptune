@@ -55,6 +55,7 @@ public class ComponetFinder implements IIntentConstant {
         if (mIntent == null || mLoadedApk == null) {
             return;
         }
+
         if (mIntent.getComponent() == null) {
             //隐式启动
             ServiceInfo mServiceInfo = mLoadedApk.getPluginPackageInfo().resolveService(mIntent);
@@ -322,7 +323,7 @@ public class ComponetFinder implements IIntentConstant {
 
         if (actInfo != null) {
             if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                PluginDebugLog.runtimeLog(TAG, "getProxyActivityClsName activiy screenOrientation: "
+                PluginDebugLog.runtimeLog(TAG, "getProxyActivityClsName activity screenOrientation: "
                         + actInfo.screenOrientation + " isHandleConfigChange = false");
                 isHandleConfigChange = false;
             }
