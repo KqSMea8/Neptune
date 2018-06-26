@@ -639,9 +639,9 @@ public class PluginLoadedApk implements IIntentConstant {
                         } else {
                             PluginDebugLog.runtimeFormatLog(TAG, "handleNewDependencies inject into %s failed", mPluginPackageName);
                         }
-                            return false;
-                        }
+                        return false;
                     }
+                }
                 libraryInfo = null;
                 injectResult = null;
             }

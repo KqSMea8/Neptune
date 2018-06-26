@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.runtime;
 
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
@@ -38,5 +39,27 @@ public class NotifyCenter {
                 IIntentConstant.EXTRA_SHOW_LOADING))) {
             context.sendBroadcast(new Intent(IIntentConstant.EXTRA_SHOW_LOADING));
         }
+    }
+
+    /**
+     * 通知插件启动错误
+     *
+     * @param context Context
+     */
+    public static void notifyStartPluginError(Context context) {
+        Intent intent = new Intent();
+        intent.setAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
+        context.sendBroadcast(intent);
+    }
+
+    /**
+     * 通知 Service 绑定成功
+     * @param context context
+     * @param service service class
+     */
+    public static void notifyServiceConnected(Context context, Class<? extends Service> service) {
+        Intent intent = new Intent(IIntentConstant.ACTION_SERVICE_CONNECTED);
+        intent.putExtra(IIntentConstant.EXTRA_SERVICE_CLASS, service);
+        context.sendBroadcast(intent);
     }
 }
