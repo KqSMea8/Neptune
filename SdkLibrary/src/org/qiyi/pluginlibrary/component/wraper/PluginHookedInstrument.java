@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.view.ContextThemeWrapper;
 
@@ -30,6 +31,10 @@ public class PluginHookedInstrument extends PluginInstrument {
 
     private static final String TAG = "PluginHookedInstrument";
     private PluginActivityRecoveryHelper mRecoveryHelper = new PluginActivityRecoveryHelper();
+    /**
+     * activity.setIntent 后可能会被系统恢复，这里保存一个 mapping，再设置回去
+     */
+    private ArrayMap<Activity, Intent> activityIntentMapping = new ArrayMap<>();
 
     public PluginHookedInstrument(Instrumentation hostInstr) {
         super(hostInstr);
@@ -50,6 +55,7 @@ public class PluginHookedInstrument extends PluginInstrument {
                 if (loadedApk != null) {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
                     activity.setIntent(intent);
+                    activityIntentMapping.put(activity, intent);
 
                     if (!dispatchToBaseActivity(activity)) {
                         // 这里需要替换Resources，是因为ContextThemeWrapper会缓存一个Resource对象，而在Activity#attach()和
@@ -76,6 +82,11 @@ public class PluginHookedInstrument extends PluginInstrument {
             mRecoveryHelper.saveIcicle(icicle);
             mHostInstr.callActivityOnCreate(activity, null);
             return;
+        }
+        // newActivity 中的 activity.setIntent 后可能会被系统恢复，这里再设置回去
+        Intent mappingIntent = activityIntentMapping.remove(activity);
+        if (mappingIntent != null) {
+            activity.setIntent(mappingIntent);
         }
         final Intent intent = activity.getIntent();
         String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
