@@ -31,7 +31,7 @@ import java.io.File;
 public class HybirdPlugin {
     private static final String TAG = "HybirdPlugin";
 
-    private static Context sAppContext;
+    private static Context sHostContext;
 
     private static HybirdPluginConfig sGlobalConfig;
 
@@ -44,21 +44,22 @@ public class HybirdPlugin {
      */
     public static void init(Application app, HybirdPluginConfig config) {
 
-        sAppContext = app;
+        sHostContext = app;
         sGlobalConfig = config != null ? config
                 : new HybirdPluginConfig.HybirdPluginConfigBuilder().build();
 
-        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() == 1;
+        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() > 0;
         if (hookInstr) {
             hookInstrumentation();
         }
 
-        PluginLoadedApk.sUseNewClassLoader = sGlobalConfig.shouldUseNewCLMode();
-        PluginLoadedApk.sUseNewResCreator = sGlobalConfig.shouldUseNewResGen();
         // 调用getInstance()方法会初始化bindService
         PluginPackageManagerNative.getInstance(app).setPackageInfoManager(sGlobalConfig.getVerifyPluginInfo());
     }
 
+    public static Context getHostContext() {
+        return sHostContext;
+    }
 
     public static HybirdPluginConfig getConfig() {
         return sGlobalConfig;
@@ -140,7 +141,7 @@ public class HybirdPlugin {
      *
      * @param apkPath
      */
-    public static void install(String apkPath) {
+    public static void install(Context context, String apkPath) {
 
         File apkFile = new File(apkPath);
         if (!apkFile.exists()) {
@@ -148,46 +149,52 @@ public class HybirdPlugin {
         }
 
         PluginLiteInfo liteInfo = new PluginLiteInfo();
-        PackageInfo packageInfo = sAppContext.getPackageManager()
+        Context mContext = ensureContext(context);
+        PackageInfo packageInfo = mContext.getPackageManager()
                 .getPackageArchiveInfo(apkPath, 0);
         if (packageInfo != null) {
             liteInfo.mPath = apkPath;
             liteInfo.packageName = packageInfo.packageName;
             liteInfo.pluginVersion = packageInfo.versionName;
-            install(liteInfo, null);
+            install(mContext, liteInfo, null);
         }
     }
 
     /**
      * 安装一个插件
+     * @param context
      * @param info
      * @param callBack
      */
-    public static void install(PluginLiteInfo info, IInstallCallBack callBack) {
+    public static void install(Context context, PluginLiteInfo info, IInstallCallBack callBack) {
         // install
-        PluginPackageManagerNative.getInstance(sAppContext).install(info, callBack);
+        Context mContext = ensureContext(context);
+        PluginPackageManagerNative.getInstance(mContext).install(info, callBack);
     }
 
 
     /**
      * 根据包名卸载一个插件
+     * @param context
      * @param pkgName
      */
-    public static void uninstall(String pkgName) {
-        PluginLiteInfo info = PluginPackageManagerNative.getInstance(sAppContext).getPackageInfo(pkgName);
+    public static void uninstall(Context context, String pkgName) {
+        Context mContext = ensureContext(context);
+        PluginLiteInfo info = PluginPackageManagerNative.getInstance(mContext).getPackageInfo(pkgName);
         if (info != null) {
-            uninstall(info, null);
+            uninstall(mContext, info, null);
         }
     }
 
     /**
      * 卸载一个插件
+     * @param context
      * @param info
      * @param callBack
      */
-    public static void uninstall(PluginLiteInfo info, IPluginUninstallCallBack callBack) {
+    public static void uninstall(Context context, PluginLiteInfo info, IPluginUninstallCallBack callBack) {
         // uninstall
-        PluginPackageManagerNative.getInstance(sAppContext).uninstall(info, callBack);
+        PluginPackageManagerNative.getInstance(sHostContext).uninstall(info, callBack);
     }
 
     /**
@@ -227,33 +234,47 @@ public class HybirdPlugin {
     /**
      * 判断插件是否安装
      *
+     * @param context
      * @param pkgName
      * @return
      */
-    public static boolean isPackageInstalled(String pkgName) {
+    public static boolean isPackageInstalled(Context context, String pkgName) {
 
-        return PluginPackageManagerNative.getInstance(sAppContext).isPackageInstalled(pkgName);
+        Context mContext = ensureContext(context);
+        return PluginPackageManagerNative.getInstance(mContext).isPackageInstalled(pkgName);
     }
 
     /**
      * 判断插件是否可用
-     *
+     * @param context
      * @param pkgName
      * @return
      */
-    public static boolean isPackageAvailable(String pkgName) {
+    public static boolean isPackageAvailable(Context context, String pkgName) {
 
-        return PluginPackageManagerNative.getInstance(sAppContext).isPackageAvailable(pkgName);
+        Context mContext = ensureContext(context);
+        return PluginPackageManagerNative.getInstance(mContext).isPackageAvailable(pkgName);
     }
 
     /**
      * 获取插件PluginLiteInfo
      *
+     * @param context
      * @param pkgName
      * @return
      */
-    public static PluginLiteInfo getPluginInfo(String pkgName) {
+    public static PluginLiteInfo getPluginInfo(Context context, String pkgName) {
 
-        return PluginPackageManagerNative.getInstance(sAppContext).getPackageInfo(pkgName);
+        Context mContext = ensureContext(context);
+        return PluginPackageManagerNative.getInstance(mContext).getPackageInfo(pkgName);
+    }
+
+
+
+    private static Context ensureContext(Context originContext) {
+        if (originContext != null) {
+            return originContext;
+        }
+        return sHostContext;
     }
 }

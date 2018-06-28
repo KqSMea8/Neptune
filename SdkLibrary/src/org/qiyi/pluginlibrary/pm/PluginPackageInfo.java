@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -134,7 +135,14 @@ public class PluginPackageInfo implements Parcelable {
                     }
                 }
             }
-            ResolveInfoUtil.parseResolveInfo(context, apkPath, this);
+
+            if (HybirdPlugin.getConfig().shouldUseNewResolveMethod()) {
+                PluginDebugLog.runtimeLog(TAG, "resolve component info with our ManifestParser");
+                ResolveInfoUtil.parseNewResolveInfo(context, apkPath, this);
+            } else {
+                PluginDebugLog.runtimeLog(TAG, "resolve component info by @hide api PackageParser#parsePacakge");
+                ResolveInfoUtil.parseResolveInfo(context, apkPath, this);
+            }
 
             Intent launchIntent = new Intent(Intent.ACTION_MAIN);
             launchIntent.addCategory(Intent.CATEGORY_DEFAULT);

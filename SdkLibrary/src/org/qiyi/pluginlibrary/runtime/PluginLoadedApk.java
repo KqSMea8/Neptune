@@ -71,10 +71,6 @@ public class PluginLoadedApk implements IIntentConstant {
      * 保存所有的插件ClassLoader
      */
     private static Map<String, DexClassLoader> sAllPluginClassLoader = new ConcurrentHashMap<>();
-    /** 使用新的ClassLoader模型 */
-    public static boolean sUseNewClassLoader = false;
-    /** 使用新的Resource构造方法 */
-    public static boolean sUseNewResCreator = false;
 
     /** 宿主的Context */
     private final Context mHostContext;
@@ -153,7 +149,7 @@ public class PluginLoadedApk implements IIntentConstant {
         // 提取插件Apk的信息
         extraPluginPackageInfo(this.mPluginPackageName);
         // 创建插件ClassLoader
-        if (sUseNewClassLoader) {
+        if (HybirdPlugin.getConfig().shouldUseNewCLMode()) {
             if (!createNewClassLoader()) {
                 throw new RuntimeException("ProxyEnvironmentNew init failed for createNewClassLoader failed:" + " apkFile: " + mPluginPath + " pluginPakName: " + mPluginPackageName);
             }
@@ -164,14 +160,14 @@ public class PluginLoadedApk implements IIntentConstant {
         }
         PluginDebugLog.runtimeFormatLog(TAG, "plugin %s, class loader: %s", mPluginPackageName, mPluginClassLoader.toString());
         // 创建插件资源
-        if (sUseNewResCreator) {
+        if (HybirdPlugin.getConfig().shouldUseNewResGen()) {
             createNewPluginResource();
         } else {
             createPluginResource();
         }
-        // 插件Application的base Context
+        // 插件Application的Base Context
         this.mPluginAppContext = new PluginContextWrapper(((Application) mHostContext)
-                .getBaseContext(), mPluginPackageName);
+                .getBaseContext(), mPluginPackageName, true);
         // 注册静态广播
         installStaticReceiver();
     }

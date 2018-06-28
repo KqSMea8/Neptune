@@ -5,12 +5,16 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -21,7 +25,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.plugin.PluginActivityCallback;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.exception.ReflectException;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
@@ -30,6 +36,7 @@ import org.qiyi.pluginlibrary.utils.VersionUtils;
  * 插件的控制器<br> 派发插件事件和控制插件生命周期
  */
 public class PluginActivityControl implements PluginActivityCallback {
+    private static final String TAG = "PluginActivityControl";
     public static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>();
     Activity mProxy;// 代理Activity
     Activity mPlugin;// 插件Activity
@@ -93,6 +100,7 @@ public class PluginActivityControl implements PluginActivityCallback {
             mPluginRef.set("mWindow", mProxy.getWindow());
             mPluginRef.set("mWindowManager", mProxy.getWindow().getWindowManager());
             mPlugin.getWindow().setCallback(mPlugin);
+            // 替换ContextImpl的OuterContext，插件Activity的LayoutInflater才能正常使用
             ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", sMethods, mPlugin);
 
         } catch (ReflectException e) {
@@ -667,5 +675,96 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnActivityResult(int requestCode, int resultCode, Intent data) {
         getPluginRef().call("onActivityResult", sMethods, requestCode, resultCode, data);
+    }
+
+    /**
+     * 修改插件Activity的ActivityInfo
+     * 执行Activity#attach()和ActivityThread启动Activity过程中的逻辑
+     *
+     * @param activity
+     * @param className
+     * @param loadedApk
+     */
+    public static void changeActivityInfo(Activity activity, String className, PluginLoadedApk loadedApk) {
+        if (loadedApk == null || TextUtils.isEmpty(className)) {
+            return;
+        }
+
+        PluginDebugLog.runtimeFormatLog(TAG, "changeActivityInfo activity name:%s, pkgName:%s", className, loadedApk.getPluginPackageName());
+        ActivityInfo origActInfo = ReflectionUtils.on(activity).get("mActivityInfo");
+        ActivityInfo actInfo = loadedApk.getActivityInfoByClassName(className);
+        if (actInfo != null) {
+            if (loadedApk.getPackageInfo() != null) {
+                actInfo.applicationInfo = loadedApk.getPackageInfo().applicationInfo;
+            }
+            if (origActInfo != null) {
+                origActInfo.applicationInfo = actInfo.applicationInfo;
+                origActInfo.configChanges = actInfo.configChanges;
+                origActInfo.descriptionRes = actInfo.descriptionRes;
+                origActInfo.enabled = actInfo.enabled;
+                origActInfo.exported = actInfo.exported;
+                origActInfo.flags = actInfo.flags;
+                origActInfo.icon = actInfo.icon;
+                origActInfo.labelRes = actInfo.labelRes;
+                origActInfo.logo = actInfo.logo;
+                origActInfo.metaData = actInfo.metaData;
+                origActInfo.name = actInfo.name;
+                origActInfo.nonLocalizedLabel = actInfo.nonLocalizedLabel;
+                origActInfo.packageName = actInfo.packageName;
+                origActInfo.permission = actInfo.permission;
+                origActInfo.screenOrientation = actInfo.screenOrientation;
+                origActInfo.softInputMode = actInfo.softInputMode;
+                origActInfo.targetActivity = actInfo.targetActivity;
+                origActInfo.taskAffinity = actInfo.taskAffinity;
+                origActInfo.theme = actInfo.theme;
+            }
+
+            // 修改Window的属性
+            Window window = activity.getWindow();
+            if (actInfo.softInputMode != WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED) {
+                window.setSoftInputMode(actInfo.softInputMode);
+            }
+            if (actInfo.uiOptions != 0) {
+                window.setUiOptions(actInfo.uiOptions);
+            }
+            if (Build.VERSION.SDK_INT >= 26) {
+                window.setColorMode(actInfo.colorMode);
+            }
+        }
+
+        // 修改插件Activity的主题
+        int resTheme = loadedApk.getActivityThemeResourceByClassName(className);
+        if (resTheme != 0) {
+            activity.setTheme(resTheme);
+        }
+
+        if (origActInfo != null) {
+            // handle ActionBar title
+            if (origActInfo.nonLocalizedLabel != null) {
+                activity.setTitle(origActInfo.nonLocalizedLabel);
+            } else if (origActInfo.labelRes != 0) {
+                activity.setTitle(origActInfo.labelRes);
+            } else if (origActInfo.applicationInfo != null) {
+                if (origActInfo.applicationInfo.nonLocalizedLabel != null) {
+                    activity.setTitle(origActInfo.applicationInfo.nonLocalizedLabel);
+                } else if (origActInfo.applicationInfo.labelRes != 0) {
+                    activity.setTitle(origActInfo.applicationInfo.labelRes);
+                } else {
+                    activity.setTitle(origActInfo.applicationInfo.name);
+                }
+            } else {
+                activity.setTitle(origActInfo.name);
+            }
+        }
+
+        if (actInfo != null) {
+            // copy from VirtualApk, is it really need?
+            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+                activity.setRequestedOrientation(actInfo.screenOrientation);
+            }
+            PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +
+                    actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
+                    + ", logo = " + actInfo.logo + ", labelRes=" + actInfo.labelRes);
+        }
     }
 }

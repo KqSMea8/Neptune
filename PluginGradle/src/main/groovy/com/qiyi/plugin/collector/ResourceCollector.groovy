@@ -126,15 +126,9 @@ class ResourceCollector {
 
         Set<AndroidDependency> androidDependencies = [] as Set<AndroidDependency>
          if (pluginExt.isHigherAGP) {
-            // TODO read Android Gradle Plugin 3.0.0 source code to find solution
+            // AGP 3.0.0, manually gather the dependencies
             DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
             androidDependencies = dependencyCollector.androidDependencies
-//            Configuration configuration = project.configurations.getByName("${apkVariant.name}CompileClasspath")
-//            if (configuration != null) {
-//                configuration.resolvedConfiguration.firstLevelModuleDependencies.each {
-//                    collectRetainedAars(it, androidDependencies)
-//                }
-//            }
         } else {
             androidDependencies = processResTask.androidDependencies
         }

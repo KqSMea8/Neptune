@@ -14,7 +14,8 @@ public final class HybirdPluginConfig {
      * 插件框架运行模式
      * 0：InstrActivityProxy模式
      * 1：hook Instrumentation方案
-     * 2: 其他方案，待定
+     * 2: hook Instrumentation + Base PluginActivity方案
+     * 3: 其他, 待定
      */
     private int sdkMode;
 
@@ -24,6 +25,12 @@ public final class HybirdPluginConfig {
     // 是否使用新的资源方式
     private boolean useNewResGen;
 
+    // 是否使用新的组件解析方式
+    private boolean useNewCompResolve;
+
+    // 是否支持MultiDex安装
+    private boolean supportMultiDex;
+
     private IVerifyPluginInfo mVerifyPluginInfo;
 
 
@@ -31,6 +38,8 @@ public final class HybirdPluginConfig {
         this.sdkMode = builder.sdkMode;
         this.useNewCLMode = builder.useNewCLMode;
         this.useNewResGen = builder.useNewResGen;
+        this.useNewCompResolve = builder.useNewCompResolve;
+        this.supportMultiDex = builder.supportMultiDex;
         this.mVerifyPluginInfo = builder.verifyPluginInfo;
     }
 
@@ -47,6 +56,14 @@ public final class HybirdPluginConfig {
         return useNewResGen;
     }
 
+    public boolean shouldUseNewResolveMethod() {
+        return useNewCompResolve;
+    }
+
+    public boolean shouldSupportMultidex() {
+        return supportMultiDex;
+    }
+
     public IVerifyPluginInfo getVerifyPluginInfo() {
         return mVerifyPluginInfo;
     }
@@ -57,6 +74,8 @@ public final class HybirdPluginConfig {
         int sdkMode = 0;
         boolean useNewCLMode = false;
         boolean useNewResGen = false;
+        boolean useNewCompResolve = false;
+        boolean supportMultiDex = false;
         IVerifyPluginInfo verifyPluginInfo;
 
         public HybirdPluginConfigBuilder configSdkMode(int sdkMode) {
@@ -71,6 +90,16 @@ public final class HybirdPluginConfig {
 
         public HybirdPluginConfigBuilder useNewResMode(boolean resGen) {
             this.useNewResGen = resGen;
+            return this;
+        }
+
+        public HybirdPluginConfigBuilder useNewCompResolveMode(boolean resolve) {
+            this.useNewCompResolve = resolve;
+            return this;
+        }
+
+        public HybirdPluginConfigBuilder supportMultiDex(boolean multiDex) {
+            this.supportMultiDex = multiDex;
             return this;
         }
 

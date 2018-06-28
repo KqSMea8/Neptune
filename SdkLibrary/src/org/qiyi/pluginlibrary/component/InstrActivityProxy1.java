@@ -278,16 +278,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
-    /**
-     * Override Oppo method in Context Resolve cann't start plugin on oppo
-     * devices, true or false both OK, false as the temporary result
-     *
-     * @return
-     */
-    public boolean isOppoStyle() {
-        return false;
-    }
-
     @Override
     public Resources.Theme getTheme() {
         if (mLoadedApk == null) {
