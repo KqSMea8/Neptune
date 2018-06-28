@@ -4,9 +4,11 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.assist.AssistContent;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
@@ -24,31 +26,37 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 
-import org.qiyi.pluginlibrary.error.ErrorType;
+import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
+import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
+import org.qiyi.pluginlibrary.utils.Util;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -57,6 +65,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 
 /**
@@ -65,11 +74,36 @@ import java.lang.reflect.Field;
 public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost {
     private static final String TAG = InstrActivityProxy1.class.getSimpleName();
 
+    /**
+     * 保留 savedInstanceState，在真正恢复的时候模拟恢复
+     *
+     * 已知问题：如果 savedInstanceState 包含自定义 class 会出错，考虑到代理方案可能会下线，暂不修复
+     */
+    private static Bundle sPendingSavedInstanceState;
     private PluginLoadedApk mLoadedApk;
     private PluginActivityControl mPluginContrl;
     private PluginContextWrapper mPluginContextWrapper;
     private String mPluginPackage = "";
     private volatile boolean mRestartCalled = false;
+    private BroadcastReceiver mFinishSelfReceiver;
+    /**
+     * 等待 PluginPackageManagerService 连接成功后启动插件
+     */
+    private BroadcastReceiver mLaunchPluginReceiver;
+
+    private void initUiForRecovery() {
+        BaseRecoveryActivity.IRecoveryUiCreator recoveryUiCreator = HybirdPlugin.getConfig().getRecoveryUiCreator();
+        if (recoveryUiCreator != null) {
+            setContentView(recoveryUiCreator.createContentView(this));
+        } else {
+            int size = (int) (50 * getResources().getDisplayMetrics().density + 0.5f);
+            ProgressBar progressBar = new ProgressBar(this);
+            FrameLayout frameLayout = new FrameLayout(this);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size, Gravity.CENTER);
+            frameLayout.addView(progressBar, lp);
+            setContentView(frameLayout);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +111,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 onCreate....");
         String pluginActivityName = null;
         String pluginPkgName = null;
-        String[] pkgAndCls = parsePkgAndClsFromIntent();
+        final String[] pkgAndCls = parsePkgAndClsFromIntent();
         if (pkgAndCls != null) {
             pluginPkgName = pkgAndCls[0];
             pluginActivityName = pkgAndCls[1];
@@ -90,8 +124,38 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
 
         if (!tryToInitPluginLoadApk(pluginPkgName)) {
-            this.finish();
-            PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
+            boolean ppmsReady = PluginPackageManagerNative.getInstance(this).isConnected();
+            if (ppmsReady) {
+                this.finish();
+                PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
+            } else {
+                initUiForRecovery();
+                sPendingSavedInstanceState = savedInstanceState;
+
+                mLaunchPluginReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
+                        if (PluginPackageManagerService.class.equals(serviceClass)) {
+                            Intent pluginIntent = new Intent(getIntent());
+                            pluginIntent.setComponent(new ComponentName(pkgAndCls[0], pkgAndCls[1]));
+                            PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(InstrActivityProxy1.this));
+                        }
+                    }
+                };
+                registerReceiver(mLaunchPluginReceiver, new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED));
+
+                mFinishSelfReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        InstrActivityProxy1.this.finish();
+                    }
+                };
+                IntentFilter filter = new IntentFilter();
+                filter.addAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
+                filter.addAction(IIntentConstant.ACTION_PLUGIN_LOADED);
+                registerReceiver(mFinishSelfReceiver, filter);
+            }
             return;
         }
         if (!PluginManager.isPluginLoadedAndInit(pluginPkgName)) {
@@ -151,10 +215,24 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
      * @param savedInstanceState
      */
     private void callProxyOnCreate(Bundle savedInstanceState) {
+        boolean mockRestoreInstanceState = false;
+        // 使用上一次的 savedInstance 进行恢复
+        if (sPendingSavedInstanceState != null && savedInstanceState == null) {
+            savedInstanceState = sPendingSavedInstanceState;
+            savedInstanceState.setClassLoader(mLoadedApk.getPluginClassLoader());
+            sPendingSavedInstanceState = null;
+            mockRestoreInstanceState = true;
+        }
         if (getParent() == null) {
             mLoadedApk.getActivityStackSupervisor().pushActivityToStack(this);
         }
         mPluginContrl.callOnCreate(savedInstanceState);
+
+        // 模拟 onRestoreInstanceState
+        if (mockRestoreInstanceState) {
+            onRestoreInstanceState(savedInstanceState);
+        }
+
         mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
         PluginManager.dispatchPluginActivityCreated(mPluginPackage, mPluginContrl.getPlugin(), savedInstanceState);
         NotifyCenter.notifyPluginActivityLoaded(this.getBaseContext());
@@ -452,6 +530,12 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+        if (mLaunchPluginReceiver != null) {
+            unregisterReceiver(mLaunchPluginReceiver);
+        }
+        if (mFinishSelfReceiver != null) {
+            unregisterReceiver(mFinishSelfReceiver);
         }
         super.onDestroy();
     }

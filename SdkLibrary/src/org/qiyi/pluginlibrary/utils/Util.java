@@ -26,6 +26,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
+import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -46,6 +47,8 @@ public final class Util {
     private static final String APK_LIB_DIR_PREFIX = "lib/";
     /** lib中so后缀 */
     private static final String APK_LIB_SUFFIX = ".so";
+    /** 当前程序进程名称 */
+    private static String sProcessName;
 
     /** utility class private constructor */
     private Util() {
@@ -721,5 +724,20 @@ public final class Util {
             length = raf.read(buffer, 0, length);
         }
         return crc.getValue();
+    }
+
+    @Nullable
+    public static String getCurrentProcessName(Context context) {
+        if (sProcessName == null && context != null) {
+            int pid = Process.myPid();
+            ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            for (ActivityManager.RunningAppProcessInfo processInfo : manager.getRunningAppProcesses()) {
+                if (processInfo.pid == pid) {
+                    sProcessName = processInfo.processName;
+                    break;
+                }
+            }
+        }
+        return sProcessName;
     }
 }
