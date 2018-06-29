@@ -887,7 +887,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (null != pkgCls && pkgCls.length == 2) {
             printWriter.print("Package&Cls is: " + this + " " + (pkgCls[0] + " " + pkgCls[1]) + " flg=0x"
                     + Integer.toHexString(getIntent().getFlags()));
-            ;
         } else {
             printWriter.print("Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags()));
         }

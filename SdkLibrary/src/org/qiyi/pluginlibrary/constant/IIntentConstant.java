@@ -45,4 +45,6 @@ public interface IIntentConstant {
     public static final String EXTRA_DEST_FILE = "install_dest_file";
     /**被安装的插件的信息*/
     public static final String EXTRA_PLUGIN_INFO = "plugin_info";
+
+    public static final String TASK_AFFINITY_CONTAINER = ":container1";
 }

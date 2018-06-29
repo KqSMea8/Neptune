@@ -477,9 +477,10 @@ public class PluginManager implements IIntentConstant {
             Context lastActivity = null;
             PActivityStackSupervisor mActivityStackSupervisor =
                     mLoadedApk.getActivityStackSupervisor();
-            if (mActivityStackSupervisor != null && !mActivityStackSupervisor.getActivityStack().isEmpty()) {
-                lastActivity = mActivityStackSupervisor.getActivityStack().getLast();
-            }
+            lastActivity = mActivityStackSupervisor.getAvailableActivity();
+//            if (mActivityStackSupervisor != null && !mActivityStackSupervisor.getActivityStack().isEmpty()) {
+//                lastActivity = mActivityStackSupervisor.getActivityStack().getLast();
+//            }
             if (!(mHostContext instanceof Activity) && null != lastActivity) {
                 int flag = mIntent.getFlags();
                 flag = flag ^ Intent.FLAG_ACTIVITY_NEW_TASK;
@@ -849,7 +850,7 @@ public class PluginManager implements IIntentConstant {
     public static boolean isActivityStackEmpty() {
         for (Map.Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             PluginLoadedApk mLoadedApk = entry.getValue();
-            if (mLoadedApk != null && mLoadedApk.getActivityStackSupervisor().getActivityStack().size() > 0) {
+            if (mLoadedApk != null && !mLoadedApk.getActivityStackSupervisor().isStackEmpty()) {
                 return false;
             }
         }
@@ -1039,10 +1040,11 @@ public class PluginManager implements IIntentConstant {
                 Map.Entry<String, PluginLoadedApk> tmp = mIterator.next();
                 printWriter.print("packageName:" + tmp.getKey());
                 printWriter.print("\n");
-                List<Activity> activities = tmp.getValue().getActivityStackSupervisor().getActivityStack();
-                for (Activity mActivity : activities) {
-                    ((InstrActivityProxy1) mActivity).dump(printWriter);
-                }
+                tmp.getValue().getActivityStackSupervisor().dump(printWriter);
+//                List<Activity> activities = tmp.getValue().getActivityStackSupervisor().getActivityStack();
+//                for (Activity mActivity : activities) {
+//                    ((InstrActivityProxy1) mActivity).dump(printWriter);
+//                }
             }
             printWriter.print("================end dump plugin activity stack====================");
         } catch (Exception e) {

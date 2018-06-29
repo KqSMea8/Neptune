@@ -710,9 +710,9 @@ public class PluginLoadedApk implements IIntentConstant {
     void quitApp(boolean force, boolean notifyHost) {
         if (force) {
             PluginDebugLog.runtimeLog(TAG, "quitapp with " + mPluginPackageName);
-            while (!mActivityStackSupervisor.getActivityStack().isEmpty()) {
-                mActivityStackSupervisor.pollActivityStack().finish();
-            }
+//            while (!mActivityStackSupervisor.getActivityStack().isEmpty()) {
+//                mActivityStackSupervisor.pollActivityStack().finish();
+//            }
             mActivityStackSupervisor.clearActivityStack();
             PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
             PActivityStackSupervisor.removeLoadingIntent(mPluginPackageName);

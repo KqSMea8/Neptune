@@ -13,18 +13,21 @@ import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * 插件的管理栈，模拟系统的{@link com.android.server.am.ActivityStackSupervisor}
+ */
 public class PActivityStackSupervisor {
-    private static final String TAG = PActivityStackSupervisor.class.getSimpleName();
+    private static final String TAG = "PActivityStackSupervisor";
 
     // 等在加载的intent请求
     private static ConcurrentMap<String, LinkedBlockingQueue<Intent>> sIntentCacheMap = new ConcurrentHashMap<String, LinkedBlockingQueue<Intent>>();
@@ -32,29 +35,223 @@ public class PActivityStackSupervisor {
     private static ConcurrentMap<String, List<Intent>> sIntentLoadingMap = new ConcurrentHashMap<String, List<Intent>>();
 
     // 当前进程所有插件的Activity栈
-    private static CopyOnWriteArrayList<Activity> sAllActivityStack = new CopyOnWriteArrayList<Activity>();
+    //private static CopyOnWriteArrayList<Activity> sAllActivityStack = new CopyOnWriteArrayList<Activity>();
+    // 当前进程所有插件的全局栈
+    private static ConcurrentHashMap<String, PActivityStack> sAllActivityStacks = new ConcurrentHashMap<>();
 
-    // 插件的Activity栈
-    private final LinkedList<Activity> mActivityStack;
+    // 插件的Activity栈集合，支持taskAffinity多任务栈，目前只额外配置了一个坑位
+    private final ConcurrentHashMap<String, PActivityStack> mActivityStacks;
+    // 前台栈
+    private PActivityStack mFocusedStack;
+    // 后台栈
+    private PActivityStack mLastFocusedStack = null;
+    // 插件
+    //private final LinkedList<Activity> mActivityStack;
     private PluginLoadedApk mLoadedApk;
 
     public PActivityStackSupervisor(PluginLoadedApk mLoadedApk) {
         this.mLoadedApk = mLoadedApk;
-        mActivityStack = new LinkedList<Activity>();
+        this.mActivityStacks = new ConcurrentHashMap<>(1);
+
+        String pkgName = mLoadedApk.getPluginPackageName();
+        mFocusedStack = new PActivityStack(pkgName);
+        mActivityStacks.put(pkgName, mFocusedStack);
+
+        //mActivityStack = new LinkedList<Activity>();
     }
 
-    public LinkedList<Activity> getActivityStack() {
-        return mActivityStack;
+//    public LinkedList<Activity> getActivityStack() {
+//        return mActivityStack;
+//    }
+
+
+    /**
+     * 把插件Activity压入堆栈
+     * 旧的插件方案：压入的是代理的Activity
+     * hook Instr方案：压入的是插件真实的Activity
+     *
+     * @param activity
+     */
+    public void pushActivityToStack(Activity activity) {
+        if (PluginDebugLog.isDebug()) {
+            PluginDebugLog.runtimeLog(TAG, "pushActivityToStack activity: " + activity + " "
+                    + IntentUtils.dump(activity));
+        }
+
+        PActivityStack sysStack = findAssociatedStack(mFocusedStack);
+        sysStack.push(activity);  // 插件Activity推入全局栈
+        removeLoadingIntent(mLoadedApk.getPluginPackageName(), activity.getIntent());
+        mFocusedStack.push(activity);  // 插件Activity推入插件自身管理的堆栈
+
+//        sAllActivityStack.add(activity);
+//        removeLoadingIntent(mLoadedApk.getPluginPackageName(), activity.getIntent());
+//        synchronized (mActivityStack) {
+//            mActivityStack.addFirst(activity);
+//        }
     }
 
+    /**
+     * 把插件Activity移出堆栈
+     * 旧的插件方案：弹出的是代理Activity
+     * hook Instr方案：弹出的是插件真实的Activity
+     *
+     * @param activity
+     * @return
+     */
+    public boolean popActivityFromStack(Activity activity) {
+
+        // 退出的时候，前后台栈都需要搜索一遍
+        PActivityStack sysStack = findAssociatedStack(mFocusedStack);
+        sysStack.pop(activity);
+        if (mLastFocusedStack != null) {
+            sysStack = findAssociatedStack(mLastFocusedStack);
+            sysStack.pop(activity);
+        }
+
+        boolean result = mFocusedStack.pop(activity);
+        if (mLastFocusedStack != null) {
+            result = mLastFocusedStack.pop(activity) || result;
+        }
+
+        if (PluginDebugLog.isDebug()) {
+            PluginDebugLog.runtimeLog(TAG, "popActivityFromStack activity: " + activity + " "
+                    + IntentUtils.dump(activity) + ", success: " + result);
+        }
+
+        return result;
+
+//        sAllActivityStack.remove(activity);
+//        boolean result = false;
+//        synchronized (mActivityStack) {
+//            if (!mActivityStack.isEmpty()) {
+//                PluginDebugLog.runtimeLog(TAG, "popActivityFromStack activity: " + activity + " "
+//                        + IntentUtils.dump(activity));
+//                result = mActivityStack.remove(activity);
+//            }
+//        }
+//
+//        return result;
+    }
+
+
+    /**
+     * 清空任务栈，销毁Activity
+     */
     public void clearActivityStack() {
-        mActivityStack.clear();
+        //mActivityStack.clear();
+        for (Map.Entry<String, PActivityStack> entry : mActivityStacks.entrySet()) {
+            PActivityStack stack = entry.getValue();
+            stack.clear(true);
+        }
     }
 
-    public Activity pollActivityStack() {
-        return mActivityStack.poll();
+    /**
+     * 获取对应插件可能位于栈顶的Activity
+     *
+     * @return
+     */
+    public Activity getTopActivity() {
+        if (!mFocusedStack.isEmpty()) {
+            return mFocusedStack.getTop();
+        }
+
+        return null;
     }
 
+    /**
+     * 获取对应插件可用的Activity，用于启动其他插件的Context
+     * @return
+     */
+    public Activity getAvailableActivity() {
+        if (!mFocusedStack.isEmpty()) {
+            return mFocusedStack.getTop();
+        }
+
+        if (mLastFocusedStack != null && !mLastFocusedStack.isEmpty()) {
+            return mLastFocusedStack.getTop();
+        }
+
+        return null;
+    }
+
+    /**
+     * 当前插件的栈里是否有Activity在执行
+     *
+     * @return
+     */
+    public boolean hasActivityRunning() {
+        return !mFocusedStack.isEmpty() ||
+                (mLastFocusedStack != null && !mLastFocusedStack.isEmpty());
+    }
+
+    /**
+     * 当前插件的栈是否为空
+     *
+     * @return
+     */
+    public boolean isStackEmpty() {
+        return mFocusedStack.isEmpty() &&
+                (mLastFocusedStack != null && mLastFocusedStack.isEmpty());
+    }
+
+    /**
+     * dump当前插件堆栈的信息
+     * @param pw
+     */
+    public void dump(PrintWriter pw) {
+        pw.print("foreground stack: ");
+        pw.print(mFocusedStack.size() + " ");
+        for (Activity activity : mFocusedStack.getActivities()) {
+            String info = IntentUtils.dump(activity);
+            pw.print(info);
+            pw.print("\n");
+        }
+
+        if (mLastFocusedStack != null) {
+            pw.print("background stack: ");
+            pw.print(mLastFocusedStack.size() + " ");
+            for (Activity activity : mLastFocusedStack.getActivities()) {
+                String info = IntentUtils.dump(activity);
+                pw.print(info);
+                pw.print("\n");
+            }
+        }
+    }
+
+    /**
+     * 根据插件栈搜索全局栈
+     *
+     * @param stack 插件的堆栈
+     * @return
+     */
+    private PActivityStack findAssociatedStack(PActivityStack stack) {
+        String stackName = stack.getTaskName();
+        String pkgName = mLoadedApk.getPluginPackageName();
+        if (TextUtils.equals(stackName, pkgName)) {
+            // 插件包名
+            stackName = mLoadedApk.getHostPackageName();
+        } else if (stackName.startsWith(pkgName)) {
+            stackName = stackName.substring(pkgName.length());
+        }
+
+        PActivityStack sysStack = sAllActivityStacks.get(stackName);
+        if (sysStack == null) {
+            sysStack = new PActivityStack(stackName);
+            sAllActivityStacks.put(stackName, sysStack);
+        }
+        return sysStack;
+    }
+
+//    public Activity pollActivityStack() {
+//        return mActivityStack.poll();
+//    }
+
+
+    /**
+     * 处理Activity的launchMode，给Intent添加相关的Flags
+     *
+     * @param intent
+     */
     public void dealLaunchMode(Intent intent) {
         if (null == intent) {
             return;
@@ -67,16 +264,16 @@ public class PActivityStackSupervisor {
 
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode target activity: " + intent + " source: "
                 + targetActivity);
-        if (PluginDebugLog.isDebug()) {
-            if (null != mActivityStack && mActivityStack.size() > 0) {
-                for (Activity ac : mActivityStack) {
-                    PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack: " + ac + " source: "
-                            + IntentUtils.dump(ac));
-                }
-            } else {
-                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack is empty");
-            }
-        }
+//        if (PluginDebugLog.isDebug()) {
+//            if (null != mActivityStack && mActivityStack.size() > 0) {
+//                for (Activity ac : mActivityStack) {
+//                    PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack: " + ac + " source: "
+//                            + IntentUtils.dump(ac));
+//                }
+//            } else {
+//                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode stack is empty");
+//            }
+//        }
 
         // 不支持LAUNCH_SINGLE_INSTANCE
         ActivityInfo info = mLoadedApk.getPluginPackageInfo().getActivityInfo(targetActivity);
@@ -101,11 +298,14 @@ public class PActivityStackSupervisor {
         PluginDebugLog.runtimeLog(TAG, "after flag: " + Integer.toHexString(intent.getFlags()));
 
         if (isSingleTop && !isClearTop) {
-            // 判断栈顶是否为需要启动的Activity
+            // 判断栈顶是否为需要启动的Activity, 只需要处理前台栈
             Activity activity = null;
-            if (!mActivityStack.isEmpty()) {
-                activity = mActivityStack.getFirst();
+            if (!mFocusedStack.isEmpty()) {
+                activity = mFocusedStack.getTop();
             }
+//            if (!mActivityStack.isEmpty()) {
+//                activity = mActivityStack.getFirst();
+//            }
             boolean hasSameActivity = false;
             String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk, info);
             if (activity != null) {
@@ -121,27 +321,40 @@ public class PActivityStackSupervisor {
                 }
             }
             if (hasSameActivity) {
-                handleOtherPluginActivityStack(activity);
+                handleOtherPluginActivityStack(activity, mFocusedStack);
             }
-            /*else {
-                handleOtherPluginActivityStack(null);
-            }*/
         } else if (isSingleTask || isClearTop) {
 
+            PActivityStack targetStack; // 需要搜索的任务栈
+            boolean fromBackStack = false;
+            if (isClearTop) {
+                targetStack = mFocusedStack;
+            } else {
+                // singleTask
+                if (mLastFocusedStack != null
+                        && TextUtils.equals(mLastFocusedStack.getTaskName(), matchTaskName(info.taskAffinity))) {
+                    // 后台栈和Activity的taskAffinity匹配
+                    targetStack = mLastFocusedStack;
+                    fromBackStack = true;
+                    PluginDebugLog.runtimeLog(TAG, "dealLaunchMode search in background stack: " + info.taskAffinity);
+                } else {
+                    // 前台栈中搜索
+                    targetStack = mFocusedStack;
+                }
+            }
+            // 查找栈中是否存在已有实例
             Activity found = null;
-            synchronized (mActivityStack) {
-                // 遍历已经起过的activity
-                for (Activity activity : mActivityStack) {
-                    String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk, info);
-                    if (activity != null) {
-                        if (TextUtils.equals(proxyClsName, activity.getClass().getName())
-                                || TextUtils.equals(targetActivity, activity.getClass().getName())) {
-                            String key = getActivityStackKey(activity);
-                            if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
-                                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode found:" + IntentUtils.dump(activity));
-                                found = activity;
-                                break;
-                            }
+            // 遍历已经起过的activity
+            for (Activity activity : targetStack.getActivities()) {
+                String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk, info);
+                if (activity != null) {
+                    if (TextUtils.equals(proxyClsName, activity.getClass().getName())
+                            || TextUtils.equals(targetActivity, activity.getClass().getName())) {
+                        String key = getActivityStackKey(activity);
+                        if (!TextUtils.isEmpty(key) && TextUtils.equals(targetActivity, key)) {
+                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode found:" + IntentUtils.dump(activity));
+                            found = activity;
+                            break;
                         }
                     }
                 }
@@ -151,39 +364,68 @@ public class PActivityStackSupervisor {
             if (found != null) {
                 // 处理其他插件的逻辑
                 // 在以这两种SingleTask， ClearTop flag启动情况下，在同一个栈的情况下
-                handleOtherPluginActivityStack(found);
+                handleOtherPluginActivityStack(found, targetStack);
+
+                // 处理当前插件的Activity
                 List<Activity> popActivities = new ArrayList<Activity>(5);
-                synchronized (mActivityStack) {
-                    for (Activity activity : mActivityStack) {
-                        if (activity == found) {
-                            if (isSingleTask || isSingleTop) {
-                                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add single top flag!");
-                                intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                            }
-                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add clear top flag!");
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            break;
+                for (Activity activity : targetStack.getActivities()) {
+                    if (activity == found) {
+                        if (isSingleTask || isSingleTop) {
+                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add single top flag!");
+                            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                         }
-                        popActivities.add(activity);
+                        PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add clear top flag!");
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        break;
                     }
-                    for (Activity act : popActivities) {
-                        if (!mActivityStack.isEmpty()) {
-                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode mActivityStack remove " + IntentUtils.dump(act));
-                            mActivityStack.remove(act);
-                        }
-                    }
+                    popActivities.add(activity);
                 }
+//                synchronized (mActivityStack) {
+//                    for (Activity activity : mActivityStack) {
+//                        if (activity == found) {
+//                            if (isSingleTask || isSingleTop) {
+//                                PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add single top flag!");
+//                                intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+//                            }
+//                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode add clear top flag!");
+//                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//                            break;
+//                        }
+//                        popActivities.add(activity);
+//                    }
+//                    for (Activity act : popActivities) {
+//                        if (!mActivityStack.isEmpty()) {
+//                            PluginDebugLog.runtimeLog(TAG, "dealLaunchMode mActivityStack remove " + IntentUtils.dump(act));
+//                            mActivityStack.remove(act);
+//                        }
+//                    }
+//                }
                 for (Activity act : popActivities) {
                     PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + IntentUtils.dump(act));
                     act.finish();
+                    popActivityFromStack(act);
                 }
+
+                // 如果Activity是在后台堆栈中找到的，需要合并前后台栈
+                if (fromBackStack) {
+                    // https://developer.android.com/guide/components/activities/tasks-and-back-stack
+                    // 把返回栈中的Activity全部推到前台
+                    PActivityStack sysForeStack = findAssociatedStack(mFocusedStack);
+                    PActivityStack sysBackStack = findAssociatedStack(mLastFocusedStack);
+                    mergeActivityStack(sysBackStack, sysForeStack);
+                    // 处理插件自身的栈
+                    mergeActivityStack(mLastFocusedStack, mFocusedStack);
+                    // 切换前后台堆栈
+                    switchToBackStack(mFocusedStack, mLastFocusedStack);
+                }
+
                 mLoadedApk.quitApp(false);
             } else {
-                // 遍历还未启动cache中的activity记录
-                LinkedBlockingQueue<Intent> recoreds = sIntentCacheMap
+                // 堆栈里没有找到，遍历还未启动cache中的activity记录
+                LinkedBlockingQueue<Intent> records = sIntentCacheMap
                         .get(mLoadedApk.getPluginPackageName());
-                if (null != recoreds) {
-                    Iterator<Intent> recordIterator = recoreds.iterator();
+                if (null != records) {
+                    Iterator<Intent> recordIterator = records.iterator();
                     String notLaunchTargetClassName = null;
                     while (recordIterator.hasNext()) {
                         Intent record = recordIterator.next();
@@ -196,7 +438,6 @@ public class PActivityStackSupervisor {
                                 if (isSingleTask || isSingleTop) {
                                     intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                                 }
-                                // intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 break;
                             }
@@ -218,21 +459,43 @@ public class PActivityStackSupervisor {
                                 if (isSingleTask || isSingleTop) {
                                     intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                                 }
-                                // intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 break;
                             }
                         }
                     }
                 }
-//                handleOtherPluginActivityStack(null);
+
+                if (isSingleTask) {
+                    // 是否需要放到单独的任务栈
+                    String taskName = matchTaskName(info.taskAffinity);
+                    if (!TextUtils.equals(mFocusedStack.getTaskName(), taskName)) {
+                        PluginDebugLog.runtimeLog(TAG, "dealLaunchMode push activity into separated stack: " + taskName);
+                        PActivityStack stack = mActivityStacks.get(taskName);
+                        if (stack == null) {
+                            // 创建一个新的任务栈
+                            stack = new PActivityStack(taskName);
+                            mActivityStacks.put(taskName, stack);
+                        }
+                        // 切换前后台栈
+                        switchToBackStack(mFocusedStack, stack);
+                    } else {
+                        PluginDebugLog.runtimeLog(TAG, "dealLaunchMode push activity into current stack: " + taskName);
+                    }
+                }
             }
         }
         PluginDebugLog.runtimeLog(TAG, "dealLaunchMode end: " + intent + " "
                 + targetActivity);
     }
 
-    private void handleOtherPluginActivityStack(Activity act) {
+    /**
+     * 处理当前Activity堆栈里的其他Activity
+     *
+     * @param act
+     * @param stack
+     */
+    private void handleOtherPluginActivityStack(Activity act, PActivityStack stack) {
         // 假如栈中存在之前的Activity，并且在该Activity之上存在其他插件的activity，则finish掉其之上的activity
         // 例如场景桌面有多个插件的图标，点击一个业务的进入，然后home键，然后再点击另外一个循环。
         if (null == act) {
@@ -264,72 +527,85 @@ public class PActivityStackSupervisor {
 //                }
 //            }
         } else {
-            Activity temp = null;
             List<Activity> needRemove = new ArrayList<Activity>();
-            for (int i = sAllActivityStack.size() - 1; i > -1; i--) {
-                temp = sAllActivityStack.get(i);
+            PActivityStack sysStack = findAssociatedStack(stack);
+            for (Activity temp : sysStack.getActivities()) {
                 if (null != temp && act == temp) {
                     break;
                 }
                 String pkgName = IntentUtils.parsePkgNameFromActivity(temp);
                 if (temp != null && !TextUtils.equals(mLoadedApk.getPluginPackageName(),
                         pkgName)) {
+                    // 其他插件Activity
                     needRemove.add(temp);
                 }
             }
+
+//            for (int i = sAllActivityStack.size() - 1; i > -1; i--) {
+//                temp = sAllActivityStack.get(i);
+//                if (null != temp && act == temp) {
+//                    break;
+//                }
+//                String pkgName = IntentUtils.parsePkgNameFromActivity(temp);
+//                if (temp != null && !TextUtils.equals(mLoadedApk.getPluginPackageName(),
+//                        pkgName)) {
+//                    needRemove.add(temp);
+//                }
+//            }
             PluginLoadedApk mLoadedApk = null;
             for (Activity removeItem : needRemove) {
                 if (null != removeItem) {
                     String pkgName = IntentUtils.parsePkgNameFromActivity(removeItem);
                     mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
-                    if (null != mLoadedApk
-                            && null != mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
-                        synchronized (mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
-                            try {
-                                PluginDebugLog.runtimeLog(TAG,
-                                        "finish: " + IntentUtils.dump(act));
-                                removeItem.finish();
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                            }
-                            mLoadedApk.getActivityStackSupervisor().mActivityStack.remove(removeItem);
-                        }
+                    if (mLoadedApk != null) {
+                        removeItem.finish();
+                        popActivityFromStack(removeItem);
                     }
+
+//                    if (null != mLoadedApk
+//                            && null != mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
+//                        synchronized (mLoadedApk.getActivityStackSupervisor().getActivityStack()) {
+//                            try {
+//                                PluginDebugLog.runtimeLog(TAG,
+//                                        "finish: " + IntentUtils.dump(act));
+//                                removeItem.finish();
+//                            } catch (Exception ex) {
+//                                ex.printStackTrace();
+//                            }
+//                            mLoadedApk.getActivityStackSupervisor().mActivityStack.remove(removeItem);
+//                        }
+//                    }
                 }
             }
         }
     }
 
     /**
-     * 把插件Activity压入堆栈
-     * 旧的插件方案：压入的是代理的Activity
-     * hook Instr方案：压入的是插件真实的Activity
+     * 把后台栈中的Activity推到前台Activity栈的最前面
      *
-     * @param activity
+     * @param backStack
+     * @param foreStack
      */
-    public void pushActivityToStack(Activity activity) {
-        PluginDebugLog.runtimeLog(TAG, "pushActivityToStack activity: " + activity + " "
-                + IntentUtils.dump(activity));
-        sAllActivityStack.add(activity);
-        removeLoadingIntent(mLoadedApk.getPluginPackageName(), activity.getIntent());
-        synchronized (mActivityStack) {
-            mActivityStack.addFirst(activity);
+    private void mergeActivityStack(PActivityStack backStack, PActivityStack foreStack) {
+
+        for (Activity activity : foreStack.getActivities()) {
+            // 把前台栈的Activity压入后台栈的末位
+            backStack.insertFirst(activity);
         }
+        // 清空前台栈
+        foreStack.clear(false);
     }
 
-    public boolean popActivityFromStack(Activity activity) {
-        sAllActivityStack.remove(activity);
-        boolean result = false;
-        synchronized (mActivityStack) {
-            if (!mActivityStack.isEmpty()) {
-                PluginDebugLog.runtimeLog(TAG, "popActivityFromStack activity: " + activity + " "
-                        + IntentUtils.dump(activity));
-                result = mActivityStack.remove(activity);
-            }
-        }
-        // mEnv.quitApp(false);
-        return result;
+    /**
+     * 把前台栈切换成后台栈
+     *
+     * @param foreStack
+     */
+    private void switchToBackStack(PActivityStack foreStack, PActivityStack nextStack) {
+        mLastFocusedStack = foreStack;
+        mFocusedStack = nextStack;
     }
+
 
     public static void addCachedIntent(String pkgName, LinkedBlockingQueue<Intent> cachedIntents) {
         if (TextUtils.isEmpty(pkgName) || null == cachedIntents) {
@@ -420,6 +696,28 @@ public class PActivityStackSupervisor {
                 + toBeRemoved + " result: " + result);
     }
 
+    /**
+     * 映射插件ActivityInfo的affinity到限定的任务栈上
+     *
+     * @param affinity
+     * @return
+     */
+    private String matchTaskName(String affinity) {
+
+        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IIntentConstant.TASK_AFFINITY_CONTAINER)) {
+            return affinity;
+        } else {
+            return mLoadedApk.getPluginPackageName();
+        }
+    }
+
+    /**
+     * 获取当前Activity对应的插件Activity的名称
+     * 如果是代理Activity，则搜索对应的插件Activity实例
+     * 如果本身就是插件Activity，直接返回即可
+     * @param activity
+     * @return
+     */
     private static String getActivityStackKey(Activity activity) {
         String key = "";
         if (activity instanceof InstrActivityProxy1) {

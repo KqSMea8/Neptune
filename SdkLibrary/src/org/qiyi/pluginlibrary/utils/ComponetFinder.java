@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary.utils;
 
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -41,6 +42,8 @@ public class ComponetFinder implements IIntentConstant {
             "org.qiyi.pluginlibrary.component.InstrActivityProxyLandscape";
     public static final String DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange";
+    public static final String DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.InstrActivityProxySingleTask";
     public static final String DEFAULT_SERVICE_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.ServiceProxy";
     public static final int TRANSLUCENTCOLOR = Color.parseColor("#00000000");
@@ -277,6 +280,7 @@ public class ComponetFinder implements IIntentConstant {
         boolean isTranslucent = false;
         boolean isHandleConfigChange = false;
         boolean isLandscape = false;
+        boolean hasTaskAffinity = false;
 
         //通过主题判断是否是透明的
         Resources.Theme mTheme = mLoadedApk.getPluginTheme();
@@ -308,13 +312,13 @@ public class ComponetFinder implements IIntentConstant {
                 if (!TextUtils.isEmpty(special_cfg)) {
                     if (special_cfg.contains(PLUGIN_ACTIVITY_TRANSLUCENT)) {
                         PluginDebugLog.runtimeLog(TAG,
-                                "getProxyActivityClsName meta data contrains translucent flag");
+                                "findActivityProxy meta data contains translucent flag");
                         isTranslucent = true;
                     }
 
                     if (special_cfg.contains(PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE)) {
                         PluginDebugLog.runtimeLog(TAG,
-                                "getProxyActivityClsName meta data contrains handleConfigChange flag");
+                                "findActivityProxy meta data contains handleConfigChange flag");
                         isHandleConfigChange = true;
                     }
                 }
@@ -322,35 +326,46 @@ public class ComponetFinder implements IIntentConstant {
         }
 
         if (actInfo != null) {
+            if (TextUtils.equals(actInfo.taskAffinity,
+                    mLoadedApk.getPluginPackageName() + TASK_AFFINITY_CONTAINER)
+                    && actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
+                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                        + actInfo.taskAffinity + " hasTaskAffinity = true");
+                hasTaskAffinity = true;
+            }
+
             if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                PluginDebugLog.runtimeLog(TAG, "getProxyActivityClsName activity screenOrientation: "
+                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity screenOrientation: "
                         + actInfo.screenOrientation + " isHandleConfigChange = false");
                 isHandleConfigChange = false;
             }
 
             if (actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                PluginDebugLog.runtimeLog(TAG, "getProxyActivityClsName isLandscape = true");
+                PluginDebugLog.runtimeLog(TAG, "findActivityProxy isLandscape = true");
                 isLandscape = true;
             }
         }
 
-        return matchActivityProxyByFeature(isTranslucent, isLandscape,
+        return matchActivityProxyByFeature(hasTaskAffinity, isTranslucent, isLandscape,
                 isHandleConfigChange, mLoadedApk.getProcessName());
     }
 
     /**
      * 根据被代理的Activity的Feature和进程名称选择代理
      *
+     * @param hasTaskAffinity 是否独立任务栈
      * @param isTranslucent  是否透明
      * @param isLandscape    是否横屏
      * @param isHandleConfig 配置变化是否仅仅执行onConfiguration方法
      * @param mProcessName   当前插件运行的进程名称
      * @return
      */
-    public static String matchActivityProxyByFeature(boolean isTranslucent,
-                                                     boolean isLandscape,
-                                                     boolean isHandleConfig,
-                                                     String mProcessName) {
+    private static String matchActivityProxyByFeature(
+            boolean hasTaskAffinity,
+            boolean isTranslucent,
+            boolean isLandscape,
+            boolean isHandleConfig,
+            String mProcessName) {
         int index = ProcessManger.getProcessIndex(mProcessName);
         if (index < 0 || index > 2) {
             //越界检查
@@ -358,7 +373,11 @@ public class ComponetFinder implements IIntentConstant {
             index = 1;
         }
 
-        if (isTranslucent) {
+        if (hasTaskAffinity) {
+            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
+                    ComponetFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index);
+            return ComponetFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index;
+        } else if (isTranslucent) {
             PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
                     ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index);
             return ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
@@ -376,7 +395,6 @@ public class ComponetFinder implements IIntentConstant {
                     ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index);
             return ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
         }
-
     }
 
     /**
