@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.view.ContextThemeWrapper;
 
@@ -31,10 +30,6 @@ public class PluginHookedInstrument extends PluginInstrument {
 
     private static final String TAG = "PluginHookedInstrument";
     private PluginActivityRecoveryHelper mRecoveryHelper = new PluginActivityRecoveryHelper();
-    /**
-     * activity.setIntent 后可能会被系统恢复，这里保存一个 mapping，再设置回去
-     */
-    private ArrayMap<Activity, Intent> activityIntentMapping = new ArrayMap<>();
 
     public PluginHookedInstrument(Instrumentation hostInstr) {
         super(hostInstr);
@@ -43,7 +38,6 @@ public class PluginHookedInstrument extends PluginInstrument {
     @Override
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         if (className.startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
-            intent = mRecoveryHelper.recoveryIntent(intent);
             // 插件代理Activity，替换回插件真实的Activity
             String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
             String packageName = result[0];
@@ -54,8 +48,6 @@ public class PluginHookedInstrument extends PluginInstrument {
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
                 if (loadedApk != null) {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
-                    activity.setIntent(intent);
-                    activityIntentMapping.put(activity, intent);
 
                     if (!dispatchToBaseActivity(activity)) {
                         // 这里需要替换Resources，是因为ContextThemeWrapper会缓存一个Resource对象，而在Activity#attach()和
@@ -66,12 +58,10 @@ public class PluginHookedInstrument extends PluginInstrument {
                     return activity;
                 } else {
                     // loadedApk 为空，可能是正常恢复进程，跳转到 RecoveryActivity
-                    mRecoveryHelper.saveIntent(intent);
-                    return mHostInstr.newActivity(cl, mRecoveryHelper.selectRecoveryActivity(className), new Intent(intent));
+                    return mHostInstr.newActivity(cl, mRecoveryHelper.selectRecoveryActivity(className), intent);
                 }
             }
         }
-
         return mHostInstr.newActivity(cl, className, intent);
     }
 
@@ -79,14 +69,9 @@ public class PluginHookedInstrument extends PluginInstrument {
     public void callActivityOnCreate(Activity activity, Bundle icicle) {
         boolean isRecovery = activity instanceof BaseRecoveryActivity;
         if (isRecovery) {
-            mRecoveryHelper.saveIcicle(icicle);
+            mRecoveryHelper.saveIcicle(activity, icicle);
             mHostInstr.callActivityOnCreate(activity, null);
             return;
-        }
-        // newActivity 中的 activity.setIntent 后可能会被系统恢复，这里再设置回去
-        Intent mappingIntent = activityIntentMapping.remove(activity);
-        if (mappingIntent != null) {
-            activity.setIntent(mappingIntent);
         }
         final Intent intent = activity.getIntent();
         String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
@@ -98,7 +83,7 @@ public class PluginHookedInstrument extends PluginInstrument {
                 PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate: " + packageName);
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
                 if (loadedApk != null) {
-                    icicle = mRecoveryHelper.recoveryIcicle(icicle);
+                    icicle = mRecoveryHelper.recoveryIcicle(activity, icicle);
                     // 设置 extra 的 ClassLoader，不然可能会出现 BadParcelException, ClassNotFound
                     if (icicle != null) {
                         icicle.setClassLoader(loadedApk.getPluginClassLoader());
@@ -177,7 +162,7 @@ public class PluginHookedInstrument extends PluginInstrument {
     @Override
     public void callActivityOnRestoreInstanceState(Activity activity, Bundle savedInstanceState) {
         if (activity instanceof BaseRecoveryActivity) {
-            mRecoveryHelper.saveSavedInstanceState(savedInstanceState);
+            mRecoveryHelper.saveSavedInstanceState(activity, savedInstanceState);
             return;
         }
         if (IntentUtils.isIntentForPlugin(activity.getIntent())) {

@@ -2,6 +2,7 @@ package org.qiyi.pluginlibrary.component;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -19,6 +20,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
+import org.qiyi.pluginlibrary.utils.Util;
 
 import java.io.Serializable;
 
@@ -27,26 +29,49 @@ import java.io.Serializable;
  */
 public abstract class BaseRecoveryActivity extends Activity {
 
+    /**
+     * 启动插件 Receiver 的优先级
+     * <p>
+     * 在恢复 Activity 堆栈时，如果栈顶 Activity 是透明主题，会连续恢复多个 Activity 直到非透明主题 Activity，
+     * 这个优先级递增，保证后恢复的 Activity 可以先打开被压到栈底。
+     * <p>
+     * 只有进程恢复时才需要，进程恢复时会自动重置。
+     */
+    private static int sLaunchPluginReceiverPriority;
     private BroadcastReceiver mFinishSelfReceiver;
     private BroadcastReceiver mLaunchPluginReceiver;
+    private String mPluginPackageName;
+    private String mPluginClassName;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initUi();
 
-        String pkgName = IntentUtils.parsePkgAndClsFromIntent(getIntent())[0];
-        if (pkgName == null) {
+        String[] packageAndClass = IntentUtils.parsePkgAndClsFromIntent(getIntent());
+        mPluginPackageName = packageAndClass[0];
+        mPluginClassName = packageAndClass[1];
+        if (mPluginPackageName == null || mPluginClassName == null) {
             finish();
             return;
         }
 
         if (PluginPackageManagerNative.getInstance(this).isConnected()) {
             // 一般而言，这时候 Service 都是未 connect 的状态，这里只是严谨考虑
-            PluginManager.launchPlugin(this, pkgName);
+            PluginManager.launchPlugin(this, createLaunchPluginIntent(), Util.getCurrentProcessName(this));
         } else {
-            mLaunchPluginReceiver = new LaunchPluginReceiver(pkgName);
-            registerReceiver(mLaunchPluginReceiver, new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED));
+            mLaunchPluginReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(final Context context, Intent intent) {
+                    Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
+                    if (PluginPackageManagerService.class.equals(serviceClass)) {
+                        PluginManager.launchPlugin(context, createLaunchPluginIntent(), Util.getCurrentProcessName(context));
+                    }
+                }
+            };
+            IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+            serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
+            registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
         }
 
         // 启动插件成功或者失败后，都应该 finish
@@ -60,6 +85,12 @@ public abstract class BaseRecoveryActivity extends Activity {
         filter.addAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
         filter.addAction(IIntentConstant.ACTION_PLUGIN_LOADED);
         registerReceiver(mFinishSelfReceiver, filter);
+    }
+
+    private Intent createLaunchPluginIntent() {
+        Intent intent = new Intent(getIntent());
+        intent.setComponent(new ComponentName(mPluginPackageName, mPluginClassName));
+        return intent;
     }
 
     private void initUi() {
@@ -91,26 +122,6 @@ public abstract class BaseRecoveryActivity extends Activity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // 限制 back 按键，不允许退出
         return keyCode == KeyEvent.KEYCODE_BACK || super.onKeyDown(keyCode, event);
-    }
-
-    /**
-     * 接收 Service Connected 通知后启动插件。因为启动插件需要依赖 PluginPackageManagerService
-     */
-    private static class LaunchPluginReceiver extends BroadcastReceiver {
-
-        private String mPluginPackageName;
-
-        public LaunchPluginReceiver(String pkgName) {
-            this.mPluginPackageName = pkgName;
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
-            if (PluginPackageManagerService.class.equals(serviceClass)) {
-                PluginManager.launchPlugin(context, mPluginPackageName);
-            }
-        }
     }
 
     /**

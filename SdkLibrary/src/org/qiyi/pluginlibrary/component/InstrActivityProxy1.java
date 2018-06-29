@@ -24,6 +24,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -67,6 +68,7 @@ import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.UUID;
 
 /**
  * :plugin1 Activity　代理
@@ -74,12 +76,22 @@ import java.lang.reflect.Field;
 public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost {
     private static final String TAG = InstrActivityProxy1.class.getSimpleName();
 
+    private static final String KEY_ID = "org.qiyi.recovery.key.id";
     /**
      * 保留 savedInstanceState，在真正恢复的时候模拟恢复
-     *
+     * <p>
      * 已知问题：如果 savedInstanceState 包含自定义 class 会出错，考虑到代理方案可能会下线，暂不修复
      */
-    private static Bundle sPendingSavedInstanceState;
+    private static ArrayMap<String, Bundle> sPendingSavedInstanceStateMap = new ArrayMap<>();
+    /**
+     * 启动插件 Receiver 的优先级
+     * <p>
+     * 在恢复 Activity 堆栈时，如果栈顶 Activity 是透明主题，会连续恢复多个 Activity 直到非透明主题 Activity，
+     * 这个优先级递增，保证后恢复的 Activity 可以先打开被压到栈底。
+     * <p>
+     * 只有进程恢复时才需要，进程恢复时会自动重置。
+     */
+    private static int sLaunchPluginReceiverPriority;
     private PluginLoadedApk mLoadedApk;
     private PluginActivityControl mPluginContrl;
     private PluginContextWrapper mPluginContextWrapper;
@@ -130,7 +142,10 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
             } else {
                 initUiForRecovery();
-                sPendingSavedInstanceState = savedInstanceState;
+
+                String id = UUID.randomUUID().toString();
+                getIntent().putExtra(KEY_ID, id);
+                sPendingSavedInstanceStateMap.put(id, savedInstanceState);
 
                 mLaunchPluginReceiver = new BroadcastReceiver() {
                     @Override
@@ -143,7 +158,10 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                         }
                     }
                 };
-                registerReceiver(mLaunchPluginReceiver, new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED));
+                IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+                // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
+                serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
+                registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
 
                 mFinishSelfReceiver = new BroadcastReceiver() {
                     @Override
@@ -217,10 +235,10 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     private void callProxyOnCreate(Bundle savedInstanceState) {
         boolean mockRestoreInstanceState = false;
         // 使用上一次的 savedInstance 进行恢复
-        if (sPendingSavedInstanceState != null && savedInstanceState == null) {
-            savedInstanceState = sPendingSavedInstanceState;
+        String id = getIntent().getStringExtra(KEY_ID);
+        if (id != null && savedInstanceState == null) {
+            savedInstanceState = sPendingSavedInstanceStateMap.remove(id);
             savedInstanceState.setClassLoader(mLoadedApk.getPluginClassLoader());
-            sPendingSavedInstanceState = null;
             mockRestoreInstanceState = true;
         }
         if (getParent() == null) {

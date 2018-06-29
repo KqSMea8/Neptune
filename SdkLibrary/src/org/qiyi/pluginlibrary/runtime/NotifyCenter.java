@@ -60,6 +60,7 @@ public class NotifyCenter {
     public static void notifyServiceConnected(Context context, Class<? extends Service> service) {
         Intent intent = new Intent(IIntentConstant.ACTION_SERVICE_CONNECTED);
         intent.putExtra(IIntentConstant.EXTRA_SERVICE_CLASS, service);
-        context.sendBroadcast(intent);
+        // 在插件 activity 进程被回收以后恢复过程中，需要保证有序，具体参见恢复逻辑
+        context.sendOrderedBroadcast(intent, null);
     }
 }
