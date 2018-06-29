@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * 此类的功能和{@link PluginPackageManager}基本一致<br/>
@@ -50,15 +52,18 @@ public class PluginPackageManagerNative {
 
         private String mProcessName;
 
+        private Executor mActionExecutor;
+
         public ActionFinishCallback(String processName) {
             mProcessName = processName;
+            mActionExecutor = Executors.newFixedThreadPool(2);
         }
 
         @Override
         public void onActionComplete(String packageName, int errorCode) throws RemoteException {
             PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, errorCode:%d", packageName, errorCode);
             if (mActionMap.containsKey(packageName)) {
-                CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
+                final CopyOnWriteArrayList<Action> list = mActionMap.get(packageName);
                 if (null == list) {
                     return;
                 }
@@ -72,7 +77,7 @@ public class PluginPackageManagerNative {
                                     "get and remove first action:%s ", finishedAction.toString());
                         }
 
-                        if (finishedAction != null && finishedAction instanceof PluginUninstallAction) {
+                        if (finishedAction instanceof PluginUninstallAction) {
                             PluginDebugLog.installFormatLog(TAG,
                                     "this is PluginUninstallAction  for :%s", packageName);
                             PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
@@ -82,28 +87,10 @@ public class PluginPackageManagerNative {
                                 uninstallAction.observer.onPluginUnintall(uninstallAction.info.packageName, errorCode);
                             }
                         }
+                        // 执行下一个卸载操作，不能同步，防止栈溢出
+                        executeNextAction(list, packageName);
 
-                        int index = 0;
-                        PluginDebugLog.installFormatLog(TAG, "start find can execute action ...");
-                        while (index < list.size()) {
-                            Action action = list.get(index);
-                            if (action != null) {
-                                if (action.meetCondition()) {
-                                    PluginDebugLog.installFormatLog(TAG,
-                                            "doAction for %s and action is %s", packageName,
-                                            action.toString());
-                                    action.doAction();
-                                    break;
-                                } else {
-                                    PluginDebugLog.installFormatLog(TAG,
-                                            "remove deprecate action of %s,and action:%s "
-                                            , packageName, action.toString());
-                                    list.remove(index);
-                                }
-                            }
-                        }
-
-                        if (list.size() == 0) {
+                        if (list.isEmpty()) {
                             PluginDebugLog.installFormatLog(TAG,
                                     "remove empty action list of %s", packageName);
                             mActionMap.remove(packageName);
@@ -111,6 +98,44 @@ public class PluginPackageManagerNative {
                     }
                 }
             }
+        }
+
+        /**
+         * 异步执行下一个Action
+         * @param actions
+         */
+        private void executeNextAction(final List<Action> actions, final String packageName) {
+            mActionExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+
+                    int index = 0;
+                    PluginDebugLog.installFormatLog(TAG, "start find can execute action ...");
+                    while (index < actions.size()) {
+                        Action action = actions.get(index);
+                        if (action != null) {
+                            if (action.meetCondition()) {
+                                PluginDebugLog.installFormatLog(TAG,
+                                        "doAction for %s and action is %s", packageName,
+                                        action.toString());
+                                action.doAction();
+                                break;
+                            } else {
+                                PluginDebugLog.installFormatLog(TAG,
+                                        "remove deprecate action of %s,and action:%s "
+                                        , packageName, action.toString());
+                                actions.remove(index);
+                            }
+                        }
+                    }
+
+                    if (actions.isEmpty()) {
+                        PluginDebugLog.installFormatLog(TAG,
+                                "remove empty action list of %s", packageName);
+                        mActionMap.remove(packageName);
+                    }
+                }
+            });
         }
 
         @Override
