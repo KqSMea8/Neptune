@@ -44,9 +44,9 @@ public class PluginHookedInstrument extends PluginInstrument {
             String targetClass = result[1];
 
             PluginDebugLog.runtimeLog(TAG, "newActivity: " + className + ", targetClass: " + targetClass);
-            if (!TextUtils.isEmpty(packageName) && !TextUtils.isEmpty(targetClass)) {
+            if (!TextUtils.isEmpty(packageName)) {
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
-                if (loadedApk != null) {
+                if (loadedApk != null && targetClass != null) {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
 
                     if (!dispatchToBaseActivity(activity)) {
@@ -56,7 +56,7 @@ public class PluginHookedInstrument extends PluginInstrument {
                     }
 
                     return activity;
-                } else {
+                } else if (loadedApk == null) {
                     // loadedApk 为空，可能是正常恢复进程，跳转到 RecoveryActivity
                     return mHostInstr.newActivity(cl, mRecoveryHelper.selectRecoveryActivity(className), intent);
                 }

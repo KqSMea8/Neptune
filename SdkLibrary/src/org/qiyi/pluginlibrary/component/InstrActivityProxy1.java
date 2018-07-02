@@ -68,7 +68,6 @@ import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.UUID;
 
 /**
  * :plugin1 Activity　代理
@@ -82,7 +81,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
      * <p>
      * 已知问题：如果 savedInstanceState 包含自定义 class 会出错，考虑到代理方案可能会下线，暂不修复
      */
-    private static ArrayMap<String, Bundle> sPendingSavedInstanceStateMap = new ArrayMap<>();
+    private static ArrayMap<Intent, Bundle> sPendingSavedInstanceStateMap = new ArrayMap<>();
     /**
      * 启动插件 Receiver 的优先级
      * <p>
@@ -143,17 +142,15 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             } else {
                 initUiForRecovery();
 
-                String id = UUID.randomUUID().toString();
-                getIntent().putExtra(KEY_ID, id);
-                sPendingSavedInstanceStateMap.put(id, savedInstanceState);
+                final Intent pluginIntent = new Intent(getIntent());
+                pluginIntent.setComponent(new ComponentName(pkgAndCls[0], pkgAndCls[1]));
+                sPendingSavedInstanceStateMap.put(pluginIntent, savedInstanceState);
 
                 mLaunchPluginReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
                         if (PluginPackageManagerService.class.equals(serviceClass)) {
-                            Intent pluginIntent = new Intent(getIntent());
-                            pluginIntent.setComponent(new ComponentName(pkgAndCls[0], pkgAndCls[1]));
                             PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(InstrActivityProxy1.this));
                         }
                     }
@@ -235,11 +232,12 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     private void callProxyOnCreate(Bundle savedInstanceState) {
         boolean mockRestoreInstanceState = false;
         // 使用上一次的 savedInstance 进行恢复
-        String id = getIntent().getStringExtra(KEY_ID);
-        if (id != null && savedInstanceState == null) {
-            savedInstanceState = sPendingSavedInstanceStateMap.remove(id);
-            savedInstanceState.setClassLoader(mLoadedApk.getPluginClassLoader());
-            mockRestoreInstanceState = true;
+        if (savedInstanceState == null) {
+            savedInstanceState = sPendingSavedInstanceStateMap.remove(getIntent());
+            if (savedInstanceState != null) {
+                savedInstanceState.setClassLoader(mLoadedApk.getPluginClassLoader());
+                mockRestoreInstanceState = true;
+            }
         }
         if (getParent() == null) {
             mLoadedApk.getActivityStackSupervisor().pushActivityToStack(this);
@@ -304,8 +302,14 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
 
         String[] result = new String[2];
-        result[0] = IntentUtils.getTargetPackage(mIntent);
-        result[1] = IntentUtils.getTargetClass(mIntent);
+        try {
+            result[0] = IntentUtils.getTargetPackage(mIntent);
+            result[1] = IntentUtils.getTargetClass(mIntent);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            // Parcelable encountered ClassNotFoundException，使用 action 里面的 pluginPackageName
+            result[0] = mPluginPackage;
+        }
         if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
             PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
             return result;

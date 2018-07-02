@@ -51,7 +51,7 @@ public abstract class BaseRecoveryActivity extends Activity {
         String[] packageAndClass = IntentUtils.parsePkgAndClsFromIntent(getIntent());
         mPluginPackageName = packageAndClass[0];
         mPluginClassName = packageAndClass[1];
-        if (mPluginPackageName == null || mPluginClassName == null) {
+        if (mPluginPackageName == null) {
             finish();
             return;
         }
