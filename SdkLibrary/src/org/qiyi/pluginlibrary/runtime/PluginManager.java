@@ -27,7 +27,6 @@ import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.listenter.IPluginInitListener;
 import org.qiyi.pluginlibrary.listenter.IPluginLoadListener;
-import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
@@ -952,15 +951,6 @@ public class PluginManager implements IIntentConstant {
     }
 
     /**
-     * 设置Activity生命周期回调(宿主工程调用)
-     *
-     * @param mCallbacks
-     */
-    public static void setPluginLifeCallBack(Application.ActivityLifecycleCallbacks mCallbacks) {
-        sActivityLifecycleCallback = mCallbacks;
-    }
-
-    /**
      * 插件状态投递逻辑接口，由外部实现并设置进来
      */
     public interface IDeliverInterface {
@@ -1054,22 +1044,53 @@ public class PluginManager implements IIntentConstant {
 
     }
 
-
-    private static ArrayList<PluginActivityLifeCycleCallback> mActivityLifecycleCallbacks =
+    /**
+     * 宿主注册到插件里的ActivityLifeCycle监听器
+     * 插件重写了Application，需要注册到插件的Application类里去
+     */
+    final static ArrayList<PluginActivityLifeCycleCallback> sActivityLifecycleCallbacks =
             new ArrayList<PluginActivityLifeCycleCallback>();
 
+    /**
+     * 注册ActivityLifeCycle到插件的Application
+     */
     public static void registerActivityLifecycleCallbacks(PluginActivityLifeCycleCallback callback) {
-        synchronized (mActivityLifecycleCallbacks) {
-            mActivityLifecycleCallbacks.add(callback);
+        synchronized (sActivityLifecycleCallbacks) {
+            sActivityLifecycleCallbacks.add(callback);
+        }
+        // 对于已经运行的插件，需要注册到其Application类中
+        for (Map.Entry<String, PluginLoadedApk> entry : sPluginsMap.entrySet()) {
+            PluginLoadedApk loadedApk = entry.getValue();
+            if (loadedApk != null && loadedApk.getPluginApplication() != null) {
+                Application application = loadedApk.getPluginApplication();
+                application.registerActivityLifecycleCallbacks(callback);
+            }
         }
     }
 
+    /**
+     * 取消插件Application里的ActivityLifeCycle监听
+     */
     public static void unregisterActivityLifecycleCallbacks(PluginActivityLifeCycleCallback callback) {
-        synchronized (mActivityLifecycleCallbacks) {
-            mActivityLifecycleCallbacks.remove(callback);
+        synchronized (sActivityLifecycleCallbacks) {
+            sActivityLifecycleCallbacks.remove(callback);
+        }
+        // 对于已经运行的插件，需要从其Application类中反注册
+        for (Map.Entry<String, PluginLoadedApk> entry : sPluginsMap.entrySet()) {
+            PluginLoadedApk loadedApk = entry.getValue();
+            if (loadedApk != null && loadedApk.getPluginApplication() != null) {
+                Application application = loadedApk.getPluginApplication();
+                application.unregisterActivityLifecycleCallbacks(callback);
+            }
         }
     }
 
+    /**********************************************************
+     *
+     * 以下Dispatch相关方法只会在InstrActivityProxyN中调用
+     * 新的Hook Instrumentation方案不会使用到
+     *
+     *********************************************************/
 
     public static void dispatchPluginActivityCreated(String pluginPkgName, Activity activity, Bundle savedInstanceState) {
         Object[] callbacks = collectActivityLifecycleCallbacks();
@@ -1138,52 +1159,11 @@ public class PluginManager implements IIntentConstant {
 
     private static Object[] collectActivityLifecycleCallbacks() {
         Object[] callbacks = null;
-        synchronized (mActivityLifecycleCallbacks) {
-            if (mActivityLifecycleCallbacks.size() > 0) {
-                callbacks = mActivityLifecycleCallbacks.toArray();
+        synchronized (sActivityLifecycleCallbacks) {
+            if (sActivityLifecycleCallbacks.size() > 0) {
+                callbacks = sActivityLifecycleCallbacks.toArray();
             }
         }
         return callbacks;
     }
-
-    /**
-     * 插件调试日志
-     **/
-    public static Application.ActivityLifecycleCallbacks sActivityLifecycleCallback = new PluginActivityLifeCycleCallback() {
-
-        @Override
-        public void onPluginActivityCreated(String pluginPkgName, Activity activity, Bundle savedInstanceState) {
-            PluginDebugLog.runtimeLog(TAG, "onPluginActivityCreated: " + activity + ", pluginName: " + pluginPkgName);
-        }
-
-        @Override
-        public void onPluginActivityStarted(String pluginPkgName, Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onPluginActivityStarted: " + activity + ", pluginName: " + pluginPkgName);
-        }
-
-        @Override
-        public void onPluginActivityResumed(String pluginPkgName, Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onPluginActivityResumed: " + activity + ", pluginName: " + pluginPkgName);
-        }
-
-        @Override
-        public void onPluginActivityPaused(String pluginPkgName, Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onPluginActivityPaused: " + activity + ", pluginName: " + pluginPkgName);
-        }
-
-        @Override
-        public void onPluginActivityStopped(String pluginPkgName, Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onPluginActivityStopped: " + activity + ", pluginName: " + pluginPkgName);
-        }
-
-        @Override
-        public void onPluginActivitySaveInstanceState(String pluginPkgName, Activity activity, Bundle outState) {
-            PluginDebugLog.runtimeLog(TAG, "onPluginActivitySaveInstanceState: " + activity + ", pluginName: " + pluginPkgName);
-        }
-
-        @Override
-        public void onPluginActivityDestroyed(String pluginPkgName, Activity activity) {
-            PluginDebugLog.runtimeLog(TAG, "onPluginActivityDestroyed: " + activity + ", pluginName: " + pluginPkgName);
-        }
-    };
 }

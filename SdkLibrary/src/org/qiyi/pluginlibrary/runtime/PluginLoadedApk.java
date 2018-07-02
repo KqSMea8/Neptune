@@ -438,8 +438,11 @@ public class PluginLoadedApk implements IIntentConstant {
                 PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
                 return false;
             }
+            // 支持注册多个ActivityLifeCycle到插件进程
+            for (PluginActivityLifeCycleCallback callback : PluginManager.sActivityLifecycleCallbacks) {
+                mPluginApplication.registerActivityLifecycleCallbacks(callback);
+            }
 
-            mPluginApplication.registerActivityLifecycleCallbacks(PluginManager.sActivityLifecycleCallback);
             isPluginInit = true;
             isLaunchingIntent = false;
 
