@@ -87,6 +87,10 @@ class PluginActivityDelegate implements InterfaceToGetHost {
                 tr.printStackTrace();
             }
         }
+        // 替换Application，不然插件内无法监听LifeCycle
+        if (mPlugin != null) {
+            ReflectionUtils.on(activity).setNoException("mApplication", mPlugin.getPluginApplication());
+        }
         // 再次确保Activity的Base Context已经被替换了
         Context mBase = activity.getBaseContext();
         if (mBase instanceof PluginContextWrapper) {
