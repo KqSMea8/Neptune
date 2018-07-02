@@ -464,6 +464,18 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return new File(prefsFile.getPath() + ".bak");
     }
 
+    /**
+     * Override Oppo method in Context Resolve cann't start plugin on oppo
+     * devices, true or false both OK, false as the temporary result
+     * [warning] 不要删除该方法，在oppo机型的Context类中存在
+     *
+     * @return
+     */
+    /** @Override */
+    public boolean isOppoStyle() {
+        return false;
+    }
+
     @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {
         if (getPluginLoadedApk() != null && getPluginPackageInfo() != null) {
