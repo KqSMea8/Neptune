@@ -123,7 +123,7 @@ public class PluginHookedInstrument extends PluginInstrument {
 
     @Override
     public void callActivityOnDestroy(Activity activity) {
-        super.callActivityOnDestroy(activity);
+        mHostInstr.callActivityOnDestroy(activity);
         if (activity.getParent() != null) {
             return;
         }

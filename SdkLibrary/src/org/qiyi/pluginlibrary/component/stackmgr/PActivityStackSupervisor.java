@@ -12,6 +12,7 @@ import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.Util;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -338,8 +339,10 @@ public class PActivityStackSupervisor {
 
                 for (Activity act : popActivities) {
                     PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + IntentUtils.dump(act));
-                    act.finish();
                     popActivityFromStack(act);
+                    if (!Util.isFinished(act)) {
+                        act.finish();
+                    }
                 }
 
                 // 如果Activity是在后台堆栈中找到的，需要合并前后台栈
@@ -455,8 +458,10 @@ public class PActivityStackSupervisor {
                     String pkgName = IntentUtils.parsePkgNameFromActivity(removeItem);
                     mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
                     if (mLoadedApk != null) {
-                        removeItem.finish();
                         popActivityFromStack(removeItem);
+                        if (!Util.isFinished(removeItem)) {
+                            removeItem.finish();
+                        }
                     }
                 }
             }

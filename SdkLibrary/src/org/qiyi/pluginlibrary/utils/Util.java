@@ -519,6 +519,20 @@ public final class Util {
         }
     }
 
+    /**
+     * 判断Activity是否已经销毁或正在销毁，这时候就不再调用Activity.finish方法
+     * 防止插件重写finish方法造成循环调用
+     *
+     * @param activity
+     * @return
+     */
+    public static boolean isFinished(Activity activity) {
+        boolean isFinished = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            isFinished = activity.isDestroyed();
+        }
+        return isFinished || activity.isFinishing();
+    }
 
 
     /**
