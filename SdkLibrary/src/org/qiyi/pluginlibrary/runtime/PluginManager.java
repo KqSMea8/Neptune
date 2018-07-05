@@ -842,6 +842,31 @@ public class PluginManager implements IIntentConstant {
     }
 
     /**
+     * 注册卸载广播，清理PluginLoadedApk内存引用
+     *
+     * @param context
+     */
+    public static void registerUninstallReceiver(Context context) {
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(PluginPackageManager.ACTION_PACKAGE_UNINSTALL);
+        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                if (PluginPackageManager.ACTION_PACKAGE_UNINSTALL.equals(intent.getAction())) {
+                    // 卸载广播
+                    String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
+                    exitPlugin(pkgName);
+                }
+            }
+        };
+        context.registerReceiver(receiver, filter);
+    }
+
+    /**
      * 插件进程的Activity栈是否空
      *
      * @return true: Activity栈是空，false：Activity栈不是空

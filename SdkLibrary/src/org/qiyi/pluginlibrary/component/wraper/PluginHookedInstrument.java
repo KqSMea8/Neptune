@@ -17,6 +17,7 @@ import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -115,10 +116,7 @@ public class PluginHookedInstrument extends PluginInstrument {
                 NotifyCenter.notifyPluginActivityLoaded(activity);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            if (PluginDebugLog.isDebug()) {
-                throw e;
-            }
+            ErrorUtil.throwErrorIfNeed(e);
             activity.finish();
         }
     }

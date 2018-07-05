@@ -125,7 +125,13 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             if (actInfo != null) {
                 changeActivityInfo(this, pluginPkgName, actInfo);
             }
-            mPluginContrl.dispatchProxyToPlugin(mLoadedApk.getPluginInstrument(), mPluginContextWrapper, pluginPkgName);
+
+            if (!mPluginContrl.dispatchProxyToPlugin(mLoadedApk.getPluginInstrument(), mPluginContextWrapper, pluginPkgName)) {
+                PluginDebugLog.runtimeLog(TAG, "dispatchProxyToPlugin failed, call attach failed");
+                this.finish();
+                return;
+            }
+
             int resTheme = mLoadedApk.getActivityThemeResourceByClassName(pluginActivityName);
             setTheme(resTheme);
             // Set plugin's default theme.

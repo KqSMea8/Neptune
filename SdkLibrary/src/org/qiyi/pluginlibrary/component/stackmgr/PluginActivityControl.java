@@ -27,6 +27,7 @@ import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.plugin.PluginActivityCallback;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.exception.ReflectException;
@@ -67,9 +68,17 @@ public class PluginActivityControl implements PluginActivityCallback {
         mPluginRef = ReflectionUtils.on(plugin);
     }
 
-    public void dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper, String packageName) {
+    /**
+     * 调用插件Activity的attach方法，注入基础信息
+     *
+     * @param pluginInstr  插件Instrumentation
+     * @param contextWrapper 插件的BaseContext
+     * @param packageName
+     * @return
+     */
+    public boolean dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper, String packageName) {
         if (mPlugin == null || mPlugin.getBaseContext() != null || pluginInstr == null) {
-            return;
+            return false;
         }
         try {
             if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -103,11 +112,12 @@ public class PluginActivityControl implements PluginActivityCallback {
             // 替换ContextImpl的OuterContext，插件Activity的LayoutInflater才能正常使用
             ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", sMethods, mPlugin);
 
+            return true;
         } catch (ReflectException e) {
             PluginManager.deliver(mProxy, false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
-            e.printStackTrace();
+            ErrorUtil.throwErrorIfNeed(e);
         }
-
+        return false;
     }
 
 

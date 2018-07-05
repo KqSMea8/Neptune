@@ -536,11 +536,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     private SharedPreferences getSharedPreferencesForPlugin(String name, int mode) {
         try {
             if (android.os.Build.VERSION.SDK_INT >= 24) {
-
-                if (useNewSpPath()) {
-                    backupSharedPreferenceV28(name);  // 迁移数据
-                    return getSharedPreferencesV28(name, mode);
-                }
                 // Android 7.0+
                 return getSharedPreferencesV24(name, mode);
             } else if (android.os.Build.VERSION.SDK_INT >= 19) {
@@ -558,20 +553,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
         return null;
     }
-
-
-    /**
-     * 是否使用新的sp路径，跟宿主放在相同的目录下
-     * @return
-     */
-    private boolean useNewSpPath() {
-        if (Build.VERSION.SDK_INT < 26) {
-            return false;
-        }
-        String pkgName = getPluginPackageName();
-        return TextUtils.equals(pkgName, "org.qiyi.videotransfer");  //写死零流量传片功能
-    }
-
 
     /**
      * Android P，增加了非SDK接口限制，SharedPreferenceImpl进入了dark名单
