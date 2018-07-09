@@ -57,7 +57,9 @@ public class IntentUtils {
         }
         if (TextUtils.isEmpty(pkgName) && activity.getIntent() != null) {
             String[] result = parsePkgAndClsFromIntent(activity.getIntent());
-            pkgName = result[0];
+            if (result != null && result.length >= 1) {
+                pkgName = result[0];
+            }
         }
         return pkgName;
     }
@@ -69,6 +71,13 @@ public class IntentUtils {
      * @return
      */
     public static String[] parsePkgAndClsFromIntent(Intent intent) {
+        String[] result = new String[2];
+        if (intent == null) {
+            result[0] = "";
+            result[1] = "";
+            return result;
+        }
+
         String pkgName = getPluginPackage(intent);
         if (!TextUtils.isEmpty(pkgName)) {
             PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
@@ -77,7 +86,7 @@ public class IntentUtils {
                 intent.setExtrasClassLoader(loadedApk.getPluginClassLoader());
             }
         }
-        String[] result = new String[2];
+
         result[0] = getTargetPackage(intent);
         result[1] = getTargetClass(intent);
         PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
