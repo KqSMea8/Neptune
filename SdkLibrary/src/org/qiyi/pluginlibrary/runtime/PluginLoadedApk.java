@@ -414,22 +414,29 @@ public class PluginLoadedApk implements IIntentConstant {
 //            }
 //            invokeApplicationAttach();
             // 注册Application回调
-            mHostContext.registerComponentCallbacks(new ComponentCallbacks2() {
-                @Override
-                public void onTrimMemory(int level) {
-                    mPluginApplication.onTrimMemory(level);
-                }
+            try {
+                mHostContext.registerComponentCallbacks(new ComponentCallbacks2() {
+                    @Override
+                    public void onTrimMemory(int level) {
+                        mPluginApplication.onTrimMemory(level);
+                    }
 
-                @Override
-                public void onConfigurationChanged(Configuration configuration) {
-                    updateConfiguration(configuration);
-                }
+                    @Override
+                    public void onConfigurationChanged(Configuration configuration) {
+                        updateConfiguration(configuration);
+                    }
 
-                @Override
-                public void onLowMemory() {
-                    mPluginApplication.onLowMemory();
-                }
-            });
+                    @Override
+                    public void onLowMemory() {
+                        mPluginApplication.onLowMemory();
+                    }
+                });
+            } catch (NoSuchMethodError e) {
+                // java.lang.NoSuchMethodError: android.content.Context.registerComponentCallbacks
+                // Vivo X3t, 4.2
+                ErrorUtil.throwErrorIfNeed(e);
+                PluginDebugLog.runtimeLog(TAG, "register ComponentCallbacks for plugin failed, pkgName=" + mPluginPackageName);
+            }
 
             try {
                 mPluginApplication.onCreate();

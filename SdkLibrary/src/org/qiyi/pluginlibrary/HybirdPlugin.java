@@ -76,9 +76,21 @@ public class HybirdPlugin {
         Instrumentation hostInstr = getHostInstrumentation();
 
         if (hostInstr != null) {
-            PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
-            ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
-            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
+            String hostInstrName = hostInstr.getClass().getName();
+            PluginDebugLog.runtimeLog(TAG, "host Instrument name: " + hostInstrName);
+
+            if (hostInstrName.startsWith("com.chaozhuo.superme")
+               || hostInstrName.startsWith("com.lody.virtual")) {
+                // warning: 特殊case，VirtualApp环境，暂不Hook
+                PluginDebugLog.runtimeLog(TAG, "reject hook instrument, run in VirtualApp Environment");
+            } else if (hostInstr instanceof PluginHookedInstrument) {
+                // already hooked
+                PluginDebugLog.runtimeLog(TAG, "ActivityThread Instrumentation already hooked");
+            } else {
+                PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
+                ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
+                PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
+            }
         } else {
             PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed, hostInstr==null");
         }

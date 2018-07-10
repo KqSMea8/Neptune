@@ -60,7 +60,6 @@ public class ContextUtils {
                     return ((InterfaceToGetHost) base).getOriginalContext();
                 }
             }
-            PluginDebugLog.log(TAG, "Return local context for getOriginalContext");
             return context;
         }
     }

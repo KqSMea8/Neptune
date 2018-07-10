@@ -496,12 +496,13 @@ public class ReflectionUtils {
                 try {
                     return accessible(type.getDeclaredMethod(name, types));
                 } catch (NoSuchMethodException ignore) {
+                    /* ignore */
                 }
 
                 type = type.getSuperclass();
             } while (type != null);
 
-            throw new NoSuchMethodException();
+            throw new NoSuchMethodException(e.getMessage());
         }
     }
 

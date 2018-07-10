@@ -190,21 +190,47 @@ public class PluginPackageInfo implements Parcelable {
         final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
 
         for (String key : activityStates.keySet()) {
-            final ActivityIntentInfo state = activityStates.getParcelable(key);
-            mActivityIntentInfos.put(key, state);
+            final ActivityIntentInfo state = getBundleParcelable(activityStates, key);
+            if (state != null) {
+                mActivityIntentInfos.put(key, state);
+            }
         }
 
         final Bundle serviceStates = in.readBundle(ServiceIntentInfo.class.getClassLoader());
         for (String key : serviceStates.keySet()) {
-            final ServiceIntentInfo state = serviceStates.getParcelable(key);
-            mServiceIntentInfos.put(key, state);
+            final ServiceIntentInfo state = getBundleParcelable(serviceStates, key);
+            if (state != null) {
+                mServiceIntentInfos.put(key, state);
+            }
         }
 
         final Bundle receiverStates = in.readBundle(ReceiverIntentInfo.class.getClassLoader());
         for (String key : receiverStates.keySet()) {
-            final ReceiverIntentInfo state = receiverStates.getParcelable(key);
-            mReceiverIntentInfos.put(key, state);
+            final ReceiverIntentInfo state = getBundleParcelable(receiverStates, key);
+            if (state != null) {
+                mReceiverIntentInfos.put(key, state);
+            }
         }
+
+        final Bundle providerStates = in.readBundle(ProviderIntentInfo.class.getClassLoader());
+        for (String key : providerStates.keySet()) {
+            final ProviderIntentInfo state = getBundleParcelable(providerStates, key);
+            if (state != null) {
+                mProviderIntentInfos.put(key, state);
+            }
+        }
+    }
+
+    /**
+     * vivo X5L, 4,4, java.lang.NoSuchMethodError: android.os.Bundle.getParcelable
+     */
+    private static <T extends Parcelable> T getBundleParcelable(Bundle bundle, String key) {
+        try {
+            return bundle.getParcelable(key);
+        } catch (NoSuchMethodError e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
@@ -550,18 +576,24 @@ public class PluginPackageInfo implements Parcelable {
 
         final Bundle serviceStates = new Bundle();
         for (String uri : mServiceIntentInfos.keySet()) {
-            final ServiceIntentInfo aii = mServiceIntentInfos.get(uri);
-            serviceStates.putParcelable(uri, aii);
+            final ServiceIntentInfo sii = mServiceIntentInfos.get(uri);
+            serviceStates.putParcelable(uri, sii);
         }
         parcel.writeBundle(serviceStates);
 
         final Bundle receiverStates = new Bundle();
         for (String uri : mReceiverIntentInfos.keySet()) {
-            final ReceiverIntentInfo aii = mReceiverIntentInfos.get(uri);
-            receiverStates.putParcelable(uri, aii);
+            final ReceiverIntentInfo rii = mReceiverIntentInfos.get(uri);
+            receiverStates.putParcelable(uri, rii);
         }
         parcel.writeBundle(receiverStates);
 
+        final Bundle providerStates = new Bundle();
+        for (String uri : mProviderIntentInfos.keySet()) {
+            final ProviderIntentInfo pii = mProviderIntentInfos.get(uri);
+            providerStates.putParcelable(uri, pii);
+        }
+        parcel.writeBundle(providerStates);
     }
 
     public final static class ActivityIntentInfo extends IntentInfo implements Parcelable {
