@@ -621,7 +621,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             }
             if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
                     .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
+                ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods, null);
             }
         }
         return (SharedPreferences) sp;
@@ -669,7 +669,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             }
             if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
                     .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
-                ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
+                ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods, null);
             }
         }
         return (SharedPreferences) sp;
@@ -709,7 +709,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
         if ((mode & Context.MODE_MULTI_PROCESS) != 0 || getPluginPackageInfo()
                 .getPackageInfo().applicationInfo.targetSdkVersion < android.os.Build.VERSION_CODES.HONEYCOMB) {
-            ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods);
+            ReflectionUtils.on(sp).call("startReloadIfChangedUnexpectedly", sMethods, null);
         }
         return (SharedPreferences) sp;
     }

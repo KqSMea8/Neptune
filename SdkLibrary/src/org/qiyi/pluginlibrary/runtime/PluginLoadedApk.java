@@ -8,7 +8,6 @@ import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -18,19 +17,19 @@ import android.content.res.Resources;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
+import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
-import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
-import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
-import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
-import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
-import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
@@ -218,11 +217,13 @@ public class PluginLoadedApk implements IIntentConstant {
             // Android 5.0以下AssetManager不支持扩展资源表，始终新建一个，避免污染宿主的AssetManager
             AssetManager am = AssetManager.class.newInstance();
             // 添加插件的资源
-            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mPluginPath);
+            Class<?>[] paramTypes = new Class[]{String.class};
+            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, paramTypes, mPluginPath);
             boolean shouldAddHostRes = !mPluginPackageInfo.isIndividualMode() && mPluginPackageInfo.isResourceNeedMerge();
             if (shouldAddHostRes) {
                 // 添加宿主的资源到插件的AssetManager
-                ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mHostContext.getApplicationInfo().sourceDir);
+                ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, paramTypes,
+                        mHostContext.getApplicationInfo().sourceDir);
                 PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
             }
 
@@ -263,8 +264,9 @@ public class PluginLoadedApk implements IIntentConstant {
                 // 对基线资源存在依赖
                 mPluginAssetManager = resources.getAssets();
                 if (mPluginPackageInfo.isResourceNeedMerge()) {
+                    Class<?>[] paramTypes = new Class[]{String.class};
                     ReflectionUtils.on(mPluginAssetManager).call("addAssetPath", PluginActivityControl.sMethods,
-                            mHostContext.getApplicationInfo().sourceDir);
+                            paramTypes, mHostContext.getApplicationInfo().sourceDir);
                     PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
                 }
 
