@@ -1,5 +1,7 @@
 package org.qiyi.pluginlibrary.runtime;
 
+import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Service;
@@ -18,18 +20,22 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
+import android.support.v4.app.Fragment;
 import android.text.TextUtils;
+import android.view.View;
 
-import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
-import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
+import org.qiyi.pluginlibrary.component.wraper.ActivityWrapper;
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.error.ErrorType;
+import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.listenter.IPluginElementLoadListener;
 import org.qiyi.pluginlibrary.listenter.IPluginInitListener;
 import org.qiyi.pluginlibrary.listenter.IPluginLoadListener;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
@@ -37,6 +43,8 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.ViewPluginHelper;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -162,6 +170,191 @@ public class PluginManager implements IIntentConstant {
      */
     public static Map<String, PluginLoadedApk> getAllPluginLoadedApk() {
         return Collections.unmodifiableMap(sPluginsMap);
+    }
+
+    /**
+     * 创建插件中的 Fragment 实例
+     *
+     * @param hostContext   host context
+     * @param packageName   plugin package name
+     * @param fragmentClass plugin fragment class name
+     * @param listener      listener for result
+     */
+    public static void createFragment(@NonNull Context hostContext,
+                                      @NonNull String packageName,
+                                      @NonNull String fragmentClass,
+                                      @NonNull IPluginElementLoadListener<Fragment> listener) {
+        createFragment(hostContext, packageName, fragmentClass, null, listener);
+    }
+
+    /**
+     * 创建插件中的 Fragment 实例
+     *
+     * @param hostContext   host context
+     * @param packageName   plugin package name
+     * @param fragmentClass plugin fragment class name
+     * @param arguments     arguments for fragment
+     * @param listener      listener for result
+     */
+    public static void createFragment(@NonNull final Context hostContext,
+                                      @NonNull final String packageName,
+                                      @NonNull final String fragmentClass,
+                                      @Nullable final Bundle arguments,
+                                      @NonNull final IPluginElementLoadListener<Fragment> listener) {
+        loadClass(hostContext.getApplicationContext(), packageName, fragmentClass, new IPluginElementLoadListener<Class<?>>() {
+            @Override
+            public void onSuccess(Class<?> element, String packageName) {
+                try {
+                    Fragment fragment = (Fragment) element.newInstance();
+                    Bundle args = new Bundle();
+                    if (arguments != null) {
+                        args.putAll(arguments);
+                    }
+                    //  告诉 Fragment 当前所在包名 可以处理资源访问问题
+                    args.putString(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY, packageName);
+                    fragment.setArguments(args);
+                    listener.onSuccess(fragment, packageName);
+                } catch (Throwable e) {
+                    ErrorUtil.throwErrorIfNeed(e);
+                    listener.onFail(packageName);
+                }
+            }
+
+            @Override
+            public void onFail(String packageName) {
+                listener.onFail(packageName);
+
+            }
+        });
+    }
+
+    /**
+     * 创建插件 View 实例，可以被添加到宿主 ViewGroup 中
+     *
+     * @param hostActivity  host activity
+     * @param packageName   package name
+     * @param viewClassName view class name
+     * @param listener      listener
+     */
+    public static void createView(@NonNull final Activity hostActivity,
+                                  @NonNull String packageName,
+                                  @NonNull final String viewClassName,
+                                  @NonNull final IPluginElementLoadListener<View> listener) {
+        loadClass(hostActivity.getApplicationContext(), packageName, viewClassName, new IPluginElementLoadListener<Class<?>>() {
+            @Override
+            public void onSuccess(Class<?> element, String packageName) {
+                try {
+                    PluginLoadedApk loadedApk = getPluginLoadedApkByPkgName(packageName);
+                    if (loadedApk != null) {
+                        ActivityWrapper context = new ActivityWrapper(hostActivity, loadedApk.getAppWrapper());
+                        View view = (View) element.getConstructor(Context.class).newInstance(context);
+                        ViewPluginHelper.disableViewSaveInstanceRecursively(view);
+                        listener.onSuccess(view, packageName);
+                    } else {
+                        listener.onFail(packageName);
+                    }
+                } catch (Throwable e) {
+                    ErrorUtil.throwErrorIfNeed(e);
+                    listener.onFail(packageName);
+                }
+            }
+
+            @Override
+            public void onFail(String packageName) {
+                listener.onFail(packageName);
+            }
+        });
+    }
+
+    /**
+     * 加载指定包名的指定 class，处理插件之间的依赖关系
+     *
+     * @param hostContext host context
+     * @param packageName packageName
+     * @param className   className
+     * @param listener    load listener
+     */
+    private static void loadClass(@NonNull final Context hostContext,
+                                  @NonNull final String packageName,
+                                  @NonNull final String className,
+                                  @NonNull final IPluginElementLoadListener<Class<?>> listener) {
+        if (hostContext == null || TextUtils.isEmpty(packageName) || TextUtils.isEmpty(className)) {
+            PluginDebugLog.runtimeLog(TAG, "loadClass hostContext or packageName or className is null!");
+            listener.onFail(packageName);
+            return;
+        }
+        PluginLoadedApk loadedApk = getPluginLoadedApkByPkgName(packageName);
+        // 1. 插件已经在内存，直接加载成功
+        if (loadedApk != null) {
+            loadedApk.makeApplication();
+            try {
+                Class<?> pluginClass = loadedApk.getPluginClassLoader().loadClass(className);
+                listener.onSuccess(pluginClass, packageName);
+            } catch (ClassNotFoundException e) {
+                ErrorUtil.throwErrorIfNeed(e);
+                listener.onFail(packageName);
+            }
+            return;
+        }
+        PluginLiteInfo packageInfo = PluginPackageManagerNative.getInstance(hostContext).getPackageInfo(packageName);
+        List<String> pluginRefs = PluginPackageManagerNative.getInstance(hostContext).getPluginRefs(packageName);
+        // 2. 如果没有依赖，异步加载插件获取
+        if (packageInfo != null && (pluginRefs == null || pluginRefs.isEmpty())) {
+            PluginDebugLog.runtimeLog(TAG, "start Check installation without dependence packageName: " + packageName);
+            doLoadClassAsync(hostContext, packageName, className, listener);
+            return;
+        }
+        // 3. 包含依赖的情况下，先启动依赖
+        if (packageInfo != null) {
+            PluginDebugLog.runtimeLog(TAG, "start to check dependence installation size: " + pluginRefs.size());
+            final AtomicInteger count = new AtomicInteger(pluginRefs.size());
+            for (String pkgName : pluginRefs) {
+                PluginDebugLog.runtimeLog(TAG, "start to check installation pkgName: " + pkgName);
+                final PluginLiteInfo refInfo = PluginPackageManagerNative.getInstance(hostContext).getPackageInfo(pkgName);
+                PluginPackageManagerNative.getInstance(hostContext).packageAction(refInfo,
+                        new IInstallCallBack.Stub() {
+                            @Override
+                            public void onPackageInstalled(PluginLiteInfo packageInfo) {
+                                count.getAndDecrement();
+                                PluginDebugLog.runtimeLog(TAG, "check installation success pkgName: " + refInfo.packageName);
+                                if (count.get() == 0) {
+                                    PluginDebugLog.runtimeLog(TAG, "start Check installation after check dependence packageName: " + packageName);
+                                    doLoadClassAsync(hostContext, packageName, className, listener);
+                                }
+                            }
+
+                            @Override
+                            public void onPackageInstallFail(PluginLiteInfo info, int failReason) throws RemoteException {
+                                PluginDebugLog.runtimeLog(TAG, "check installation failed pkgName: " + info.packageName + " failReason: " + failReason);
+                                count.set(-1);
+                                listener.onFail(packageName);
+                            }
+                        });
+            }
+            return;
+        }
+        // 4. packageInfo 为空的情况，记录异常，用户未安装
+        PluginDebugLog.runtimeLog(TAG, "pluginLiteInfo is null packageName: " + packageName);
+        listener.onFail(packageName);
+    }
+
+    private static void doLoadClassAsync(@NonNull final Context hostContext,
+                                         @NonNull String packageName,
+                                         @NonNull final String fragmentClass,
+                                         @NonNull final IPluginElementLoadListener<Class<?>> listener) {
+        loadPluginAsync(hostContext, packageName, new IPluginLoadListener() {
+            @Override
+            public void onLoadSuccess(String packageName) {
+                if (getPluginLoadedApkByPkgName(packageName) != null) {
+                    loadClass(hostContext, packageName, fragmentClass, listener);
+                }
+            }
+
+            @Override
+            public void onLoadFailed(String packageName) {
+                listener.onFail(packageName);
+            }
+        }, Util.getCurrentProcessName(hostContext));
     }
 
     /**

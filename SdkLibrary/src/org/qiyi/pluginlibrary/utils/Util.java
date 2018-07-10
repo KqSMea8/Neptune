@@ -1,5 +1,15 @@
 package org.qiyi.pluginlibrary.utils;
 
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.os.Build;
+import android.os.Process;
+import android.text.TextUtils;
+import android.util.Log;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -25,16 +35,6 @@ import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
-
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.pm.Signature;
-import android.os.Build;
-import android.os.Process;
-import android.text.TextUtils;
-import android.util.Log;
 
 /**
  *
@@ -735,5 +735,20 @@ public final class Util {
             length = raf.read(buffer, 0, length);
         }
         return crc.getValue();
+    }
+
+
+    public static String getCurrentProcessName(Context context) {
+        int pid = Process.myPid();
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (manager == null) {
+            return null;
+        }
+        for (ActivityManager.RunningAppProcessInfo processInfo : manager.getRunningAppProcesses()) {
+            if (processInfo.pid == pid) {
+                return processInfo.processName;
+            }
+        }
+        return null;
     }
 }
