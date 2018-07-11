@@ -1,5 +1,9 @@
 package org.qiyi.pluginlibrary.utils;
 
+import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.exception.ReflectException;
+
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -12,12 +16,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import android.text.TextUtils;
-
-import org.qiyi.pluginlibrary.exception.ReflectException;
 
 public class ReflectionUtils {
     public static <T> T getFieldValue(Object obj, String fieldName)
@@ -399,19 +397,21 @@ public class ReflectionUtils {
      * @throws ReflectException
      */
     public ReflectionUtils call(String name, Object... args) throws ReflectException {
-        return call(name, null, args);
+        return call(name, null, null, args);
     }
 
+
     /**
-     * 给定方法名参数，以及Cache，调用一个方法
+     * 给定方法名参数，MethodCache及可选的参数类型列表，调用一个方法
      *
      * @param name
      * @param methodCache
+     * @param paramTypes
      * @param args
      * @return
      * @throws ReflectException
      */
-    public ReflectionUtils call(String name, Map<String, Vector<Method>> methodCache, Object... args) throws ReflectException {
+    public ReflectionUtils call(String name, Map<String, Vector<Method>> methodCache, Class<?>[] paramTypes, Object... args) throws ReflectException {
         Class<?>[] types = types(args);
 
         // 尝试调用方法
@@ -422,7 +422,18 @@ public class ReflectionUtils {
                     return res;
                 }
             }
-            Method method = exactMethod(name, types);
+            Method method;
+            if (paramTypes != null) {
+                try {
+                    // 先尝试使用外部直接传入的类型参数获取Method，然后再使用推导的类型
+                    method = exactMethod(name, paramTypes);
+                } catch (NoSuchMethodException e) {
+                    method = exactMethod(name, types);
+                }
+            } else {
+                method = exactMethod(name, types);
+            }
+
             if (null != methodCache && null != method) {
                 Vector<Method> methods = methodCache.get(name);
                 if (methods == null) {
@@ -485,12 +496,13 @@ public class ReflectionUtils {
                 try {
                     return accessible(type.getDeclaredMethod(name, types));
                 } catch (NoSuchMethodException ignore) {
+                    /* ignore */
                 }
 
                 type = type.getSuperclass();
             } while (type != null);
 
-            throw new NoSuchMethodException();
+            throw new NoSuchMethodException(e.getMessage());
         }
     }
 
@@ -501,18 +513,31 @@ public class ReflectionUtils {
         Class<?> type = type();
 
         // 对于公有方法:
-        for (Method method : type.getMethods()) {
-            if (isSimilarSignature(method, name, types)) {
-                return accessible(method);
+        try {
+            for (Method method : type.getMethods()) {
+                if (isSimilarSignature(method, name, types)) {
+                    return accessible(method);
+                }
             }
+        } catch (NoClassDefFoundError e) {
+            // 可能因为平台差异 getMethods 时发生 NoClassDefFoundError，
+            // 比如 360 修改了 Instrumentation 并且方法签名引用了 4.x 设备没有的类
+            // 由于后续 getDeclaredMethods 会继续去父类查询，这里只是简单的 try catch
+            ErrorUtil.throwErrorIfNeed(e);
         }
 
         // 对于私有方法：
         do {
-            for (Method method : type.getDeclaredMethods()) {
-                if (isSimilarSignature(method, name, types)) {
-                    return accessible(method);
+            try {
+                for (Method method : type.getDeclaredMethods()) {
+                    if (isSimilarSignature(method, name, types)) {
+                        return accessible(method);
+                    }
                 }
+            } catch (NoClassDefFoundError e) {
+                // 可能因为平台差异 getDeclaredMethods 时发生 NoClassDefFoundError，
+                // 比如 360 修改了 Instrumentation 并且方法签名引用了 4.x 设备没有的类
+                ErrorUtil.throwErrorIfNeed(e);
             }
 
             type = type.getSuperclass();

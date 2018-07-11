@@ -60,7 +60,6 @@ public class ContextUtils {
                     return ((InterfaceToGetHost) base).getOriginalContext();
                 }
             }
-            PluginDebugLog.log(TAG, "Return local context for getOriginalContext");
             return context;
         }
     }
@@ -92,10 +91,10 @@ public class ContextUtils {
         for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             String packageName = (String) entry.getKey();
             PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
-            if (mLoadedApk.getActivityStackSupervisor().getActivityStack().size() == 0) {
-                continue;
-            } else if (Util.isResumed(mLoadedApk.getActivityStackSupervisor().getActivityStack().getFirst())) {
+            Activity topActivity = mLoadedApk.getActivityStackSupervisor().getTopActivity();
+            if (topActivity != null && Util.isResumed(topActivity)) {
                 topPackage = packageName;
+                break;
             }
         }
         return topPackage;
@@ -106,7 +105,7 @@ public class ContextUtils {
         for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             String packageName = (String) entry.getKey();
             PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
-            if (mLoadedApk.getActivityStackSupervisor().getActivityStack().size() > 0) {
+            if (mLoadedApk.getActivityStackSupervisor().hasActivityRunning()) {
                 mRunningPackage.add(packageName);
             }
         }

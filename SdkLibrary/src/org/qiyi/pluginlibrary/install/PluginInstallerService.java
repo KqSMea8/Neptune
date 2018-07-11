@@ -337,7 +337,10 @@ public class PluginInstallerService extends Service {
             pkgInfo = pm.getPackageArchiveInfo(apkFilePath, PackageManager.GET_ACTIVITIES);
         } catch (Exception e) {
             e.printStackTrace();
+        } catch (Error e) {
+            e.printStackTrace();
         }
+
 
         if (pkgInfo == null) {
             setInstallFail(srcPathWithScheme, ErrorType.INSTALL_ERROR_APK_PARSE_FAILED, info);

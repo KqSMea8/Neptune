@@ -3,6 +3,9 @@ package org.qiyi.pluginlibrary.pm;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * 存放插件最基本的信息：
  * 安装前的路径（必须有)
@@ -68,6 +71,24 @@ public class PluginLiteInfo implements Parcelable {
 
     }
 
+    public PluginLiteInfo(String json) {
+        try {
+            JSONObject jObj = new JSONObject(json);
+            mPath = jObj.optString("mPath");
+            packageName = jObj.optString("pkgName");
+            installStatus = jObj.optString("installStatus");
+            pluginVersion = jObj.optString("plugin_ver");
+            pluginGrayVersion = jObj.optString("plugin_gray_ver");
+            id = jObj.optString("plugin_id");
+            mDeliverStartUp = jObj.optInt("deliver_startup");
+            srcApkPath = jObj.optString("srcApkPath");
+            srcApkPkgName = jObj.optString("srcPkgName");
+            srcApkVersion = jObj.optString("srcApkVer");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
     protected PluginLiteInfo(Parcel in) {
         mPath = in.readString();
         packageName = in.readString();
@@ -110,6 +131,26 @@ public class PluginLiteInfo implements Parcelable {
         parcel.writeInt(mDeliverStartUp);
         parcel.writeString(srcApkPkgName);
         parcel.writeString(srcApkVersion);
+    }
+
+
+    public String toJson() {
+        JSONObject jObj = new JSONObject();
+        try {
+            jObj.put("mPath", mPath);
+            jObj.put("pkgName", packageName);
+            jObj.put("installStatus", installStatus);
+            jObj.put("plugin_ver", pluginVersion);
+            jObj.put("plugin_gray_ver", pluginGrayVersion);
+            jObj.put("plugin_id", id);
+            jObj.put("deliver_startup", mDeliverStartUp);
+            jObj.put("srcApkPath", srcApkPath);
+            jObj.put("srcPkgName", srcApkPkgName);
+            jObj.put("srcApkVer", srcApkVersion);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jObj.toString();
     }
 
     @Override

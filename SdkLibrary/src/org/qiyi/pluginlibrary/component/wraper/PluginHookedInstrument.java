@@ -17,6 +17,7 @@ import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -115,28 +116,25 @@ public class PluginHookedInstrument extends PluginInstrument {
                 NotifyCenter.notifyPluginActivityLoaded(activity);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            if (PluginDebugLog.isDebug()) {
-                throw e;
-            }
+            ErrorUtil.throwErrorIfNeed(e);
             activity.finish();
         }
     }
 
     @Override
     public void callActivityOnDestroy(Activity activity) {
-        super.callActivityOnDestroy(activity);
+        mHostInstr.callActivityOnDestroy(activity);
         if (activity.getParent() != null) {
             return;
         }
 
         final Intent intent = activity.getIntent();
-        String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
+        String pkgName = IntentUtils.parsePkgNameFromActivity(activity);
+        // TODO 优化以下条件判断，有些Activity可能会把intent置空，导致onDestroy时判断不准确
         if (IntentUtils.isIntentForPlugin(intent)) {
-            String packageName = result[0];
-            if (!TextUtils.isEmpty(packageName)) {
-                PluginDebugLog.runtimeLog(TAG, "callActivityOnDestroy: " + packageName);
-                PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
+            if (!TextUtils.isEmpty(pkgName)) {
+                PluginDebugLog.runtimeLog(TAG, "callActivityOnDestroy: " + pkgName);
+                PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
                 if (loadedApk != null) {
                     loadedApk.getActivityStackSupervisor().popActivityFromStack(activity);
                 }

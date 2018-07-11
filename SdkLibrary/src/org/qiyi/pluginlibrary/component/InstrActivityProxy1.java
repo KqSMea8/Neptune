@@ -30,12 +30,12 @@ import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
 
-import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
@@ -43,7 +43,6 @@ import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -126,7 +125,13 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             if (actInfo != null) {
                 changeActivityInfo(this, pluginPkgName, actInfo);
             }
-            mPluginContrl.dispatchProxyToPlugin(mLoadedApk.getPluginInstrument(), mPluginContextWrapper, pluginPkgName);
+
+            if (!mPluginContrl.dispatchProxyToPlugin(mLoadedApk.getPluginInstrument(), mPluginContextWrapper, pluginPkgName)) {
+                PluginDebugLog.runtimeLog(TAG, "dispatchProxyToPlugin failed, call attach failed");
+                this.finish();
+                return;
+            }
+
             int resTheme = mLoadedApk.getActivityThemeResourceByClassName(pluginActivityName);
             setTheme(resTheme);
             // Set plugin's default theme.
@@ -174,7 +179,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                     .loadClass(activityName).newInstance();
             return mActivity;
         } catch (Exception e) {
-            e.printStackTrace();
+            ErrorUtil.throwErrorIfNeed(e);
         }
         return null;
     }
@@ -413,7 +418,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 PluginManager.dispatchPluginActivityResumed(mPluginPackage, mPluginContrl.getPlugin());
                 IResourchStaticsticsControllerManager.onResume(this);
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
     }
@@ -433,7 +438,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 getController().callOnStart();
                 PluginManager.dispatchPluginActivityStarted(mPluginPackage, mPluginContrl.getPlugin());
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
     }
@@ -446,7 +451,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             try {
                 getController().callOnPostCreate(savedInstanceState);
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
     }
@@ -463,7 +468,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 getController().callOnDestroy();
                 PluginManager.dispatchPluginActivityDestroyed(mPluginPackage, mPluginContrl.getPlugin());
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
         super.onDestroy();
@@ -480,7 +485,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 PluginManager.dispatchPluginActivityPaused(mPluginPackage, mPluginContrl.getPlugin());
                 IResourchStaticsticsControllerManager.onPause(this);
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
     }
@@ -492,7 +497,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             try {
                 getController().callOnBackPressed();
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
     }
@@ -506,7 +511,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 getController().callOnStop();
                 PluginManager.dispatchPluginActivityStopped(mPluginPackage, mPluginContrl.getPlugin());
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
     }
@@ -519,7 +524,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             try {
                 getController().callOnRestart();
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
         }
         mRestartCalled = true;  //标记onRestart()被回调
@@ -679,7 +684,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         super.onActivityResult(requestCode, resultCode, data);
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 onActivityResult");
         if (getController() != null) {
-            getController().getPluginRef().call("onActivityResult", PluginActivityControl.sMethods, requestCode, resultCode, data);
+            Class<?>[] paramTypes = new Class[]{int.class, int.class, Intent.class};
+            getController().getPluginRef().call("onActivityResult", PluginActivityControl.sMethods, paramTypes, requestCode, resultCode, data);
         }
     }
 
@@ -804,8 +810,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
-                pluginRef.call("onRequestPermissionsResult", PluginActivityControl.sMethods, requestCode, permissions, grantResults);
+                Class<?>[] paramTyps = new Class[]{int.class, String[].class, int[].class};
+                pluginRef.call("onRequestPermissionsResult", PluginActivityControl.sMethods, paramTyps, requestCode, permissions, grantResults);
             }
         }
     }
@@ -813,7 +819,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public void onStateNotSaved() {
         super.onStateNotSaved();
         if (getController() != null) {
-            getController().getPluginRef().call("onStateNotSaved", PluginActivityControl.sMethods);
+            getController().getPluginRef().call("onStateNotSaved", PluginActivityControl.sMethods, null);
         }
     }
 
@@ -900,7 +906,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (null != pkgCls && pkgCls.length == 2) {
             printWriter.print("Package&Cls is: " + this + " " + (pkgCls[0] + " " + pkgCls[1]) + " flg=0x"
                     + Integer.toHexString(getIntent().getFlags()));
-            ;
         } else {
             printWriter.print("Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags()));
         }

@@ -1,5 +1,15 @@
 package org.qiyi.pluginlibrary.utils;
 
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.os.Build;
+import android.os.Process;
+import android.text.TextUtils;
+import android.util.Log;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -25,16 +35,6 @@ import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
-
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.pm.Signature;
-import android.os.Build;
-import android.os.Process;
-import android.text.TextUtils;
-import android.util.Log;
 
 /**
  *
@@ -519,6 +519,20 @@ public final class Util {
         }
     }
 
+    /**
+     * 判断Activity是否已经销毁或正在销毁，这时候就不再调用Activity.finish方法
+     * 防止插件重写finish方法造成循环调用
+     *
+     * @param activity
+     * @return
+     */
+    public static boolean isFinished(Activity activity) {
+        boolean isFinished = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            isFinished = activity.isDestroyed();
+        }
+        return isFinished || activity.isFinishing();
+    }
 
 
     /**
@@ -579,7 +593,7 @@ public final class Util {
      * 获取当前进程名
      */
     private static String currentProcessName = null;
-    public static String getCurrentProcesName(Context context) {
+    public static String getCurrentProcessName(Context context) {
         if (!TextUtils.isEmpty(currentProcessName)) {
             return currentProcessName;
         }

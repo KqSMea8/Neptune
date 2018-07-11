@@ -1,13 +1,5 @@
 package org.qiyi.pluginlibrary.component.wraper;
 
-import java.lang.reflect.Method;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
-import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.Instrumentation;
@@ -15,6 +7,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
+
+import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+
+import java.lang.reflect.Method;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 负责转移插件的跳转目标<br>
@@ -66,7 +66,9 @@ public class PluginInstrument extends Instrumentation {
 
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
-            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+            Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
+                    Intent.class, int.class, Bundle.class};
+            return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -81,7 +83,9 @@ public class PluginInstrument extends Instrumentation {
             Intent intent, int requestCode) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
-            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode).get();
+            Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
+                    Intent.class, int.class};
+            return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode).get();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -96,7 +100,9 @@ public class PluginInstrument extends Instrumentation {
             Intent intent, int requestCode, Bundle options, int userId) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
-            return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options, userId)
+            Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
+                    Intent.class, int.class, Bundle.class, int.class};
+            return mInstrumentRef.call("execStartActivityAsCaller", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options, userId)
                     .get();
         } catch (Exception e) {
             e.printStackTrace();
@@ -113,7 +119,9 @@ public class PluginInstrument extends Instrumentation {
             boolean ignoreTargetSecurity, int userId) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
-            return mInstrumentRef.call("execStartActivityAsCaller", sMethods, who, contextThread, token, target, intent, requestCode, options,
+            Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
+                    Intent.class, int.class, Bundle.class, boolean.class, int.class};
+            return mInstrumentRef.call("execStartActivityAsCaller", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options,
                     ignoreTargetSecurity, userId).get();
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,7 +139,9 @@ public class PluginInstrument extends Instrumentation {
             ComponetFinder.switchToActivityProxy(mPkgName, intent, 0, who);
         }
         try {
-            mInstrumentRef.call("execStartActivitiesAsUser", sMethods, who, contextThread, token, target, intents, options, userId);
+            Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
+                    Intent[].class, Bundle.class, int.class};
+            mInstrumentRef.call("execStartActivitiesAsUser", sMethods, paramTypes, who, contextThread, token, target, intents, options, userId);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -145,7 +155,9 @@ public class PluginInstrument extends Instrumentation {
             Intent intent, int requestCode, Bundle options) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
-            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+            Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Fragment.class,
+                    Intent.class, int.class, Bundle.class};
+            return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -160,7 +172,9 @@ public class PluginInstrument extends Instrumentation {
             Intent intent, int requestCode, Bundle options) {
         ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
-            return mInstrumentRef.call("execStartActivity", sMethods, who, contextThread, token, target, intent, requestCode, options).get();
+            Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, String.class,
+                    Intent.class, int.class, Bundle.class};
+            return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
             e.printStackTrace();
         }

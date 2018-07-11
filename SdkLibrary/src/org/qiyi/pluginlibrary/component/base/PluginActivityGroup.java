@@ -33,8 +33,6 @@ public class PluginActivityGroup extends ActivityGroup implements IPluginBase{
         newBase = mDelegate.createActivityContext(this, newBase);
 
         super.attachBaseContext(newBase);
-
-        // TODO FIXME, we need to replace the mApplication in Activity?
     }
 
     @Override
