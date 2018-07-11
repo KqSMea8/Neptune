@@ -1,5 +1,6 @@
 package org.qiyi.pluginlibrary;
 
+import org.qiyi.pluginlibrary.component.AbstractFragmentProxy;
 import org.qiyi.pluginlibrary.pm.IVerifyPluginInfo;
 
 /**
@@ -32,6 +33,7 @@ public final class HybirdPluginConfig {
     private boolean supportMultiDex;
 
     private IVerifyPluginInfo mVerifyPluginInfo;
+    private Class<? extends AbstractFragmentProxy> mFragmentProxyClass;
 
 
     HybirdPluginConfig(HybirdPluginConfigBuilder builder) {
@@ -41,6 +43,7 @@ public final class HybirdPluginConfig {
         this.useNewCompResolve = builder.useNewCompResolve;
         this.supportMultiDex = builder.supportMultiDex;
         this.mVerifyPluginInfo = builder.verifyPluginInfo;
+        this.mFragmentProxyClass = builder.pluginProxyClass;
     }
 
 
@@ -68,7 +71,9 @@ public final class HybirdPluginConfig {
         return mVerifyPluginInfo;
     }
 
-
+    public Class<? extends AbstractFragmentProxy> getFragmentProxyClass() {
+        return mFragmentProxyClass;
+    }
 
     public static class HybirdPluginConfigBuilder {
         int sdkMode = 0;
@@ -77,6 +82,7 @@ public final class HybirdPluginConfig {
         boolean useNewCompResolve = false;
         boolean supportMultiDex = false;
         IVerifyPluginInfo verifyPluginInfo;
+        Class<? extends AbstractFragmentProxy> pluginProxyClass;
 
         public HybirdPluginConfigBuilder configSdkMode(int sdkMode) {
             this.sdkMode = sdkMode;
@@ -106,6 +112,10 @@ public final class HybirdPluginConfig {
         public HybirdPluginConfigBuilder setVerifyPluginInfo(IVerifyPluginInfo verifyPluginInfo) {
             this.verifyPluginInfo = verifyPluginInfo;
             return this;
+        }
+
+        public void setPluginProxyClass(Class<? extends AbstractFragmentProxy> pluginProxyClass) {
+            this.pluginProxyClass = pluginProxyClass;
         }
 
         public HybirdPluginConfig build() {

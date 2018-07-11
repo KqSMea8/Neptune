@@ -24,6 +24,7 @@ import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.View;
 
+import org.qiyi.pluginlibrary.component.FragmentProxyFactory;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.wraper.ActivityWrapper;
@@ -173,6 +174,26 @@ public class PluginManager implements IIntentConstant {
     }
 
     /**
+     * 创建插件中的 Fragment 代理实例，代理会负责加载具体插件 Fragment
+     * <p>
+     * 如果插件未安装，则返回 null
+     *
+     * @param context       host context
+     * @param pkgName       plugin package name
+     * @param fragmentClass plugin fragment class name
+     * @return FragmentProxy or null if plugin is not installed
+     */
+    @Nullable
+    public static Fragment createFragment(@NonNull Context context,
+                                          @NonNull String pkgName, @NonNull String fragmentClass) {
+        if (PluginPackageManagerNative.getInstance(context).isPackageInstalled(pkgName)) {
+            return FragmentProxyFactory.create(pkgName, fragmentClass);
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * 创建插件中的 Fragment 实例
      *
      * @param hostContext   host context
@@ -201,6 +222,10 @@ public class PluginManager implements IIntentConstant {
                                       @NonNull final String fragmentClass,
                                       @Nullable final Bundle arguments,
                                       @NonNull final IPluginElementLoadListener<Fragment> listener) {
+        if (!PluginPackageManagerNative.getInstance(hostContext).isPackageInstalled(packageName)) {
+            listener.onFail(packageName);
+            return;
+        }
         loadClass(hostContext.getApplicationContext(), packageName, fragmentClass, new IPluginElementLoadListener<Class<?>>() {
             @Override
             public void onSuccess(Class<?> element, String packageName) {
@@ -530,7 +555,7 @@ public class PluginManager implements IIntentConstant {
     /**
      * 准备启动指定插件组件
      *
-     * @param mContext      主工程Context
+     * @param mContext     主工程Context
      * @param mConnection  bindService时需要的ServiceConnection,如果不是bindService的方式启动组件，传入Null
      * @param mIntent      需要启动组件的Intent
      * @param needAddCache 是否需要缓存Intnet,true:如果插件没有初始化，那么会缓存起来，等插件加载完毕再执行此Intent
