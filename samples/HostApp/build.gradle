@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+apply plugin: 'com.qiyi.plugin'
+// 宿主使用，固定资源id
+qyplugin {
+    pluginMode = false
+    packageId = 0x7f
+}
+
+
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.2"
@@ -51,4 +59,8 @@ dependencies {
     compile "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
     compile 'com.facebook.fresco:fresco:1.2.0'
     compile 'com.airbnb.android:lottie:2.3.1'
+    compile "com.jakewharton:butterknife:${BUTTER_KNIFE_VERSION}"
+    annotationProcessor "com.jakewharton:butterknife-compiler:${BUTTER_KNIFE_VERSION}"
+
+    compile project(":SdkLibrary")
 }

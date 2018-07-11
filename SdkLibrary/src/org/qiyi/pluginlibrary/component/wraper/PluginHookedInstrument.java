@@ -130,8 +130,9 @@ public class PluginHookedInstrument extends PluginInstrument {
 
         final Intent intent = activity.getIntent();
         String pkgName = IntentUtils.parsePkgNameFromActivity(activity);
-        // TODO 优化以下条件判断，有些Activity可能会把intent置空，导致onDestroy时判断不准确
-        if (IntentUtils.isIntentForPlugin(intent)) {
+        if (IntentUtils.isIntentForPlugin(intent)
+                || intent == null) {
+            // intent为null时，如果能够从Activity中解析出pkgName，也应该是插件的页面
             if (!TextUtils.isEmpty(pkgName)) {
                 PluginDebugLog.runtimeLog(TAG, "callActivityOnDestroy: " + pkgName);
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);

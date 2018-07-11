@@ -386,7 +386,7 @@ public class PluginManager implements IIntentConstant {
     }
 
     /**
-     * 启动插件
+     * 启动插件的默认入口Activity
      *
      * @param mHostContext
      * @param packageName  插件包名

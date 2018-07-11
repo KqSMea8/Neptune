@@ -9,7 +9,7 @@ if (isPluginBuild) {
         pluginMode = isPluginBuild
         packageId = 0x30
         hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
-        dexModify = true
+        dexModify = false
     }
 }
 
@@ -42,16 +42,33 @@ android {
     }
 
     android.applicationVariants.all { variant ->
+
+        def fileName = defaultConfig.applicationId + ".apk"
         variant.outputs.each { output ->
 
             //def fileName = defaultConfig.applicationId + "-" + defaultConfig.versionName + "-" + variant.buildType.name + ".apk"
-            def fileName = defaultConfig.applicationId + ".apk"
+
             // 修改apk名称
 //            def file = output.outputFile
 //            if (file != null && file.name.endsWith(".apk")) {
 //                output.outputFile = new File(file.parent, fileName)
 //            }
             output.outputFileName = fileName
+        }
+
+        def assembleTask = tasks.getByName("assemble${variant.name.capitalize()}")
+        assembleTask.doLast {
+            def targetDir = "${project(":HostApp").projectDir}/src/main/assets/pluginapp"
+            def targetApk = new File(targetDir, fileName);
+            if (targetApk.exists()) {
+                targetApk.delete()
+            }
+
+            copy {
+                from "${project.buildDir}/outputs/apk/${variant.name}"
+                into targetDir
+                include "**.apk"
+            }
         }
     }
 }
@@ -72,3 +89,4 @@ dependencies {
         compile 'com.airbnb.android:lottie:2.3.1'
     }
 }
+

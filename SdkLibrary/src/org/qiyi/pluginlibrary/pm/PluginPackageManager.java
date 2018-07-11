@@ -250,6 +250,10 @@ public class PluginPackageManager {
                         pkgInfo.installStatus = PluginLiteInfo.PLUGIN_INSTALLED;
                     }
                     PluginDebugLog.installFormatLog(TAG, "plugin install success: %s", pkgInfo.packageName);
+                    // 先更新内存状态，再回调给上层
+                    mInstalledPlugins.put(pkgInfo.packageName, pkgInfo);
+                    saveInstallPluginInfos();
+
                     IInstallCallBack callback = listenerMap.get(pkgInfo.packageName);
                     if (callback != null) {
                         try {
@@ -263,9 +267,6 @@ public class PluginPackageManager {
                     // 执行等待执行的action
                     executePackageAction(pkgInfo, true, 0);
                     onActionFinish(pkgInfo.packageName, INSTALL_SUCCESS);
-
-                    mInstalledPlugins.put(pkgInfo.packageName, pkgInfo);
-                    saveInstallPluginInfos();
                 } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
                     // 插件安装失败
                     PluginLiteInfo pkgInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
@@ -700,9 +701,9 @@ public class PluginPackageManager {
             }
 
             if (uninstallFlag) {
-                mInstalledPlugins.remove(packageName);
                 mPackageInfoCache.remove(packageName);
 
+                mInstalledPlugins.remove(packageName);
                 saveInstallPluginInfos();
             }
 

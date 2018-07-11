@@ -151,9 +151,21 @@ public class HybirdPlugin {
     /**
      * 安装sd卡上的插件
      *
+     * @param context
      * @param apkPath
      */
     public static void install(Context context, String apkPath) {
+        install(context, apkPath, null);
+    }
+
+    /**
+     * 安装sd上的插件
+     *
+     * @param context
+     * @param apkPath
+     * @param callBack
+     */
+    public static void install(Context context, String apkPath, IInstallCallBack callBack) {
 
         File apkFile = new File(apkPath);
         if (!apkFile.exists()) {
@@ -168,7 +180,7 @@ public class HybirdPlugin {
             liteInfo.mPath = apkPath;
             liteInfo.packageName = packageInfo.packageName;
             liteInfo.pluginVersion = packageInfo.versionName;
-            install(mContext, liteInfo, null);
+            install(mContext, liteInfo, callBack);
         }
     }
 
@@ -191,10 +203,21 @@ public class HybirdPlugin {
      * @param pkgName
      */
     public static void uninstall(Context context, String pkgName) {
+        uninstall(context, pkgName, null);
+    }
+
+
+    /**
+     * 根据包名卸载一个插件
+     * @param context
+     * @param pkgName
+     * @param callBack
+     */
+    public static void uninstall(Context context, String pkgName, IPluginUninstallCallBack callBack) {
         Context mContext = ensureContext(context);
         PluginLiteInfo info = PluginPackageManagerNative.getInstance(mContext).getPackageInfo(pkgName);
         if (info != null) {
-            uninstall(mContext, info, null);
+            uninstall(mContext, info, callBack);
         }
     }
 
@@ -206,7 +229,8 @@ public class HybirdPlugin {
      */
     public static void uninstall(Context context, PluginLiteInfo info, IPluginUninstallCallBack callBack) {
         // uninstall
-        PluginPackageManagerNative.getInstance(sHostContext).uninstall(info, callBack);
+        Context mContext = ensureContext(context);
+        PluginPackageManagerNative.getInstance(mContext).uninstall(info, callBack);
     }
 
     /**
