@@ -24,6 +24,7 @@ import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.View;
 
+import org.qiyi.pluginlibrary.component.AbstractFragmentProxy;
 import org.qiyi.pluginlibrary.component.FragmentProxyFactory;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
@@ -175,19 +176,21 @@ public class PluginManager implements IIntentConstant {
 
     /**
      * 创建插件中的 Fragment 代理实例，代理会负责加载具体插件 Fragment
-     * <p>
+     * <br/>
      * 如果插件未安装，则返回 null
      *
      * @param context       host context
+     * @param proxyClass    FragmentProxy 具体类型，可以为空使用 SDK 默认 FragmentProxy
      * @param pkgName       plugin package name
      * @param fragmentClass plugin fragment class name
      * @return FragmentProxy or null if plugin is not installed
      */
     @Nullable
-    public static Fragment createFragment(@NonNull Context context,
-                                          @NonNull String pkgName, @NonNull String fragmentClass) {
+    public static AbstractFragmentProxy createFragmentProxy(@NonNull Context context,
+                                                            @Nullable Class<? extends AbstractFragmentProxy> proxyClass,
+                                                            @NonNull String pkgName, @NonNull String fragmentClass) {
         if (PluginPackageManagerNative.getInstance(context).isPackageInstalled(pkgName)) {
-            return FragmentProxyFactory.create(pkgName, fragmentClass);
+            return FragmentProxyFactory.create(proxyClass, pkgName, fragmentClass);
         } else {
             return null;
         }

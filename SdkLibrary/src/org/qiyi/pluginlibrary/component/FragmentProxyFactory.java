@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.R;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
@@ -21,19 +20,19 @@ public class FragmentProxyFactory {
     /**
      * 根据 packageName 与 classname 创建 FragmentProxy
      *
+     * @param proxyClass  FragmentProxy 具体类型
      * @param packageName 插件包名
      * @param className   插件 Fragment 类名
      * @return FragmentProxy
      */
     @NonNull
-    public static Fragment create(String packageName, String className) {
-        Class<? extends AbstractFragmentProxy> clazz = HybirdPlugin.getConfig().getFragmentProxyClass();
-        Fragment fragment;
-        if (clazz == null) {
+    public static AbstractFragmentProxy create(Class<? extends AbstractFragmentProxy> proxyClass, String packageName, String className) {
+        AbstractFragmentProxy fragment;
+        if (proxyClass == null) {
             fragment = new DefaultFragmentProxy();
         } else {
             try {
-                fragment = clazz.newInstance();
+                fragment = proxyClass.newInstance();
             } catch (Throwable e) {
                 ErrorUtil.throwErrorIfNeed(e);
                 fragment = new DefaultFragmentProxy();
