@@ -593,7 +593,7 @@ public final class Util {
      * 获取当前进程名
      */
     private static String currentProcessName = null;
-    public static String getCurrentProcesName(Context context) {
+    public static String getCurrentProcessName(Context context) {
         if (!TextUtils.isEmpty(currentProcessName)) {
             return currentProcessName;
         }
@@ -735,20 +735,5 @@ public final class Util {
             length = raf.read(buffer, 0, length);
         }
         return crc.getValue();
-    }
-
-
-    public static String getCurrentProcessName(Context context) {
-        int pid = Process.myPid();
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (manager == null) {
-            return null;
-        }
-        for (ActivityManager.RunningAppProcessInfo processInfo : manager.getRunningAppProcesses()) {
-            if (processInfo.pid == pid) {
-                return processInfo.processName;
-            }
-        }
-        return null;
     }
 }

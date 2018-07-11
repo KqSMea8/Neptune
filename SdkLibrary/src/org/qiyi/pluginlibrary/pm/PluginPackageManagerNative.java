@@ -339,7 +339,7 @@ public class PluginPackageManagerNative {
 
     private PluginPackageManagerNative(Context context) {
         mContext = context.getApplicationContext();
-        mProcessName = Util.getCurrentProcesName(context);
+        mProcessName = Util.getCurrentProcessName(context);
     }
 
     private void init() {
