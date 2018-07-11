@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.listenter.IPluginElementLoadListener;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -23,17 +24,17 @@ public abstract class AbstractFragmentProxy extends Fragment {
     @Nullable
     private Fragment mPluginFragment;
 
-    protected abstract View onCreateView(LayoutInflater inflater, ViewGroup container);
+    protected abstract View onCreateUi(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState);
 
     protected abstract void onLoadPluginFragmentSuccess(FragmentManager fragmentManager, Fragment fragment, String packageName);
 
-    protected abstract void onLoadPluginFragmentFail(String packageName);
+    protected abstract void onLoadPluginFragmentFail(int errorType, String packageName);
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public final View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         mPluginHelper = new FragmentPluginHelper(getChildFragmentManager());
-        View view = onCreateView(inflater, container);
+        View view = onCreateUi(inflater, container, savedInstanceState);
         loadPluginFragment();
         return view;
     }
@@ -55,15 +56,15 @@ public abstract class AbstractFragmentProxy extends Fragment {
                     }
 
                     @Override
-                    public void onFail(String packageName) {
+                    public void onFail(int errorType, String packageName) {
                         if (isAdded()) {
-                            onLoadPluginFragmentFail(packageName);
+                            onLoadPluginFragmentFail(errorType, packageName);
                         }
                     }
                 });
             } else {
                 if (isAdded()) {
-                    onLoadPluginFragmentFail(packageName);
+                    onLoadPluginFragmentFail(ErrorType.ERROR_CLIENT_PLUGIN_NOT_INSTALL, packageName);
                 }
             }
         }

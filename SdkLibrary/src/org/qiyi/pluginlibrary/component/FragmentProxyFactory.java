@@ -2,6 +2,7 @@ package org.qiyi.pluginlibrary.component;
 
 import android.annotation.NonNull;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
@@ -53,7 +54,7 @@ public class FragmentProxyFactory {
         private View errorView;
 
         @Override
-        protected View onCreateView(LayoutInflater inflater, ViewGroup container) {
+        protected View onCreateUi(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
             View view = inflater.inflate(R.layout.fragment_proxy_default, container, false);
             loadingView = view.findViewById(R.id.loading_view);
             errorView = view.findViewById(R.id.error_view);
@@ -68,7 +69,7 @@ public class FragmentProxyFactory {
         }
 
         @Override
-        protected void onLoadPluginFragmentFail(String packageName) {
+        protected void onLoadPluginFragmentFail(int errorType, String packageName) {
             loadingView.setVisibility(View.GONE);
             errorView.setVisibility(View.VISIBLE);
         }
