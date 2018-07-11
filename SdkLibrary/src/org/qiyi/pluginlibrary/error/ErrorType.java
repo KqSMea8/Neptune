@@ -188,6 +188,16 @@ public class ErrorType {
     public static final int ERROR_CLIENT_REFLECTIONUTILS_CALL = ERROR_CLIENT_CALL_ON_CREATE_FAIL + 1;
     // Class loader创建失败
     public static final int ERROR_CLIENT_CREATE_CLSlOADER = ERROR_CLIENT_REFLECTIONUTILS_CALL + 1;
+    /** 启动插件时，插件未安装 */
+    public static final int ERROR_CLIENT_PLUGIN_NOT_INSTALL = ERROR_CLIENT_CREATE_CLSlOADER + 1;
+    /** 创建插件 class 实例异常，可能缺少构造函数等 */
+    public static final int ERROR_CLIENT_PLUGIN_CLASS_NEW_INSTANCE = ERROR_CLIENT_PLUGIN_NOT_INSTALL + 1;
+    /** 加载插件 class 异常，比如 ClassNotFound */
+    public static final int ERROR_CLIENT_PLUGIN_CLASS_NOT_FOUND = ERROR_CLIENT_PLUGIN_CLASS_NEW_INSTANCE + 1;
+    /** 插件 packageInfo 信息为空，未知插件 */
+    public static final int ERROR_CLIENT_UNKNOWN_PLUGIN = ERROR_CLIENT_PLUGIN_CLASS_NOT_FOUND + 1;
+    /** 加载插件失败 */
+    public static final int ERROR_CLIENT_LOAD_PLUGIN = ERROR_CLIENT_UNKNOWN_PLUGIN + 1;
     /**
      * 网络异常
      */

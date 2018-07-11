@@ -24,6 +24,8 @@ import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.View;
 
+import org.qiyi.pluginlibrary.component.AbstractFragmentProxy;
+import org.qiyi.pluginlibrary.component.FragmentProxyFactory;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.wraper.ActivityWrapper;
@@ -173,6 +175,28 @@ public class PluginManager implements IIntentConstant {
     }
 
     /**
+     * 创建插件中的 Fragment 代理实例，代理会负责加载具体插件 Fragment
+     * <br/>
+     * 如果插件未安装，则返回 null
+     *
+     * @param context       host context
+     * @param proxyClass    FragmentProxy 具体类型，可以为空使用 SDK 默认 FragmentProxy
+     * @param pkgName       plugin package name
+     * @param fragmentClass plugin fragment class name
+     * @return FragmentProxy or null if plugin is not installed
+     */
+    @Nullable
+    public static AbstractFragmentProxy createFragmentProxy(@NonNull Context context,
+                                                            @Nullable Class<? extends AbstractFragmentProxy> proxyClass,
+                                                            @NonNull String pkgName, @NonNull String fragmentClass) {
+        if (PluginPackageManagerNative.getInstance(context).isPackageInstalled(pkgName)) {
+            return FragmentProxyFactory.create(proxyClass, pkgName, fragmentClass);
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * 创建插件中的 Fragment 实例
      *
      * @param hostContext   host context
@@ -201,6 +225,10 @@ public class PluginManager implements IIntentConstant {
                                       @NonNull final String fragmentClass,
                                       @Nullable final Bundle arguments,
                                       @NonNull final IPluginElementLoadListener<Fragment> listener) {
+        if (!PluginPackageManagerNative.getInstance(hostContext).isPackageInstalled(packageName)) {
+            listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_NOT_INSTALL, packageName);
+            return;
+        }
         loadClass(hostContext.getApplicationContext(), packageName, fragmentClass, new IPluginElementLoadListener<Class<?>>() {
             @Override
             public void onSuccess(Class<?> element, String packageName) {
@@ -216,13 +244,13 @@ public class PluginManager implements IIntentConstant {
                     listener.onSuccess(fragment, packageName);
                 } catch (Throwable e) {
                     ErrorUtil.throwErrorIfNeed(e);
-                    listener.onFail(packageName);
+                    listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_CLASS_NEW_INSTANCE, packageName);
                 }
             }
 
             @Override
-            public void onFail(String packageName) {
-                listener.onFail(packageName);
+            public void onFail(int errorType, String packageName) {
+                listener.onFail(errorType, packageName);
 
             }
         });
@@ -251,17 +279,17 @@ public class PluginManager implements IIntentConstant {
                         ViewPluginHelper.disableViewSaveInstanceRecursively(view);
                         listener.onSuccess(view, packageName);
                     } else {
-                        listener.onFail(packageName);
+                        listener.onFail(ErrorType.ERROR_CLIENT_NOT_LOAD, packageName);
                     }
                 } catch (Throwable e) {
                     ErrorUtil.throwErrorIfNeed(e);
-                    listener.onFail(packageName);
+                    listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_CLASS_NEW_INSTANCE, packageName);
                 }
             }
 
             @Override
-            public void onFail(String packageName) {
-                listener.onFail(packageName);
+            public void onFail(int errorType, String packageName) {
+                listener.onFail(errorType, packageName);
             }
         });
     }
@@ -280,7 +308,7 @@ public class PluginManager implements IIntentConstant {
                                   @NonNull final IPluginElementLoadListener<Class<?>> listener) {
         if (hostContext == null || TextUtils.isEmpty(packageName) || TextUtils.isEmpty(className)) {
             PluginDebugLog.runtimeLog(TAG, "loadClass hostContext or packageName or className is null!");
-            listener.onFail(packageName);
+            listener.onFail(ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL, packageName);
             return;
         }
         PluginLoadedApk loadedApk = getPluginLoadedApkByPkgName(packageName);
@@ -292,7 +320,7 @@ public class PluginManager implements IIntentConstant {
                 listener.onSuccess(pluginClass, packageName);
             } catch (ClassNotFoundException e) {
                 ErrorUtil.throwErrorIfNeed(e);
-                listener.onFail(packageName);
+                listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_CLASS_NOT_FOUND, packageName);
             }
             return;
         }
@@ -327,7 +355,7 @@ public class PluginManager implements IIntentConstant {
                             public void onPackageInstallFail(PluginLiteInfo info, int failReason) throws RemoteException {
                                 PluginDebugLog.runtimeLog(TAG, "check installation failed pkgName: " + info.packageName + " failReason: " + failReason);
                                 count.set(-1);
-                                listener.onFail(packageName);
+                                listener.onFail(failReason, packageName);
                             }
                         });
             }
@@ -335,7 +363,7 @@ public class PluginManager implements IIntentConstant {
         }
         // 4. packageInfo 为空的情况，记录异常，用户未安装
         PluginDebugLog.runtimeLog(TAG, "pluginLiteInfo is null packageName: " + packageName);
-        listener.onFail(packageName);
+        listener.onFail(ErrorType.ERROR_CLIENT_UNKNOWN_PLUGIN, packageName);
     }
 
     private static void doLoadClassAsync(@NonNull final Context hostContext,
@@ -352,7 +380,7 @@ public class PluginManager implements IIntentConstant {
 
             @Override
             public void onLoadFailed(String packageName) {
-                listener.onFail(packageName);
+                listener.onFail(ErrorType.ERROR_CLIENT_LOAD_PLUGIN, packageName);
             }
         }, Util.getCurrentProcessName(hostContext));
     }
@@ -530,7 +558,7 @@ public class PluginManager implements IIntentConstant {
     /**
      * 准备启动指定插件组件
      *
-     * @param mContext      主工程Context
+     * @param mContext     主工程Context
      * @param mConnection  bindService时需要的ServiceConnection,如果不是bindService的方式启动组件，传入Null
      * @param mIntent      需要启动组件的Intent
      * @param needAddCache 是否需要缓存Intnet,true:如果插件没有初始化，那么会缓存起来，等插件加载完毕再执行此Intent

@@ -33,7 +33,6 @@ public final class HybirdPluginConfig {
 
     private IVerifyPluginInfo mVerifyPluginInfo;
 
-
     HybirdPluginConfig(HybirdPluginConfigBuilder builder) {
         this.sdkMode = builder.sdkMode;
         this.useNewCLMode = builder.useNewCLMode;
@@ -67,8 +66,6 @@ public final class HybirdPluginConfig {
     public IVerifyPluginInfo getVerifyPluginInfo() {
         return mVerifyPluginInfo;
     }
-
-
 
     public static class HybirdPluginConfigBuilder {
         int sdkMode = 0;

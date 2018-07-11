@@ -9,5 +9,5 @@ public interface IPluginElementLoadListener<T> {
 
     void onSuccess(T element, String packageName);
 
-    void onFail(String packageName);
+    void onFail(int errorType, String packageName);
 }
