@@ -130,9 +130,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (!tryToInitPluginLoadApk(pluginPkgName)) {
             IPluginSpecificConfig pluginSpecificConfig = HybirdPlugin.getConfig().getPluginSpecificConfig();
             boolean enableRecovery = pluginSpecificConfig != null && pluginSpecificConfig.enableRecovery(pluginPkgName);
-            boolean ppmsReady = PluginPackageManagerNative.getInstance(this).isConnected();
-            // 如果插件不支持 recovery，则直接 finish / ppmsReady 时不应该获取不到 PluginLoadedApk 说明有异常
-            if (!enableRecovery || ppmsReady) {
+            // 如果插件不支持 recovery，则直接 finish
+            if (!enableRecovery) {
                 this.finish();
                 PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
             } else {
@@ -142,19 +141,26 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 pluginIntent.setComponent(new ComponentName(pkgAndCls[0], pkgAndCls[1]));
                 sPendingSavedInstanceStateMap.put(pluginIntent, savedInstanceState);
 
-                mLaunchPluginReceiver = new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
-                        if (PluginPackageManagerService.class.equals(serviceClass)) {
-                            PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(InstrActivityProxy1.this));
+                boolean ppmsReady = PluginPackageManagerNative.getInstance(this).isConnected();
+                if (ppmsReady) {
+                    // 一般而言，这时候 Service 都是未 connect 的状态，这里只是严谨考虑
+                    Context context = InstrActivityProxy1.this;
+                    PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
+                } else {
+                    mLaunchPluginReceiver = new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
+                            if (PluginPackageManagerService.class.equals(serviceClass)) {
+                                PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
+                            }
                         }
-                    }
-                };
-                IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
-                // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
-                serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
-                registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
+                    };
+                    IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+                    // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
+                    serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
+                    registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
+                }
 
                 mFinishSelfReceiver = new BroadcastReceiver() {
                     @Override
@@ -386,7 +392,9 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
      *
      * @return
      */
-    /** @Override */
+    /**
+     * @Override
+     */
     public boolean isOppoStyle() {
         return false;
     }
