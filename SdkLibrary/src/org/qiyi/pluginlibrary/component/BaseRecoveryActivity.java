@@ -60,20 +60,22 @@ public abstract class BaseRecoveryActivity extends Activity {
         if (PluginPackageManagerNative.getInstance(this).isConnected()) {
             // 一般而言，这时候 Service 都是未 connect 的状态，这里只是严谨考虑
             PluginManager.launchPlugin(this, createLaunchPluginIntent(), Util.getCurrentProcessName(this));
-        } else {
-            mLaunchPluginReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(final Context context, Intent intent) {
-                    Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
-                    if (PluginPackageManagerService.class.equals(serviceClass)) {
-                        PluginManager.launchPlugin(context, createLaunchPluginIntent(), Util.getCurrentProcessName(context));
-                    }
-                }
-            };
-            IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
-            serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
-            registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
+            finish();
+            return;
         }
+
+        mLaunchPluginReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(final Context context, Intent intent) {
+                Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
+                if (PluginPackageManagerService.class.equals(serviceClass)) {
+                    PluginManager.launchPlugin(context, createLaunchPluginIntent(), Util.getCurrentProcessName(context));
+                }
+            }
+        };
+        IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+        serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
+        registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
 
         // 启动插件成功或者失败后，都应该 finish
         mFinishSelfReceiver = new BroadcastReceiver() {
