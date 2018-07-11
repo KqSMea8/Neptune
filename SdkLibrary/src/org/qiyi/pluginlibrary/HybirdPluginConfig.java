@@ -1,8 +1,8 @@
 package org.qiyi.pluginlibrary;
 
-import org.qiyi.pluginlibrary.component.BaseRecoveryActivity;
 import org.qiyi.pluginlibrary.pm.IVerifyPluginInfo;
 import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
+import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 
 /**
  * 插件框架运行配置信息
@@ -34,7 +34,7 @@ public final class HybirdPluginConfig {
     private boolean supportMultiDex;
 
     private IVerifyPluginInfo mVerifyPluginInfo;
-    private BaseRecoveryActivity.IRecoveryUiCreator mRecoveryUiCreator;
+    private IRecoveryUiCreator mRecoveryUiCreator;
     private IPluginSpecificConfig mPluginSpecificConfig;
 
     HybirdPluginConfig(HybirdPluginConfigBuilder builder) {
@@ -73,7 +73,7 @@ public final class HybirdPluginConfig {
         return mVerifyPluginInfo;
     }
 
-    public BaseRecoveryActivity.IRecoveryUiCreator getRecoveryUiCreator() {
+    public IRecoveryUiCreator getRecoveryUiCreator() {
         return mRecoveryUiCreator;
     }
 
@@ -88,7 +88,7 @@ public final class HybirdPluginConfig {
         boolean useNewCompResolve = false;
         boolean supportMultiDex = false;
         IVerifyPluginInfo verifyPluginInfo;
-        BaseRecoveryActivity.IRecoveryUiCreator recoveryUiCreator;
+        IRecoveryUiCreator recoveryUiCreator;
         IPluginSpecificConfig pluginSpecificConfig;
 
         public HybirdPluginConfigBuilder configSdkMode(int sdkMode) {
@@ -121,7 +121,7 @@ public final class HybirdPluginConfig {
             return this;
         }
 
-        public HybirdPluginConfigBuilder recoveryUiCreator(BaseRecoveryActivity.IRecoveryUiCreator creator) {
+        public HybirdPluginConfigBuilder recoveryUiCreator(IRecoveryUiCreator creator) {
             this.recoveryUiCreator = creator;
             return this;
         }

@@ -27,14 +27,11 @@ import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.ProgressBar;
 
 import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
@@ -54,6 +51,7 @@ import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
+import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -104,17 +102,11 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     private BroadcastReceiver mLaunchPluginReceiver;
 
     private void initUiForRecovery() {
-        BaseRecoveryActivity.IRecoveryUiCreator recoveryUiCreator = HybirdPlugin.getConfig().getRecoveryUiCreator();
-        if (recoveryUiCreator != null) {
-            setContentView(recoveryUiCreator.createContentView(this));
-        } else {
-            int size = (int) (50 * getResources().getDisplayMetrics().density + 0.5f);
-            ProgressBar progressBar = new ProgressBar(this);
-            FrameLayout frameLayout = new FrameLayout(this);
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size, Gravity.CENTER);
-            frameLayout.addView(progressBar, lp);
-            setContentView(frameLayout);
+        IRecoveryUiCreator recoveryUiCreator = HybirdPlugin.getConfig().getRecoveryUiCreator();
+        if (recoveryUiCreator == null) {
+            recoveryUiCreator = new IRecoveryUiCreator.DefaultRecoveryUiCreator();
         }
+        setContentView(recoveryUiCreator.createContentView(this));
     }
 
     @Override

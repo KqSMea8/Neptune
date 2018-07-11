@@ -8,11 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.ProgressBar;
 
 import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
@@ -20,6 +16,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
+import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.Util;
 
@@ -99,16 +96,10 @@ public abstract class BaseRecoveryActivity extends Activity {
 
     private void initUi() {
         IRecoveryUiCreator recoveryUiCreator = HybirdPlugin.getConfig().getRecoveryUiCreator();
-        if (recoveryUiCreator != null) {
-            setContentView(recoveryUiCreator.createContentView(this));
-        } else {
-            int size = (int) (50 * getResources().getDisplayMetrics().density + 0.5f);
-            ProgressBar progressBar = new ProgressBar(this);
-            FrameLayout frameLayout = new FrameLayout(this);
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size, Gravity.CENTER);
-            frameLayout.addView(progressBar, lp);
-            setContentView(frameLayout);
+        if (recoveryUiCreator == null) {
+            recoveryUiCreator = new IRecoveryUiCreator.DefaultRecoveryUiCreator();
         }
+        setContentView(recoveryUiCreator.createContentView(this));
     }
 
     @Override
@@ -126,12 +117,5 @@ public abstract class BaseRecoveryActivity extends Activity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // 限制 back 按键，不允许退出
         return keyCode == KeyEvent.KEYCODE_BACK || super.onKeyDown(keyCode, event);
-    }
-
-    /**
-     * 恢复插件 Activity 时的准备阶段 UI，由宿主提供
-     */
-    public interface IRecoveryUiCreator {
-        View createContentView(Context context);
     }
 }
