@@ -7,15 +7,14 @@ import android.os.IBinder;
 import android.os.Process;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -82,7 +81,7 @@ public class ServiceProxy1 extends Service {
                         .loadClass(targetClassName).newInstance());
                 PluginContextWrapper actWrapper = new PluginContextWrapper(ServiceProxy1.this.getBaseContext(),
                         targetPackageName, true);
-                ReflectionUtils.on(pluginService).call("attach", sMethods, actWrapper,
+                ReflectionUtils.on(pluginService).call("attach", sMethods, null, actWrapper,
                         ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,
                         ReflectionUtils.getFieldValue(this, "mToken"), mLoadedApk.getPluginApplication(),
                         ReflectionUtils.getFieldValue(this, "mActivityManager"));

@@ -1,15 +1,5 @@
 package org.qiyi.pluginlibrary.utils;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-
-import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
-import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
-import org.qiyi.pluginlibrary.runtime.PluginManager;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Application;
@@ -19,6 +9,16 @@ import android.content.ContextWrapper;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
 
 public class ContextUtils {
     private static final String TAG = ContextUtils.class.getSimpleName();
@@ -60,7 +60,6 @@ public class ContextUtils {
                     return ((InterfaceToGetHost) base).getOriginalContext();
                 }
             }
-            PluginDebugLog.log(TAG, "Return local context for getOriginalContext");
             return context;
         }
     }
@@ -92,10 +91,10 @@ public class ContextUtils {
         for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             String packageName = (String) entry.getKey();
             PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
-            if (mLoadedApk.getActivityStackSupervisor().getActivityStack().size() == 0) {
-                continue;
-            } else if (Util.isResumed(mLoadedApk.getActivityStackSupervisor().getActivityStack().getFirst())) {
+            Activity topActivity = mLoadedApk.getActivityStackSupervisor().getTopActivity();
+            if (topActivity != null && Util.isResumed(topActivity)) {
                 topPackage = packageName;
+                break;
             }
         }
         return topPackage;
@@ -106,7 +105,7 @@ public class ContextUtils {
         for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             String packageName = (String) entry.getKey();
             PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
-            if (mLoadedApk.getActivityStackSupervisor().getActivityStack().size() > 0) {
+            if (mLoadedApk.getActivityStackSupervisor().hasActivityRunning()) {
                 mRunningPackage.add(packageName);
             }
         }

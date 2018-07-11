@@ -83,6 +83,24 @@
             android:process=":plugin2"
             android:screenOrientation="landscape" />
 
+        <!-- singTask独立taskAffinity的Activity坑位 -->
+        <activity
+            android:name="org.qiyi.pluginlibrary.component.InstrActivityProxySingleTask0"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:launchMode="singleTask"
+            android:taskAffinity=":container1"/>
+        <activity
+            android:name="org.qiyi.pluginlibrary.component.InstrActivityProxySingleTask1"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:launchMode="singleTask"
+            android:process=":plugin1"
+            android:taskAffinity=":container1"/>
+        <activity
+            android:name="org.qiyi.pluginlibrary.component.InstrActivityProxySingleTask2"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
+            android:launchMode="singleTask"
+            android:process=":plugin2"
+            android:taskAffinity=":container1"/>
 
         <!-- standard 处理横竖屏变化的Activity，可废弃 -->
         <activity

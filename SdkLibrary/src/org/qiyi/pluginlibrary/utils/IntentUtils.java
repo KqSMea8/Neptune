@@ -6,6 +6,7 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 
@@ -57,8 +58,18 @@ public class IntentUtils {
         }
         if (TextUtils.isEmpty(pkgName) && activity.getIntent() != null) {
             String[] result = parsePkgAndClsFromIntent(activity.getIntent());
-            pkgName = result[0];
+            if (result != null && result.length >= 1) {
+                pkgName = result[0];
+            }
         }
+        // fallback, 通过ClassLoader识别
+        if (TextUtils.isEmpty(pkgName)) {
+            ClassLoader cl = activity.getClass().getClassLoader();
+            if (cl instanceof PluginClassLoader) {
+                pkgName = ((PluginClassLoader)cl).getPackageName();
+            }
+        }
+
         return pkgName;
     }
 
@@ -69,6 +80,13 @@ public class IntentUtils {
      * @return
      */
     public static String[] parsePkgAndClsFromIntent(Intent intent) {
+        String[] result = new String[2];
+        if (intent == null) {
+            result[0] = "";
+            result[1] = "";
+            return result;
+        }
+
         String pkgName = getPluginPackage(intent);
         if (!TextUtils.isEmpty(pkgName)) {
             PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
@@ -77,12 +95,10 @@ public class IntentUtils {
                 intent.setExtrasClassLoader(loadedApk.getPluginClassLoader());
             }
         }
-        String[] result = new String[2];
         try {
             result[0] = getTargetPackage(intent);
             result[1] = getTargetClass(intent);
         } catch (RuntimeException e) {
-            e.printStackTrace();
             // Parcelable encountered ClassNotFoundException，只能从 action 里面读取 packageName
             result[0] = pkgName;
         }
@@ -97,6 +113,10 @@ public class IntentUtils {
      * @return
      */
     public static String getPluginPackage(Intent intent) {
+        if (intent == null) {
+            return "";
+        }
+
         String action = intent.getAction();
         String pkgName = "";
         if (!TextUtils.isEmpty(action) && action.contains(TOKEN)) {
@@ -111,6 +131,9 @@ public class IntentUtils {
     }
 
     public static boolean isIntentForPlugin(Intent intent) {
+        if (intent == null) {
+            return false;
+        }
 //        try {
             return intent.getBooleanExtra(IIntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
 //        } catch (Exception e) { // ClassNotFoundException
@@ -120,6 +143,9 @@ public class IntentUtils {
     }
 
     public static String getTargetPackage(Intent intent) {
+        if (intent == null) {
+            return "";
+        }
 //        try {
             return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
 //        } catch (Exception e) {  // ClassNotFoundException
@@ -129,6 +155,9 @@ public class IntentUtils {
     }
 
     public static String getTargetClass(Intent intent) {
+        if (intent == null) {
+            return "";
+        }
 //        try {
             return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
 //        } catch (Exception e) {
@@ -141,6 +170,10 @@ public class IntentUtils {
      * 重置恢复Intent中的Action
      */
     public static void resetAction(Intent intent) {
+        if (intent == null) {
+            return;
+        }
+
         String action = intent.getAction();
         if (!TextUtils.isEmpty(action) && action.contains(TOKEN)) {
             String[] info = action.split(TOKEN);

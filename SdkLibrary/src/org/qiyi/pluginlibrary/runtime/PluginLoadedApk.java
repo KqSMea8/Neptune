@@ -8,7 +8,6 @@ import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -18,19 +17,19 @@ import android.content.res.Resources;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
+import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
+import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.context.PluginContextWrapper;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
-import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
-import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
-import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
-import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
-import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
@@ -218,11 +217,13 @@ public class PluginLoadedApk implements IIntentConstant {
             // Android 5.0以下AssetManager不支持扩展资源表，始终新建一个，避免污染宿主的AssetManager
             AssetManager am = AssetManager.class.newInstance();
             // 添加插件的资源
-            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mPluginPath);
+            Class<?>[] paramTypes = new Class[]{String.class};
+            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, paramTypes, mPluginPath);
             boolean shouldAddHostRes = !mPluginPackageInfo.isIndividualMode() && mPluginPackageInfo.isResourceNeedMerge();
             if (shouldAddHostRes) {
                 // 添加宿主的资源到插件的AssetManager
-                ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, mHostContext.getApplicationInfo().sourceDir);
+                ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, paramTypes,
+                        mHostContext.getApplicationInfo().sourceDir);
                 PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
             }
 
@@ -263,8 +264,9 @@ public class PluginLoadedApk implements IIntentConstant {
                 // 对基线资源存在依赖
                 mPluginAssetManager = resources.getAssets();
                 if (mPluginPackageInfo.isResourceNeedMerge()) {
+                    Class<?>[] paramTypes = new Class[]{String.class};
                     ReflectionUtils.on(mPluginAssetManager).call("addAssetPath", PluginActivityControl.sMethods,
-                            mHostContext.getApplicationInfo().sourceDir);
+                            paramTypes, mHostContext.getApplicationInfo().sourceDir);
                     PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
                 }
 
@@ -306,9 +308,7 @@ public class PluginLoadedApk implements IIntentConstant {
                     mPluginPackageInfo.getNativeLibraryDir(), mHostClassLoader);
 
             // 把插件 classloader 注入到host程序中，方便host app 能够找到 插件 中的class
-            if (!isSharePluginInjectClassLoader()) {
-                PluginDebugLog.runtimeLog(TAG, "share plugin: " + mPluginPackageInfo.getPackageName() + " no need to inject into host classloader");
-            } else if (mPluginPackageInfo.isClassNeedInject()) {
+            if (mPluginPackageInfo.isClassNeedInject()) {
                 if (!sInjectedPlugins.contains(mPluginPackageName)) {
                     ClassLoaderInjectHelper.InjectResult injectResult = ClassLoaderInjectHelper.inject(mHostClassLoader,
                             mPluginClassLoader, mPluginPackageInfo.getPackageName() + ".R");
@@ -324,7 +324,8 @@ public class PluginLoadedApk implements IIntentConstant {
                             "--- Class injecting @ " + mPluginPackageInfo.getPackageName() + " already injected!");
                 }
             } else {
-                PluginDebugLog.runtimeLog(TAG, "plugin: " + mPluginPackageInfo.getPackageName() + " no need to inject to host classloader");
+                PluginDebugLog.runtimeFormatLog(TAG, "plugin:  " +
+                        "%s cannot inject to host classloader, inject meta: %s", String.valueOf(mPluginPackageInfo.isClassNeedInject()));
             }
             return true;
         } else {
@@ -413,22 +414,29 @@ public class PluginLoadedApk implements IIntentConstant {
 //            }
 //            invokeApplicationAttach();
             // 注册Application回调
-            mHostContext.registerComponentCallbacks(new ComponentCallbacks2() {
-                @Override
-                public void onTrimMemory(int level) {
-                    mPluginApplication.onTrimMemory(level);
-                }
+            try {
+                mHostContext.registerComponentCallbacks(new ComponentCallbacks2() {
+                    @Override
+                    public void onTrimMemory(int level) {
+                        mPluginApplication.onTrimMemory(level);
+                    }
 
-                @Override
-                public void onConfigurationChanged(Configuration configuration) {
-                    updateConfiguration(configuration);
-                }
+                    @Override
+                    public void onConfigurationChanged(Configuration configuration) {
+                        updateConfiguration(configuration);
+                    }
 
-                @Override
-                public void onLowMemory() {
-                    mPluginApplication.onLowMemory();
-                }
-            });
+                    @Override
+                    public void onLowMemory() {
+                        mPluginApplication.onLowMemory();
+                    }
+                });
+            } catch (NoSuchMethodError e) {
+                // java.lang.NoSuchMethodError: android.content.Context.registerComponentCallbacks
+                // Vivo X3t, 4.2
+                ErrorUtil.throwErrorIfNeed(e);
+                PluginDebugLog.runtimeLog(TAG, "register ComponentCallbacks for plugin failed, pkgName=" + mPluginPackageName);
+            }
 
             try {
                 mPluginApplication.onCreate();
@@ -438,8 +446,11 @@ public class PluginLoadedApk implements IIntentConstant {
                 PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
                 return false;
             }
+            // 支持注册多个ActivityLifeCycle到插件进程
+            for (PluginActivityLifeCycleCallback callback : PluginManager.sActivityLifecycleCallbacks) {
+                mPluginApplication.registerActivityLifecycleCallbacks(callback);
+            }
 
-            mPluginApplication.registerActivityLifecycleCallbacks(PluginManager.sActivityLifecycleCallback);
             isPluginInit = true;
             isLaunchingIntent = false;
 
@@ -710,9 +721,9 @@ public class PluginLoadedApk implements IIntentConstant {
     void quitApp(boolean force, boolean notifyHost) {
         if (force) {
             PluginDebugLog.runtimeLog(TAG, "quitapp with " + mPluginPackageName);
-            while (!mActivityStackSupervisor.getActivityStack().isEmpty()) {
-                mActivityStackSupervisor.pollActivityStack().finish();
-            }
+//            while (!mActivityStackSupervisor.getActivityStack().isEmpty()) {
+//                mActivityStackSupervisor.pollActivityStack().finish();
+//            }
             mActivityStackSupervisor.clearActivityStack();
             PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
             PActivityStackSupervisor.removeLoadingIntent(mPluginPackageName);
@@ -905,34 +916,5 @@ public class PluginLoadedApk implements IIntentConstant {
      */
     void changeLaunchingIntentStatus(boolean isLaunchingIntent) {
         this.isLaunchingIntent = isLaunchingIntent;
-    }
-
-    /**
-     * 分享插件是否注入到主ClassLoader里
-     * 临时方案，因为插件sdk无法访问基线的类
-     *
-     * @return false不注入，true维持线上逻辑
-     */
-    private boolean isSharePluginInjectClassLoader() {
-
-        if (!TextUtils.equals("com.iqiyi.share", mPluginPackageName)) {
-            // 不是分享插件，维持现状
-            return true;
-        }
-
-        if (!mPluginPackageInfo.isClassNeedInject()) {
-            // meta配置不需要处理
-            return false;
-        }
-
-        SharedPreferences sp = mHostContext.getSharedPreferences("default_sharePreference", Context.MODE_MULTI_PROCESS);
-        String pluginSwitch = sp.getString("WEIBO_SHARE_ENABLE", "0");  // 0维持线上逻辑，1去掉ClassLoader注入
-        if ("1".equals(pluginSwitch)) {
-            // 云控关闭ClassLoader注入
-            PluginDebugLog.runtimeLog(TAG, "disable share plugin inject into host classloader by fusion switch");
-            return false;
-        }
-        // 维持现状
-        return true;
     }
 }

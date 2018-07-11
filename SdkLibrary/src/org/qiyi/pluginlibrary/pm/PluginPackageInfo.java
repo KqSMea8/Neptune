@@ -1,19 +1,5 @@
 package org.qiyi.pluginlibrary.pm;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.qiyi.pluginlibrary.HybirdPlugin;
-import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ErrorUtil;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -24,13 +10,25 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ProviderInfo;
-import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.error.ErrorType;
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 存放插件apk的{@link PackageInfo}里面的信息
@@ -134,6 +132,10 @@ public class PluginPackageInfo implements Parcelable {
                         mUsePluginCodePath = true;
                     }
                 }
+
+                if (mIsClassInject) {
+                    PluginDebugLog.runtimeFormatLog(TAG, "plugin %s need class inject: true", packageName);
+                }
             }
 
             if (HybirdPlugin.getConfig().shouldUseNewResolveMethod()) {
@@ -186,21 +188,47 @@ public class PluginPackageInfo implements Parcelable {
         final Bundle activityStates = in.readBundle(ActivityIntentInfo.class.getClassLoader());
 
         for (String key : activityStates.keySet()) {
-            final ActivityIntentInfo state = activityStates.getParcelable(key);
-            mActivityIntentInfos.put(key, state);
+            final ActivityIntentInfo state = getBundleParcelable(activityStates, key);
+            if (state != null) {
+                mActivityIntentInfos.put(key, state);
+            }
         }
 
         final Bundle serviceStates = in.readBundle(ServiceIntentInfo.class.getClassLoader());
         for (String key : serviceStates.keySet()) {
-            final ServiceIntentInfo state = serviceStates.getParcelable(key);
-            mServiceIntentInfos.put(key, state);
+            final ServiceIntentInfo state = getBundleParcelable(serviceStates, key);
+            if (state != null) {
+                mServiceIntentInfos.put(key, state);
+            }
         }
 
         final Bundle receiverStates = in.readBundle(ReceiverIntentInfo.class.getClassLoader());
         for (String key : receiverStates.keySet()) {
-            final ReceiverIntentInfo state = receiverStates.getParcelable(key);
-            mReceiverIntentInfos.put(key, state);
+            final ReceiverIntentInfo state = getBundleParcelable(receiverStates, key);
+            if (state != null) {
+                mReceiverIntentInfos.put(key, state);
+            }
         }
+
+        final Bundle providerStates = in.readBundle(ProviderIntentInfo.class.getClassLoader());
+        for (String key : providerStates.keySet()) {
+            final ProviderIntentInfo state = getBundleParcelable(providerStates, key);
+            if (state != null) {
+                mProviderIntentInfos.put(key, state);
+            }
+        }
+    }
+
+    /**
+     * vivo X5L, 4,4, java.lang.NoSuchMethodError: android.os.Bundle.getParcelable
+     */
+    private static <T extends Parcelable> T getBundleParcelable(Bundle bundle, String key) {
+        try {
+            return bundle.getParcelable(key);
+        } catch (NoSuchMethodError e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
@@ -391,9 +419,18 @@ public class PluginPackageInfo implements Parcelable {
     }
 
 
+    /**
+     * 白名单列表插件，允许注入插件ClassLoader到宿主ClassLoader
+     * TODO 开源化，移除相关配置
+     */
+    private boolean isInClassInjectList() {
+        return TextUtils.equals("android.app.fw", packageName)
+                || TextUtils.equals("com.iqiyi.plugin.qiyibase", packageName);
+    }
+
 
     public boolean isClassNeedInject() {
-        return mIsClassInject;
+        return mIsClassInject && isInClassInjectList();
     }
 
     public boolean isResourceNeedMerge() {
@@ -537,18 +574,24 @@ public class PluginPackageInfo implements Parcelable {
 
         final Bundle serviceStates = new Bundle();
         for (String uri : mServiceIntentInfos.keySet()) {
-            final ServiceIntentInfo aii = mServiceIntentInfos.get(uri);
-            serviceStates.putParcelable(uri, aii);
+            final ServiceIntentInfo sii = mServiceIntentInfos.get(uri);
+            serviceStates.putParcelable(uri, sii);
         }
         parcel.writeBundle(serviceStates);
 
         final Bundle receiverStates = new Bundle();
         for (String uri : mReceiverIntentInfos.keySet()) {
-            final ReceiverIntentInfo aii = mReceiverIntentInfos.get(uri);
-            receiverStates.putParcelable(uri, aii);
+            final ReceiverIntentInfo rii = mReceiverIntentInfos.get(uri);
+            receiverStates.putParcelable(uri, rii);
         }
         parcel.writeBundle(receiverStates);
 
+        final Bundle providerStates = new Bundle();
+        for (String uri : mProviderIntentInfos.keySet()) {
+            final ProviderIntentInfo pii = mProviderIntentInfos.get(uri);
+            providerStates.putParcelable(uri, pii);
+        }
+        parcel.writeBundle(providerStates);
     }
 
     public final static class ActivityIntentInfo extends IntentInfo implements Parcelable {

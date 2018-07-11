@@ -16,21 +16,22 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import org.qiyi.pluginlibrary.error.ErrorType;
+import org.qiyi.pluginlibrary.exception.ReflectException;
+import org.qiyi.pluginlibrary.plugin.PluginActivityCallback;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
+
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.plugin.PluginActivityCallback;
-import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
-import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-import org.qiyi.pluginlibrary.exception.ReflectException;
-import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 /**
  * 插件的控制器<br> 派发插件事件和控制插件生命周期
@@ -67,9 +68,17 @@ public class PluginActivityControl implements PluginActivityCallback {
         mPluginRef = ReflectionUtils.on(plugin);
     }
 
-    public void dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper, String packageName) {
+    /**
+     * 调用插件Activity的attach方法，注入基础信息
+     *
+     * @param pluginInstr  插件Instrumentation
+     * @param contextWrapper 插件的BaseContext
+     * @param packageName
+     * @return
+     */
+    public boolean dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper, String packageName) {
         if (mPlugin == null || mPlugin.getBaseContext() != null || pluginInstr == null) {
-            return;
+            return false;
         }
         try {
             if (android.os.Build.VERSION.SDK_INT >= 26) {
@@ -101,13 +110,15 @@ public class PluginActivityControl implements PluginActivityCallback {
             mPluginRef.set("mWindowManager", mProxy.getWindow().getWindowManager());
             mPlugin.getWindow().setCallback(mPlugin);
             // 替换ContextImpl的OuterContext，插件Activity的LayoutInflater才能正常使用
-            ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", sMethods, mPlugin);
+            Class<?>[] paramTypes = new Class[]{Context.class};
+            ReflectionUtils.on(mProxy.getBaseContext()).call("setOuterContext", sMethods, paramTypes, mPlugin);
 
+            return true;
         } catch (ReflectException e) {
             PluginManager.deliver(mProxy, false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
-            e.printStackTrace();
+            ErrorUtil.throwErrorIfNeed(e);
         }
-
+        return false;
     }
 
 
@@ -123,6 +134,7 @@ public class PluginActivityControl implements PluginActivityCallback {
                     // 方法名
                     "attach",
                     sMethods,
+                    null,
                     // Context context
                     // contextWrapper,
                     mProxy,
@@ -178,6 +190,7 @@ public class PluginActivityControl implements PluginActivityCallback {
                     // 方法名
                     "attach",
                     sMethods,
+                    null,
                     // Context context
                     // contextWrapper,
                     mProxy,
@@ -230,6 +243,7 @@ public class PluginActivityControl implements PluginActivityCallback {
                     // 方法名
                     "attach",
                     sMethods,
+                    null,
                     // Context context
                     // contextWrapper,
                     mProxy,
@@ -280,6 +294,7 @@ public class PluginActivityControl implements PluginActivityCallback {
                     // 方法名
                     "attach",
                     sMethods,
+                    null,
                     // Context context
                     // contextWrapper,
                     mProxy,
@@ -327,6 +342,7 @@ public class PluginActivityControl implements PluginActivityCallback {
                     // 方法名
                     "attach",
                     sMethods,
+                    null,
                     // Context context
                     // contextWrapper,
                     mProxy,
@@ -370,6 +386,7 @@ public class PluginActivityControl implements PluginActivityCallback {
                 // 方法名
                 "attach",
                 sMethods,
+                null,
                 // Context context
                 // contextWrapper,
                 mProxy,
@@ -479,7 +496,7 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnStart() {
         if (null != getPluginRef()) {
-            getPluginRef().call("performStart", sMethods);
+            getPluginRef().call("performStart", sMethods, null);
         }
     }
 
@@ -491,7 +508,7 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnResume() {
         if (null != getPluginRef()) {
-            getPluginRef().call("performResume", sMethods);
+            getPluginRef().call("performResume", sMethods, null);
         }
     }
 
@@ -517,9 +534,9 @@ public class PluginActivityControl implements PluginActivityCallback {
         if (null != getPluginRef()) {
             if (VersionUtils.hasNougat()) {
                 // 此处强制写false可能带来一些风险，暂时没有其他的方法处理
-                getPluginRef().call("performStop", sMethods, false);
+                getPluginRef().call("performStop", sMethods, null, false);
             } else {
-                getPluginRef().call("performStop", sMethods);
+                getPluginRef().call("performStop", sMethods, null);
             }
         }
     }
@@ -532,7 +549,7 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnRestart() {
         if (null != getPluginRef()) {
-            getPluginRef().call("performRestart", sMethods);
+            getPluginRef().call("performRestart", sMethods, null);
         }
     }
 
@@ -570,7 +587,7 @@ public class PluginActivityControl implements PluginActivityCallback {
     @Override
     public void callOnPause() {
         if (null != getPluginRef()) {
-            getPluginRef().call("performPause", sMethods);
+            getPluginRef().call("performPause", sMethods, null);
         }
     }
 
@@ -629,7 +646,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     @Override
     public void callOnPostResume() {
-        getPluginRef().call("onPostResume", sMethods);
+        getPluginRef().call("onPostResume", sMethods, null);
     }
 
     @Override
@@ -674,7 +691,8 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     @Override
     public void callOnActivityResult(int requestCode, int resultCode, Intent data) {
-        getPluginRef().call("onActivityResult", sMethods, requestCode, resultCode, data);
+        Class<?>[] paramTypes = new Class[]{int.class, int.class, Intent.class};
+        getPluginRef().call("onActivityResult", sMethods, paramTypes, requestCode, resultCode, data);
     }
 
     /**

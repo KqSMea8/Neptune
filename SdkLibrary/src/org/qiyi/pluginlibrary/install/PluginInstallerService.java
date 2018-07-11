@@ -1,20 +1,5 @@
 package org.qiyi.pluginlibrary.install;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-
-import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
-import org.qiyi.pluginlibrary.pm.PluginPackageManager;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-import org.qiyi.pluginlibrary.utils.Util;
-import org.qiyi.pluginlibrary.utils.VersionUtils;
-
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -28,6 +13,21 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Parcelable;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.error.ErrorType;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageManager;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 import dalvik.system.DexClassLoader;
 
@@ -337,7 +337,10 @@ public class PluginInstallerService extends Service {
             pkgInfo = pm.getPackageArchiveInfo(apkFilePath, PackageManager.GET_ACTIVITIES);
         } catch (Exception e) {
             e.printStackTrace();
+        } catch (Error e) {
+            e.printStackTrace();
         }
+
 
         if (pkgInfo == null) {
             setInstallFail(srcPathWithScheme, ErrorType.INSTALL_ERROR_APK_PARSE_FAILED, info);

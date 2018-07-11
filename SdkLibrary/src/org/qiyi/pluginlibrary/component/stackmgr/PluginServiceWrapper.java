@@ -1,7 +1,6 @@
 package org.qiyi.pluginlibrary.component.stackmgr;
 
 import android.app.Service;
-import android.content.Intent;
 
 /**
  * 对插件Service的包装，记录每个Service的状态，便于对

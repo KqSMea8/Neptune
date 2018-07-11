@@ -53,6 +53,13 @@ public class PluginClassLoader extends DexClassLoader{
     }
 
     /**
+     * 获取插件ClassLoader对应的插件包名
+     */
+    public String getPackageName() {
+        return pkgName;
+    }
+
+    /**
      * 添加依赖的插件ClassLoader
      */
     public void addDependency(DexClassLoader classLoader) {
