@@ -19,6 +19,7 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.Util;
 
@@ -46,15 +47,18 @@ public abstract class BaseRecoveryActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initUi();
-
         String[] packageAndClass = IntentUtils.parsePkgAndClsFromIntent(getIntent());
         mPluginPackageName = packageAndClass[0];
         mPluginClassName = packageAndClass[1];
-        if (mPluginPackageName == null) {
+
+        IPluginSpecificConfig pluginSpecificConfig = HybirdPlugin.getConfig().getPluginSpecificConfig();
+        boolean enableRecovery = pluginSpecificConfig != null && pluginSpecificConfig.enableRecovery(mPluginPackageName);
+
+        if (!enableRecovery || mPluginPackageName == null) {
             finish();
             return;
         }
+        initUi();
 
         if (PluginPackageManagerNative.getInstance(this).isConnected()) {
             // 一般而言，这时候 Service 都是未 connect 的状态，这里只是严谨考虑

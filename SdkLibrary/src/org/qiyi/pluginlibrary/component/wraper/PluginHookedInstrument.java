@@ -59,7 +59,7 @@ public class PluginHookedInstrument extends PluginInstrument {
 
                     return activity;
                 } else if (loadedApk == null) {
-                    // loadedApk 为空，可能是正常恢复进程，跳转到 RecoveryActivity
+                    // loadedApk 为空，可能是正在恢复进程，跳转到 RecoveryActivity
                     return mHostInstr.newActivity(cl, mRecoveryHelper.selectRecoveryActivity(className), intent);
                 }
             }

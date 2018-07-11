@@ -53,6 +53,7 @@ import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -135,8 +136,11 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
 
         if (!tryToInitPluginLoadApk(pluginPkgName)) {
+            IPluginSpecificConfig pluginSpecificConfig = HybirdPlugin.getConfig().getPluginSpecificConfig();
+            boolean enableRecovery = pluginSpecificConfig != null && pluginSpecificConfig.enableRecovery(pluginPkgName);
             boolean ppmsReady = PluginPackageManagerNative.getInstance(this).isConnected();
-            if (ppmsReady) {
+            // 如果插件不支持 recovery，则直接 finish / ppmsReady 时不应该获取不到 PluginLoadedApk 说明有异常
+            if (!enableRecovery || ppmsReady) {
                 this.finish();
                 PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
             } else {
@@ -312,7 +316,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             result[0] = IntentUtils.getTargetPackage(mIntent);
             result[1] = IntentUtils.getTargetClass(mIntent);
         } catch (RuntimeException e) {
-            // Parcelable encountered ClassNotFoundException，使用 action 里面的 pluginPackageName
+            // 进程恢复时，Parcelable encountered ClassNotFoundException，使用 action 里面的 pluginPackageName
             result[0] = mPluginPackage;
         }
         if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {
