@@ -790,10 +790,12 @@ public class PluginPackageManager {
             mRefs = sVerifyPluginInfo.getPluginRefs(pkgName);
         } else {
             PluginLiteInfo liteInfo = mInstalledPlugins.get(pkgName);
-            if (liteInfo != null && liteInfo.plugin_refs != null) {
+            if (liteInfo != null && !TextUtils.isEmpty(liteInfo.plugin_refs)) {
                 String[] refs = liteInfo.plugin_refs.split(",");
-                if (refs != null && refs.length > 0) {
-                    mRefs = Arrays.asList(refs);
+                for (String ref : refs) {
+                    if (!TextUtils.isEmpty(ref)) {
+                        mRefs.add(ref);
+                    }
                 }
             }
         }
@@ -868,10 +870,12 @@ public class PluginPackageManager {
         } else {
             PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
             PluginLiteInfo liteInfo = mInstalledPlugins.get(packageName);
-            if (liteInfo != null && liteInfo.plugin_refs != null) {
+            if (liteInfo != null && !TextUtils.isEmpty(liteInfo.plugin_refs)) {
                 String[] refs = liteInfo.plugin_refs.split(",");
-                if (refs != null && refs.length > 0) {
-                    mRefPlugins = Arrays.asList(refs);
+                for (String ref : refs) {
+                    if (!TextUtils.isEmpty(ref)) {
+                        mRefPlugins.add(ref);
+                    }
                 }
             }
         }

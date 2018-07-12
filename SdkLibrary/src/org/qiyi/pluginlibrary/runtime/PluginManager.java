@@ -26,6 +26,7 @@ import android.view.View;
 
 import org.qiyi.pluginlibrary.component.AbstractFragmentProxy;
 import org.qiyi.pluginlibrary.component.FragmentProxyFactory;
+import org.qiyi.pluginlibrary.component.processmgr.ProcessManager;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.wraper.ActivityWrapper;
@@ -392,7 +393,7 @@ public class PluginManager implements IIntentConstant {
      * @param packageName  插件包名
      */
     public static void launchPlugin(Context mHostContext, String packageName) {
-        if (mHostContext == null && TextUtils.isEmpty(packageName)) {
+        if (mHostContext == null || TextUtils.isEmpty(packageName)) {
             PluginDebugLog.runtimeLog(TAG, "launchPlugin mHostContext is null or packageName is null!");
             return;
         }
@@ -400,7 +401,7 @@ public class PluginManager implements IIntentConstant {
         ComponentName mComponentName = new ComponentName(packageName, "");
         Intent mIntent = new Intent();
         mIntent.setComponent(mComponentName);
-        launchPlugin(mHostContext, mIntent, null);
+        launchPlugin(mHostContext, mIntent, ProcessManager.chooseDefaultProcess(mHostContext, packageName));
     }
 
     /**
@@ -436,6 +437,26 @@ public class PluginManager implements IIntentConstant {
                 deliver(mHostContext, false, mHostContext.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);
             }
             PluginDebugLog.runtimeLog(TAG, "enterProxy packageName is null return! packageName: " + packageName);
+            return;
+        }
+        // 处理不同进程跳转
+        final String targetProcessName = TextUtils.isEmpty(mProcessName) ?
+                ProcessManager.chooseDefaultProcess(mHostContext, packageName) : mProcessName;
+        String currentProcess = Util.getCurrentProcessName(mHostContext);
+        if (!TextUtils.equals(currentProcess, targetProcessName)) {
+            // 启动进程和目标进程不一致，需要先启动目标进程，初始化PluginLoadedApk
+            Intent transIntent = new Intent();
+            transIntent.setAction(IIntentConstant.ACTION_START_PLUGIN);
+            transIntent.putExtra(EXTRA_START_INTENT_KEY, mIntent);
+            transIntent.putExtra(EXTRA_TARGET_PROCESS, targetProcessName);
+            try {
+                String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(targetProcessName);
+                transIntent.setClass(mHostContext, Class.forName(proxyServiceName));
+                mHostContext.startService(transIntent);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            // TODO ServiceConnection如何中转处理
             return;
         }
 
@@ -476,6 +497,8 @@ public class PluginManager implements IIntentConstant {
                 PluginDebugLog.runtimeLog(TAG, "start to check installation pkgName: " + pkgName);
                 final PluginLiteInfo refInfo = PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext())
                         .getPackageInfo(pkgName);
+
+
                 PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext()).packageAction(refInfo,
                         new IInstallCallBack.Stub() {
                             @Override
@@ -486,7 +509,7 @@ public class PluginManager implements IIntentConstant {
                                     PluginDebugLog.runtimeLog(TAG,
                                             "start Check installation after check dependence packageName: "
                                                     + packageName);
-                                    checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent, mProcessName);
+                                    checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent, targetProcessName);
                                 }
                             }
 
@@ -500,7 +523,7 @@ public class PluginManager implements IIntentConstant {
             }
         } else if (info != null) {
             PluginDebugLog.runtimeLog(TAG, "start Check installation without dependence packageName: " + packageName);
-            checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent, mProcessName);
+            checkPkgInstallationAndLaunch(mHostContext, info, mServiceConnection, mIntent, targetProcessName);
         } else {
             PluginDebugLog.runtimeLog(TAG, "pluginLiteInfo is null packageName: " + packageName);
             PActivityStackSupervisor.clearLoadingIntent(packageName);
@@ -579,7 +602,7 @@ public class PluginManager implements IIntentConstant {
         }
 
         if (!mLoadedApk.makeApplication()) {
-            PluginDebugLog.log(TAG, "makeApplication fail:%s", packageName);
+            PluginDebugLog.runtimeFormatLog(TAG, "makeApplication fail:%s", packageName);
             return false;
         }
 
@@ -1251,19 +1274,13 @@ public class PluginManager implements IIntentConstant {
         if (mContext != null) {
             Intent intent = new Intent();
             String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(mProcessName);
-
-            Class<?> proxyServiceNameClass = null;
             try {
-                proxyServiceNameClass = Class.forName(proxyServiceName);
+                PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
+                intent.setClass(mContext, Class.forName(proxyServiceName));
+                intent.setAction(ACTION_QUIT_SERVICE);
+                mContext.startService(intent);
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
-            }
-
-            if (proxyServiceNameClass != null) {
-                PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
-                intent.setClass(mContext, proxyServiceNameClass);
-                intent.setAction(ACTION_QUIT);
-                mContext.startService(intent);
             }
         }
     }

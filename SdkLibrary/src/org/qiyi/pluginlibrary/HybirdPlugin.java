@@ -251,8 +251,8 @@ public class HybirdPlugin {
      * @param intent
      */
     public static void launchPlugin(Context mHostContext, Intent intent) {
-        // start plugin, 默认主进程
-        PluginManager.launchPlugin(mHostContext, intent, mHostContext.getPackageName());
+        // start plugin, 默认选择进程
+        PluginManager.launchPlugin(mHostContext, intent, null);
     }
 
     /**
