@@ -1,7 +1,6 @@
 package org.qiyi.pluginlibrary;
 
 import org.qiyi.pluginlibrary.pm.IVerifyPluginInfo;
-import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
 import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 
 /**
@@ -35,7 +34,6 @@ public final class HybirdPluginConfig {
 
     private IVerifyPluginInfo mVerifyPluginInfo;
     private IRecoveryUiCreator mRecoveryUiCreator;
-    private IPluginSpecificConfig mPluginSpecificConfig;
 
     HybirdPluginConfig(HybirdPluginConfigBuilder builder) {
         this.sdkMode = builder.sdkMode;
@@ -45,7 +43,6 @@ public final class HybirdPluginConfig {
         this.supportMultiDex = builder.supportMultiDex;
         this.mVerifyPluginInfo = builder.verifyPluginInfo;
         this.mRecoveryUiCreator = builder.recoveryUiCreator;
-        this.mPluginSpecificConfig = builder.pluginSpecificConfig;
     }
 
 
@@ -77,10 +74,6 @@ public final class HybirdPluginConfig {
         return mRecoveryUiCreator;
     }
 
-    public IPluginSpecificConfig getPluginSpecificConfig() {
-        return mPluginSpecificConfig;
-    }
-
     public static class HybirdPluginConfigBuilder {
         int sdkMode = 0;
         boolean useNewCLMode = false;
@@ -89,7 +82,6 @@ public final class HybirdPluginConfig {
         boolean supportMultiDex = false;
         IVerifyPluginInfo verifyPluginInfo;
         IRecoveryUiCreator recoveryUiCreator;
-        IPluginSpecificConfig pluginSpecificConfig;
 
         public HybirdPluginConfigBuilder configSdkMode(int sdkMode) {
             this.sdkMode = sdkMode;
@@ -123,11 +115,6 @@ public final class HybirdPluginConfig {
 
         public HybirdPluginConfigBuilder recoveryUiCreator(IRecoveryUiCreator creator) {
             this.recoveryUiCreator = creator;
-            return this;
-        }
-
-        public HybirdPluginConfigBuilder pluginSpecificConfig(IPluginSpecificConfig pluginSpecificConfig) {
-            this.pluginSpecificConfig = pluginSpecificConfig;
             return this;
         }
 

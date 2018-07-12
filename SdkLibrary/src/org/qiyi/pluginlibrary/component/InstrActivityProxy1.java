@@ -42,6 +42,7 @@ import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
@@ -50,7 +51,6 @@ import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponetFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
-import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
 import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -128,8 +128,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
 
         if (!tryToInitPluginLoadApk(pluginPkgName)) {
-            IPluginSpecificConfig pluginSpecificConfig = HybirdPlugin.getConfig().getPluginSpecificConfig();
-            boolean enableRecovery = pluginSpecificConfig != null && pluginSpecificConfig.enableRecovery(pluginPkgName);
+            PluginLiteInfo packageInfo = PluginPackageManagerNative.getInstance(this).getPackageInfo(pluginPkgName);
+            boolean enableRecovery = packageInfo != null && packageInfo.enableRecovery;
             // 如果插件不支持 recovery，则直接 finish
             if (!enableRecovery) {
                 this.finish();

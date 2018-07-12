@@ -12,10 +12,10 @@ import android.view.KeyEvent;
 
 import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.IPluginSpecificConfig;
 import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.Util;
@@ -48,8 +48,9 @@ public abstract class BaseRecoveryActivity extends Activity {
         mPluginPackageName = packageAndClass[0];
         mPluginClassName = packageAndClass[1];
 
-        IPluginSpecificConfig pluginSpecificConfig = HybirdPlugin.getConfig().getPluginSpecificConfig();
-        boolean enableRecovery = pluginSpecificConfig != null && pluginSpecificConfig.enableRecovery(mPluginPackageName);
+        // PPMS 可能未连接，getPackageInfo 会直接读取 SharedPreference
+        PluginLiteInfo packageInfo = PluginPackageManagerNative.getInstance(this).getPackageInfo(mPluginPackageName);
+        boolean enableRecovery = packageInfo != null && packageInfo.enableRecovery;
 
         if (!enableRecovery || mPluginPackageName == null) {
             finish();

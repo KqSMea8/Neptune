@@ -65,6 +65,10 @@ public class PluginLiteInfo implements Parcelable {
      * 插件安装apk里的版本号
      */
     public String srcApkVersion = "";
+    /**
+     * 是否启动插件的进程恢复功能，(由于插件可能未适配，需要这个开关)
+     */
+    public boolean enableRecovery;
 
 
     public PluginLiteInfo() {
@@ -84,6 +88,7 @@ public class PluginLiteInfo implements Parcelable {
             srcApkPath = jObj.optString("srcApkPath");
             srcApkPkgName = jObj.optString("srcPkgName");
             srcApkVersion = jObj.optString("srcApkVer");
+            enableRecovery = jObj.optBoolean("enableRecovery");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -100,6 +105,7 @@ public class PluginLiteInfo implements Parcelable {
         mDeliverStartUp = in.readInt();
         srcApkPkgName = in.readString();
         srcApkVersion = in.readString();
+        enableRecovery = in.readInt() == 1;
     }
 
     public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
@@ -131,6 +137,7 @@ public class PluginLiteInfo implements Parcelable {
         parcel.writeInt(mDeliverStartUp);
         parcel.writeString(srcApkPkgName);
         parcel.writeString(srcApkVersion);
+        parcel.writeInt(enableRecovery ? 1 : 0);
     }
 
 
@@ -147,6 +154,7 @@ public class PluginLiteInfo implements Parcelable {
             jObj.put("srcApkPath", srcApkPath);
             jObj.put("srcPkgName", srcApkPkgName);
             jObj.put("srcApkVer", srcApkVersion);
+            jObj.put("enableRecovery", enableRecovery);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -158,6 +166,7 @@ public class PluginLiteInfo implements Parcelable {
         return "mPath=" + mPath + ", packageName=" + packageName
                 + ", srcApkPath=" + srcApkPath + ", installStatus=" + installStatus
                 + ", version=" + pluginVersion + ", grayVersion=" + pluginGrayVersion
-                + ", srcApkPkgName" + srcApkPkgName + ", srcApkVersion=" + srcApkVersion;
+                + ", srcApkPkgName=" + srcApkPkgName + ", srcApkVersion=" + srcApkVersion
+                + ", enableRecovery=" + enableRecovery;
     }
 }
