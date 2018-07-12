@@ -1,19 +1,5 @@
 package org.qiyi.pluginlibrary.pm;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.qiyi.pluginlibrary.HybirdPlugin;
-import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ErrorUtil;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -24,13 +10,25 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ProviderInfo;
-import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.error.ErrorType;
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.ResolveInfoUtil;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 存放插件apk的{@link PackageInfo}里面的信息

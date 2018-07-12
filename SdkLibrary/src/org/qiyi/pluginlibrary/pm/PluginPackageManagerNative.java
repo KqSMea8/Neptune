@@ -11,10 +11,10 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
-
 
 import java.io.File;
 import java.util.Iterator;
@@ -294,6 +294,7 @@ public class PluginPackageManagerNative {
             }
             PluginDebugLog.runtimeLog(TAG, "onServiceConnected called");
             if (mService != null) {
+                NotifyCenter.notifyServiceConnected(mContext, PluginPackageManagerService.class);
                 try {
                     mService.setActionFinishCallback(new ActionFinishCallback(mProcessName));
                 } catch (RemoteException e) {
@@ -350,6 +351,11 @@ public class PluginPackageManagerNative {
     public void setPackageInfoManager(IVerifyPluginInfo packageInfoManager) {
         PluginPackageManager.setVerifyPluginInfoImpl(packageInfoManager);
     }
+
+    public boolean isConnected() {
+        return mService != null;
+    }
+
 
     private void onBindService(Context context) {
         Intent intent = new Intent(context, PluginPackageManagerService.class);

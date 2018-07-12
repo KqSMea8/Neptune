@@ -1,15 +1,5 @@
 package org.qiyi.pluginlibrary.utils;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-
-import org.qiyi.pluginlibrary.install.PluginInstaller;
-import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
-import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
-import org.qiyi.pluginlibrary.runtime.PluginManager;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Application;
@@ -19,6 +9,16 @@ import android.content.ContextWrapper;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.TextUtils;
+
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
 
 public class ContextUtils {
     private static final String TAG = ContextUtils.class.getSimpleName();

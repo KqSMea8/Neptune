@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.view.ContextThemeWrapper;
 
 import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.component.BaseRecoveryActivity;
 import org.qiyi.pluginlibrary.component.base.IPluginBase;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
@@ -25,11 +26,11 @@ import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 /**
  * 负责转移插件的跳转目标和创建插件的Activity实例
  * 用于Hook ActivityThread中的全局Instrumentation
- *
  */
 public class PluginHookedInstrument extends PluginInstrument {
 
-    private static final String  TAG = "PluginHookedInstrument";
+    private static final String TAG = "PluginHookedInstrument";
+    private PluginActivityRecoveryHelper mRecoveryHelper = new PluginActivityRecoveryHelper();
 
     public PluginHookedInstrument(Instrumentation hostInstr) {
         super(hostInstr);
@@ -37,7 +38,6 @@ public class PluginHookedInstrument extends PluginInstrument {
 
     @Override
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-
         if (className.startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
             // 插件代理Activity，替换回插件真实的Activity
             String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
@@ -45,9 +45,9 @@ public class PluginHookedInstrument extends PluginInstrument {
             String targetClass = result[1];
 
             PluginDebugLog.runtimeLog(TAG, "newActivity: " + className + ", targetClass: " + targetClass);
-            if (!TextUtils.isEmpty(packageName) && !TextUtils.isEmpty(targetClass)) {
+            if (!TextUtils.isEmpty(packageName)) {
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
-                if (loadedApk != null) {
+                if (loadedApk != null && targetClass != null) {
                     Activity activity = mHostInstr.newActivity(loadedApk.getPluginClassLoader(), targetClass, intent);
                     activity.setIntent(intent);
 
@@ -58,15 +58,23 @@ public class PluginHookedInstrument extends PluginInstrument {
                     }
 
                     return activity;
+                } else if (loadedApk == null) {
+                    // loadedApk 为空，可能是正在恢复进程，跳转到 RecoveryActivity
+                    return mHostInstr.newActivity(cl, mRecoveryHelper.selectRecoveryActivity(className), intent);
                 }
             }
         }
-
         return mHostInstr.newActivity(cl, className, intent);
     }
 
     @Override
     public void callActivityOnCreate(Activity activity, Bundle icicle) {
+        boolean isRecovery = activity instanceof BaseRecoveryActivity;
+        if (isRecovery) {
+            mRecoveryHelper.saveIcicle(activity, icicle);
+            mHostInstr.callActivityOnCreate(activity, null);
+            return;
+        }
         final Intent intent = activity.getIntent();
         String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
         boolean isLaunchPlugin = false;
@@ -77,7 +85,11 @@ public class PluginHookedInstrument extends PluginInstrument {
                 PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate: " + packageName);
                 PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(packageName);
                 if (loadedApk != null) {
-
+                    icicle = mRecoveryHelper.recoveryIcicle(activity, icicle);
+                    // 设置 extra 的 ClassLoader，不然可能会出现 BadParcelException, ClassNotFound
+                    if (icicle != null) {
+                        icicle.setClassLoader(loadedApk.getPluginClassLoader());
+                    }
                     if (!dispatchToBaseActivity(activity)) {
                         // 如果分发给插件Activity的基类了，就不需要在这里反射hook替换相关成员变量了
                         try {
@@ -115,8 +127,12 @@ public class PluginHookedInstrument extends PluginInstrument {
                 NotifyCenter.notifyPluginStarted(activity, intent);
                 NotifyCenter.notifyPluginActivityLoaded(activity);
             }
+            mRecoveryHelper.mockActivityOnRestoreInstanceStateIfNeed(this, activity);
         } catch (Exception e) {
             ErrorUtil.throwErrorIfNeed(e);
+            if (isLaunchPlugin) {
+                NotifyCenter.notifyStartPluginError(activity);
+            }
             activity.finish();
         }
     }
@@ -143,8 +159,27 @@ public class PluginHookedInstrument extends PluginInstrument {
         }
     }
 
+    @Override
+    public void callActivityOnRestoreInstanceState(Activity activity, Bundle savedInstanceState) {
+        if (activity instanceof BaseRecoveryActivity) {
+            mRecoveryHelper.saveSavedInstanceState(activity, savedInstanceState);
+            return;
+        }
+        if (IntentUtils.isIntentForPlugin(activity.getIntent())) {
+            String pkgName = IntentUtils.parsePkgAndClsFromIntent(activity.getIntent())[0];
+            PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
+            if (loadedApk != null && savedInstanceState != null) {
+                savedInstanceState.setClassLoader(loadedApk.getPluginClassLoader());
+                super.callActivityOnRestoreInstanceState(activity, savedInstanceState);
+            }
+        } else {
+            super.callActivityOnRestoreInstanceState(activity, savedInstanceState);
+        }
+    }
+
     /**
      * 将Activity反射相关操作分发给插件Activity的基类
+     *
      * @param activity
      * @return
      */

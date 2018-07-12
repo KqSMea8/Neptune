@@ -13,10 +13,10 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 
 import org.qiyi.pluginlibrary.component.processmgr.ProcessManger;
-import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
+import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;

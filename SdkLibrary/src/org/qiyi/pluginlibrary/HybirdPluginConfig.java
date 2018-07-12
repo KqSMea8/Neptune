@@ -1,6 +1,7 @@
 package org.qiyi.pluginlibrary;
 
 import org.qiyi.pluginlibrary.pm.IVerifyPluginInfo;
+import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 
 /**
  * 插件框架运行配置信息
@@ -32,6 +33,7 @@ public final class HybirdPluginConfig {
     private boolean supportMultiDex;
 
     private IVerifyPluginInfo mVerifyPluginInfo;
+    private IRecoveryUiCreator mRecoveryUiCreator;
 
     HybirdPluginConfig(HybirdPluginConfigBuilder builder) {
         this.sdkMode = builder.sdkMode;
@@ -40,6 +42,7 @@ public final class HybirdPluginConfig {
         this.useNewCompResolve = builder.useNewCompResolve;
         this.supportMultiDex = builder.supportMultiDex;
         this.mVerifyPluginInfo = builder.verifyPluginInfo;
+        this.mRecoveryUiCreator = builder.recoveryUiCreator;
     }
 
 
@@ -67,6 +70,10 @@ public final class HybirdPluginConfig {
         return mVerifyPluginInfo;
     }
 
+    public IRecoveryUiCreator getRecoveryUiCreator() {
+        return mRecoveryUiCreator;
+    }
+
     public static class HybirdPluginConfigBuilder {
         int sdkMode = 0;
         boolean useNewCLMode = false;
@@ -74,6 +81,7 @@ public final class HybirdPluginConfig {
         boolean useNewCompResolve = false;
         boolean supportMultiDex = false;
         IVerifyPluginInfo verifyPluginInfo;
+        IRecoveryUiCreator recoveryUiCreator;
 
         public HybirdPluginConfigBuilder configSdkMode(int sdkMode) {
             this.sdkMode = sdkMode;
@@ -102,6 +110,11 @@ public final class HybirdPluginConfig {
 
         public HybirdPluginConfigBuilder setVerifyPluginInfo(IVerifyPluginInfo verifyPluginInfo) {
             this.verifyPluginInfo = verifyPluginInfo;
+            return this;
+        }
+
+        public HybirdPluginConfigBuilder recoveryUiCreator(IRecoveryUiCreator creator) {
+            this.recoveryUiCreator = creator;
             return this;
         }
 

@@ -95,9 +95,13 @@ public class IntentUtils {
                 intent.setExtrasClassLoader(loadedApk.getPluginClassLoader());
             }
         }
-
-        result[0] = getTargetPackage(intent);
-        result[1] = getTargetClass(intent);
+        try {
+            result[0] = getTargetPackage(intent);
+            result[1] = getTargetClass(intent);
+        } catch (RuntimeException e) {
+            // Parcelable encountered ClassNotFoundException，只能从 action 里面读取 packageName
+            result[0] = pkgName;
+        }
         PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
         return result;
     }

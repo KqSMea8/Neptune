@@ -17,7 +17,8 @@ public interface IIntentConstant {
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "target_stub";
     /**通知插件启动完毕(用于快捷方式) */
     public static final String ACTION_PLUGIN_LOADED = "org.qiyi.pluginapp.ACTION_PLUGIN_LOADED";
-
+    /**插件启动失败*/
+    public static final String ACTION_START_PLUGIN_ERROR = "org.qiyi.pluginapp.ACTION_START_PLUGIN_ERROR";
     /**插件初始化完毕*/
     public static final String ACTION_PLUGIN_INIT = "org.qiyi.pluginapp.action.TARGET_INIT";
 
@@ -25,6 +26,8 @@ public interface IIntentConstant {
     public static final String EXTRA_TARGET_CATEGORY = "pluginapp_service_category";
     /**bind Service时读取flag值的key*/
     public static final String BIND_SERVICE_FLAGS = "bind_service_flags";
+    /**通知 Service 绑定成功，可以进行进程通信了*/
+    public static final String ACTION_SERVICE_CONNECTED = "org.qiyi.pluginapp.ACTION_SERVICE_CONNECTED";
 
     @Deprecated
     public static final String META_KEY_ACTIVITY_SPECIAL = "pluginapp_activity_special";
@@ -45,6 +48,7 @@ public interface IIntentConstant {
     public static final String EXTRA_DEST_FILE = "install_dest_file";
     /**被安装的插件的信息*/
     public static final String EXTRA_PLUGIN_INFO = "plugin_info";
-
+    /**ACTION_SERVICE_CONNECTED Broadcast 中的 service 类型*/
+    public static final String EXTRA_SERVICE_CLASS = "service_class";
     public static final String TASK_AFFINITY_CONTAINER = ":container1";
 }
