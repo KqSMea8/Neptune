@@ -49,7 +49,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
@@ -654,7 +654,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy startActivityForResult one....");
         if (mLoadedApk != null) {
             super.startActivityForResult(
-                    ComponetFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
+                    ComponentFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
                             intent, requestCode, this),
                     requestCode);
         } else {
@@ -667,7 +667,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy startActivityForResult two....");
         if (mLoadedApk != null) {
             super.startActivityForResult(
-                    ComponetFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
+                    ComponentFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
                             intent, requestCode, this),
                     requestCode, options);
         } else {
@@ -679,7 +679,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public ComponentName startService(Intent mIntent) {
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 startService....");
         if (mLoadedApk != null) {
-            ComponetFinder.switchToServiceProxy(mLoadedApk, mIntent);
+            ComponentFinder.switchToServiceProxy(mLoadedApk, mIntent);
         }
         return super.startService(mIntent);
     }
@@ -717,7 +717,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     @Override
     public boolean bindService(Intent mIntent, ServiceConnection conn, int flags) {
         if (mLoadedApk != null) {
-            ComponetFinder.switchToServiceProxy(mLoadedApk, mIntent);
+            ComponentFinder.switchToServiceProxy(mLoadedApk, mIntent);
         }
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 bindService...." + mIntent);
         return super.bindService(mIntent, conn, flags);

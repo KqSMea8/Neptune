@@ -8,21 +8,21 @@ package org.qiyi.pluginlibrary.component.processmgr;
  * Email:yuanzeyao@qiyi.com
  */
 
-public class ProcessManger {
-    private static final String TAG = "ProcessManger";
+public class ProcessManager {
+    private static final String TAG = "ProcessManager";
 
-    public static interface IProcessSelecter {
+    public static interface IProcessSelector {
         public int getProcessIndex(String processName);
     }
 
-    private static IProcessSelecter mOutterSelecter;
+    private static IProcessSelector mOutterSelecter;
 
     /**
      * 外面设置的进程选择器
      *
      * @param mSelecter
      */
-    public static void setOutterSelecter(IProcessSelecter mSelecter) {
+    public static void setOutterSelecter(IProcessSelector mSelecter) {
         mOutterSelecter = mSelecter;
     }
 

@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 
 /**
@@ -65,7 +65,7 @@ public class PluginActivityGroup extends ActivityGroup implements IPluginBase{
     public void startActivityForResult(Intent intent, int requestCode) {
         // 替换成坑位Activity
         String pkgName = getPluginPackageName();
-        intent = ComponetFinder.switchToActivityProxy(pkgName, intent, requestCode, this);
+        intent = ComponentFinder.switchToActivityProxy(pkgName, intent, requestCode, this);
 
         super.startActivityForResult(intent, requestCode);
     }
@@ -75,7 +75,7 @@ public class PluginActivityGroup extends ActivityGroup implements IPluginBase{
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         // 替换成坑位Activity
         String pkgName = getPluginPackageName();
-        intent = ComponetFinder.switchToActivityProxy(pkgName, intent, requestCode, this);
+        intent = ComponentFinder.switchToActivityProxy(pkgName, intent, requestCode, this);
 
         super.startActivityForResult(intent, requestCode, options);
     }

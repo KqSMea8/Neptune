@@ -27,7 +27,7 @@ import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -103,7 +103,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         PluginDebugLog.log(getLogTag(), "startService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
-            ComponetFinder.switchToServiceProxy(mLoadedApk, service);
+            ComponentFinder.switchToServiceProxy(mLoadedApk, service);
         }
         return super.startService(service);
     }
@@ -139,7 +139,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         PluginDebugLog.log(getLogTag(), "bindService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
-            ComponetFinder.switchToServiceProxy(mLoadedApk, service);
+            ComponentFinder.switchToServiceProxy(mLoadedApk, service);
         }
         if (conn != null) {
             if (mLoadedApk != null && service != null) {
@@ -162,12 +162,12 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public void startActivity(Intent intent) {
-        super.startActivity(ComponetFinder.switchToActivityProxy(getPluginPackageName(), intent, -1, this));
+        super.startActivity(ComponentFinder.switchToActivityProxy(getPluginPackageName(), intent, -1, this));
     }
 
     @Override
     public void startActivity(Intent intent, Bundle options) {
-        super.startActivity(ComponetFinder.switchToActivityProxy(getPluginPackageName(), intent, -1, this), options);
+        super.startActivity(ComponentFinder.switchToActivityProxy(getPluginPackageName(), intent, -1, this), options);
     }
 
     @Override

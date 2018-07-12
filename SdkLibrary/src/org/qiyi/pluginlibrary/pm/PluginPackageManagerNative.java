@@ -84,7 +84,7 @@ public class PluginPackageManagerNative {
                             if (uninstallAction.observer != null && uninstallAction.info != null
                                     && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
                                 PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", packageName);
-                                uninstallAction.observer.onPluginUnintall(uninstallAction.info.packageName, errorCode);
+                                uninstallAction.observer.onPluginUninstall(uninstallAction.info.packageName, errorCode);
                             }
                         }
                         // 执行下一个卸载操作，不能同步，防止栈溢出

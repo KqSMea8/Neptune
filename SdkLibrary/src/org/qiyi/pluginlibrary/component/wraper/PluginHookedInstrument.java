@@ -17,7 +17,7 @@ import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -38,7 +38,7 @@ public class PluginHookedInstrument extends PluginInstrument {
 
     @Override
     public Activity newActivity(ClassLoader cl, String className, Intent intent) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-        if (className.startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
+        if (className.startsWith(ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
             // 插件代理Activity，替换回插件真实的Activity
             String[] result = IntentUtils.parsePkgAndClsFromIntent(intent);
             String packageName = result[0];

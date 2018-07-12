@@ -12,11 +12,12 @@ import android.graphics.Color;
 import android.text.TextUtils;
 import android.util.TypedValue;
 
-import org.qiyi.pluginlibrary.component.processmgr.ProcessManger;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
+
+import org.qiyi.pluginlibrary.component.processmgr.ProcessManager;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
+import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -31,8 +32,8 @@ import java.util.List;
  * Email:yuanzeyao@qiyi.com
  */
 
-public class ComponetFinder implements IIntentConstant {
-    private static final String TAG = "ComponetFinder";
+public class ComponentFinder implements IIntentConstant {
+    private static final String TAG = "ComponentFinder";
 
     public static final String DEFAULT_ACTIVITY_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.InstrActivityProxy";
@@ -235,7 +236,7 @@ public class ComponetFinder implements IIntentConstant {
         if (mIntent != null && mIntent.getComponent() != null
                 && !TextUtils.isEmpty(IntentUtils.getTargetClass(mIntent))
                 && !TextUtils.isEmpty(IntentUtils.getTargetPackage(mIntent))) {
-            if (mIntent.getComponent().getClassName().startsWith(ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
+            if (mIntent.getComponent().getClassName().startsWith(ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX)) {
                 return true;
             }
         }
@@ -245,7 +246,7 @@ public class ComponetFinder implements IIntentConstant {
     /**
      * 为插件中的Activity 设置代理
      *
-     * @param mIntent      需要设置代理的Activity的Intent
+     * @param mIntent        需要设置代理的Activity的Intent
      * @param targetActivity 目标的ActivityInfo，包含插件包名和跳转Activity的名称
      */
     private static void setActivityProxy(Intent mIntent, ActivityInfo targetActivity) {
@@ -354,10 +355,10 @@ public class ComponetFinder implements IIntentConstant {
      * 根据被代理的Activity的Feature和进程名称选择代理
      *
      * @param hasTaskAffinity 是否独立任务栈
-     * @param isTranslucent  是否透明
-     * @param isLandscape    是否横屏
-     * @param isHandleConfig 配置变化是否仅仅执行onConfiguration方法
-     * @param mProcessName   当前插件运行的进程名称
+     * @param isTranslucent   是否透明
+     * @param isLandscape     是否横屏
+     * @param isHandleConfig  配置变化是否仅仅执行onConfiguration方法
+     * @param mProcessName    当前插件运行的进程名称
      * @return
      */
     private static String matchActivityProxyByFeature(
@@ -366,7 +367,7 @@ public class ComponetFinder implements IIntentConstant {
             boolean isLandscape,
             boolean isHandleConfig,
             String mProcessName) {
-        int index = ProcessManger.getProcessIndex(mProcessName);
+        int index = ProcessManager.getProcessIndex(mProcessName);
         if (index < 0 || index > 2) {
             //越界检查
             PluginDebugLog.log(TAG, "matchActivityProxyByFeature index is out of bounds!");
@@ -375,25 +376,25 @@ public class ComponetFinder implements IIntentConstant {
 
         if (hasTaskAffinity) {
             PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index);
-            return ComponetFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index;
+                    ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index);
+            return ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index;
         } else if (isTranslucent) {
             PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index);
-            return ComponetFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
+                    ComponentFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index);
+            return ComponentFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
         } else if (isLandscape) {
             PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index);
-            return ComponetFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index;
+                    ComponentFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index);
+            return ComponentFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index;
         }
         if (isHandleConfig) {
             PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index);
-            return ComponetFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index;
+                    ComponentFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index);
+            return ComponentFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index;
         } else {
             PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index);
-            return ComponetFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
+                    ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index);
+            return ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
         }
     }
 
@@ -405,7 +406,7 @@ public class ComponetFinder implements IIntentConstant {
      */
     public static String matchServiceProxyByFeature(String processName) {
         String proxyServiceName =
-                DEFAULT_SERVICE_PROXY_PREFIX + ProcessManger.getProcessIndex(processName);
+                DEFAULT_SERVICE_PROXY_PREFIX + ProcessManager.getProcessIndex(processName);
         PluginDebugLog.runtimeFormatLog(TAG, "matchServiceProxyByFeature:%s", proxyServiceName);
         return proxyServiceName;
     }

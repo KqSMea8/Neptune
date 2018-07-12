@@ -8,7 +8,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
 
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -64,7 +64,7 @@ public class PluginInstrument extends Instrumentation {
             Context who, IBinder contextThread, IBinder token, Activity target,
             Intent intent, int requestCode, Bundle options) {
 
-        ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
+        ComponentFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
             Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
                     Intent.class, int.class, Bundle.class};
@@ -81,7 +81,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(
             Context who, IBinder contextThread, IBinder token, Activity target,
             Intent intent, int requestCode) {
-        ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
+        ComponentFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
             Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
                     Intent.class, int.class};
@@ -98,7 +98,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivityAsCaller(
             Context who, IBinder contextThread, IBinder token, Activity target,
             Intent intent, int requestCode, Bundle options, int userId) {
-        ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
+        ComponentFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
             Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
                     Intent.class, int.class, Bundle.class, int.class};
@@ -117,7 +117,7 @@ public class PluginInstrument extends Instrumentation {
             Context who, IBinder contextThread, IBinder token, Activity target,
             Intent intent, int requestCode, Bundle options,
             boolean ignoreTargetSecurity, int userId) {
-        ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
+        ComponentFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
             Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
                     Intent.class, int.class, Bundle.class, boolean.class, int.class};
@@ -136,7 +136,7 @@ public class PluginInstrument extends Instrumentation {
             Context who, IBinder contextThread, IBinder token, Activity target,
             Intent[] intents, Bundle options, int userId) {
         for (Intent intent : intents) {
-            ComponetFinder.switchToActivityProxy(mPkgName, intent, 0, who);
+            ComponentFinder.switchToActivityProxy(mPkgName, intent, 0, who);
         }
         try {
             Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Activity.class,
@@ -153,7 +153,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(
             Context who, IBinder contextThread, IBinder token, Fragment target,
             Intent intent, int requestCode, Bundle options) {
-        ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
+        ComponentFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
             Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, Fragment.class,
                     Intent.class, int.class, Bundle.class};
@@ -170,7 +170,7 @@ public class PluginInstrument extends Instrumentation {
     public ActivityResult execStartActivity(
             Context who, IBinder contextThread, IBinder token, String target,
             Intent intent, int requestCode, Bundle options) {
-        ComponetFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
+        ComponentFinder.switchToActivityProxy(mPkgName, intent, requestCode, who);
         try {
             Class<?>[] paramTypes = new Class[]{Context.class, IBinder.class, IBinder.class, String.class,
                     Intent.class, int.class, Bundle.class};

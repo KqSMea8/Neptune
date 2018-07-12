@@ -40,7 +40,7 @@ import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
@@ -682,7 +682,7 @@ public class PluginManager implements IIntentConstant {
         PluginDebugLog.runtimeLog(TAG, "launchIntent_targetClass: " + targetClass);
         if (targetClass != null && Service.class.isAssignableFrom(targetClass)) {
             //处理的是Service, 宿主启动插件Service只能通过显式启动
-            ComponetFinder.switchToServiceProxy(mLoadedApk, mIntent, targetClassName);
+            ComponentFinder.switchToServiceProxy(mLoadedApk, mIntent, targetClassName);
             if (mConnection == null) {
                 mHostContext.startService(mIntent);
             } else {
@@ -691,7 +691,7 @@ public class PluginManager implements IIntentConstant {
             }
         } else {
             //处理的是Activity
-            ComponetFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
+            ComponentFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
                     mIntent, -1, mHostContext);
             PActivityStackSupervisor.addLoadingIntent(mLoadedApk.getPluginPackageName(), mIntent);
             Context lastActivity = null;
@@ -1250,7 +1250,7 @@ public class PluginManager implements IIntentConstant {
 
         if (mContext != null) {
             Intent intent = new Intent();
-            String proxyServiceName = ComponetFinder.matchServiceProxyByFeature(mProcessName);
+            String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(mProcessName);
 
             Class<?> proxyServiceNameClass = null;
             try {

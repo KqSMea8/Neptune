@@ -69,7 +69,11 @@ public class PluginLiteInfo implements Parcelable {
      * 是否启动插件的进程恢复功能，(由于插件可能未适配，需要这个开关)
      */
     public boolean enableRecovery;
-
+    /**
+     * 该插件的依赖插件包名列表
+     * 用逗号分隔
+     */
+    public String plugin_refs;
 
     public PluginLiteInfo() {
 
@@ -89,6 +93,7 @@ public class PluginLiteInfo implements Parcelable {
             srcApkPkgName = jObj.optString("srcPkgName");
             srcApkVersion = jObj.optString("srcApkVer");
             enableRecovery = jObj.optBoolean("enableRecovery");
+            plugin_refs = jObj.optString("plugin_refs");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -106,6 +111,7 @@ public class PluginLiteInfo implements Parcelable {
         srcApkPkgName = in.readString();
         srcApkVersion = in.readString();
         enableRecovery = in.readInt() == 1;
+        plugin_refs = in.readString();
     }
 
     public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
@@ -138,6 +144,7 @@ public class PluginLiteInfo implements Parcelable {
         parcel.writeString(srcApkPkgName);
         parcel.writeString(srcApkVersion);
         parcel.writeInt(enableRecovery ? 1 : 0);
+        parcel.writeString(plugin_refs);
     }
 
 
@@ -155,6 +162,7 @@ public class PluginLiteInfo implements Parcelable {
             jObj.put("srcPkgName", srcApkPkgName);
             jObj.put("srcApkVer", srcApkVersion);
             jObj.put("enableRecovery", enableRecovery);
+            jObj.put("plugin_refs", plugin_refs);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -167,6 +175,6 @@ public class PluginLiteInfo implements Parcelable {
                 + ", srcApkPath=" + srcApkPath + ", installStatus=" + installStatus
                 + ", version=" + pluginVersion + ", grayVersion=" + pluginGrayVersion
                 + ", srcApkPkgName=" + srcApkPkgName + ", srcApkVersion=" + srcApkVersion
-                + ", enableRecovery=" + enableRecovery;
+                + ", enableRecovery=" + enableRecovery + ", plugin_refs=[" + plugin_refs + "]";
     }
 }
