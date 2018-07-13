@@ -227,6 +227,17 @@ class TaskHookerManager {
         def resourcesDir = new File(apFile.parentFile, Files.getNameWithoutExtension(apFile.name))
         /** clean up last build resources */
         resourcesDir.deleteDir()
+
+        /** back up original ap-file */
+        File backupFile = new File(apFile.getParentFile(), "${Files.getNameWithoutExtension(apFile.name)}-original.${Files.getFileExtension(apFile.name)}")
+        backupFile.delete()
+        project.copy {
+            from apFile
+            into apFile.getParentFile()
+            rename { backupFile.name }
+        }
+
+
         /** Unzip resourece-${variant.name}.ap_ to resourceDir */
         project.copy {
             from project.zipTree(apFile)
@@ -273,7 +284,8 @@ class TaskHookerManager {
             args 'add', apFile.path
             args updatedResources
             // store the output instead of printing to the console
-            standardOutput = new ByteArrayOutputStream()
+            standardOutput = System.out
+            errorOutput = System.err
         }
 
         updateRJava(aapt, par.sourceOutputDir, variant, resourceCollector)

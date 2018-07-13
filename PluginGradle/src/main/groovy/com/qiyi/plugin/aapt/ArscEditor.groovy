@@ -57,6 +57,11 @@ public class ArscEditor extends AssetEditor {
         def retainedEntries = []
         def libPackageIds = []
 
+        if (t.typeList.specs.size() == 0) {
+            println "\t -- There was no res."
+            return
+        }
+
         // Ensure there is an `attr' typeSpec
         if (retainedTypes[0].id == Aapt.ID_NO_ATTR) { // attr type id is always at first
             def attrSpec = t.typeList.specs[0]
@@ -74,6 +79,11 @@ public class ArscEditor extends AssetEditor {
             retainedStringIds.add(index++)
         }
 
+        // Create the mapping of type ids
+        LinkedHashMap<Object, Integer> typeIdMap = new LinkedHashMap<>()
+        t.typeList.specs.eachWithIndex { it, i ->
+            typeIdMap.put(it.id.intValue(), i)
+        }
 
         // Filter typeSpecs
         retainedTypes.each {
@@ -86,7 +96,8 @@ public class ArscEditor extends AssetEditor {
                 return
             }
 
-            def ts = t.typeList.specs[it.id - 1]
+            def specIndex = typeIdMap.get(it.id)
+            def ts = t.typeList.specs[specIndex]
             def es = it.entries
             def newEntryCount = es.size()
             def d = (ts.entryCount - newEntryCount) * 4

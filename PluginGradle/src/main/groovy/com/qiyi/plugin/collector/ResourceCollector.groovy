@@ -3,10 +3,9 @@ package com.qiyi.plugin.collector
 
 import com.android.build.gradle.api.ApkVariant
 import com.android.build.gradle.tasks.ProcessAndroidResources
-import com.android.builder.dependency.MavenCoordinatesImpl
 import com.android.builder.dependency.level2.AndroidDependency
+import com.android.builder.model.AndroidLibrary
 import com.android.builder.model.MavenCoordinates
-import com.android.utils.FileUtils
 import com.qiyi.plugin.collector.dependence.AarDependenceInfo
 import com.qiyi.plugin.collector.dependence.DependenceInfo
 
@@ -17,8 +16,6 @@ import com.google.common.collect.ListMultimap
 import com.google.common.collect.Lists
 import com.qiyi.plugin.QYPluginExtension
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ResolvedDependency
 
 /**
  * Collect all(host+plugin) resources&styleables in the APK and reassign the resource ID
@@ -87,14 +84,14 @@ class ResourceCollector {
         //1. First, resolve dependencies info from prepareDependenciesTask
         prepareDependencies()
 
-        //2、First, collect all resources by parsing the R symbol file.
+        //2、Second, collect all resources by parsing the R symbol file.
         parseResEntries(allRSymbolFile, allResources, allStyleables)
 
         //3、Then, collect host resources by parsing the host apk R symbol file, should be stripped.
         parseResEntries(hostRSymbolFile, hostResources, hostStyleables)
         stripDependencies.each {
             if (it instanceof AarDependenceInfo) {
-                parseResEntries(it.symbolFile, hostResources, hostStyleables)
+                parseResEntries(it.aarRSymbolFile, hostResources, hostStyleables)
             }
         }
 
@@ -124,8 +121,60 @@ class ResourceCollector {
             }
         }
 
-        Set<AndroidDependency> androidDependencies = [] as Set<AndroidDependency>
-         if (pluginExt.isHigherAGP) {
+        if (pluginExt.isHigherAGP) {
+            // 3.0.0+
+            prepareAndroidLibrary()
+        } else {
+            // 2.3.3
+            prepareAndroidDependency()
+        }
+    }
+
+    /**
+     * 处理Android Gradle Plugin 3.0.0+的依赖关系
+     */
+    private void prepareAndroidLibrary() {
+        println "prepareAndroidLibrary() ..............."
+
+        DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
+        Set<AndroidLibrary> androidLibraries = dependencyCollector.androidLibraries
+
+        androidLibraries.each {
+            println "${it.folder}, ${it.symbolFile}, ${it.jarFile}, ${it.bundle}"
+
+            def mavenCoordinates = it.resolvedCoordinates
+            if (hostDependencies.contains("${mavenCoordinates.groupId}:${mavenCoordinates.artifactId}")) {
+                println "strip Aar: ${mavenCoordinates.groupId}:${mavenCoordinates.artifactId}:${mavenCoordinates.version}"
+                AarDependenceInfo aarDependenceInfo = new AarDependenceInfo(
+                        mavenCoordinates.groupId,
+                        mavenCoordinates.artifactId,
+                        mavenCoordinates.version,
+                        it)
+                aarDependenceInfo = aarDependenceInfo.fixAarManifest(project, apkVariant)
+                aarDependenceInfo = aarDependenceInfo.fixRSymbol(project, apkVariant)
+                stripDependencies.add(aarDependenceInfo)
+            } else {
+                println "retained Aar: ${mavenCoordinates.groupId}:${mavenCoordinates.artifactId}:${mavenCoordinates.version}"
+                AarDependenceInfo aarDependenceInfo = new AarDependenceInfo(
+                        mavenCoordinates.groupId,
+                        mavenCoordinates.artifactId,
+                        mavenCoordinates.version,
+                        it)
+                aarDependenceInfo = aarDependenceInfo.fixAarManifest(project, apkVariant)
+                aarDependenceInfo = aarDependenceInfo.fixRSymbol(project, apkVariant)
+                retainedAarLibs.add(aarDependenceInfo)
+            }
+        }
+    }
+
+    /**
+     * 处理Android Gradle Plugin 2.x的依赖关系
+     */
+    private void prepareAndroidDependency() {
+        println "prepareAndroidDependency() ..............."
+
+        Set<AndroidDependency> androidDependencies
+        if (pluginExt.isHigherAGP) {
             // AGP 3.0.0, manually gather the dependencies
             DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
             androidDependencies = dependencyCollector.androidDependencies
@@ -134,7 +183,7 @@ class ResourceCollector {
         }
 
         androidDependencies.each {
-            println "${it.extractedFolder}, ${it.symbolFile}, ${it.jarFile}"
+            println "${it.extractedFolder}, ${it.symbolFile}, ${it.jarFile}, ${it.artifactFile}"
 
             def mavenCoordinates = it.coordinates as MavenCoordinates
             if (hostDependencies.contains("${mavenCoordinates.groupId}:${mavenCoordinates.artifactId}")) {
@@ -161,71 +210,6 @@ class ResourceCollector {
         }
     }
 
-
-    /** Collect the dependency aars */
-    protected void collectRetainedAars(ResolvedDependency node, Set<AndroidDependency> outAndroidDependencies) {
-        def group = node.moduleGroup
-        def name = node.moduleName
-        def version = node.moduleVersion
-
-
-        println "collectRetainedAars dependency ${group}:${name}:${version}, dependency name:${node.getClass().getName()}"
-
-        node.allModuleArtifacts.each {
-            println "artifact: ${it.name}, file: ${it.file.absolutePath}"
-            if (it.extension == "aar" && version == it.getModuleVersion().getId().version) {
-                MavenCoordinatesImpl mavenCoordinates = new MavenCoordinatesImpl(
-                        it.getModuleVersion().getId().getGroup(),
-                        it.getModuleVersion().getId().getName(),
-                        it.getModuleVersion().getId().getVersion(),
-                        it.getExtension(),
-                        it.getClassifier()
-                )
-
-                final String variantName = it.getClassifier()
-                boolean  isSubProject = false
-                Project subProject = project.findProject(name)
-                if (subProject != null) {
-                    isSubProject = subProject.plugins.hasPlugin("com.android.library")
-                }
-                if (isSubProject) {
-                    File stagingDir = FileUtils.join(
-                            subProject.buildDir,
-                            "intermediates",
-                            "bundles",
-                            variantName != null ? variantName : "default"
-                    )
-                    AndroidDependency androidDependency = new AndroidDependency(
-                            it.file,
-                            mavenCoordinates,
-                            name,
-                            subProject.path,
-                            stagingDir,
-                            stagingDir,
-                            variantName,
-                            true
-                    )
-                    outAndroidDependencies.add(androidDependency)
-                } else {
-                    // jars/classes.jar
-                    // res/xxx
-                    File explodedDir = it.file.getParentFile().getParentFile()
-                    AndroidDependency androidDependency = AndroidDependency.createExplodedAarLibrary(
-                            it.file,
-                            mavenCoordinates,
-                            name,
-                            null,
-                            explodedDir)
-                    outAndroidDependencies.add(androidDependency)
-                }
-            }
-        }
-
-        node.children.each {
-            collectRetainedAars(it, outAndroidDependencies)
-        }
-    }
-
     /**
      * Collect resources and styleables by parsing R symbol file
      * @param RSymbolFile R symbol file records the resource entries
@@ -236,6 +220,8 @@ class ResourceCollector {
         if (RSymbolFile == null || !RSymbolFile.exists()) {
             return
         }
+
+        println "parseResEntries for file: ${RSymbolFile.absolutePath}"
         RSymbolFile.eachLine { line ->
             /**
              *  Line Content:
@@ -248,7 +234,7 @@ class ResourceCollector {
                 def valueType = tokenizer.nextToken()     // value type (int or int[])
                 def resType = tokenizer.nextToken()      // resource type (attr/string/color etc.)
                 def resName = tokenizer.nextToken()
-                def resId = tokenizer.nextToken('\r\n').trim()
+                def resId = tokenizer.nextToken('\n').trim()
 
                 if (resType == 'styleable') {
                     styleableList.add(new StyleableEntry(resName, resId, valueType))
@@ -322,7 +308,9 @@ class ResourceCollector {
             List<String> values = styleableEntry.valueAsList
             values.eachWithIndex { hexResId, idx ->
                 ResourceEntry resEntry = attrEntries.find { it.hexResourceId == hexResId }
-                values[idx] = resEntry?.hexNewResourceId
+                if (resEntry != null) {
+                    values[idx] = resEntry.hexNewResourceId
+                }
             }
             styleableEntry.value = values
         }
@@ -364,11 +352,13 @@ class ResourceCollector {
     public void dump() {
         final def resSplitDir = new File(project.buildDir, 'generated')
 
+        println "dump *********Retained Resources*********"
         final def retainTypeFile = new File(resSplitDir, 'retainType.txt')
         if (!retainTypeFile.exists()) {
             retainTypeFile.createNewFile()
         }
         retainTypeFile.withPrintWriter { pw ->
+            pw.println "************ Resources in Plugin ***********"
             pluginResources.values().each {
                 pw.println "${it.resourceType} ${it.resourceName} 0x${Integer.toHexString(it.resourceId)} 0x${Integer.toHexString(it.newResourceId)}"
             }
@@ -378,12 +368,29 @@ class ResourceCollector {
             }
         }
 
+        println "dump *********Striped Resources*********"
+        final def stripTypeFile = new File(resSplitDir, "stripType.txt")
+        if (!stripTypeFile.exists()) {
+            stripTypeFile.createNewFile()
+        }
+        stripTypeFile.withPrintWriter { pw ->
+            pw.println "************ Resources from Host ***********"
+            hostResources.values().each {
+                pw.println "${it.resourceType} ${it.resourceName} 0x${Integer.toHexString(it.resourceId)} 0x${Integer.toHexString(it.newResourceId)}"
+            }
+            pw.println "****************Styleables*****************"
+            hostStyleables.each {
+                pw.println "${it.name} ${it.valueType} ${it.value}"
+            }
+        }
 
+        println "dump *********All Resources*********"
         final def allTypeFile = new File(resSplitDir, "allType.txt")
         if (!allTypeFile.exists()) {
             allTypeFile.createNewFile()
         }
         allTypeFile.withPrintWriter { pw ->
+            pw.println "************ All resources ***********"
             allResources.values().each {
                 pw.println "${it.resourceType} ${it.resourceName} 0x${Integer.toHexString(it.resourceId)} 0x${Integer.toHexString(it.newResourceId)}"
             }
@@ -393,11 +400,11 @@ class ResourceCollector {
             }
         }
 
+        println "dump *********VendorType*********"
         final def vendorTypeFile = new File(resSplitDir, 'vendorType.txt')
         if (!vendorTypeFile.exists()) {
             vendorTypeFile.createNewFile()
         }
-
         vendorTypeFile.withPrintWriter { pw ->
             retainedAarLibs.each { aarLib ->
                 pw.println "${aarLib.name}"
