@@ -126,18 +126,31 @@ class ResourceCollector {
             prepareAndroidLibrary()
         } else {
             // 2.3.3
-            prepareAndroidDependency()
+            try {
+                prepareAndroidDependency()
+            } catch (Throwable tr) {
+                tr.printStackTrace()
+                // 2.2.0
+                prepareAndroidLibrary()
+            }
         }
     }
 
     /**
      * 处理Android Gradle Plugin 3.0.0+的依赖关系
+     * 或者2.2.x版本的依赖关系
      */
     private void prepareAndroidLibrary() {
         println "prepareAndroidLibrary() ..............."
 
-        DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
-        Set<AndroidLibrary> androidLibraries = dependencyCollector.androidLibraries
+        Set<AndroidLibrary> androidLibraries
+        if (pluginExt.isHigherAGP) {
+            // AGP 3.0.0, gather the dependencies with AndroidLibrary
+            DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
+            androidLibraries = dependencyCollector.androidLibraries
+        } else {
+            androidLibraries = processResTask.libraries
+        }
 
         androidLibraries.each {
             println "${it.folder}, ${it.symbolFile}, ${it.jarFile}, ${it.bundle}"

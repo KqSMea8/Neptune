@@ -79,7 +79,14 @@ class TaskHookerManager {
                         }
                     }
                 } else {
-                    def outputScope = scope.getVariantData().getMainOutput().getScope()
+                    def variantData = scope.getVariantData()
+                    def outputScope
+                    try {
+                        outputScope = variantData.getMainOutput().getScope()
+                    } catch (Throwable tr) {
+                        // 2.2.x
+                        outputScope = variantData.getOutputs().get(0).getScope()
+                    }
                     String manifestTaskName = outputScope.getManifestProcessorTask().name
                     manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
                 }
