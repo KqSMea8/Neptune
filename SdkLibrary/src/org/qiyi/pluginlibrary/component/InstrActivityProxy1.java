@@ -22,6 +22,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.os.BadParcelableException;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
@@ -313,8 +314,10 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         try {
             result[0] = IntentUtils.getTargetPackage(mIntent);
             result[1] = IntentUtils.getTargetClass(mIntent);
-        } catch (RuntimeException e) {
-            // 进程恢复时，Parcelable encountered ClassNotFoundException，使用 action 里面的 pluginPackageName
+        } catch (BadParcelableException e) {
+            // Intent里放置了插件自定义的序列化数据
+            // 进程恢复时，android.os.BadParcelableException: ClassNotFoundException when unmarshalling:
+            // 使用 action 里面的 pluginPackageName
             result[0] = mPluginPackage;
         }
         if (!TextUtils.isEmpty(result[0]) && !TextUtils.isEmpty(result[1])) {

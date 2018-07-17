@@ -2,6 +2,7 @@ package org.qiyi.pluginlibrary.utils;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.BadParcelableException;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
@@ -98,8 +99,10 @@ public class IntentUtils {
         try {
             result[0] = getTargetPackage(intent);
             result[1] = getTargetClass(intent);
-        } catch (RuntimeException e) {
-            // Parcelable encountered ClassNotFoundException，只能从 action 里面读取 packageName
+        } catch (BadParcelableException e) {
+            // Intent里放置了插件自定义的序列化数据
+            // 进程重启时，android.os.BadParcelableException: ClassNotFoundException when unmarshalling:
+            // 只能从 action 里面读取 packageName
             result[0] = pkgName;
         }
         PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
