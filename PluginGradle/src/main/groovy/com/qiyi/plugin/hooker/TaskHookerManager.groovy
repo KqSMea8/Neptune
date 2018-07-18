@@ -432,7 +432,13 @@ class TaskHookerManager {
             }
         }
 
-        return AndroidGradleOptions.isAapt2Enabled(project)
+        try {
+            // AGP 2.x
+            return AndroidGradleOptions.isAapt2Enabled(project)
+        } catch (Throwable t) {
+            t.printStackTrace()
+        }
+        return false
     }
 
     private File getAapt2File(ProcessAndroidResources task) {

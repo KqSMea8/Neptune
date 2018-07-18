@@ -45,6 +45,10 @@ class DependencyCollector {
         this.apkVariant = apkVariant
     }
 
+    /**
+     * Android Gradle Plugin 3.0.0+
+     * @return
+     */
     public Set<AndroidDependency> getAndroidDependencies() {
         println "DependencyCollector getAndroidDependencies() ........"
 
@@ -63,7 +67,10 @@ class DependencyCollector {
         return androidDependencies
     }
 
-
+    /**
+     * Android Gradle Plugin 3.0.0+
+     * @return
+     */
     public Set<AndroidLibrary> getAndroidLibraries() {
         println "DependencyCollector getAndroidLibraries() ........"
 
