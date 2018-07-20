@@ -314,7 +314,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         try {
             result[0] = IntentUtils.getTargetPackage(mIntent);
             result[1] = IntentUtils.getTargetClass(mIntent);
-        } catch (BadParcelableException e) {
+        } catch (RuntimeException e) {
             // Intent里放置了插件自定义的序列化数据
             // 进程恢复时，android.os.BadParcelableException: ClassNotFoundException when unmarshalling:
             // 使用 action 里面的 pluginPackageName

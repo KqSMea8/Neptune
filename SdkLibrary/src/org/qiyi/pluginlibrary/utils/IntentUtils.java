@@ -99,10 +99,12 @@ public class IntentUtils {
         try {
             result[0] = getTargetPackage(intent);
             result[1] = getTargetClass(intent);
-        } catch (BadParcelableException e) {
+        } catch (RuntimeException e) {
             // Intent里放置了插件自定义的序列化数据
             // 进程重启时，android.os.BadParcelableException: ClassNotFoundException when unmarshalling:
             // 只能从 action 里面读取 packageName
+            //
+            // Caused by: java.io.InvalidClassException: org.iqiyi.video.mode.lpt3; Incompatible class (SUID):
             result[0] = pkgName;
         }
         PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
