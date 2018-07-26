@@ -46,18 +46,36 @@ public class ContextUtils {
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "Return host  context for getOriginalContext");
                     return ((InterfaceToGetHost) base).getOriginalContext();
+                } else if (base instanceof ContextWrapper) {
+                    return getOriginalContext(base);
                 }
             } else if (context instanceof Application) {
                 Context base = ((Application) context).getBaseContext();
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "Return Application host  context for getOriginalContext");
                     return ((InterfaceToGetHost) base).getOriginalContext();
+                } else if (base instanceof ContextWrapper) {
+                    return getOriginalContext(base);
                 }
             } else if (context instanceof Service) {
                 Context base = ((Service) context).getBaseContext();
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "Return Service host  context for getOriginalContext");
                     return ((InterfaceToGetHost) base).getOriginalContext();
+                } else if (base instanceof ContextWrapper) {
+                    return getOriginalContext(base);
+                }
+            } else if (context instanceof ContextWrapper) {
+                Context base = ((ContextWrapper) context).getBaseContext();
+                if (base instanceof InterfaceToGetHost) {
+                    PluginDebugLog.log(TAG, "getPluginPackageName context is ContextWrapper " +
+                            "and base is InterfaceToGetHost!");
+                    return ((InterfaceToGetHost) base).getOriginalContext();
+                } else if (base instanceof ContextWrapper) {
+                    // 递归调用
+                    // DecorView的Context是com.android.internal.policy.DecorContext
+                    // https://android.googlesource.com/platform/frameworks/base.git/+/master/core/java/com/android/internal/policy/DecorContext.java
+                    return getOriginalContext(base);
                 }
             }
             return context;
@@ -100,7 +118,7 @@ public class ContextUtils {
         return topPackage;
     }
 
-    public static List<String> getRunningPluginPackage(){
+    public static List<String> getRunningPluginPackage() {
         List<String> mRunningPackage = new ArrayList<String>();
         for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
             String packageName = (String) entry.getKey();
@@ -168,7 +186,7 @@ public class ContextUtils {
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "getPluginPackageName context is Activity!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
-                }else if(base instanceof ContextWrapper){
+                } else if (base instanceof ContextWrapper) {
                     return getPluginPackageName(base);
                 }
             } else if (context instanceof Application) {
@@ -176,7 +194,7 @@ public class ContextUtils {
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "getPluginPackageName context is Application!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
-                }else if(base instanceof ContextWrapper){
+                } else if (base instanceof ContextWrapper) {
                     return getPluginPackageName(base);
                 }
             } else if (context instanceof Service) {
@@ -184,16 +202,16 @@ public class ContextUtils {
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "getPluginPackageName context is Service!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
-                }else if(base instanceof ContextWrapper){
+                } else if (base instanceof ContextWrapper) {
                     return getPluginPackageName(base);
                 }
-            } else if(context instanceof ContextWrapper){
-                Context base =((ContextWrapper)context).getBaseContext();
+            } else if (context instanceof ContextWrapper) {
+                Context base = ((ContextWrapper) context).getBaseContext();
                 if (base instanceof InterfaceToGetHost) {
                     PluginDebugLog.log(TAG, "getPluginPackageName context is ContextWrapper " +
                             "and base is InterfaceToGetHost!");
                     return ((InterfaceToGetHost) base).getPluginPackageName();
-                }else if(base instanceof ContextWrapper){
+                } else if (base instanceof ContextWrapper) {
                     //递归调用
                     return getPluginPackageName(base);
                 }
@@ -286,7 +304,7 @@ public class ContextUtils {
     /**
      * 判断当前系统是否是Android N或者Android O
      *
-     * @param sdk       Android SDK名（“N”或者“O”）
+     * @param sdk Android SDK名（“N”或者“O”）
      */
     private static boolean isParticularAndroidVersion(String sdk) {
         int minSDKValue = 0;
@@ -296,7 +314,7 @@ public class ContextUtils {
             minSDKValue = 24;
             maxSDKValue = 25;
             compareSDKName = "N";
-        } else if (TextUtils.equals(ANDROID_O, sdk)){
+        } else if (TextUtils.equals(ANDROID_O, sdk)) {
             minSDKValue = 26;
             maxSDKValue = 27;
             compareSDKName = "O";
