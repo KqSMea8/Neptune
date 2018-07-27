@@ -3,12 +3,19 @@ package com.qiyi.plugin.collector
 import com.android.annotations.NonNull
 import com.android.annotations.Nullable
 import com.android.build.gradle.api.ApkVariant
+import com.android.build.gradle.internal.api.ApplicationVariantImpl
 import com.android.build.gradle.internal.dependency.ArtifactCollectionWithExtraArtifact
+import com.android.build.gradle.internal.ide.ArtifactDependencyGraph
+import com.android.build.gradle.internal.ide.ModelBuilder
 import com.android.build.gradle.internal.publishing.AndroidArtifacts
 import com.android.build.gradle.internal.scope.VariantScope
+import com.android.build.gradle.internal.variant.BaseVariantData
 import com.android.builder.dependency.MavenCoordinatesImpl
 import com.android.builder.dependency.level2.AndroidDependency
+import com.android.builder.model.AndroidLibrary
+import com.android.builder.model.Dependencies
 import com.android.builder.model.MavenCoordinates
+import com.android.builder.model.SyncIssue
 import com.android.utils.FileUtils
 import com.google.common.collect.Maps
 import com.google.common.collect.Sets
@@ -19,11 +26,13 @@ import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 
+import java.util.function.Consumer
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 /**
  * 处理Android Library依赖的收集
+ * 参考android插件{@link com.android.build.gradle.internal.ide.ArtifactDependencyGraph}的实现
  */
 class DependencyCollector {
 
@@ -36,7 +45,13 @@ class DependencyCollector {
         this.apkVariant = apkVariant
     }
 
+    /**
+     * Android Gradle Plugin 3.0.0+
+     * @return
+     */
     public Set<AndroidDependency> getAndroidDependencies() {
+        println "DependencyCollector getAndroidDependencies() ........"
+
         Set<AndroidDependency> androidDependencies = [] as Set<AndroidDependency>
         def scope = apkVariant.getVariantData().getScope() as VariantScope
         Set<ResolvedArtifactResult> allArtifacts = getAllArtifacts(scope,
@@ -50,6 +65,33 @@ class DependencyCollector {
         }
 
         return androidDependencies
+    }
+
+    /**
+     * Android Gradle Plugin 3.0.0+
+     * @return
+     */
+    public Set<AndroidLibrary> getAndroidLibraries() {
+        println "DependencyCollector getAndroidLibraries() ........"
+
+        BaseVariantData variantData = ((ApplicationVariantImpl)apkVariant).variantData
+        ArtifactDependencyGraph graph = new ArtifactDependencyGraph()
+        Dependencies dependencies
+        Consumer<SyncIssue> consumer = new Consumer<SyncIssue>() {
+            @Override
+            void accept(SyncIssue syncIssue) {
+                println "get Android Libraries issue: " + syncIssue
+            }
+        }
+        try {
+            dependencies = graph.createDependencies(variantData.scope, false, consumer)
+        } catch (Throwable t) {
+            t.printStackTrace()
+            // NoSuchMethodError
+            dependencies = graph.createDependencies(variantData.scope, false, ModelBuilder.computeBuildMapping(project.gradle), consumer)
+        }
+
+        return dependencies.libraries
     }
 
     /**

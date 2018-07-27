@@ -13,8 +13,8 @@ import android.text.TextUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
@@ -24,12 +24,14 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 负责安装卸载app，获取安装列表等工作.<br>
@@ -250,6 +252,10 @@ public class PluginPackageManager {
                         pkgInfo.installStatus = PluginLiteInfo.PLUGIN_INSTALLED;
                     }
                     PluginDebugLog.installFormatLog(TAG, "plugin install success: %s", pkgInfo.packageName);
+                    // 先更新内存状态，再回调给上层
+                    mInstalledPlugins.put(pkgInfo.packageName, pkgInfo);
+                    saveInstallPluginInfos();
+
                     IInstallCallBack callback = listenerMap.get(pkgInfo.packageName);
                     if (callback != null) {
                         try {
@@ -263,9 +269,6 @@ public class PluginPackageManager {
                     // 执行等待执行的action
                     executePackageAction(pkgInfo, true, 0);
                     onActionFinish(pkgInfo.packageName, INSTALL_SUCCESS);
-
-                    mInstalledPlugins.put(pkgInfo.packageName, pkgInfo);
-                    saveInstallPluginInfos();
                 } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
                     // 插件安装失败
                     PluginLiteInfo pkgInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
@@ -645,7 +648,7 @@ public class PluginPackageManager {
 
                 // 回调
                 if (observer != null) {
-                    observer.onPluginUnintall(packageName, DELETE_SUCCEEDED);
+                    observer.onPluginUninstall(packageName, DELETE_SUCCEEDED);
                     // 发送广播给插件进程，清理PluginLoadedApk数据
                     Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_UNINSTALL);
                     intent.setPackage(mContext.getPackageName());
@@ -689,7 +692,7 @@ public class PluginPackageManager {
                 if (uninstallFlag) {
                     deletePackage(packageInfo, new IPluginUninstallCallBack.Stub() {
                         @Override
-                        public void onPluginUnintall(String packageName, int returnCode) throws RemoteException {
+                        public void onPluginUninstall(String packageName, int returnCode) throws RemoteException {
                             PluginDebugLog.runtimeFormatLog(TAG, "onPluginUninstall %s", packageName);
                         }
                     });
@@ -700,9 +703,9 @@ public class PluginPackageManager {
             }
 
             if (uninstallFlag) {
-                mInstalledPlugins.remove(packageName);
                 mPackageInfoCache.remove(packageName);
 
+                mInstalledPlugins.remove(packageName);
                 saveInstallPluginInfos();
             }
 
@@ -785,6 +788,16 @@ public class PluginPackageManager {
 
         if (sVerifyPluginInfo != null) {
             mRefs = sVerifyPluginInfo.getPluginRefs(pkgName);
+        } else {
+            PluginLiteInfo liteInfo = mInstalledPlugins.get(pkgName);
+            if (liteInfo != null && !TextUtils.isEmpty(liteInfo.plugin_refs)) {
+                String[] refs = liteInfo.plugin_refs.split(",");
+                for (String ref : refs) {
+                    if (!TextUtils.isEmpty(ref)) {
+                        mRefs.add(ref);
+                    }
+                }
+            }
         }
         return mRefs;
     }
@@ -816,13 +829,14 @@ public class PluginPackageManager {
      * @return
      */
     List<PluginLiteInfo> getInstalledPackagesDirectly() {
-        List<PluginLiteInfo> mInstallPlugins = Collections.emptyList();
+        List<PluginLiteInfo> installPlugins = Collections.emptyList();
         if (sVerifyPluginInfo != null) {
-            mInstallPlugins = sVerifyPluginInfo.getInstalledPackagesDirectly();
+            installPlugins = sVerifyPluginInfo.getInstalledPackagesDirectly();
         } else {
             PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
+            installPlugins.addAll(mInstalledPlugins.values());
         }
-        return mInstallPlugins;
+        return installPlugins;
     }
 
     /**
@@ -855,6 +869,15 @@ public class PluginPackageManager {
             mRefPlugins = sVerifyPluginInfo.getPluginRefsDirectly(packageName);
         } else {
             PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
+            PluginLiteInfo liteInfo = mInstalledPlugins.get(packageName);
+            if (liteInfo != null && !TextUtils.isEmpty(liteInfo.plugin_refs)) {
+                String[] refs = liteInfo.plugin_refs.split(",");
+                for (String ref : refs) {
+                    if (!TextUtils.isEmpty(ref)) {
+                        mRefPlugins.add(ref);
+                    }
+                }
+            }
         }
         return mRefPlugins;
     }
@@ -866,14 +889,15 @@ public class PluginPackageManager {
      * @return
      */
     PluginLiteInfo getPackageInfoDirectly(String packageName) {
-        PluginLiteInfo mInfo = null;
+        PluginLiteInfo liteInfo = null;
         if (!TextUtils.isEmpty(packageName) && sVerifyPluginInfo != null) {
-            mInfo = sVerifyPluginInfo.getPackageInfoDirectly(packageName);
+            liteInfo = sVerifyPluginInfo.getPackageInfoDirectly(packageName);
         } else {
             PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
+            liteInfo = mInstalledPlugins.get(packageName);
         }
 
-        return mInfo;
+        return liteInfo;
     }
 
 

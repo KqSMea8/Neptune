@@ -9,7 +9,7 @@ import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ComponetFinder;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
@@ -263,7 +263,7 @@ public class PActivityStackSupervisor {
                 activity = mFocusedStack.getTop();
             }
             boolean hasSameActivity = false;
-            String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk, info);
+            String proxyClsName = ComponentFinder.findActivityProxy(mLoadedApk, info);
             if (activity != null) {
                 // 栈内有实例, 可能是ProxyActivity，也可能是插件真实的Activity
                 if (TextUtils.equals(proxyClsName, activity.getClass().getName())
@@ -302,7 +302,7 @@ public class PActivityStackSupervisor {
             Activity found = null;
             // 遍历已经起过的activity
             for (Activity activity : targetStack.getActivities()) {
-                String proxyClsName = ComponetFinder.findActivityProxy(mLoadedApk, info);
+                String proxyClsName = ComponentFinder.findActivityProxy(mLoadedApk, info);
                 if (activity != null) {
                     if (TextUtils.equals(proxyClsName, activity.getClass().getName())
                             || TextUtils.equals(targetActivity, activity.getClass().getName())) {

@@ -15,6 +15,7 @@ import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
+import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -196,15 +197,25 @@ public class ServiceProxy1 extends Service {
             super.onStartCommand(null, paramInt1, paramInt2);
             return START_NOT_STICKY;
         }
-
-        if (!TextUtils.isEmpty(paramIntent.getAction())) {
-            if (paramIntent.getAction().equals(IIntentConstant.ACTION_QUIT)) {
-                PluginDebugLog.log(TAG, "service " + getClass().getName() + " received quit intent action");
-                mKillProcessOnDestroy = true;
-                stopSelf();
-                return START_NOT_STICKY;
-            }
+        // 退出Service
+        if (TextUtils.equals(IIntentConstant.ACTION_QUIT_SERVICE, paramIntent.getAction())) {
+            PluginDebugLog.runtimeLog(TAG, "service " + getClass().getName() + " received quit intent action");
+            mKillProcessOnDestroy = true;
+            stopSelf();
+            return START_NOT_STICKY;
         }
+        // 启动插件
+        if (TextUtils.equals(IIntentConstant.ACTION_START_PLUGIN, paramIntent.getAction())) {
+            PluginDebugLog.runtimeLog(TAG, "service " + getClass().getName() + " received start plugin intent action");
+            String processName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_PROCESS);
+            Intent launchIntent = paramIntent.getParcelableExtra(IIntentConstant.EXTRA_START_INTENT_KEY);
+            if (!TextUtils.isEmpty(processName) && launchIntent != null) {
+                launchIntent.setExtrasClassLoader(this.getClass().getClassLoader());
+                PluginManager.launchPlugin(this, launchIntent, processName);
+            }
+            return START_NOT_STICKY;
+        }
+
         NotifyCenter.notifyPluginStarted(this, paramIntent);
 
         String targetClassName = IntentUtils.getTargetClass(paramIntent);

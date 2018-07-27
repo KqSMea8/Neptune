@@ -11,10 +11,10 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
-
 
 import java.io.File;
 import java.util.Iterator;
@@ -84,7 +84,7 @@ public class PluginPackageManagerNative {
                             if (uninstallAction.observer != null && uninstallAction.info != null
                                     && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
                                 PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", packageName);
-                                uninstallAction.observer.onPluginUnintall(uninstallAction.info.packageName, errorCode);
+                                uninstallAction.observer.onPluginUninstall(uninstallAction.info.packageName, errorCode);
                             }
                         }
                         // 执行下一个卸载操作，不能同步，防止栈溢出
@@ -294,6 +294,7 @@ public class PluginPackageManagerNative {
             }
             PluginDebugLog.runtimeLog(TAG, "onServiceConnected called");
             if (mService != null) {
+                NotifyCenter.notifyServiceConnected(mContext, PluginPackageManagerService.class);
                 try {
                     mService.setActionFinishCallback(new ActionFinishCallback(mProcessName));
                 } catch (RemoteException e) {
@@ -350,6 +351,11 @@ public class PluginPackageManagerNative {
     public void setPackageInfoManager(IVerifyPluginInfo packageInfoManager) {
         PluginPackageManager.setVerifyPluginInfoImpl(packageInfoManager);
     }
+
+    public boolean isConnected() {
+        return mService != null;
+    }
+
 
     private void onBindService(Context context) {
         Intent intent = new Intent(context, PluginPackageManagerService.class);

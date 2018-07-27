@@ -1,7 +1,7 @@
 package com.qiyi.plugin.collector.dependence
 
 import com.android.build.gradle.api.ApkVariant
-import com.android.builder.dependency.level2.AndroidDependency
+import com.android.builder.model.AndroidLibrary
 import com.android.utils.FileUtils
 import com.google.common.collect.ArrayListMultimap
 import com.google.common.collect.ListMultimap
@@ -20,8 +20,10 @@ class AarDependenceInfo extends DependenceInfo {
 
     /**
      * Android library dependence in android build system, delegate of AarDependenceInfo
+     * android gradle plugin below 2.3.3: refer to AndroidDependency
+     * android gradle plugin 2.2.x or above 3.0.0: refer to AndroidLibrary
      */
-    @Delegate AndroidDependency dependency
+    Object dependency
 
     /**
      * All resources(e.g. drawable, layout...) this library can access
@@ -37,11 +39,15 @@ class AarDependenceInfo extends DependenceInfo {
 
     File aarRSymbolFile
 
-    AarDependenceInfo(String group, String artifact, String version, AndroidDependency dependency) {
+    AarDependenceInfo(String group, String artifact, String version, Object dependency) {
         super(group, artifact, version)
         this.dependency = dependency
-        this.aarManifestFile = manifest
-        this.aarRSymbolFile = symbolFile
+        this.aarManifestFile = dependency.manifest
+        this.aarRSymbolFile = dependency.symbolFile
+    }
+
+    String getName() {
+        return dependency.name
     }
 
     @Override
@@ -52,6 +58,14 @@ class AarDependenceInfo extends DependenceInfo {
     @Override
     DependenceType getDependenceType() {
         return DependenceType.AAR
+    }
+
+    File getManifest() {
+        return dependency.manifest
+    }
+
+    File getSymbolFile() {
+        return dependency.symbolFile
     }
 
     /**
@@ -88,7 +102,8 @@ class AarDependenceInfo extends DependenceInfo {
             return this
         }
 
-        String projectName = artifact
+        String projectName = (dependency instanceof AndroidLibrary && dependency.project != null && !dependency.project.isEmpty()) ?
+                dependency.project : artifact
         Project subProject = project.rootProject.findProject(projectName)
         if (subProject != null) {
             File manifestsDir = new File(subProject.buildDir, "intermediates/manifests")
@@ -129,7 +144,8 @@ class AarDependenceInfo extends DependenceInfo {
             return this
         }
 
-        String projectName = artifact
+        String projectName = (dependency instanceof AndroidLibrary && dependency.project != null && !dependency.project.isEmpty()) ?
+                dependency.project : artifact
         Project subProject = project.rootProject.findProject(projectName)
         if (subProject != null) {
             File symbolDir = new File(subProject.buildDir, "intermediates/symbols")

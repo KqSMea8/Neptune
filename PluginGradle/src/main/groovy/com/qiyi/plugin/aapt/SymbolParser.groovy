@@ -78,7 +78,7 @@ public final class SymbolParser {
         final def vtype = tokenizer.nextToken()     // value type (int or int[])
         final def type = tokenizer.nextToken()      // resource type (attr/string/color etc.)
         final def key = tokenizer.nextToken()
-        final def idStr = tokenizer.nextToken('\r\n').trim()
+        final def idStr = tokenizer.nextToken('\n').trim()
 
         if (type == 'styleable') {
             // Styleables won't be compiled to resources.arsc file but saved in `R.java',

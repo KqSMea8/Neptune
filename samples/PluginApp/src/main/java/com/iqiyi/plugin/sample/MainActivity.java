@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity{
         Fresco.initialize(this);
         FLog.setMinimumLoggingLevel(FLog.VERBOSE);
 
-        setContentView(R.layout.home_page);
+        setContentView(R.layout.activity_main);
         Log.i(TAG, "MainActivity onCreate() called");
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);

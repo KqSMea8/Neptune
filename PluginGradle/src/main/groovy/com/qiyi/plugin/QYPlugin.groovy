@@ -27,7 +27,7 @@ class QYPlugin implements Plugin<Project> {
 
         def android = project.extensions.getByType(AppExtension)
         boolean highAGP = Utils.compareVersion(Version.ANDROID_GRADLE_PLUGIN_VERSION, "3.0.0") >= 0
-        println "current AGP version ${Version.ANDROID_GRADLE_PLUGIN_VERSION}, isHigherAGP=${pluginExt.isHigherAGP}"
+        println "current AGP version ${Version.ANDROID_GRADLE_PLUGIN_VERSION}, isHigherAGP=${highAGP}"
 
         project.afterEvaluate {
             // init plugin extension

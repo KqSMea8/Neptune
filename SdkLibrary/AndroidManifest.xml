@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.qiyi.pluginlibrary"
     android:versionCode="1"
-    android:versionName="1.0" >
+    android:versionName="1.0">
 
     <application>
         <!-- 插件安装Service，独立进程 -->
@@ -17,6 +17,19 @@
         <!-- 主进程Service -->
         <service android:name="org.qiyi.pluginlibrary.pm.PluginPackageManagerService" />
 
+        <activity
+            android:name=".component.RecoveryActivity0"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".component.RecoveryActivity1"
+            android:process=":plugin1"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".component.RecoveryActivity2"
+            android:process=":plugin2"
+            android:screenOrientation="portrait" />
 
         <!-- standard Activity坑位 -->
         <activity
@@ -103,8 +116,7 @@
             android:process=":plugin2" />
 
         <!-- Service坑位 -->
-        <service
-            android:name="org.qiyi.pluginlibrary.component.ServiceProxy0"/>
+        <service android:name="org.qiyi.pluginlibrary.component.ServiceProxy0" />
         <service
             android:name="org.qiyi.pluginlibrary.component.ServiceProxy1"
             android:process=":plugin1" />

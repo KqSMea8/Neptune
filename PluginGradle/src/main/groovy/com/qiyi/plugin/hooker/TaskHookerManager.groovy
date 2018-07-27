@@ -79,7 +79,14 @@ class TaskHookerManager {
                         }
                     }
                 } else {
-                    def outputScope = scope.getVariantData().getMainOutput().getScope()
+                    def variantData = scope.getVariantData()
+                    def outputScope
+                    try {
+                        outputScope = variantData.getMainOutput().getScope()
+                    } catch (Throwable tr) {
+                        // 2.2.x
+                        outputScope = variantData.getOutputs().get(0).getScope()
+                    }
                     String manifestTaskName = outputScope.getManifestProcessorTask().name
                     manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
                 }
@@ -227,6 +234,17 @@ class TaskHookerManager {
         def resourcesDir = new File(apFile.parentFile, Files.getNameWithoutExtension(apFile.name))
         /** clean up last build resources */
         resourcesDir.deleteDir()
+
+        /** back up original ap-file */
+        File backupFile = new File(apFile.getParentFile(), "${Files.getNameWithoutExtension(apFile.name)}-original.${Files.getFileExtension(apFile.name)}")
+        backupFile.delete()
+        project.copy {
+            from apFile
+            into apFile.getParentFile()
+            rename { backupFile.name }
+        }
+
+
         /** Unzip resourece-${variant.name}.ap_ to resourceDir */
         project.copy {
             from project.zipTree(apFile)
@@ -273,7 +291,8 @@ class TaskHookerManager {
             args 'add', apFile.path
             args updatedResources
             // store the output instead of printing to the console
-            standardOutput = new ByteArrayOutputStream()
+            standardOutput = System.out
+            errorOutput = System.err
         }
 
         updateRJava(aapt, par.sourceOutputDir, variant, resourceCollector)
@@ -413,7 +432,13 @@ class TaskHookerManager {
             }
         }
 
-        return AndroidGradleOptions.isAapt2Enabled(project)
+        try {
+            // AGP 2.x
+            return AndroidGradleOptions.isAapt2Enabled(project)
+        } catch (Throwable t) {
+            t.printStackTrace()
+        }
+        return false
     }
 
     private File getAapt2File(ProcessAndroidResources task) {
