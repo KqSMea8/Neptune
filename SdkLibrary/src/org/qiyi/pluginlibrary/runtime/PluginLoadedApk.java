@@ -447,7 +447,7 @@ public class PluginLoadedApk implements IIntentConstant {
                 return false;
             }
             // 支持注册多个ActivityLifeCycle到插件进程
-            for (PluginActivityLifeCycleCallback callback : PluginManager.sActivityLifecycleCallbacks) {
+            for (Application.ActivityLifecycleCallbacks callback : PluginManager.sActivityLifecycleCallbacks) {
                 mPluginApplication.registerActivityLifecycleCallbacks(callback);
             }
 

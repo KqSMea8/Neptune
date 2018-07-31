@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
@@ -1294,10 +1295,6 @@ public class PluginManager implements IIntentConstant {
                 printWriter.print("packageName:" + tmp.getKey());
                 printWriter.print("\n");
                 tmp.getValue().getActivityStackSupervisor().dump(printWriter);
-//                List<Activity> activities = tmp.getValue().getActivityStackSupervisor().getActivityStack();
-//                for (Activity mActivity : activities) {
-//                    ((InstrActivityProxy1) mActivity).dump(printWriter);
-//                }
             }
             printWriter.print("================end dump plugin activity stack====================");
         } catch (Exception e) {
@@ -1311,13 +1308,13 @@ public class PluginManager implements IIntentConstant {
      * 宿主注册到插件里的ActivityLifeCycle监听器
      * 插件重写了Application，需要注册到插件的Application类里去
      */
-    final static ArrayList<PluginActivityLifeCycleCallback> sActivityLifecycleCallbacks =
-            new ArrayList<PluginActivityLifeCycleCallback>();
+    final static ArrayList<Application.ActivityLifecycleCallbacks> sActivityLifecycleCallbacks =
+            new ArrayList<Application.ActivityLifecycleCallbacks>();
 
     /**
      * 注册ActivityLifeCycle到插件的Application
      */
-    public static void registerActivityLifecycleCallbacks(PluginActivityLifeCycleCallback callback) {
+    public static void registerActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
         synchronized (sActivityLifecycleCallbacks) {
             sActivityLifecycleCallbacks.add(callback);
         }
@@ -1334,7 +1331,7 @@ public class PluginManager implements IIntentConstant {
     /**
      * 取消插件Application里的ActivityLifeCycle监听
      */
-    public static void unregisterActivityLifecycleCallbacks(PluginActivityLifeCycleCallback callback) {
+    public static void unregisterActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
         synchronized (sActivityLifecycleCallbacks) {
             sActivityLifecycleCallbacks.remove(callback);
         }
@@ -1346,87 +1343,5 @@ public class PluginManager implements IIntentConstant {
                 application.unregisterActivityLifecycleCallbacks(callback);
             }
         }
-    }
-
-    /**********************************************************
-     *
-     * 以下Dispatch相关方法只会在InstrActivityProxyN中调用
-     * 新的Hook Instrumentation方案不会使用到
-     *
-     *********************************************************/
-
-    public static void dispatchPluginActivityCreated(String pluginPkgName, Activity activity, Bundle savedInstanceState) {
-        Object[] callbacks = collectActivityLifecycleCallbacks();
-        if (callbacks != null) {
-            for (int i = 0; i < callbacks.length; i++) {
-                ((PluginActivityLifeCycleCallback) callbacks[i]).onPluginActivityCreated(pluginPkgName, activity,
-                        savedInstanceState);
-            }
-        }
-    }
-
-    public static void dispatchPluginActivityStarted(String pluginPkgName, Activity activity) {
-        Object[] callbacks = collectActivityLifecycleCallbacks();
-        if (callbacks != null) {
-            for (int i = 0; i < callbacks.length; i++) {
-                ((PluginActivityLifeCycleCallback) callbacks[i]).onPluginActivityStarted(pluginPkgName, activity);
-            }
-        }
-    }
-
-    public static void dispatchPluginActivityResumed(String pluginPkgName, Activity activity) {
-        Object[] callbacks = collectActivityLifecycleCallbacks();
-        if (callbacks != null) {
-            for (int i = 0; i < callbacks.length; i++) {
-                ((PluginActivityLifeCycleCallback) callbacks[i]).onPluginActivityResumed(pluginPkgName, activity);
-            }
-        }
-    }
-
-    public static void dispatchPluginActivityPaused(String pluginPkgName, Activity activity) {
-        Object[] callbacks = collectActivityLifecycleCallbacks();
-        if (callbacks != null) {
-            for (int i = 0; i < callbacks.length; i++) {
-                ((PluginActivityLifeCycleCallback) callbacks[i]).onPluginActivityPaused(pluginPkgName, activity);
-            }
-        }
-    }
-
-    public static void dispatchPluginActivityStopped(String pluginPkgName, Activity activity) {
-        Object[] callbacks = collectActivityLifecycleCallbacks();
-        if (callbacks != null) {
-            for (int i = 0; i < callbacks.length; i++) {
-                ((PluginActivityLifeCycleCallback) callbacks[i]).onPluginActivityStopped(pluginPkgName, activity);
-            }
-        }
-    }
-
-    public static void dispatchPluginActivitySaveInstanceState(String pluginPkgName, Activity activity, Bundle outState) {
-        Object[] callbacks = collectActivityLifecycleCallbacks();
-        if (callbacks != null) {
-            for (int i = 0; i < callbacks.length; i++) {
-                ((PluginActivityLifeCycleCallback) callbacks[i]).onPluginActivitySaveInstanceState(pluginPkgName, activity,
-                        outState);
-            }
-        }
-    }
-
-    public static void dispatchPluginActivityDestroyed(String pluginPkgName, Activity activity) {
-        Object[] callbacks = collectActivityLifecycleCallbacks();
-        if (callbacks != null) {
-            for (int i = 0; i < callbacks.length; i++) {
-                ((PluginActivityLifeCycleCallback) callbacks[i]).onPluginActivityDestroyed(pluginPkgName, activity);
-            }
-        }
-    }
-
-    private static Object[] collectActivityLifecycleCallbacks() {
-        Object[] callbacks = null;
-        synchronized (sActivityLifecycleCallbacks) {
-            if (sActivityLifecycleCallbacks.size() > 0) {
-                callbacks = sActivityLifecycleCallbacks.toArray();
-            }
-        }
-        return callbacks;
     }
 }
