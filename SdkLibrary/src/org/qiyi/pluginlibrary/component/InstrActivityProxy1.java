@@ -22,9 +22,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.os.BadParcelableException;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -46,13 +46,12 @@ import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
-import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
-import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
+import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -66,7 +65,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 
 /**
@@ -101,18 +99,27 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
      * 等待 PluginPackageManagerService 连接成功后启动插件
      */
     private BroadcastReceiver mLaunchPluginReceiver;
-
-    private void initUiForRecovery() {
-        IRecoveryUiCreator recoveryUiCreator = HybirdPlugin.getConfig().getRecoveryUiCreator();
-        if (recoveryUiCreator == null) {
-            recoveryUiCreator = new IRecoveryUiCreator.DefaultRecoveryUiCreator();
+    private IRecoveryCallback mRecoveryCallback;
+    private Handler mHandler = new Handler();
+    private Runnable mMockServiceReady = new Runnable() {
+        @Override
+        public void run() {
+            PluginDebugLog.runtimeLog(TAG, "mock ServiceConnected event.");
+            NotifyCenter.notifyServiceConnected(InstrActivityProxy1.this, null);
         }
-        setContentView(recoveryUiCreator.createContentView(this));
+    };
+
+    private void initRecoveryCallback() {
+        mRecoveryCallback = HybirdPlugin.getConfig().getRecoveryCallback();
+        if (mRecoveryCallback == null) {
+            mRecoveryCallback = new IRecoveryCallback.DefaultRecoveryCallback();
+        }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initRecoveryCallback();
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 onCreate....");
         String pluginActivityName = null;
         String pluginPkgName = null;
@@ -136,37 +143,38 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 this.finish();
                 PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
             } else {
-                initUiForRecovery();
+                mRecoveryCallback.beforeRecovery(this, pluginPkgName, pluginActivityName);
+                mRecoveryCallback.onSetContentView(this, pluginPkgName, pluginActivityName);
 
                 final Intent pluginIntent = new Intent(getIntent());
                 pluginIntent.setComponent(new ComponentName(pkgAndCls[0], pkgAndCls[1]));
                 sPendingSavedInstanceStateMap.put(pluginIntent, savedInstanceState);
 
-                boolean ppmsReady = PluginPackageManagerNative.getInstance(this).isConnected();
-                if (ppmsReady) {
-                    // 一般而言，这时候 Service 都是未 connect 的状态，这里只是严谨考虑
-                    Context context = InstrActivityProxy1.this;
-                    PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
-                } else {
-                    mLaunchPluginReceiver = new BroadcastReceiver() {
-                        @Override
-                        public void onReceive(Context context, Intent intent) {
-                            Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
-                            if (PluginPackageManagerService.class.equals(serviceClass)) {
-                                PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
-                            }
+                mLaunchPluginReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        Class<?> service = (Class<?>) intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
+                        PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", pkgAndCls[1], service);
+                        boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
+                        boolean readyLaunch = mRecoveryCallback.beforeLaunch(context, pkgAndCls[0], pkgAndCls[1]);
+                        if (ppmsReady && readyLaunch) {
+                            PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#launch %s", pkgAndCls[1]);
+                            PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
+                            unregisterReceiver(mLaunchPluginReceiver);
+                            mLaunchPluginReceiver = null;
                         }
-                    };
-                    IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
-                    // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
-                    serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
-                    registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
-                }
+                    }
+                };
+                IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+                // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
+                serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
+                registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
 
                 mFinishSelfReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         InstrActivityProxy1.this.finish();
+                        mRecoveryCallback.afterRecovery(context, pkgAndCls[0], pkgAndCls[1]);
                     }
                 };
                 IntentFilter filter = new IntentFilter();
@@ -526,6 +534,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 ErrorUtil.throwErrorIfNeed(e);
             }
         }
+        // 模拟触发 service 连接成功，防止部分手机由于 plugin1 进程自启动 service 提前准备好后，无法再次触发 service 连接事件
+        mHandler.postDelayed(mMockServiceReady, 500);
     }
 
     @Override
@@ -580,6 +590,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (mFinishSelfReceiver != null) {
             unregisterReceiver(mFinishSelfReceiver);
         }
+        mHandler.removeCallbacks(mMockServiceReady);
         super.onDestroy();
     }
 
