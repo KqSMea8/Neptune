@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.view.KeyEvent;
 
@@ -14,19 +15,18 @@ import org.qiyi.pluginlibrary.HybirdPlugin;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
-import org.qiyi.pluginlibrary.pm.PluginPackageManagerService;
+import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.IRecoveryUiCreator;
+import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
-
-import java.io.Serializable;
 
 /**
  * 进程因资源不足被回收以后，恢复时插件信息会丢失，这个页面作为临时页面处理插件恢复问题。
  */
 public abstract class BaseRecoveryActivity extends Activity {
-
+    private static String TAG = "BaseRecoveryActivity";
     /**
      * 启动插件 Receiver 的优先级
      * <p>
@@ -40,13 +40,26 @@ public abstract class BaseRecoveryActivity extends Activity {
     private BroadcastReceiver mLaunchPluginReceiver;
     private String mPluginPackageName;
     private String mPluginClassName;
+    private IRecoveryCallback mRecoveryCallback;
+    private Handler mHandler = new Handler();
+    private Runnable mMockServiceReady = new Runnable() {
+        @Override
+        public void run() {
+            PluginDebugLog.runtimeLog(TAG, "mock ServiceConnected event.");
+            NotifyCenter.notifyServiceConnected(BaseRecoveryActivity.this, null);
+        }
+    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initRecoveryCallback();
+
         String[] packageAndClass = IntentUtils.parsePkgAndClsFromIntent(getIntent());
         mPluginPackageName = packageAndClass[0];
         mPluginClassName = packageAndClass[1];
+        PluginDebugLog.runtimeFormatLog(TAG, "BaseRecoveryActivity onCreate....%s %s", mPluginPackageName, mPluginClassName);
+        mRecoveryCallback.beforeRecovery(this, mPluginPackageName, mPluginClassName);
 
         // PPMS 可能未连接，getPackageInfo 会直接读取 SharedPreference
         PluginLiteInfo packageInfo = PluginPackageManagerNative.getInstance(this).getPackageInfo(mPluginPackageName);
@@ -56,21 +69,20 @@ public abstract class BaseRecoveryActivity extends Activity {
             finish();
             return;
         }
-        initUi();
 
-        if (PluginPackageManagerNative.getInstance(this).isConnected()) {
-            // 一般而言，这时候 Service 都是未 connect 的状态，这里只是严谨考虑
-            PluginManager.launchPlugin(this, createLaunchPluginIntent(), Util.getCurrentProcessName(this));
-            finish();
-            return;
-        }
+        mRecoveryCallback.onSetContentView(this, mPluginPackageName, mPluginClassName);
 
         mLaunchPluginReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(final Context context, Intent intent) {
-                Serializable serviceClass = intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
-                if (PluginPackageManagerService.class.equals(serviceClass)) {
+                PluginDebugLog.runtimeFormatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", mPluginClassName, intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS));
+                boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
+                boolean hostReady = mRecoveryCallback.beforeLaunch(context, mPluginPackageName, mPluginClassName);
+                if (ppmsReady && hostReady) {
+                    PluginDebugLog.runtimeFormatLog(TAG, "LaunchPluginReceiver#launch %s", mPluginClassName);
                     PluginManager.launchPlugin(context, createLaunchPluginIntent(), Util.getCurrentProcessName(context));
+                    unregisterReceiver(mLaunchPluginReceiver);
+                    mLaunchPluginReceiver = null;
                 }
             }
         };
@@ -83,6 +95,7 @@ public abstract class BaseRecoveryActivity extends Activity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 BaseRecoveryActivity.this.finish();
+                mRecoveryCallback.afterRecovery(context, mPluginPackageName, mPluginClassName);
             }
         };
         IntentFilter filter = new IntentFilter();
@@ -97,12 +110,18 @@ public abstract class BaseRecoveryActivity extends Activity {
         return intent;
     }
 
-    private void initUi() {
-        IRecoveryUiCreator recoveryUiCreator = HybirdPlugin.getConfig().getRecoveryUiCreator();
-        if (recoveryUiCreator == null) {
-            recoveryUiCreator = new IRecoveryUiCreator.DefaultRecoveryUiCreator();
+    private void initRecoveryCallback() {
+        mRecoveryCallback = HybirdPlugin.getConfig().getRecoveryCallback();
+        if (mRecoveryCallback == null) {
+            mRecoveryCallback = new IRecoveryCallback.DefaultRecoveryCallback();
         }
-        setContentView(recoveryUiCreator.createContentView(this));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 模拟触发 service 连接成功，防止部分手机由于 plugin1 进程自启动 service 提前准备好后，无法再次触发 service 连接事件
+        mHandler.postDelayed(mMockServiceReady, 500);
     }
 
     @Override
@@ -114,6 +133,7 @@ public abstract class BaseRecoveryActivity extends Activity {
         if (mFinishSelfReceiver != null) {
             unregisterReceiver(mFinishSelfReceiver);
         }
+        mHandler.removeCallbacks(mMockServiceReady);
     }
 
     @Override
