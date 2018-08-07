@@ -1,10 +1,8 @@
-# NoahDocker [征名]
+# Neptune
 
-NoahDocker是一个灵活，稳定，轻量级的插件化方案，有爱奇艺移动端基线Team研发。它可以在数以百万级的Android设备上动态加载和运行插件apk。框架支持了爱奇艺20个多独立业务的发展，比如爱奇艺文学，电影票，爱奇艺直播等。
+Neptune是一个灵活，稳定，轻量级的插件化方案，有爱奇艺移动端基线Team研发。它可以在数以百万级的Android设备上动态加载和运行插件apk。框架支持了爱奇艺20个多独立业务的发展，比如爱奇艺文学，电影票，爱奇艺直播等。
 
-随着Android P即将发布，我们的框架遇到了非限制性SDK接口访问的挑战。短时间内，我们及时进行了跟进和适配，现在NoahDocker可以无缝运行在Android P设备上，目前只有一个Hook点（ActivityThread中的Instrumentation）。
-
-When Android P is arriving, we meet the non-sdk strict challenge on P. And now, NoahDocker can run on Android P devices seamless with only *ONE* hook (Instrumentaion, same idea with other great plugin frameworks).
+随着Android P即将发布，我们的框架遇到了非限制性SDK接口访问的挑战。短时间内，我们及时进行了跟进和适配，现在Neptune可以无缝运行在Android P设备上，目前只有一个Hook点（ActivityThread中的Instrumentation）。
 
 
 # 支持的特性
@@ -32,10 +30,10 @@ When Android P is arriving, we meet the non-sdk strict challenge on P. And now, 
 
 ## Host Project
 
-在App模块的`build.gradle`中compile移入NoahDocker库
+在App模块的`build.gradle`中compile移入Neptune库
 
 ```Gradle
-    compile 'com.qiyi.video:noahdocker:xxx'
+    compile 'com.iqiyi.video:neptune:1.0.3'
 ```
 
 在`Application#onCreate()`阶段初始化NoahDocker
@@ -92,5 +90,5 @@ qyplugin {
 
 # License
 
-NoahDocker is [Apache v2.0 Licensed](LICENSE.md).
+Neptune is [Apache v2.0 Licensed](LICENSE.md).
 

@@ -1,8 +1,8 @@
-# NoahDocker [征名] 
+# Neptune
 
-NoahDocker is a flexible, powerful and lightweight plugin framework for Android developed by IQIYI Baseline Team. It can dynamically load and run a plugin APK file on billions of devices. It carries more than 20 separated business module of IQIYI, such as reader, movie tickets, live videos, and so on.
+Neptune is a flexible, powerful and lightweight plugin framework for Android developed by IQIYI Baseline Team. It can dynamically load and run a plugin APK file on billions of devices. It carries more than 20 separated business module of IQIYI, such as reader, movie tickets, live videos, and so on.
 
-When Android P is arriving, we meet the non-sdk strict challenge on P. And now, NoahDocker can run on Android P devices seamless with only *ONE* hook (Instrumentaion in ActivityThread, same idea with other great plugin frameworks). 
+When Android P is arriving, we meet the non-sdk strict challenge on P. And now, Neptune can run on Android P devices seamless with only *ONE* hook (Instrumentaion in ActivityThread, same idea with other great plugin frameworks).
 
 [中文文档](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/blob/dev/README_CN.md)
 
@@ -31,10 +31,10 @@ When Android P is arriving, we meet the non-sdk strict challenge on P. And now, 
 
 ## Host Project
 
-compile NoahDocker in application module of `build.gradle`.
+compile Neptune in application module of `build.gradle`.
 
 ```Gradle
-    compile 'com.qiyi.video:noahdocker:xxx'
+    compile 'com.iqiyi.video:neptune:1.0.3'
 ```
 
 Initialize sdk in your `Application#onCreate()`.
@@ -91,5 +91,5 @@ We sincerely welcome and appreciate your PR contribution of any kind including c
 
 # License
 
-NoahDocker is [Apache v2.0 Licensed](LICENSE.md).
+Neptune is [Apache v2.0 Licensed](LICENSE.md).
 
