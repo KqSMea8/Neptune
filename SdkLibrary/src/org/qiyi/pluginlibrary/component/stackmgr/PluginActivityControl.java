@@ -39,12 +39,12 @@ import java.util.concurrent.ConcurrentMap;
 public class PluginActivityControl implements PluginActivityCallback {
     private static final String TAG = "PluginActivityControl";
     public static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>();
-    Activity mProxy;// 代理Activity
-    Activity mPlugin;// 插件Activity
-    ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类
-    ReflectionUtils mPluginRef;// 指向插件Activity的反射工具类
-    Application mApplication;// 分派给插件的Application
-    Instrumentation mHostInstr;
+    private Activity mProxy;// 代理Activity
+    private Activity mPlugin;// 插件Activity
+    private ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类
+    private ReflectionUtils mPluginRef;// 指向插件Activity的反射工具类
+    private Application mApplication;// 分派给插件的Application
+    private Instrumentation mHostInstr;
 
     /**
      * @param proxy  代理Activity

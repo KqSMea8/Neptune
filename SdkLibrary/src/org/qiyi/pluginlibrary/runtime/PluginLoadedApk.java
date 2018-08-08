@@ -727,7 +727,7 @@ public class PluginLoadedApk implements IIntentConstant {
                     if (!TextUtils.isEmpty(mPluginPackageName) &&
                             TextUtils.equals(mPluginPackageName, serviceWrapper.getPkgName())) {
                         String identity = PluginServiceWrapper.
-                                getIndeitfy(mPluginPackageName, serviceWrapper.getServiceClassName());
+                                getIdentify(mPluginPackageName, serviceWrapper.getServiceClassName());
                         if (!TextUtils.isEmpty(identity)) {
                             PluginDebugLog.runtimeLog(TAG, mPluginPackageName + " quitapp with service: " + identity);
                             ServiceConnection connection = PServiceSupervisor.getConnection(identity);

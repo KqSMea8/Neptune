@@ -51,7 +51,7 @@ public class ServiceProxy1 extends Service {
     private void handleSlefLaunchPluginService() {
         List<PluginServiceWrapper> selfLaunchServices = new ArrayList<PluginServiceWrapper>(1);
         for (PluginServiceWrapper plugin : PServiceSupervisor.getAliveServices().values()) {
-            PServiceSupervisor.removeServiceByIdentifer(PluginServiceWrapper.getIndeitfy(plugin.getPkgName(), plugin.getServiceClassName()));
+            PServiceSupervisor.removeServiceByIdentifer(PluginServiceWrapper.getIdentify(plugin.getPkgName(), plugin.getServiceClassName()));
             if (plugin.mNeedSelfLaunch) {
                 selfLaunchServices.add(plugin);
             }
@@ -62,7 +62,7 @@ public class ServiceProxy1 extends Service {
     }
 
     private PluginServiceWrapper findPluginService(String pkgName, String clsName) {
-        return PServiceSupervisor.getServiceByIdentifer(PluginServiceWrapper.getIndeitfy(pkgName, clsName));
+        return PServiceSupervisor.getServiceByIdentifer(PluginServiceWrapper.getIdentify(pkgName, clsName));
     }
 
     public PluginServiceWrapper loadTargetService(String targetPackageName, String targetClassName) {

@@ -275,7 +275,7 @@ public class PluginManager implements IIntentConstant {
                 try {
                     PluginLoadedApk loadedApk = getPluginLoadedApkByPkgName(packageName);
                     if (loadedApk != null) {
-                        ActivityWrapper context = new ActivityWrapper(hostActivity, loadedApk.getAppWrapper());
+                        ActivityWrapper context = new ActivityWrapper(hostActivity, packageName);
                         View view = (View) element.getConstructor(Context.class).newInstance(context);
                         ViewPluginHelper.disableViewSaveInstanceRecursively(view);
                         listener.onSuccess(view, packageName);

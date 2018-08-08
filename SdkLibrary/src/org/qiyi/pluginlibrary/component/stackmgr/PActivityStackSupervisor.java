@@ -609,8 +609,8 @@ public class PActivityStackSupervisor {
     private static String getActivityStackKey(Activity activity) {
         String key = "";
         if (activity instanceof InstrActivityProxy1) {
-            InstrActivityProxy1 lActivityProxy = (InstrActivityProxy1) activity;
-            PluginActivityControl ctl = lActivityProxy.getController();
+            InstrActivityProxy1 proxy = (InstrActivityProxy1) activity;
+            PluginActivityControl ctl = proxy.getController();
             if (ctl != null && ctl.getPlugin() != null) {
                 key = ctl.getPlugin().getClass().getName();
             }

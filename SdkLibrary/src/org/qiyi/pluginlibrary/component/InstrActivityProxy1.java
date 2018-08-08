@@ -65,7 +65,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
 
 /**
  * :plugin1 Activity　代理
@@ -709,7 +708,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             }
             if (!TextUtils.isEmpty(mTargetServiceName)) {
                 PluginServiceWrapper plugin = PServiceSupervisor.getServiceByIdentifer(
-                        PluginServiceWrapper.getIndeitfy(mLoadedApk.getPluginPackageName(),
+                        PluginServiceWrapper.getIdentify(mLoadedApk.getPluginPackageName(),
                                 mTargetServiceName));
                 if (plugin != null) {
                     plugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);

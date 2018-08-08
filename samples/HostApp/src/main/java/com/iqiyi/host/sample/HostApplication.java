@@ -20,12 +20,8 @@ public class HostApplication extends Application {
 
 
     private void initPluginFramework() {
-        final boolean useNewFeature = true;
-        NeptuneConfig config = new NeptuneConfig.HybirdPluginConfigBuilder()
-                .configSdkMode(1)
-                .useNewCLMode(useNewFeature)
-                .useNewResMode(useNewFeature)
-                .useNewCompResolveMode(useNewFeature)
+        NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
+                .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
                 .build();
         Neptune.init(this, config);
 

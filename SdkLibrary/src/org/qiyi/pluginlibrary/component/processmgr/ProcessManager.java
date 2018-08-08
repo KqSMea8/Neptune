@@ -11,8 +11,6 @@ import android.content.Context;
  */
 
 public class ProcessManager {
-    private static final String TAG = "ProcessManager";
-
     private static final String PROXY_PROCESS0 = "";  //主进程
     private static final String PROXY_PROCESS1 = ":plugin1";
     private static final String PROXY_PROCESS2 = ":plugin2";

@@ -21,7 +21,7 @@ import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import java.io.File;
 
 /**
- * HybirdPlugin对外暴露的统一调用类
+ * Neptune对外暴露的统一调用类
  *
  * author: liuchun
  * date: 2018/6/4

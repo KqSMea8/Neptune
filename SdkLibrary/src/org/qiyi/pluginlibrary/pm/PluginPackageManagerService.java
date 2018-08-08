@@ -90,33 +90,6 @@ public class PluginPackageManagerService extends Service {
                 mManager.install(info, listener);
             }
 
-//            @Override
-//            public void installApkFile(String filePath, IInstallCallBack listener,
-//                                       PluginLiteInfo pluginInfo) throws RemoteException {
-//                if (mManager == null || TextUtils.isEmpty(filePath)) {
-//                    return;
-//                }
-//                mManager.installApkFile(filePath, listener, pluginInfo);
-//            }
-//
-//            @Override
-//            public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener)
-//                    throws RemoteException {
-//                if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
-//                    return;
-//                }
-//                mManager.installBuildinApps(info, listener);
-//            }
-
-//            @Override
-//            public void deletePackage(
-//                    PluginLiteInfo packageInfo, IPluginUninstallCallBack observer) throws RemoteException {
-//                if (mManager == null) {
-//                    return;
-//                }
-//                mManager.deletePackage(packageInfo, observer);
-//            }
-
             @Override
             public boolean uninstall(PluginLiteInfo info) throws RemoteException {
                 return mManager != null && mManager.uninstall(info);

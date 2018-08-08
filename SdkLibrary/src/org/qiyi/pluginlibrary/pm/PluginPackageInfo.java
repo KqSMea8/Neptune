@@ -419,18 +419,8 @@ public class PluginPackageInfo implements Parcelable {
     }
 
 
-    /**
-     * 白名单列表插件，允许注入插件ClassLoader到宿主ClassLoader
-     * TODO 开源化，移除相关配置
-     */
-    private boolean isInClassInjectList() {
-        return TextUtils.equals("android.app.fw", packageName)
-                || TextUtils.equals("com.iqiyi.plugin.qiyibase", packageName);
-    }
-
-
     public boolean isClassNeedInject() {
-        return mIsClassInject && isInClassInjectList();
+        return mIsClassInject;
     }
 
     public boolean isResourceNeedMerge() {

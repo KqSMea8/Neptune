@@ -171,11 +171,9 @@ public class PluginHookedInstrument extends PluginInstrument {
             PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
             if (loadedApk != null && savedInstanceState != null) {
                 savedInstanceState.setClassLoader(loadedApk.getPluginClassLoader());
-                super.callActivityOnRestoreInstanceState(activity, savedInstanceState);
             }
-        } else {
-            super.callActivityOnRestoreInstanceState(activity, savedInstanceState);
         }
+        mHostInstr.callActivityOnRestoreInstanceState(activity, savedInstanceState);
     }
 
     /**

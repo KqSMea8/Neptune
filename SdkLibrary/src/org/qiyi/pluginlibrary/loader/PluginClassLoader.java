@@ -1,6 +1,5 @@
 package org.qiyi.pluginlibrary.loader;
 
-import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.utils.MultiDex;
 
