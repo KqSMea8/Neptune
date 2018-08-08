@@ -16,7 +16,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
@@ -148,18 +148,20 @@ public class PluginLoadedApk implements IIntentConstant {
         // 提取插件Apk的信息
         extraPluginPackageInfo(this.mPluginPackageName);
         // 创建插件ClassLoader
-        if (HybirdPlugin.getConfig().shouldUseNewCLMode()) {
+        if (Neptune.SEPARATED_CLASSLOADER) {
             if (!createNewClassLoader()) {
+                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_CREATE_CLASSLOADER);
                 throw new RuntimeException("ProxyEnvironmentNew init failed for createNewClassLoader failed:" + " apkFile: " + mPluginPath + " pluginPakName: " + mPluginPackageName);
             }
         } else {
             if (!createClassLoader()) {
+                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_CREATE_CLASSLOADER);
                 throw new RuntimeException("ProxyEnvironmentNew init failed for createClassLoader failed:" + " apkFile: " + mPluginPath + " pluginPakName: " + mPluginPackageName);
             }
         }
         PluginDebugLog.runtimeFormatLog(TAG, "plugin %s, class loader: %s", mPluginPackageName, mPluginClassLoader.toString());
         // 创建插件资源
-        if (HybirdPlugin.getConfig().shouldUseNewResGen()) {
+        if (Neptune.NEW_RESOURCE_CREATOR) {
             createNewPluginResource();
         } else {
             createPluginResource();
@@ -230,7 +232,7 @@ public class PluginLoadedApk implements IIntentConstant {
             mPluginAssetManager = am;
         } catch (Exception e) {
             ErrorUtil.throwErrorIfNeed(e);
-            PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_LOAD_INIT_RESOURCE_FAILE);
+            PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_INIT_RESOURCES);
         }
 
         Configuration config = new Configuration();
@@ -280,10 +282,9 @@ public class PluginLoadedApk implements IIntentConstant {
             mPluginTheme = mPluginResource.newTheme();
             mPluginTheme.setTo(mHostContext.getTheme());
             mResourceTool = new ResourcesToolForPlugin(mHostContext);
-        } catch (PackageManager.NameNotFoundException e) {
-            //使用旧的反射的方案创建Resource
-            createPluginResource();
         } catch (Exception e) {
+            //使用旧的反射的方案创建Resource
+            PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_INIT_RESOURCES);
             createPluginResource();
         }
     }
@@ -396,7 +397,7 @@ public class PluginLoadedApk implements IIntentConstant {
                 this.mPluginApplication = mPluginInstrument.newApplication(mPluginClassLoader, className, mPluginAppContext);
             } catch (Exception e) {
                 ErrorUtil.throwErrorIfNeed(e);
-                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
+                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_LOAD_APPLICATION);
                 return false;
             }
 
@@ -442,8 +443,8 @@ public class PluginLoadedApk implements IIntentConstant {
                 mPluginApplication.onCreate();
             } catch (Throwable t) {
                 ErrorUtil.throwErrorIfNeed(t);
+                PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_CREATE_APPLICATION);
                 PluginDebugLog.runtimeLog(TAG, "call plugin Application#onCreate() failed, pkgName=" + mPluginPackageName);
-                PActivityStackSupervisor.clearLoadingIntent(mPluginPackageName);
                 return false;
             }
             // 支持注册多个ActivityLifeCycle到插件进程
@@ -471,18 +472,19 @@ public class PluginLoadedApk implements IIntentConstant {
 //            Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
 //            instrumentationF.setAccessible(true);
 //            Instrumentation hostInstr = (Instrumentation) instrumentationF.get(activityThread);
-            Instrumentation hostInstr = HybirdPlugin.getHostInstrumentation();
+            Instrumentation hostInstr = Neptune.getHostInstrumentation();
             mPluginInstrument = new PluginInstrument(hostInstr, mPluginPackageName);
         } catch (Exception e) {
             ErrorUtil.throwErrorIfNeed(e);
             PluginManager.deliver(mHostContext, false, mPluginPackageName,
-                    ErrorType.ERROR_CLIENT_CHANGE_INSTRUMENTATION_FAIL);
+                    ErrorType.ERROR_PLUGIN_HOOK_INSTRUMENTATION);
         }
     }
 
     /**
      * 通过反射attach方法，让插件Application具备真正Application的能力
      */
+    @Deprecated
     private void invokeApplicationAttach() {
         if (mPluginApplication == null) {
             PluginDebugLog.formatLog(TAG, "invokeApplicationAttach mPluginApplication is null! %s",
@@ -498,7 +500,7 @@ public class PluginLoadedApk implements IIntentConstant {
             attachMethod.invoke(mPluginApplication, mPluginAppContext);
         } catch (Exception e) {
             PluginManager.deliver(mHostContext, false, mPluginPackageName,
-                    ErrorType.ERROR_CLIENT_SET_APPLICATION_BASE_FAIL);
+                    ErrorType.ERROR_PLUGIN_APPLICATION_ATTACH_BASE);
             e.printStackTrace();
         }
     }
@@ -507,7 +509,6 @@ public class PluginLoadedApk implements IIntentConstant {
      * 提取插件apk中的PackageInfo信息，主要就是解析AndroidManifest.xml文件
      *
      * @param mPluginPackage 需要提取信息的插件包名
-     * @throws Exception 当提取信息失败时，会抛出一些异常
      */
     private void extraPluginPackageInfo(String mPluginPackage) {
         PluginLiteInfo pkgInfo = PluginPackageManagerNative.getInstance(mHostContext)
@@ -668,15 +669,10 @@ public class PluginLoadedApk implements IIntentConstant {
      * @param packageName
      * @return
      */
-    public File getDataDir(Context context, String packageName) {
+    private File getDataDir(Context context, String packageName) {
         PluginDebugLog.runtimeLog(TAG, "packageName:" + packageName + " context:" + context);
         File dataDir = null;
         try {
-            if (TextUtils.isEmpty(packageName)) {
-                PluginManager.deliver(context, false, context.getPackageName(),
-                        ErrorType.ERROR_CLIENT_LOAD_CREATE_FILE_NULL);
-                return null;
-            }
             dataDir = new File(mPluginPackageInfo.getDataDir());
             if (!dataDir.exists()) {
                 dataDir.mkdirs();

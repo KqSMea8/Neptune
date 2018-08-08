@@ -42,13 +42,10 @@ Initialize sdk in your `Application#onCreate()`.
 ```Java
 @Override
 public void onCreate() {
-    HybirdPluginConfig config = new HybirdPluginConfig.HybirdPluginConfigBuilder()
-                .configSdkMode(1)
-                .useNewCLMode(useNewFeature)
-                .useNewResMode(useNewFeature)
-                .useNewCompResolveMode(useNewFeature)
+    NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
+                .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
                 .build();
-    HybirdPlugin.init(this, config);
+    Neptune.init(this, config);
 
     PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
 }

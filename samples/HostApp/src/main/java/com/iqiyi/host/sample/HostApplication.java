@@ -2,8 +2,8 @@ package com.iqiyi.host.sample;
 
 import android.app.Application;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
-import org.qiyi.pluginlibrary.HybirdPluginConfig;
+import org.qiyi.pluginlibrary.Neptune;
+import org.qiyi.pluginlibrary.NeptuneConfig;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 /**
@@ -21,13 +21,13 @@ public class HostApplication extends Application {
 
     private void initPluginFramework() {
         final boolean useNewFeature = true;
-        HybirdPluginConfig config = new HybirdPluginConfig.HybirdPluginConfigBuilder()
+        NeptuneConfig config = new NeptuneConfig.HybirdPluginConfigBuilder()
                 .configSdkMode(1)
                 .useNewCLMode(useNewFeature)
                 .useNewResMode(useNewFeature)
                 .useNewCompResolveMode(useNewFeature)
                 .build();
-        HybirdPlugin.init(this, config);
+        Neptune.init(this, config);
 
         PluginDebugLog.setIsDebug(true);
     }

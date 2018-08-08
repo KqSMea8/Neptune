@@ -52,11 +52,8 @@ public class PluginActivityControl implements PluginActivityCallback {
      * @param app    分派给插件的Application
      * @throws Exception
      */
-    public PluginActivityControl(Activity proxy, Activity plugin, Application app, Instrumentation pluginInstr) throws Exception {
-        if (null == proxy || null == plugin || null == app || null == pluginInstr) {
-            throw new Exception("proxy, plugin, app, pluginInstr shouldn't be null! proxy: " + proxy + " plugin: " + plugin + " app: " + app
-                    + " pluginInstr: " + pluginInstr);
-        }
+    public PluginActivityControl(Activity proxy, Activity plugin,
+                                 Application app, Instrumentation pluginInstr) {
         mProxy = proxy;
         mPlugin = plugin;
         mApplication = app;
@@ -115,7 +112,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
             return true;
         } catch (ReflectException e) {
-            PluginManager.deliver(mProxy, false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
+            PluginManager.deliver(mProxy, false, packageName, ErrorType.ERROR_PLUGIN_ACTIVITY_ATTACH_BASE);
             ErrorUtil.throwErrorIfNeed(e);
         }
         return false;
@@ -703,7 +700,8 @@ public class PluginActivityControl implements PluginActivityCallback {
      * @param className
      * @param loadedApk
      */
-    public static void changeActivityInfo(Activity activity, String className, PluginLoadedApk loadedApk) {
+    public static void changeActivityInfo(Activity activity, String className,
+                                          PluginLoadedApk loadedApk) {
         if (loadedApk == null || TextUtils.isEmpty(className)) {
             return;
         }
@@ -750,7 +748,7 @@ public class PluginActivityControl implements PluginActivityCallback {
             }
         }
 
-        // 修改插件Activity的主题
+        // onCreate()中调用时需要修改插件Activity的主题
         int resTheme = loadedApk.getActivityThemeResourceByClassName(className);
         if (resTheme != 0) {
             activity.setTheme(resTheme);

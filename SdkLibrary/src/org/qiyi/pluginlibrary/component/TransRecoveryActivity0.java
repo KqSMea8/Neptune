@@ -11,7 +11,7 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.view.KeyEvent;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
@@ -23,10 +23,11 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.Util;
 
 /**
+ * 主进程恢复 中转Activity
  * 进程因资源不足被回收以后，恢复时插件信息会丢失，这个页面作为临时页面处理插件恢复问题。
  */
-public abstract class BaseRecoveryActivity extends Activity {
-    private static String TAG = "BaseRecoveryActivity";
+public class TransRecoveryActivity0 extends Activity {
+    private static String TAG = "TransRecoveryActivity0";
     /**
      * 启动插件 Receiver 的优先级
      * <p>
@@ -46,7 +47,7 @@ public abstract class BaseRecoveryActivity extends Activity {
         @Override
         public void run() {
             PluginDebugLog.runtimeLog(TAG, "mock ServiceConnected event.");
-            NotifyCenter.notifyServiceConnected(BaseRecoveryActivity.this, null);
+            NotifyCenter.notifyServiceConnected(TransRecoveryActivity0.this, null);
         }
     };
 
@@ -58,7 +59,7 @@ public abstract class BaseRecoveryActivity extends Activity {
         String[] packageAndClass = IntentUtils.parsePkgAndClsFromIntent(getIntent());
         mPluginPackageName = packageAndClass[0];
         mPluginClassName = packageAndClass[1];
-        PluginDebugLog.runtimeFormatLog(TAG, "BaseRecoveryActivity onCreate....%s %s", mPluginPackageName, mPluginClassName);
+        PluginDebugLog.runtimeFormatLog(TAG, "TransRecoveryActivity0 onCreate....%s %s", mPluginPackageName, mPluginClassName);
         mRecoveryCallback.beforeRecovery(this, mPluginPackageName, mPluginClassName);
 
         // PPMS 可能未连接，getPackageInfo 会直接读取 SharedPreference
@@ -94,7 +95,7 @@ public abstract class BaseRecoveryActivity extends Activity {
         mFinishSelfReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                BaseRecoveryActivity.this.finish();
+                TransRecoveryActivity0.this.finish();
                 mRecoveryCallback.afterRecovery(context, mPluginPackageName, mPluginClassName);
             }
         };
@@ -111,7 +112,7 @@ public abstract class BaseRecoveryActivity extends Activity {
     }
 
     private void initRecoveryCallback() {
-        mRecoveryCallback = HybirdPlugin.getConfig().getRecoveryCallback();
+        mRecoveryCallback = Neptune.getConfig().getRecoveryCallback();
         if (mRecoveryCallback == null) {
             mRecoveryCallback = new IRecoveryCallback.DefaultRecoveryCallback();
         }

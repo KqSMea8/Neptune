@@ -34,7 +34,7 @@ import android.view.MotionEvent;
 import android.view.SearchEvent;
 import android.view.View;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
@@ -90,7 +90,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
      */
     private static int sLaunchPluginReceiverPriority;
     private PluginLoadedApk mLoadedApk;
-    private PluginActivityControl mPluginContrl;
+    private PluginActivityControl mPluginControl;
     private PluginContextWrapper mPluginContextWrapper;
     private String mPluginPackage = "";
     private volatile boolean mRestartCalled = false;
@@ -110,7 +110,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     };
 
     private void initRecoveryCallback() {
-        mRecoveryCallback = HybirdPlugin.getConfig().getRecoveryCallback();
+        mRecoveryCallback = Neptune.getConfig().getRecoveryCallback();
         if (mRecoveryCallback == null) {
             mRecoveryCallback = new IRecoveryCallback.DefaultRecoveryCallback();
         }
@@ -128,60 +128,15 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             pluginPkgName = pkgAndCls[0];
             pluginActivityName = pkgAndCls[1];
         } else {
-            PluginManager.deliver(this, false, pluginPkgName,
-                    ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL);
+            PluginManager.deliver(this, false, "",
+                    ErrorType.ERROR_PLUGIN_GET_PKG_AND_CLS_FAIL);
             PluginDebugLog.log(TAG, "Pkg or activity is null in LActivityProxy, just return!");
             this.finish();
             return;
         }
 
         if (!tryToInitPluginLoadApk(pluginPkgName)) {
-            PluginLiteInfo packageInfo = PluginPackageManagerNative.getInstance(this).getPackageInfo(pluginPkgName);
-            boolean enableRecovery = packageInfo != null && packageInfo.enableRecovery;
-            // 如果插件不支持 recovery，则直接 finish
-            if (!enableRecovery) {
-                this.finish();
-                PluginDebugLog.log(TAG, "mPluginEnv is null in LActivityProxy, just return!");
-            } else {
-                mRecoveryCallback.beforeRecovery(this, pluginPkgName, pluginActivityName);
-                mRecoveryCallback.onSetContentView(this, pluginPkgName, pluginActivityName);
-
-                final Intent pluginIntent = new Intent(getIntent());
-                pluginIntent.setComponent(new ComponentName(pkgAndCls[0], pkgAndCls[1]));
-                sPendingSavedInstanceStateMap.put(pluginIntent, savedInstanceState);
-
-                mLaunchPluginReceiver = new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        Class<?> service = (Class<?>) intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
-                        PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", pkgAndCls[1], service);
-                        boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
-                        boolean readyLaunch = mRecoveryCallback.beforeLaunch(context, pkgAndCls[0], pkgAndCls[1]);
-                        if (ppmsReady && readyLaunch) {
-                            PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#launch %s", pkgAndCls[1]);
-                            PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
-                            unregisterReceiver(mLaunchPluginReceiver);
-                            mLaunchPluginReceiver = null;
-                        }
-                    }
-                };
-                IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
-                // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
-                serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
-                registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
-
-                mFinishSelfReceiver = new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        InstrActivityProxy1.this.finish();
-                        mRecoveryCallback.afterRecovery(context, pkgAndCls[0], pkgAndCls[1]);
-                    }
-                };
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
-                filter.addAction(IIntentConstant.ACTION_PLUGIN_LOADED);
-                registerReceiver(mFinishSelfReceiver, filter);
-            }
+            tryRecoverPluginActivity(pluginPkgName, pluginActivityName, savedInstanceState);
             return;
         }
         if (!PluginManager.isPluginLoadedAndInit(pluginPkgName)) {
@@ -195,50 +150,42 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         Activity mPluginActivity = loadPluginActivity(mLoadedApk, pluginActivityName);
         if (null == mPluginActivity) {
             PluginManager.deliver(this, false, pluginPkgName,
-                    ErrorType.ERROR_CLIENT_FILL_PLUGIN_ACTIVITY_FAIL);
-            PluginDebugLog.log(TAG, "Cann't get pluginActivityName class finish!");
+                    ErrorType.ERROR_PLUGIN_LOAD_TARGET_ACTIVITY);
+            PluginDebugLog.log(TAG, "Cannot get pluginActivityName class finish!, pkgName: " + pluginPkgName);
             this.finish();
             return;
         }
+
+        mPluginControl = new PluginActivityControl(InstrActivityProxy1.this, mPluginActivity,
+                mLoadedApk.getPluginApplication(), mLoadedApk.getPluginInstrument());
+        mPluginContextWrapper = new PluginContextWrapper(InstrActivityProxy1.this.getBaseContext(), pluginPkgName);
+        // 需要先修改InstrActivity的ActivityInfo，这样后面attach的信息才是正确的
+        ActivityInfo actInfo = mLoadedApk.getActivityInfoByClassName(pluginActivityName);
+        if (actInfo != null) {
+            changeActivityInfo(this, pluginPkgName, actInfo);
+        }
+
+        if (!mPluginControl.dispatchProxyToPlugin(mLoadedApk.getPluginInstrument(), mPluginContextWrapper, pluginPkgName)) {
+            PluginDebugLog.runtimeLog(TAG, "dispatchProxyToPlugin failed, call attach failed");
+            this.finish();
+            return;
+        }
+
+        int resTheme = mLoadedApk.getActivityThemeResourceByClassName(pluginActivityName);
+        setTheme(resTheme);
+        // Set plugin's default theme.
+        mPluginActivity.setTheme(resTheme);
+
         try {
-            mPluginContrl = new PluginActivityControl(InstrActivityProxy1.this, mPluginActivity,
-                    mLoadedApk.getPluginApplication(), mLoadedApk.getPluginInstrument());
-        } catch (Exception e1) {
+            callProxyOnCreate(savedInstanceState);
+        } catch (Exception e) {
+            ErrorUtil.throwErrorIfNeed(e);
             PluginManager.deliver(this, false, pluginPkgName,
-                    ErrorType.ERROR_CLIENT_CREATE_PLUGIN_ACTIVITY_CONTROL_FAIL);
-            e1.printStackTrace();
+                    ErrorType.ERROR_PLUGIN_CALL_ACTIVITY_ONCREATE);
             this.finish();
             return;
         }
-        if (null != mPluginContrl) {
-            mPluginContextWrapper = new PluginContextWrapper(InstrActivityProxy1.this.getBaseContext(), pluginPkgName);
-            ActivityInfo actInfo = mLoadedApk.getActivityInfoByClassName(pluginActivityName);
-            if (actInfo != null) {
-                changeActivityInfo(this, pluginPkgName, actInfo);
-            }
-
-            if (!mPluginContrl.dispatchProxyToPlugin(mLoadedApk.getPluginInstrument(), mPluginContextWrapper, pluginPkgName)) {
-                PluginDebugLog.runtimeLog(TAG, "dispatchProxyToPlugin failed, call attach failed");
-                this.finish();
-                return;
-            }
-
-            int resTheme = mLoadedApk.getActivityThemeResourceByClassName(pluginActivityName);
-            setTheme(resTheme);
-            // Set plugin's default theme.
-            mPluginActivity.setTheme(resTheme);
-
-            try {
-                callProxyOnCreate(savedInstanceState);
-            } catch (Exception e) {
-                ErrorUtil.throwErrorIfNeed(e);
-                PluginManager.deliver(this, false, pluginPkgName,
-                        ErrorType.ERROR_CLIENT_CALL_ON_CREATE_FAIL);
-                this.finish();
-                return;
-            }
-            mRestartCalled = false;  // onCreate()-->onStart()
-        }
+        mRestartCalled = false;  // onCreate()-->onStart()
     }
 
     /**
@@ -259,14 +206,14 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (getParent() == null) {
             mLoadedApk.getActivityStackSupervisor().pushActivityToStack(this);
         }
-        mPluginContrl.callOnCreate(savedInstanceState);
+        mPluginControl.callOnCreate(savedInstanceState);
 
         // 模拟 onRestoreInstanceState
         if (mockRestoreInstanceState) {
             onRestoreInstanceState(savedInstanceState);
         }
 
-        mPluginContrl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
+        mPluginControl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
         NotifyCenter.notifyPluginActivityLoaded(this.getBaseContext());
     }
 
@@ -345,17 +292,72 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (!TextUtils.isEmpty(mPluginPackage) && null == mLoadedApk) {
             mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(mPluginPackage);
         }
-        if (null != mLoadedApk) {
-            return true;
+
+        return mLoadedApk != null;
+    }
+
+    /**
+     * 尝试恢复插件Activity
+     *
+     * @param pkgName
+     * @param activityName
+     * @param savedInstanceState
+     */
+    private void tryRecoverPluginActivity(final String pkgName, final String activityName,
+                                          Bundle savedInstanceState) {
+        PluginLiteInfo packageInfo = PluginPackageManagerNative.getInstance(this).getPackageInfo(pkgName);
+        boolean enableRecovery = packageInfo != null && packageInfo.enableRecovery;
+        // 如果插件不支持 recovery，则直接 finish
+        if (!enableRecovery) {
+            this.finish();
+            PluginDebugLog.log(TAG, "PluginLoadedApk not loaded in InstrActivityProxy, pkgName: " + pkgName);
+        } else {
+            mRecoveryCallback.beforeRecovery(this, pkgName, activityName);
+            mRecoveryCallback.onSetContentView(this, pkgName, activityName);
+
+            final Intent pluginIntent = new Intent(getIntent());
+            pluginIntent.setComponent(new ComponentName(pkgName, activityName));
+            sPendingSavedInstanceStateMap.put(pluginIntent, savedInstanceState);
+
+            mLaunchPluginReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    Class<?> service = (Class<?>) intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
+                    PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", pkgName, service);
+                    boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
+                    boolean readyLaunch = mRecoveryCallback.beforeLaunch(context, pkgName, activityName);
+                    if (ppmsReady && readyLaunch) {
+                        PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#launch %s", activityName);
+                        PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
+                        unregisterReceiver(mLaunchPluginReceiver);
+                        mLaunchPluginReceiver = null;
+                    }
+                }
+            };
+            IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+            // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
+            serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
+            registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
+
+            mFinishSelfReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    InstrActivityProxy1.this.finish();
+                    mRecoveryCallback.afterRecovery(context, pkgName, activityName);
+                }
+            };
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
+            filter.addAction(IIntentConstant.ACTION_PLUGIN_LOADED);
+            registerReceiver(mFinishSelfReceiver, filter);
         }
-        return false;
     }
 
     private boolean mNeedUpdateConfiguration = true;
 
 
     public PluginActivityControl getController() {
-        return mPluginContrl;
+        return mPluginControl;
     }
 
     @Override
@@ -402,9 +404,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
      *
      * @return
      */
-    /**
-     * @Override
-     */
+    /** @Override */
     public boolean isOppoStyle() {
         return false;
     }
@@ -1045,20 +1045,16 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         return super.getPackageCodePath();
     }
 
+    /**
+     * 修改ActivityInfo信息
+     * @param activity
+     * @param pkgName
+     * @param mActivityInfo
+     */
     private void changeActivityInfo(Activity activity, String pkgName, ActivityInfo mActivityInfo) {
-        ActivityInfo origActInfo = null;
-        try {
-            Field field_mActivityInfo = Activity.class.getDeclaredField("mActivityInfo");
-            field_mActivityInfo.setAccessible(true);
-            origActInfo = (ActivityInfo) field_mActivityInfo.get(activity);
-        } catch (Exception e) {
-            PluginManager.deliver(activity, false, pkgName, ErrorType.ERROR_CLIENT_CHANGE_ACTIVITYINFO_FAIL);
-            PluginDebugLog.log(TAG, e.getStackTrace());
-            return;
-        }
+
+        ActivityInfo origActInfo = ReflectionUtils.on(activity).get("mActivityInfo");
         PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
-
-
         if (null != mActivityInfo) {
             if (null != mLoadedApk && null != mLoadedApk.getPluginPackageInfo()) {
                 mActivityInfo.applicationInfo = mLoadedApk.getPluginPackageInfo().getPackageInfo().applicationInfo;

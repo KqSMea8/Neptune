@@ -18,16 +18,16 @@
         <service android:name="org.qiyi.pluginlibrary.pm.PluginPackageManagerService" />
 
         <activity
-            android:name=".component.RecoveryActivity0"
+            android:name="org.qiyi.pluginlibrary.component.TransRecoveryActivity0"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".component.RecoveryActivity1"
+            android:name="org.qiyi.pluginlibrary.component.TransRecoveryActivity1"
             android:process=":plugin1"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".component.RecoveryActivity2"
+            android:name="org.qiyi.pluginlibrary.component.TransRecoveryActivity2"
             android:process=":plugin2"
             android:screenOrientation="portrait" />
 

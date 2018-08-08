@@ -17,7 +17,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -138,7 +138,7 @@ public class PluginPackageInfo implements Parcelable {
                 }
             }
 
-            if (HybirdPlugin.getConfig().shouldUseNewResolveMethod()) {
+            if (Neptune.NEW_COMPONENT_PARSER) {
                 PluginDebugLog.runtimeLog(TAG, "resolve component info with our ManifestParser");
                 ResolveInfoUtil.parseNewResolveInfo(context, apkPath, this);
             } else {
@@ -155,7 +155,7 @@ public class PluginPackageInfo implements Parcelable {
 
         } catch (RuntimeException e) {
             ErrorUtil.throwErrorIfNeed(e);
-            PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
+            PluginManager.deliver(context, false, packageName, ErrorType.ERROR_PLUGIN_PARSER_PACKAGE_INFO);
         } catch (Throwable e) {
             // java.lang.VerifyError: android/content/pm/PackageParser
             // java.lang.NoSuchMethodError: android.content.pm.PackageParser
@@ -163,7 +163,7 @@ public class PluginPackageInfo implements Parcelable {
             // com.android.internal.R$styleable.AndroidManifest
             // java.lang.NoSuchMethodError: android.graphics.PixelXorXfermode
             ErrorUtil.throwErrorIfNeed(e);
-            PluginManager.deliver(context, false, packageName, ErrorType.ERROR_CLIENT_LOAD_INIT_APK_FAILE);
+            PluginManager.deliver(context, false, packageName, ErrorType.ERROR_PLUGIN_PARSER_PACKAGE_INFO);
         }
     }
 

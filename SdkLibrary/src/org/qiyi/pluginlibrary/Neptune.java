@@ -26,12 +26,16 @@ import java.io.File;
  * author: liuchun
  * date: 2018/6/4
  */
-public class HybirdPlugin {
-    private static final String TAG = "HybirdPlugin";
+public class Neptune {
+    private static final String TAG = "Neptune";
+
+    public static final boolean SEPARATED_CLASSLOADER = true;
+    public static final boolean NEW_RESOURCE_CREATOR = true;
+    public static final boolean NEW_COMPONENT_PARSER = true;
 
     private static Context sHostContext;
 
-    private static HybirdPluginConfig sGlobalConfig;
+    private static NeptuneConfig sGlobalConfig;
 
     private static Instrumentation mHostInstr;
     /**
@@ -40,13 +44,13 @@ public class HybirdPlugin {
      * @param app
      * @param config
      */
-    public static void init(Application app, HybirdPluginConfig config) {
+    public static void init(Application app, NeptuneConfig config) {
 
         sHostContext = app;
         sGlobalConfig = config != null ? config
-                : new HybirdPluginConfig.HybirdPluginConfigBuilder().build();
+                : new NeptuneConfig.NeptuneConfigBuilder().build();
 
-        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() > 0;
+        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() != NeptuneConfig.LEGACY_MODE;
         if (hookInstr) {
             hookInstrumentation();
         }
@@ -61,7 +65,7 @@ public class HybirdPlugin {
         return sHostContext;
     }
 
-    public static HybirdPluginConfig getConfig() {
+    public static NeptuneConfig getConfig() {
         return sGlobalConfig;
     }
 

@@ -1,6 +1,6 @@
 package org.qiyi.pluginlibrary.loader;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.utils.MultiDex;
 
@@ -28,9 +28,7 @@ public class PluginClassLoader extends DexClassLoader{
         this.pkgName = packageInfo.getPackageName();
         this.dependencies = new ArrayList<>();
 
-        if (HybirdPlugin.getConfig().shouldSupportMultidex()) {
-            MultiDex.install(packageInfo, dexPath, this);
-        }
+        MultiDex.install(packageInfo, dexPath, this);
     }
 
     @Override

@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
@@ -228,7 +227,7 @@ public class PluginManager implements IIntentConstant {
                                       @Nullable final Bundle arguments,
                                       @NonNull final IPluginElementLoadListener<Fragment> listener) {
         if (!PluginPackageManagerNative.getInstance(hostContext).isPackageInstalled(packageName)) {
-            listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_NOT_INSTALL, packageName);
+            listener.onFail(ErrorType.ERROR_PLUGIN_LOAD_NOT_INSTALLED, packageName);
             return;
         }
         loadClass(hostContext.getApplicationContext(), packageName, fragmentClass, new IPluginElementLoadListener<Class<?>>() {
@@ -246,7 +245,7 @@ public class PluginManager implements IIntentConstant {
                     listener.onSuccess(fragment, packageName);
                 } catch (Throwable e) {
                     ErrorUtil.throwErrorIfNeed(e);
-                    listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_CLASS_NEW_INSTANCE, packageName);
+                    listener.onFail(ErrorType.ERROR_PLUGIN_CREATE_CLASS_INSTANCE, packageName);
                 }
             }
 
@@ -281,11 +280,11 @@ public class PluginManager implements IIntentConstant {
                         ViewPluginHelper.disableViewSaveInstanceRecursively(view);
                         listener.onSuccess(view, packageName);
                     } else {
-                        listener.onFail(ErrorType.ERROR_CLIENT_NOT_LOAD, packageName);
+                        listener.onFail(ErrorType.ERROR_PLUGIN_NOT_LOADED, packageName);
                     }
                 } catch (Throwable e) {
                     ErrorUtil.throwErrorIfNeed(e);
-                    listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_CLASS_NEW_INSTANCE, packageName);
+                    listener.onFail(ErrorType.ERROR_PLUGIN_CREATE_CLASS_INSTANCE, packageName);
                 }
             }
 
@@ -310,7 +309,7 @@ public class PluginManager implements IIntentConstant {
                                   @NonNull final IPluginElementLoadListener<Class<?>> listener) {
         if (hostContext == null || TextUtils.isEmpty(packageName) || TextUtils.isEmpty(className)) {
             PluginDebugLog.runtimeLog(TAG, "loadClass hostContext or packageName or className is null!");
-            listener.onFail(ErrorType.ERROR_CLIENT_GET_PKG_AND_CLS_FAIL, packageName);
+            listener.onFail(ErrorType.ERROR_PLUGIN_GET_PKG_AND_CLS_FAIL, packageName);
             return;
         }
         PluginLoadedApk loadedApk = getPluginLoadedApkByPkgName(packageName);
@@ -322,7 +321,7 @@ public class PluginManager implements IIntentConstant {
                 listener.onSuccess(pluginClass, packageName);
             } catch (ClassNotFoundException e) {
                 ErrorUtil.throwErrorIfNeed(e);
-                listener.onFail(ErrorType.ERROR_CLIENT_PLUGIN_CLASS_NOT_FOUND, packageName);
+                listener.onFail(ErrorType.ERROR_PLUGIN_LOAD_TARGET_CLASS, packageName);
             }
             return;
         }
@@ -365,7 +364,7 @@ public class PluginManager implements IIntentConstant {
         }
         // 4. packageInfo 为空的情况，记录异常，用户未安装
         PluginDebugLog.runtimeLog(TAG, "pluginLiteInfo is null packageName: " + packageName);
-        listener.onFail(ErrorType.ERROR_CLIENT_UNKNOWN_PLUGIN, packageName);
+        listener.onFail(ErrorType.ERROR_PLUGIN_LITEINFO_NOT_FOUND, packageName);
     }
 
     private static void doLoadClassAsync(@NonNull final Context hostContext,
@@ -382,7 +381,7 @@ public class PluginManager implements IIntentConstant {
 
             @Override
             public void onLoadFailed(String packageName) {
-                listener.onFail(ErrorType.ERROR_CLIENT_LOAD_PLUGIN, packageName);
+                listener.onFail(ErrorType.ERROR_PLUGIN_CREATE_LOADEDAPK, packageName);
             }
         }, Util.getCurrentProcessName(hostContext));
     }
@@ -435,7 +434,7 @@ public class PluginManager implements IIntentConstant {
         final String packageName = tryParsePkgName(mHostContext, mIntent);
         if (TextUtils.isEmpty(packageName)) {
             if (null != mHostContext) {
-                deliver(mHostContext, false, mHostContext.getPackageName(), ErrorType.ERROR_CLIENT_LOAD_NO_PAKNAME);
+                deliver(mHostContext, false, mHostContext.getPackageName(), ErrorType.ERROR_PLUGIN_LOAD_NO_PKGNAME_INTENT);
             }
             PluginDebugLog.runtimeLog(TAG, "enterProxy packageName is null return! packageName: " + packageName);
             return;
@@ -498,7 +497,6 @@ public class PluginManager implements IIntentConstant {
                 PluginDebugLog.runtimeLog(TAG, "start to check installation pkgName: " + pkgName);
                 final PluginLiteInfo refInfo = PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext())
                         .getPackageInfo(pkgName);
-
 
                 PluginPackageManagerNative.getInstance(mHostContext.getApplicationContext()).packageAction(refInfo,
                         new IInstallCallBack.Stub() {
@@ -596,13 +594,14 @@ public class PluginManager implements IIntentConstant {
         String packageName = tryParsePkgName(mContext, mIntent);
         PluginLoadedApk mLoadedApk = getPluginLoadedApkByPkgName(packageName);
         if (mLoadedApk == null) {
-            deliver(mContext, false, packageName, ErrorType.ERROR_CLIENT_NOT_LOAD);
+            deliver(mContext, false, packageName, ErrorType.ERROR_PLUGIN_NOT_LOADED);
             PluginDebugLog.runtimeLog(TAG, packageName + " launchIntent env is null! Just return!");
             PActivityStackSupervisor.clearLoadingIntent(packageName);
             return false;
         }
 
         if (!mLoadedApk.makeApplication()) {
+            PActivityStackSupervisor.clearLoadingIntent(packageName);
             PluginDebugLog.runtimeFormatLog(TAG, "makeApplication fail:%s", packageName);
             return false;
         }
@@ -671,12 +670,13 @@ public class PluginManager implements IIntentConstant {
         }
 
         Class<?> targetClass = null;
-        if (!TextUtils.isEmpty(targetClassName)) {
+        if (!TextUtils.isEmpty(targetClassName)
+                && !TextUtils.equals(targetClassName, EXTRA_VALUE_LOADTARGET_STUB)) {
             try {
                 targetClass = mLoadedApk.getPluginClassLoader().loadClass(targetClassName);
             } catch (Exception e) {
                 deliver(mHostContext, false,
-                        mLoadedApk.getPluginPackageName(), ErrorType.ERROR_CLIENT_LOAD_START);
+                        mLoadedApk.getPluginPackageName(), ErrorType.ERROR_PLUGIN_LOAD_COMP_CLASS);
                 PluginDebugLog.runtimeLog(TAG, "launchIntent loadClass failed for targetClassName: "
                         + targetClassName);
                 executeNext(mLoadedApk, mConnection, mHostContext);
@@ -859,13 +859,7 @@ public class PluginManager implements IIntentConstant {
      */
     private static void loadPluginAsync(final Context mContext, String mPackageName,
                                         final IPluginLoadListener mListener, String mProcessName) {
-        try {
-            mExecutor.execute(new LoadPluginTask(mContext, mPackageName, mListener, mProcessName));
-        } catch (Exception e) {
-            e.printStackTrace();
-            PActivityStackSupervisor.clearLoadingIntent(mPackageName);
-            deliver(mContext, false, mPackageName, ErrorType.ERROR_CLIENT_LOAD_INIT_TARGET);
-        }
+        mExecutor.execute(new LoadPluginTask(mContext, mPackageName, mListener, mProcessName));
     }
 
     /**
@@ -1011,8 +1005,9 @@ public class PluginManager implements IIntentConstant {
                 }
             } catch (Exception e) {
                 ErrorUtil.throwErrorIfNeed(e);
+                PActivityStackSupervisor.clearLoadingIntent(mPackageName);
                 deliver(mHostContext, false, mPackageName,
-                        ErrorType.ERROR_CLIENT_LOAD_INIT_ENVIRONMENT_FAIL);
+                        ErrorType.ERROR_PLUGIN_CREATE_LOADEDAPK);
                 loaded = false;
             }
             int what = loaded ? PluginLoadedApkHandler.PLUGIN_LOADED_APK_CREATE_SUCCESS : PluginLoadedApkHandler.PLUGIN_LOADED_APK_CREATE_FAILED;
@@ -1047,19 +1042,11 @@ public class PluginManager implements IIntentConstant {
                         PluginPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist!");
                         return false;
                     }
-                    try {
-                        mLoadedApk = new PluginLoadedApk(context, packageInfo.srcApkPath, packageName, mProcessName);
-                    } catch (Exception e) {
-                        ErrorUtil.throwErrorIfNeed(e);
-                        PActivityStackSupervisor.clearLoadingIntent(packageName);
-                        deliver(context, false, packageName,
-                                ErrorType.ERROR_CLIENT_ENVIRONMENT_NULL);
-                    }
-                    if (mLoadedApk != null) {
-                        addPluginLoadedApk(packageName, mLoadedApk);
-                        PluginDebugLog.runtimeLog(TAG, "plugin loaded success! packageName: " + packageName);
-                        return true;
-                    }
+
+                    mLoadedApk = new PluginLoadedApk(context, packageInfo.srcApkPath, packageName, mProcessName);
+                    addPluginLoadedApk(packageName, mLoadedApk);
+                    PluginDebugLog.runtimeLog(TAG, "plugin loaded success! packageName: " + packageName);
+                    return true;
                 }
             }
             PluginDebugLog.runtimeLog(TAG, "plugin loaded failed! packageName: " + packageName);
