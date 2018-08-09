@@ -24,7 +24,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
-import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,20 +36,23 @@ import java.io.FileOutputStream;
  * 考虑到会用在 Fragment 插件化中，所以继承自 FragmentActivity
  */
 public class ActivityWrapper extends FragmentActivity {
-    private PluginContextWrapper mPluginContext;
-    private Activity mOriginActivity;
+    private String mPkgName;  // 插件包名
+    private PluginContextWrapper mPluginContext; // 插件Context
+    private Activity mOriginActivity; //原生的宿主Activity
     /**
      * 如果 mOriginActivity 是 FragmentActivity 则该值不为空且 FragmentActivity 调用可以用该对象代理
      */
     private FragmentActivity mOriginFragmentActivity;
 
-    public ActivityWrapper(Activity origin, PluginContextWrapper pluginContext) {
-        mPluginContext = pluginContext;
+    public ActivityWrapper(Activity origin, String pkgName) {
+        mPkgName = pkgName;
+        mPluginContext = new PluginContextWrapper(origin.getBaseContext(), pkgName);
         mOriginActivity = origin;
         if (mOriginActivity instanceof FragmentActivity) {
             mOriginFragmentActivity = (FragmentActivity) mOriginActivity;
         }
-        ReflectionUtils.on(this).set("mBase", origin);
+        // 将ActivityWrapper的mBase设置为插件的Context
+        attachBaseContext(mPluginContext);
     }
 
     @Override

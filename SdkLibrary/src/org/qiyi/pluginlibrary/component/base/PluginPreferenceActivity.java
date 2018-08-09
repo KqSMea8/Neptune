@@ -2,8 +2,10 @@ package org.qiyi.pluginlibrary.component.base;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
+import android.support.annotation.RequiresApi;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
@@ -62,7 +64,7 @@ public class PluginPreferenceActivity extends PreferenceActivity implements IPlu
     }
 
     // Api 16新增
-    @Override
+    @Override @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         // 替换成坑位Activity
         String pkgName = getPluginPackageName();

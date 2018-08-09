@@ -41,16 +41,14 @@ Neptune是一个灵活，稳定，轻量级的插件化方案，有爱奇艺移�
 ```Java
 @Override
 public void onCreate() {
-    HybirdPluginConfig config = new HybirdPluginConfig.HybirdPluginConfigBuilder()
-                .configSdkMode(1)
-                .useNewCLMode(useNewFeature)
-                .useNewResMode(useNewFeature)
-                .useNewCompResolveMode(useNewFeature)
+    NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
+                .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
                 .build();
-    HybirdPlugin.init(this, config);
+    Neptune.init(this, config);
 
     PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
 }
+
 ```
 
 更多细节和开发指南请参考wiki。

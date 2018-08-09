@@ -2,7 +2,6 @@ package org.qiyi.pluginlibrary.utils;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.BadParcelableException;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;

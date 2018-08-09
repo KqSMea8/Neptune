@@ -41,12 +41,11 @@ public class PluginSupportFragment extends Fragment implements IPluginBase {
         if (mPluginPackageName != null) {
             PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(mPluginPackageName);
             if (loadedApk != null) {
-                PluginContextWrapper pluginContext = loadedApk.getAppWrapper();
                 Object host = ReflectionUtils.on(this).get("mHost");
                 if (!(host instanceof PluginFragmentHostCallback)) {
                     // 替换 mHost, 不能直接修改原来的 mHost，因为它在各个 Fragment 间共享
                     FragmentActivity activity = ReflectionUtils.on(host).get("mActivity");
-                    ActivityWrapper wrapper = new ActivityWrapper(activity, pluginContext);
+                    ActivityWrapper wrapper = new ActivityWrapper(activity, mPluginPackageName);
                     PluginFragmentHostCallback newHost = new PluginFragmentHostCallback((FragmentHostCallback<FragmentActivity>) host, wrapper);
                     ReflectionUtils.on(this).set("mHost", newHost);
                 }

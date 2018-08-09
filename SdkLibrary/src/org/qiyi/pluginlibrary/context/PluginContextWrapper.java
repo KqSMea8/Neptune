@@ -75,9 +75,4 @@ public class PluginContextWrapper extends CustomContextWrapper {
     protected PluginLoadedApk getPluginLoadedApk() {
         return PluginManager.getPluginLoadedApkByPkgName(mPackageName);
     }
-
-    @Override
-    protected String getLogTag() {
-        return PluginContextWrapper.class.getSimpleName();
-    }
 }

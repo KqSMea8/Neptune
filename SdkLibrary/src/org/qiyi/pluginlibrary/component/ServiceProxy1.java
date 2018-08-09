@@ -15,7 +15,7 @@ import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ComponentFinder;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -51,7 +51,7 @@ public class ServiceProxy1 extends Service {
     private void handleSlefLaunchPluginService() {
         List<PluginServiceWrapper> selfLaunchServices = new ArrayList<PluginServiceWrapper>(1);
         for (PluginServiceWrapper plugin : PServiceSupervisor.getAliveServices().values()) {
-            PServiceSupervisor.removeServiceByIdentifer(PluginServiceWrapper.getIndeitfy(plugin.getPkgName(), plugin.getServiceClassName()));
+            PServiceSupervisor.removeServiceByIdentifer(PluginServiceWrapper.getIdentify(plugin.getPkgName(), plugin.getServiceClassName()));
             if (plugin.mNeedSelfLaunch) {
                 selfLaunchServices.add(plugin);
             }
@@ -62,7 +62,7 @@ public class ServiceProxy1 extends Service {
     }
 
     private PluginServiceWrapper findPluginService(String pkgName, String clsName) {
-        return PServiceSupervisor.getServiceByIdentifer(PluginServiceWrapper.getIndeitfy(pkgName, clsName));
+        return PServiceSupervisor.getServiceByIdentifer(PluginServiceWrapper.getIdentify(pkgName, clsName));
     }
 
     public PluginServiceWrapper loadTargetService(String targetPackageName, String targetClassName) {
@@ -73,48 +73,43 @@ public class ServiceProxy1 extends Service {
             PluginDebugLog.log(TAG, "ServiceProxy1>>>>ProxyEnvironment.hasInstance:"
                     + PluginManager.isPluginLoaded(targetPackageName) + ";targetPackageName:" + targetPackageName);
 
+            Service targetService;
             try {
                 PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(targetPackageName);
                 if (null == mLoadedApk) {
                     return null;
                 }
-                Service pluginService = ((Service) mLoadedApk.getPluginClassLoader()
+                targetService = ((Service) mLoadedApk.getPluginClassLoader()
                         .loadClass(targetClassName).newInstance());
                 PluginContextWrapper actWrapper = new PluginContextWrapper(ServiceProxy1.this.getBaseContext(),
                         targetPackageName, true);
-                ReflectionUtils.on(pluginService).call("attach", sMethods, null, actWrapper,
+                ReflectionUtils.on(targetService).call("attach", sMethods, null, actWrapper,
                         ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,
                         ReflectionUtils.getFieldValue(this, "mToken"), mLoadedApk.getPluginApplication(),
                         ReflectionUtils.getFieldValue(this, "mActivityManager"));
-                currentPlugin = new PluginServiceWrapper(targetClassName, targetPackageName, this, pluginService);
-                pluginService.onCreate();
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+                PluginManager.deliver(this, false, targetPackageName,
+                        ErrorType.ERROR_PLUGIN_LOAD_TARGET_SERVICE);
+                PluginDebugLog.log(TAG, "加载targetService失败: " + targetPackageName);
+                return null;
+            }
+
+            try {
+                currentPlugin = new PluginServiceWrapper(targetClassName, targetPackageName, this, targetService);
+                targetService.onCreate();
                 currentPlugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_CREATED);
 
                 PServiceSupervisor.addServiceByIdentifer(targetPackageName + "." + targetClassName, currentPlugin);
 
                 PluginDebugLog.log(TAG, "ServiceProxy1>>>start service, pkgName: " + targetPackageName + ", clsName: "
                         + targetClassName);
-            } catch (InstantiationException e) {
-                currentPlugin = null;
-                e.printStackTrace();
-                PluginManager.deliver(this, false, targetPackageName,
-                        ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_INSTANTIATION);
-            } catch (IllegalAccessException e) {
-                currentPlugin = null;
-                e.printStackTrace();
-                PluginManager.deliver(this, false, targetPackageName,
-                        ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_ILLEGALACCESS);
-            } catch (ClassNotFoundException e) {
-                currentPlugin = null;
-                e.printStackTrace();
-                PluginManager.deliver(this, false, targetPackageName,
-                        ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION_CLASSNOTFOUND);
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
                 PluginManager.deliver(this, false, targetPackageName,
-                        ErrorType.ERROR_CLIENT_LOAD_INIT_EXCEPTION);
-                currentPlugin = null;
-                PluginDebugLog.log(TAG, "初始化target失败");
+                        ErrorType.ERROR_PLUGIN_CREATE_TARGET_SERVICE);
+                PluginDebugLog.log(TAG, "调用targetService#onCreate失败: " + targetPackageName);
+                return null;
             }
         }
         return currentPlugin;

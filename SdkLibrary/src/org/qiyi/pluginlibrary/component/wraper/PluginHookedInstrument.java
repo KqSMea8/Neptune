@@ -9,8 +9,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.ContextThemeWrapper;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
-import org.qiyi.pluginlibrary.component.BaseRecoveryActivity;
+import org.qiyi.pluginlibrary.Neptune;
+import org.qiyi.pluginlibrary.NeptuneConfig;
+import org.qiyi.pluginlibrary.component.TransRecoveryActivity0;
 import org.qiyi.pluginlibrary.component.base.IPluginBase;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
@@ -69,7 +70,7 @@ public class PluginHookedInstrument extends PluginInstrument {
 
     @Override
     public void callActivityOnCreate(Activity activity, Bundle icicle) {
-        boolean isRecovery = activity instanceof BaseRecoveryActivity;
+        boolean isRecovery = activity instanceof TransRecoveryActivity0;
         if (isRecovery) {
             mRecoveryHelper.saveIcicle(activity, icicle);
             mHostInstr.callActivityOnCreate(activity, null);
@@ -161,7 +162,7 @@ public class PluginHookedInstrument extends PluginInstrument {
 
     @Override
     public void callActivityOnRestoreInstanceState(Activity activity, Bundle savedInstanceState) {
-        if (activity instanceof BaseRecoveryActivity) {
+        if (activity instanceof TransRecoveryActivity0) {
             mRecoveryHelper.saveSavedInstanceState(activity, savedInstanceState);
             return;
         }
@@ -170,11 +171,9 @@ public class PluginHookedInstrument extends PluginInstrument {
             PluginLoadedApk loadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
             if (loadedApk != null && savedInstanceState != null) {
                 savedInstanceState.setClassLoader(loadedApk.getPluginClassLoader());
-                super.callActivityOnRestoreInstanceState(activity, savedInstanceState);
             }
-        } else {
-            super.callActivityOnRestoreInstanceState(activity, savedInstanceState);
         }
+        mHostInstr.callActivityOnRestoreInstanceState(activity, savedInstanceState);
     }
 
     /**
@@ -185,7 +184,7 @@ public class PluginHookedInstrument extends PluginInstrument {
      */
     private boolean dispatchToBaseActivity(Activity activity) {
 
-        return HybirdPlugin.getConfig().getSdkMode() == 2
+        return Neptune.getConfig().getSdkMode() == NeptuneConfig.INSTRUMENTATION_BASEACT_MODE
                 && activity instanceof IPluginBase;
     }
 }

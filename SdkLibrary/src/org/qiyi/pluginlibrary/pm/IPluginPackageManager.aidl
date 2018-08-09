@@ -20,12 +20,6 @@ interface IPluginPackageManager {
 
     oneway void install(in PluginLiteInfo info, IInstallCallBack listener);
 
-    //oneway void installApkFile(String filePath, IInstallCallBack listener,in PluginLiteInfo pluginInfo);
-
-    //oneway void installBuildinApps(in PluginLiteInfo info, IInstallCallBack listener);
-
-    //oneway void deletePackage(in PluginLiteInfo info, IPluginUninstallCallBack observer);
-
     boolean uninstall(in PluginLiteInfo info);
 
     oneway void packageAction(in PluginLiteInfo info, IInstallCallBack callBack);

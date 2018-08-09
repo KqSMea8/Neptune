@@ -3,7 +3,7 @@ package org.qiyi.pluginlibrary.utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.Neptune;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -261,7 +261,7 @@ class MultiDexExtractor {
     }
 
     private static SharedPreferences getMultiDexPreferences() {
-        return HybirdPlugin.getHostContext().getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE);
+        return Neptune.getHostContext().getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE);
     }
 
     private static long getTimeStamp(File archive) {

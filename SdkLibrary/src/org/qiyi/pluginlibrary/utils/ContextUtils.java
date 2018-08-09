@@ -281,20 +281,6 @@ public class ContextUtils {
     }
 
     /**
-     * 判断是否Android N系统
-     */
-    public static boolean isAndroidN() {
-        return isParticularAndroidVersion(ANDROID_N);
-    }
-
-    /**
-     * 判断是否Android O系统
-     */
-    public static boolean isAndroidO() {
-        return isParticularAndroidVersion(ANDROID_O);
-    }
-
-    /**
      * 判断是否Android P系统
      */
     public static boolean isAndroidP() {
