@@ -5,15 +5,13 @@ apply plugin: 'com.android.application'
 
 def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
-if (isPluginBuild) {
-    apply plugin: 'com.qiyi.plugin'
+apply plugin: 'com.qiyi.plugin'
 
-    qyplugin {
-        pluginMode = isPluginBuild
-        packageId = 0x30
-        hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
-        dexModify = false
-    }
+neptune {
+    pluginMode = isPluginBuild
+    packageId = 0x30
+    hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
+    dexModify = false
 }
 
 android {

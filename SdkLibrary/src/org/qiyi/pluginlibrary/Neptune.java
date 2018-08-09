@@ -39,7 +39,7 @@ public class Neptune {
 
     private static Instrumentation mHostInstr;
     /**
-     * 初始化HybirdPlugin环境
+     * 初始化Neptune插件环境
      *
      * @param app
      * @param config

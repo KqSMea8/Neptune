@@ -5,7 +5,7 @@ apply plugin: 'com.android.application'
 
 apply plugin: 'com.qiyi.plugin'
 // 宿主使用，固定资源id
-qyplugin {
+neptune {
     pluginMode = false
     packageId = 0x7f
 }

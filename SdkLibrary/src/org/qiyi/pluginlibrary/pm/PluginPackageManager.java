@@ -690,7 +690,7 @@ public class PluginPackageManager {
                 if (uninstallFlag) {
                     deletePackage(packageInfo, new IPluginUninstallCallBack.Stub() {
                         @Override
-                        public void onPluginUninstall(String packageName, int returnCode) throws RemoteException {
+                        public void onPluginUninstall(String packageName, int resultCode) throws RemoteException {
                             PluginDebugLog.runtimeFormatLog(TAG, "onPluginUninstall %s", packageName);
                         }
                     });

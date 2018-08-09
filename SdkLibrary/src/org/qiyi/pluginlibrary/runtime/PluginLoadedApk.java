@@ -21,6 +21,7 @@ import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
+import org.qiyi.pluginlibrary.component.wraper.PluginHookedInstrument;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
@@ -391,10 +392,11 @@ public class PluginLoadedApk implements IIntentConstant {
                 className = "android.app.Application";
             }
 
-            hookInstrumentation();
+            Instrumentation hostInstr = Neptune.getHostInstrumentation();
+            hookInstrumentation(hostInstr);
             try {
                 // load plugin Application and call Application#attach()
-                this.mPluginApplication = mPluginInstrument.newApplication(mPluginClassLoader, className, mPluginAppContext);
+                this.mPluginApplication = hostInstr.newApplication(mPluginClassLoader, className, mPluginAppContext);
             } catch (Exception e) {
                 ErrorUtil.throwErrorIfNeed(e);
                 PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_LOAD_APPLICATION);
@@ -465,14 +467,14 @@ public class PluginLoadedApk implements IIntentConstant {
      * 反射获取ActivityThread中的Instrumentation对象
      * 从而拦截Activity跳转
      */
-    private void hookInstrumentation() {
+    private void hookInstrumentation(Instrumentation hostInstr) {
         try {
 //            Context contextImpl = ((ContextWrapper) mHostContext).getBaseContext();
 //            Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
 //            Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
 //            instrumentationF.setAccessible(true);
 //            Instrumentation hostInstr = (Instrumentation) instrumentationF.get(activityThread);
-            Instrumentation hostInstr = Neptune.getHostInstrumentation();
+//            Instrumentation hostInstr = Neptune.getHostInstrumentation();
             mPluginInstrument = new PluginInstrument(hostInstr, mPluginPackageName);
         } catch (Exception e) {
             ErrorUtil.throwErrorIfNeed(e);

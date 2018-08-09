@@ -7,21 +7,10 @@ apply from: '../addCopyRight.gradle'
 buildscript {
     repositories {
         jcenter()
-        maven {
-            url="http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
-        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.3'
     }
-}
-
-uploadArchives {
-    repositories.mavenDeployer {
-        repository(url: "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/")
-        pom.groupId = "com.qiyi.video.plugin"
-        pom.artifactId = "pluginsdk"
-        pom.version = "1.0" }
 }
 
 dependencies {
@@ -67,25 +56,6 @@ android {
         // but continue the build even when errors are found:
         abortOnError false
     }
-    def target = new File(project.buildDir.toString()+"/libs")
-
-    task clearJar(type: Delete) {
-        delete "${target}/libplugin.jar"
-        delete "${project.projectDir}/MANIFEST.MF"
-    }
-
-    //在基线8.7版本开始废弃，通过gradle uploadArchives上传aar到maven服务器,
-    task makeJar(type: Copy) {
-        from('build/intermediates/bundles/debug/')
-        into(target)
-        include('classes.jar')
-        rename('classes.jar', 'libplugin.jar')
-        doLast{
-            updateManifestMFInfo(getGitChangeId(), 'libplugin.jar', target)
-        }
-
-    }
-    makeJar.dependsOn(clearJar, build)
 }
 
 import groovy.xml.XmlUtil
@@ -114,43 +84,4 @@ gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
         options.compilerArgs.add('-Xbootclasspath/p:libs/android-26.jar')
     }
-}
-
-/**
- * 更新MANIFEST.MF信息
- */
-def updateManifestMFInfo(def changeId, def jarName, def target) {
-    def manifestmf = 'MANIFEST.MF';
-    println project.getProjectDir().getAbsolutePath()
-    File mf = new File(project.getProjectDir().getAbsolutePath() + "/" + manifestmf)
-    mf.deleteOnExit()
-    def time = new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(new Date())
-    println 'ChangeId: ' + changeId + '\nImplementation-Version: ' + time
-    mf.write('ChangeId: ' + changeId + '\nImplementation-Version: ' + time)
-    println 'Update ' + jarName + ' Manifest.mf'
-    exec {
-        executable = 'jar'
-        workingDir "${target}"
-        args = ['-uvfm', jarName, mf.getAbsolutePath()]
-    }
-    println 'Update ' + jarName + ' Manifest.mf end!'
-}
-
-/**
- * 获取change id版本号
- * @return
- */
-def getGitChangeId() {
-    def outputAsString
-    new ByteArrayOutputStream().withStream { os ->
-        exec {
-            executable = 'git'
-            args = ['log', '-1']
-            standardOutput = os
-        }
-        outputAsString = os.toString()
-        outputAsString = outputAsString.substring(outputAsString.indexOf('Change-Id: ') + 11)
-        println 'ChangeId' + outputAsString
-    }
-    return outputAsString
 }

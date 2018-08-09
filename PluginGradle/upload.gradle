@@ -4,10 +4,10 @@ apply plugin: 'signing'
 def getRepositoryUrl() {
     if (isReleaseBuild()) {
         println 'RELEASE BUILD'
-        return hasProperty('NEXUS_REPO') ? NEXUS_REPO : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
+        return hasProperty('NEXUS_REPO') ? NEXUS_REPO : ""
     } else {
         println 'SNAPSHOTS BUILD'
-        return "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android-snapshot/"
+        return ""
     }
 }
 

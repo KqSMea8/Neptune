@@ -1,6 +1,12 @@
 # Neptune
 
-Neptune是一个灵活，稳定，轻量级的插件化方案，有爱奇艺移动端基线Team研发。它可以在数以百万级的Android设备上动态加载和运行插件apk。框架支持了爱奇艺20个多独立业务的发展，比如爱奇艺文学，电影票，爱奇艺直播等。
+![license](http://img.shields.io/badge/license-Apache2.0-brightgreen.svg?style=flat)
+![Release Version](https://img.shields.io/badge/release-2.5.0-red.svg)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+
+**Neptune是一套灵活，稳定，轻量级的插件化方案，由爱奇艺移动端基线Team研发。它可以在数以百万级的Android设备上动态加载和运行插件apk。**
+
+该框架支持了爱奇艺20个多独立业务的发展和需求开发，比如爱奇艺文学，电影票，爱奇艺直播等。
 
 随着Android P即将发布，我们的框架遇到了非限制性SDK接口访问的挑战。短时间内，我们及时进行了跟进和适配，现在Neptune可以无缝运行在Android P设备上，目前只有一个Hook点（ActivityThread中的Instrumentation）。
 
@@ -33,7 +39,7 @@ Neptune是一个灵活，稳定，轻量级的插件化方案，有爱奇艺移�
 在App模块的`build.gradle`中compile移入Neptune库
 
 ```Gradle
-    compile 'com.iqiyi.video:neptune:1.0.3'
+    compile 'com.iqiyi.video:neptune:2.5.0'
 ```
 
 在`Application#onCreate()`阶段初始化NoahDocker
@@ -59,7 +65,7 @@ public void onCreate() {
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:plugin-gradle:1.0.6'
+    classpath  'com.iqiyi.tools.build:plugin-gradle:1.0.7'
 }
 ```
 
@@ -68,7 +74,7 @@ dependencies {
 ```Gradle
 apply plugin: 'com.qiyi.plugin'
 
-qyplugin {
+neptune {
     pluginMode = true      // In plugin apk build mode
     packageId = 0x30       // The packge id of Resources
     hostDependencies = "{group1}:{artifact1};{group2}:{artifact2}" // host app resources dependencies
@@ -80,7 +86,7 @@ qyplugin {
 * API文档见wiki
 * 宿主APP的示例工程
 * 插件APP的示例工程
-* 阅读SDKLibray的源码
+* 阅读SDKLibrary的源码
 
 # Contribution
 

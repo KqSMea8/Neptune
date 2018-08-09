@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
     @OnClick(R.id.uninstall_plugin) void uninstallPlugin() {
         Neptune.uninstall(this, SAMPLE_PLUGIN_PKG, new IPluginUninstallCallBack.Stub() {
             @Override
-            public void onPluginUninstall(String packageName, int returnCode) throws RemoteException {
+            public void onPluginUninstall(String packageName, int resultCode) throws RemoteException {
                 Toast.makeText(MainActivity.this, "sample plugin uninstall success", Toast.LENGTH_SHORT).show();
                 updatePluginState();
             }

@@ -1,10 +1,16 @@
 # Neptune
 
-Neptune is a flexible, powerful and lightweight plugin framework for Android developed by IQIYI Baseline Team. It can dynamically load and run a plugin APK file on billions of devices. It carries more than 20 separated business module of IQIYI, such as reader, movie tickets, live videos, and so on.
+![license](http://img.shields.io/badge/license-Apache2.0-brightgreen.svg?style=flat)
+![Release Version](https://img.shields.io/badge/release-2.5.0-red.svg)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
-When Android P is arriving, we meet the non-sdk strict challenge on P. And now, Neptune can run on Android P devices seamless with only *ONE* hook (Instrumentaion in ActivityThread, same idea with other great plugin frameworks).
+**Neptune is a flexible, powerful and lightweight plugin framework for Android developed by IQIYI Baseline Team.**
 
-[中文文档](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/blob/dev/README_CN.md)
+It can dynamically load and run a plugin APK file on billions of devices. It carries more than 20 separated business module of IQIYI, such as reader, movie tickets, live videos, and so on.
+
+When Android P is arriving, we meet the non-sdk strict challenge on P. And now, Neptune can run on Android P devices seamless with only **ONE** hook (Instrumentaion in ActivityThread, same idea with other great plugin frameworks).
+
+[中文文档](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/blob/sdk_open/README_CN.md)
 
 # Supported Features
 
@@ -34,7 +40,7 @@ When Android P is arriving, we meet the non-sdk strict challenge on P. And now, 
 compile Neptune in application module of `build.gradle`.
 
 ```Gradle
-    compile 'com.iqiyi.video:neptune:1.0.3'
+    compile 'com.iqiyi.video:neptune:2.5.0'
 ```
 
 Initialize sdk in your `Application#onCreate()`.
@@ -59,7 +65,7 @@ If plugin app wants to share resources with host app, you need add dependency in
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:plugin-gradle:1.0.6'
+    classpath  'com.iqiyi.tools.build:plugin-gradle:1.0.7'
 }
 ```
 
@@ -68,7 +74,7 @@ Apply gradle plugin in application module of `build.gradle` and config it.
 ```Gradle
 apply plugin: 'com.qiyi.plugin'
 
-qyplugin {
+neptune {
     pluginMode = true      // In plugin apk build mode
     packageId = 0x30       // The packge id of Resources
     hostDependencies = "{group1}:{artifact1};{group2}:{artifact2}" // host app resources dependencies
