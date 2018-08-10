@@ -41,7 +41,6 @@ import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.listenter.IResourchStaticsticsControllerManager;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
@@ -528,7 +527,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (getController() != null) {
             try {
                 getController().callOnResume();
-                IResourchStaticsticsControllerManager.onResume(this);
             } catch (Exception e) {
                 ErrorUtil.throwErrorIfNeed(e);
             }
@@ -601,7 +599,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
             try {
                 getController().callOnPause();
-                IResourchStaticsticsControllerManager.onPause(this);
             } catch (Exception e) {
                 ErrorUtil.throwErrorIfNeed(e);
             }

@@ -27,7 +27,8 @@ public final class NeptuneConfig {
     // 新特性，减少反射API调用
     private boolean useSeparateClassLoader;
     private boolean useNewResCreator;
-    private boolean useNewCompPaser;
+    private boolean useNewCompParser;
+    private boolean supportMultidex;
 
     private IVerifyPluginInfo mVerifyPluginInfo;
     private IRecoveryCallback mRecoveryCallback;
@@ -36,7 +37,8 @@ public final class NeptuneConfig {
         this.sdkMode = builder.sdkMode;
         this.useSeparateClassLoader = builder.useSeparateClassLoader;
         this.useNewResCreator = builder.useNewResCreator;
-        this.useNewCompPaser = builder.useNewCompPaser;
+        this.useNewCompParser = builder.useNewCompParser;
+        this.supportMultidex = builder.supportMultidex;
         this.mVerifyPluginInfo = builder.verifyPluginInfo;
         this.mRecoveryCallback = builder.recoveryCallback;
     }
@@ -56,7 +58,11 @@ public final class NeptuneConfig {
     }
 
     public boolean withNewCompParser() {
-        return useNewCompPaser;
+        return useNewCompParser;
+    }
+
+    public boolean supportMultidex() {
+        return supportMultidex;
     }
 
     public IVerifyPluginInfo getVerifyPluginInfo() {
@@ -71,7 +77,8 @@ public final class NeptuneConfig {
         int sdkMode = 0;
         boolean useSeparateClassLoader;
         boolean useNewResCreator;
-        boolean useNewCompPaser;
+        boolean useNewCompParser;
+        boolean supportMultidex;
         IVerifyPluginInfo verifyPluginInfo;
         IRecoveryCallback recoveryCallback;
 
@@ -91,7 +98,12 @@ public final class NeptuneConfig {
         }
 
         public NeptuneConfigBuilder withNewCompParser(boolean newCompParser) {
-            this.useNewCompPaser = newCompParser;
+            this.useNewCompParser = newCompParser;
+            return this;
+        }
+
+        public NeptuneConfigBuilder supportMultidex(boolean multidexEnable) {
+            this.supportMultidex = multidexEnable;
             return this;
         }
 
