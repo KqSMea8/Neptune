@@ -4,7 +4,6 @@ import android.app.Application;
 
 import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.NeptuneConfig;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 /**
  * author: liuchun
@@ -22,9 +21,8 @@ public class HostApplication extends Application {
     private void initPluginFramework() {
         NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
                 .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
+                .enableDebugMode(true)
                 .build();
         Neptune.init(this, config);
-
-        PluginDebugLog.setIsDebug(true);
     }
 }

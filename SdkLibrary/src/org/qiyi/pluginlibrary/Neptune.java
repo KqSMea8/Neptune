@@ -50,6 +50,8 @@ public class Neptune {
         sGlobalConfig = config != null ? config
                 : new NeptuneConfig.NeptuneConfigBuilder().build();
 
+        PluginDebugLog.setIsDebug(sGlobalConfig.isDebugMode());
+
         boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() != NeptuneConfig.LEGACY_MODE;
         if (hookInstr) {
             hookInstrumentation();

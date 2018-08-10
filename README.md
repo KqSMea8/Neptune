@@ -52,10 +52,9 @@ public class XXXApplication extends Application {
     public void onCreate() {
         NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
                     .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
+                    .enableDebugMode(BuildConfig.DEBUG)
                     .build();
         Neptune.init(this, config);
-    
-        PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
     }
 }
 ```

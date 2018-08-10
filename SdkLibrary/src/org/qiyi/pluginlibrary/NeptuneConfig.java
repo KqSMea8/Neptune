@@ -27,11 +27,13 @@ public final class NeptuneConfig {
 
     private IVerifyPluginInfo mVerifyPluginInfo;
     private IRecoveryCallback mRecoveryCallback;
+    private boolean mIsDebugMode;
 
     NeptuneConfig(NeptuneConfigBuilder builder) {
         this.sdkMode = builder.sdkMode;
         this.mVerifyPluginInfo = builder.verifyPluginInfo;
         this.mRecoveryCallback = builder.recoveryCallback;
+        this.mIsDebugMode = builder.isDebugMode;
     }
 
 
@@ -47,10 +49,15 @@ public final class NeptuneConfig {
         return mRecoveryCallback;
     }
 
+    public boolean isDebugMode() {
+        return mIsDebugMode;
+    }
+
     public static class NeptuneConfigBuilder {
         int sdkMode = 0;
         IVerifyPluginInfo verifyPluginInfo;
         IRecoveryCallback recoveryCallback;
+        boolean isDebugMode;
 
         public NeptuneConfigBuilder configSdkMode(int sdkMode) {
             this.sdkMode = sdkMode;
@@ -64,6 +71,11 @@ public final class NeptuneConfig {
 
         public NeptuneConfigBuilder recoveryCallback(IRecoveryCallback callback) {
             this.recoveryCallback = callback;
+            return this;
+        }
+
+        public NeptuneConfigBuilder enableDebugMode(boolean enable) {
+            isDebugMode = enable;
             return this;
         }
 
