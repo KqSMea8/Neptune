@@ -25,15 +25,17 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
 /**
+ *
+ * 自定义的全局的Instrumentation
  * 负责转移插件的跳转目标和创建插件的Activity实例
  * 用于Hook ActivityThread中的全局Instrumentation
  */
-public class PluginHookedInstrument extends PluginInstrument {
+public class NeptuneInstrument extends PluginInstrument {
 
-    private static final String TAG = "PluginHookedInstrument";
+    private static final String TAG = "NeptuneInstrument";
     private PluginActivityRecoveryHelper mRecoveryHelper = new PluginActivityRecoveryHelper();
 
-    public PluginHookedInstrument(Instrumentation hostInstr) {
+    public NeptuneInstrument(Instrumentation hostInstr) {
         super(hostInstr);
     }
 

@@ -7,7 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 
-import org.qiyi.pluginlibrary.component.wraper.PluginHookedInstrument;
+import org.qiyi.pluginlibrary.component.wraper.NeptuneInstrument;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.IPluginUninstallCallBack;
@@ -87,11 +87,11 @@ public class Neptune {
                || hostInstrName.startsWith("com.lody.virtual")) {
                 // warning: 特殊case，VirtualApp环境，暂不Hook
                 PluginDebugLog.runtimeLog(TAG, "reject hook instrument, run in VirtualApp Environment");
-            } else if (hostInstr instanceof PluginHookedInstrument) {
+            } else if (hostInstr instanceof NeptuneInstrument) {
                 // already hooked
                 PluginDebugLog.runtimeLog(TAG, "ActivityThread Instrumentation already hooked");
             } else {
-                PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
+                PluginInstrument pluginInstrument = new NeptuneInstrument(hostInstr);
                 ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
                 PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
             }
@@ -108,7 +108,7 @@ public class Neptune {
 //        }
 //
 //        if (hostInstr != null) {
-//            PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
+//            PluginInstrument pluginInstrument = new NeptuneInstrument(hostInstr);
 //            ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
 //            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
 //        } else {

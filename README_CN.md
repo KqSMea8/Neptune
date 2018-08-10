@@ -45,16 +45,18 @@
 在`Application#onCreate()`阶段初始化NoahDocker
 
 ```Java
-@Override
-public void onCreate() {
-    NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
-                .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
-                .build();
-    Neptune.init(this, config);
-
-    PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
+public class XXXApplication extends Application {
+    
+    @Override
+    public void onCreate() {
+        NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
+                    .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
+                    .build();
+        Neptune.init(this, config);
+    
+        PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
+    }
 }
-
 ```
 
 更多细节和开发指南请参考wiki。

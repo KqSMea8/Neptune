@@ -21,7 +21,6 @@ import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.component.wraper.PluginHookedInstrument;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
