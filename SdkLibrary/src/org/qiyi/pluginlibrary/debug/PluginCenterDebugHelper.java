@@ -1,6 +1,5 @@
 package org.qiyi.pluginlibrary.debug;
 
-import android.content.ComponentName;
 import android.content.Context;
 
 import java.util.Collections;

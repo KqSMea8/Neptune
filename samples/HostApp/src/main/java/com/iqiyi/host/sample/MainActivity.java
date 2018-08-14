@@ -16,7 +16,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.qiyi.pluginlibrary.HybirdPlugin;
+import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.IPluginUninstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updatePluginState() {
-        boolean installed = HybirdPlugin.isPackageInstalled(this, SAMPLE_PLUGIN_PKG);
+        boolean installed = Neptune.isPackageInstalled(this, SAMPLE_PLUGIN_PKG);
         pluginState.setText(getString(R.string.plugin_state, installed ? "已安装" : "未安装"));
     }
 
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void installPluginInternal(String apkPath) {
 
-        HybirdPlugin.install(this, apkPath, new IInstallCallBack.Stub() {
+        Neptune.install(this, apkPath, new IInstallCallBack.Stub() {
             @Override
             public void onPackageInstalled(PluginLiteInfo info) throws RemoteException {
                 Toast.makeText(MainActivity.this, "sample plugin install success", Toast.LENGTH_SHORT).show();
@@ -135,8 +135,8 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent();
         ComponentName cn = new ComponentName(SAMPLE_PLUGIN_PKG, "");  // 启动默认入口Activity
         intent.setComponent(cn);
-        if (HybirdPlugin.isPackageInstalled(this, SAMPLE_PLUGIN_PKG)) {
-            HybirdPlugin.launchPlugin(this, intent);
+        if (Neptune.isPackageInstalled(this, SAMPLE_PLUGIN_PKG)) {
+            Neptune.launchPlugin(this, intent);
         } else {
             Toast.makeText(this, "sample plugin not installed", Toast.LENGTH_SHORT).show();
         }
@@ -146,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
      * 卸载插件
      */
     @OnClick(R.id.uninstall_plugin) void uninstallPlugin() {
-        HybirdPlugin.uninstall(this, SAMPLE_PLUGIN_PKG, new IPluginUninstallCallBack.Stub() {
+        Neptune.uninstall(this, SAMPLE_PLUGIN_PKG, new IPluginUninstallCallBack.Stub() {
             @Override
             public void onPluginUninstall(String packageName, int returnCode) throws RemoteException {
                 Toast.makeText(MainActivity.this, "sample plugin uninstall success", Toast.LENGTH_SHORT).show();

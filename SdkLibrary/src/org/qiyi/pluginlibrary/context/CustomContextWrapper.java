@@ -100,7 +100,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public ComponentName startService(Intent service) {
-        PluginDebugLog.log(getLogTag(), "startService: " + service);
+        PluginDebugLog.log(TAG, "startService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
             ComponentFinder.switchToServiceProxy(mLoadedApk, service);
@@ -110,7 +110,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public boolean stopService(Intent name) {
-        PluginDebugLog.log(getLogTag(), "stopService: " + name);
+        PluginDebugLog.log(TAG, "stopService: " + name);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
             String actServiceClsName = "";
@@ -124,7 +124,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             }
 
             PluginServiceWrapper plugin = PServiceSupervisor
-                    .getServiceByIdentifer(PluginServiceWrapper.getIndeitfy(getPluginPackageName(), actServiceClsName));
+                    .getServiceByIdentifer(PluginServiceWrapper.getIdentify(getPluginPackageName(), actServiceClsName));
             if (plugin != null) {
                 plugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_STOPED);
                 plugin.tryToDestroyService();
@@ -136,7 +136,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public boolean bindService(Intent service, ServiceConnection conn, int flags) {
-        PluginDebugLog.log(getLogTag(), "bindService: " + service);
+        PluginDebugLog.log(TAG, "bindService: " + service);
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
         if (mLoadedApk != null) {
             ComponentFinder.switchToServiceProxy(mLoadedApk, service);
@@ -157,7 +157,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     public void unbindService(ServiceConnection conn) {
         super.unbindService(conn);
         PServiceSupervisor.removeServiceConnection(conn);
-        PluginDebugLog.log(getLogTag(), "unbindService: " + conn);
+        PluginDebugLog.log(TAG, "unbindService: " + conn);
     }
 
     @Override
@@ -821,9 +821,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     }
 
     /**
-     * Get host resource
-     *
-     * @return host resource tool
+     * 获取宿主的ResourcesTool
      */
     @Override
     public ResourcesToolForPlugin getHostResourceTool() {
@@ -851,18 +849,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     }
 
     /**
-     * Get proxy environment
-     *
-     * @return plugin's environment
+     * 获取插件的PluginLoadedApk
      */
     protected abstract PluginLoadedApk getPluginLoadedApk();
-
-    /**
-     * Get log tag
-     *
-     * @return log tag
-     */
-    protected abstract String getLogTag();
-
-
 }

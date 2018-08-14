@@ -39,12 +39,12 @@ import java.util.concurrent.ConcurrentMap;
 public class PluginActivityControl implements PluginActivityCallback {
     private static final String TAG = "PluginActivityControl";
     public static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>();
-    Activity mProxy;// 代理Activity
-    Activity mPlugin;// 插件Activity
-    ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类
-    ReflectionUtils mPluginRef;// 指向插件Activity的反射工具类
-    Application mApplication;// 分派给插件的Application
-    Instrumentation mHostInstr;
+    private Activity mProxy;// 代理Activity
+    private Activity mPlugin;// 插件Activity
+    private ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类
+    private ReflectionUtils mPluginRef;// 指向插件Activity的反射工具类
+    private Application mApplication;// 分派给插件的Application
+    private Instrumentation mHostInstr;
 
     /**
      * @param proxy  代理Activity
@@ -52,11 +52,8 @@ public class PluginActivityControl implements PluginActivityCallback {
      * @param app    分派给插件的Application
      * @throws Exception
      */
-    public PluginActivityControl(Activity proxy, Activity plugin, Application app, Instrumentation pluginInstr) throws Exception {
-        if (null == proxy || null == plugin || null == app || null == pluginInstr) {
-            throw new Exception("proxy, plugin, app, pluginInstr shouldn't be null! proxy: " + proxy + " plugin: " + plugin + " app: " + app
-                    + " pluginInstr: " + pluginInstr);
-        }
+    public PluginActivityControl(Activity proxy, Activity plugin,
+                                 Application app, Instrumentation pluginInstr) {
         mProxy = proxy;
         mPlugin = plugin;
         mApplication = app;
@@ -115,7 +112,7 @@ public class PluginActivityControl implements PluginActivityCallback {
 
             return true;
         } catch (ReflectException e) {
-            PluginManager.deliver(mProxy, false, packageName, ErrorType.ERROR_CLIENT_DISPATCH_PROXY_TO_PLUGIN_FAIL);
+            PluginManager.deliver(mProxy, false, packageName, ErrorType.ERROR_PLUGIN_ACTIVITY_ATTACH_BASE);
             ErrorUtil.throwErrorIfNeed(e);
         }
         return false;
@@ -703,7 +700,8 @@ public class PluginActivityControl implements PluginActivityCallback {
      * @param className
      * @param loadedApk
      */
-    public static void changeActivityInfo(Activity activity, String className, PluginLoadedApk loadedApk) {
+    public static void changeActivityInfo(Activity activity, String className,
+                                          PluginLoadedApk loadedApk) {
         if (loadedApk == null || TextUtils.isEmpty(className)) {
             return;
         }
@@ -750,7 +748,7 @@ public class PluginActivityControl implements PluginActivityCallback {
             }
         }
 
-        // 修改插件Activity的主题
+        // onCreate()中调用时需要修改插件Activity的主题
         int resTheme = loadedApk.getActivityThemeResourceByClassName(className);
         if (resTheme != 0) {
             activity.setTheme(resTheme);

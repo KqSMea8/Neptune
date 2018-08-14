@@ -14,7 +14,7 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 
 /**
- * 工厂类，负责创建 FragmentProxy，根据 HybirdPlugin 配置，决定具体的 FragmentProxy 类型
+ * 工厂类，负责创建 FragmentProxy，根据 Neptune 配置，决定具体的 FragmentProxy 类型
  */
 public class FragmentProxyFactory {
 

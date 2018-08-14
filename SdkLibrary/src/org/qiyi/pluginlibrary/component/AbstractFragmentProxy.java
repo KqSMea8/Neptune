@@ -64,7 +64,7 @@ public abstract class AbstractFragmentProxy extends Fragment {
                 });
             } else {
                 if (isAdded()) {
-                    onLoadPluginFragmentFail(ErrorType.ERROR_CLIENT_PLUGIN_NOT_INSTALL, packageName);
+                    onLoadPluginFragmentFail(ErrorType.ERROR_PLUGIN_LOAD_NOT_INSTALLED, packageName);
                 }
             }
         }

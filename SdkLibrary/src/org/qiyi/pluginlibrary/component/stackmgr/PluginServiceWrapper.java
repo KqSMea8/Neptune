@@ -89,7 +89,7 @@ public class PluginServiceWrapper {
                 e.printStackTrace();
             }
             // remove service record.
-            PServiceSupervisor.removeServiceByIdentifer(getIndeitfy(mPkgName, mServiceClassName));
+            PServiceSupervisor.removeServiceByIdentifer(getIdentify(mPkgName, mServiceClassName));
             if (PServiceSupervisor.getAliveServices().size() == 0 && mParentService != null) {
                 mParentService.stopSelf();
             }
@@ -102,7 +102,7 @@ public class PluginServiceWrapper {
      * @param serviceClsName
      * @return
      */
-    public static String getIndeitfy(String pkg, String serviceClsName) {
+    public static String getIdentify(String pkg, String serviceClsName) {
         return pkg + "." + serviceClsName;
     }
 }

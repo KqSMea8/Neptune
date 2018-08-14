@@ -33,6 +33,7 @@ public class ResolveInfoUtil {
      * @param dexPath apk path
      * @param target
      */
+    @Deprecated
     public static void parseResolveInfo(Context context, String dexPath, PluginPackageInfo target) {
 
         try { // 先得到解析类PackageParser并实例化

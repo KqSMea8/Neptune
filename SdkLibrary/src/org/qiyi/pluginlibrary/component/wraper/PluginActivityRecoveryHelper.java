@@ -7,9 +7,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.util.ArrayMap;
 
-import org.qiyi.pluginlibrary.component.RecoveryActivity0;
-import org.qiyi.pluginlibrary.component.RecoveryActivity1;
-import org.qiyi.pluginlibrary.component.RecoveryActivity2;
+import org.qiyi.pluginlibrary.component.TransRecoveryActivity0;
+import org.qiyi.pluginlibrary.component.TransRecoveryActivity1;
+import org.qiyi.pluginlibrary.component.TransRecoveryActivity2;
 
 import java.util.UUID;
 
@@ -87,11 +87,11 @@ class PluginActivityRecoveryHelper {
         char lastChar = proxyClassName.charAt(proxyClassName.length() - 1);
         switch (lastChar) {
             case '0':
-                return RecoveryActivity0.class.getName();
+                return TransRecoveryActivity0.class.getName();
             case '1':
-                return RecoveryActivity1.class.getName();
+                return TransRecoveryActivity1.class.getName();
             case '2':
-                return RecoveryActivity2.class.getName();
+                return TransRecoveryActivity2.class.getName();
             default:
                 throw new IllegalStateException("can not find RecoveryActivity for " + proxyClassName);
         }

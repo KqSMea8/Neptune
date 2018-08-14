@@ -2,7 +2,9 @@ package org.qiyi.pluginlibrary.component.base;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 
@@ -59,7 +61,7 @@ public class PluginAppCompatActivity extends AppCompatActivity implements IPlugi
     }
 
     // Api 16新增
-    @Override
+    @Override @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         // 替换成坑位Activity
         String pkgName = getPluginPackageName();
