@@ -39,7 +39,7 @@
 在App模块的`build.gradle`中compile移入Neptune库
 
 ```Gradle
-    compile 'com.iqiyi.video:neptune:2.5.0'
+    compile 'org.qiyi.video:neptune:2.5.0'
 ```
 
 在`Application#onCreate()`阶段初始化NoahDocker
@@ -51,10 +51,9 @@ public class XXXApplication extends Application {
     public void onCreate() {
         NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
                     .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
+                    .enableDebug(BuildConfig.DEBUG)
                     .build();
         Neptune.init(this, config);
-    
-        PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
     }
 }
 ```
@@ -67,14 +66,14 @@ public class XXXApplication extends Application {
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:plugin-gradle:1.0.7'
+    classpath  'com.iqiyi.tools.build:plugin-gradle:1.1.0'
 }
 ```
 
 在App模块的`build.gradle`中应用gradle插件并添加相应配置
 
 ```Gradle
-apply plugin: 'com.qiyi.plugin'
+apply plugin: 'com.qiyi.neptune.plugin'
 
 neptune {
     pluginMode = true      // In plugin apk build mode

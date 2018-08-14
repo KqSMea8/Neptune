@@ -21,7 +21,7 @@ public class HostApplication extends Application {
     private void initPluginFramework() {
         NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
                 .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
-                .enableDebugMode(true)
+                .enableDebug(true)
                 .build();
         Neptune.init(this, config);
     }

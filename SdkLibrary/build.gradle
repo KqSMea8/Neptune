@@ -1,8 +1,6 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven'
-apply from: './maven_push.gradle'
 
-apply from: '../addCopyRight.gradle'
+apply from: "addCopyRight.gradle"
 
 buildscript {
     repositories {
@@ -85,3 +83,5 @@ gradle.projectsEvaluated {
         options.compilerArgs.add('-Xbootclasspath/p:libs/android-26.jar')
     }
 }
+
+apply from: "release.gradle"

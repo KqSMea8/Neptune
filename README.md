@@ -40,7 +40,7 @@ When Android P is arriving, we meet the non-sdk strict challenge on P. And now, 
 compile Neptune in application module of `build.gradle`.
 
 ```Gradle
-    compile 'com.iqiyi.video:neptune:2.5.0'
+    compile 'org.qiyi.video:neptune:2.5.0'
 ```
 
 Initialize sdk in your `Application#onCreate()`.
@@ -52,7 +52,7 @@ public class XXXApplication extends Application {
     public void onCreate() {
         NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
                     .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
-                    .enableDebugMode(BuildConfig.DEBUG)
+                    .enableDebug(BuildConfig.DEBUG)
                     .build();
         Neptune.init(this, config);
     }
@@ -67,14 +67,14 @@ If plugin app wants to share resources with host app, you need add dependency in
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:plugin-gradle:1.0.7'
+    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.0'
 }
 ```
 
 Apply gradle plugin in application module of `build.gradle` and config it.
 
 ```Gradle
-apply plugin: 'com.qiyi.plugin'
+apply plugin: 'com.qiyi.neptune.plugin'
 
 neptune {
     pluginMode = true      // In plugin apk build mode

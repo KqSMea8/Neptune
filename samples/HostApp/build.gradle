@@ -3,7 +3,7 @@ import com.qiyi.plugin.utils.Utils
 
 apply plugin: 'com.android.application'
 
-apply plugin: 'com.qiyi.plugin'
+apply plugin: 'com.qiyi.neptune.plugin'
 // 宿主使用，固定资源id
 neptune {
     pluginMode = false

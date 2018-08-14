@@ -5,7 +5,7 @@ apply plugin: 'com.android.application'
 
 def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
-apply plugin: 'com.qiyi.plugin'
+apply plugin: 'com.qiyi.neptune.plugin'
 
 neptune {
     pluginMode = isPluginBuild
