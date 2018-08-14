@@ -84,10 +84,10 @@ neptune {
 
 # Developer Guide
 
-* API文档见wiki
-* 宿主APP的示例工程
-* 插件APP的示例工程
-* 阅读SDKLibrary的源码
+* [API文档见wiki](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/wikis/home)
+* [宿主APP的示例工程](samples/HostApp)
+* [插件APP的示例工程](samples/PluginApp)
+* [阅读SDKLibrary的源码](SdkLibrary)
 
 # Contribution
 

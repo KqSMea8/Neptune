@@ -10,7 +10,7 @@ It can dynamically load and run a plugin APK file on billions of devices. It car
 
 When Android P is arriving, we meet the non-sdk strict challenge on P. And now, Neptune can run on Android P devices seamless with only **ONE** hook (Instrumentaion in ActivityThread, same idea with other great plugin frameworks).
 
-[中文文档](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/blob/sdk_open/README_CN.md)
+[中文文档](README_CN.md)
 
 # Supported Features
 
@@ -85,10 +85,10 @@ neptune {
 
 # Developer Guide
 
-* API document wiki
-* Host App Sample Project
-* Plugin App Sample Project
-* Read SDKLibrary source code
+* [API document wiki](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/wikis/home)
+* [Host App Sample Project](samples/HostApp)
+* [Plugin App Sample Project](samples/PluginApp)
+* [Read SDKLibrary source code](SdkLibrary)
 
 # Contribution
 
