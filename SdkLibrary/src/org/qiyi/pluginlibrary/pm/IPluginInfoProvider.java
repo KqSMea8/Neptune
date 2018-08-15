@@ -3,7 +3,7 @@ package org.qiyi.pluginlibrary.pm;
 import java.io.File;
 import java.util.List;
 
-public interface IVerifyPluginInfo {
+public interface IPluginInfoProvider {
 
     /* ------------------通过IPC获取插件信息接口定义 START------------------ */
 
