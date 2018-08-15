@@ -103,7 +103,7 @@ public class PluginPackageManager {
     /**
      * 验证插件基本信息、获取插件状态等信息接口，该接口通常交由主工程实现，并设置
      */
-    private static IVerifyPluginInfo sVerifyPluginInfo = null;
+    private static IPluginInfoProvider sPluginInfoProvider = null;
 
     public static final int DELETE_SUCCEEDED = 1;
 
@@ -122,12 +122,12 @@ public class PluginPackageManager {
     }
 
     /**
-     * 设置IVerifyPluginInfo接口，由应用层实现更高级的控制
+     * 设置 IPluginInfoProvider 接口，由应用层实现更高级的控制
      *
      * @param packageInfoManager
      */
-    public static void setVerifyPluginInfoImpl(IVerifyPluginInfo packageInfoManager) {
-        sVerifyPluginInfo = packageInfoManager;
+    public static void setPluginInfoProvider(IPluginInfoProvider packageInfoManager) {
+        sPluginInfoProvider = packageInfoManager;
     }
 
     /**
@@ -321,8 +321,8 @@ public class PluginPackageManager {
                     PluginDebugLog.installFormatLog(TAG,
                             "plugin install exception:%s,exception:%s", pkgName
                             , exception);
-                    if (null != sVerifyPluginInfo && !TextUtils.isEmpty(pkgName)) {
-                        sVerifyPluginInfo.handlePluginException(pkgName, exception);
+                    if (null != sPluginInfoProvider && !TextUtils.isEmpty(pkgName)) {
+                        sPluginInfoProvider.handlePluginException(pkgName, exception);
                     }
                 }
             } catch (Exception e) {
@@ -520,8 +520,8 @@ public class PluginPackageManager {
      *
      */
     public List<PluginLiteInfo> getInstalledApps() {
-        if (sVerifyPluginInfo != null) {
-            List<PluginLiteInfo> packageInfoList = sVerifyPluginInfo.getInstalledPackages();
+        if (sPluginInfoProvider != null) {
+            List<PluginLiteInfo> packageInfoList = sPluginInfoProvider.getInstalledPackages();
             return packageInfoList;
         }
 
@@ -533,8 +533,8 @@ public class PluginPackageManager {
      * 判断一个package是否安装
      */
     public boolean isPackageInstalled(String packageName) {
-        if (sVerifyPluginInfo != null) {
-            return sVerifyPluginInfo.isPackageInstalled(packageName);
+        if (sPluginInfoProvider != null) {
+            return sPluginInfoProvider.isPackageInstalled(packageName);
         }
         return mInstalledPlugins.containsKey(packageName);
     }
@@ -551,9 +551,9 @@ public class PluginPackageManager {
             return null;
         }
 
-        if (sVerifyPluginInfo != null) {
-            if (sVerifyPluginInfo.isPackageInstalled(packageName)) {
-                PluginLiteInfo info = sVerifyPluginInfo.getPackageInfo(packageName);
+        if (sPluginInfoProvider != null) {
+            if (sPluginInfoProvider.isPackageInstalled(packageName)) {
+                PluginLiteInfo info = sPluginInfoProvider.getPackageInfo(packageName);
                 if (null != info) {
                     return info;
                 } else {
@@ -566,7 +566,7 @@ public class PluginPackageManager {
             }
         } else {
             PluginDebugLog.log(TAG, "getPackageInfo " +
-                    packageName + " return null due to verifyPluginInfoImpl is null");
+                    packageName + " return null due to sPluginInfoProvider is null");
         }
 
         return mInstalledPlugins.get(packageName);
@@ -738,8 +738,8 @@ public class PluginPackageManager {
      * @return
      */
     public boolean canInstallPackage(PluginLiteInfo info) {
-        if (sVerifyPluginInfo != null) {
-            return sVerifyPluginInfo.canInstallPackage(info);
+        if (sPluginInfoProvider != null) {
+            return sPluginInfoProvider.canInstallPackage(info);
         }
         return true;
     }
@@ -751,8 +751,8 @@ public class PluginPackageManager {
      * @return
      */
     public boolean canUninstallPackage(PluginLiteInfo info) {
-        if (sVerifyPluginInfo != null) {
-            return sVerifyPluginInfo.canUninstallPackage(info);
+        if (sPluginInfoProvider != null) {
+            return sPluginInfoProvider.canUninstallPackage(info);
         }
         return true;
     }
@@ -802,8 +802,8 @@ public class PluginPackageManager {
             return mRefs;
         }
 
-        if (sVerifyPluginInfo != null) {
-            mRefs = sVerifyPluginInfo.getPluginRefs(pkgName);
+        if (sPluginInfoProvider != null) {
+            mRefs = sPluginInfoProvider.getPluginRefs(pkgName);
         } else {
             PluginLiteInfo liteInfo = mInstalledPlugins.get(pkgName);
             if (liteInfo != null && !TextUtils.isEmpty(liteInfo.plugin_refs)) {
@@ -823,8 +823,8 @@ public class PluginPackageManager {
      * 获取内置存储的files根目录
      */
     public static File getExternalFilesRootDir() {
-        if (null != sVerifyPluginInfo) {
-            return sVerifyPluginInfo.getExternalFilesRootDirDirectly();
+        if (null != sPluginInfoProvider) {
+            return sPluginInfoProvider.getExternalFilesRootDirDirectly();
         }
         return null;
     }
@@ -833,8 +833,8 @@ public class PluginPackageManager {
      * 获取内置存储的cache根目录
      */
     public static File getExternalCacheRootDir() {
-        if (null != sVerifyPluginInfo) {
-            return sVerifyPluginInfo.getExternalCacheRootDirDirectly();
+        if (null != sPluginInfoProvider) {
+            return sPluginInfoProvider.getExternalCacheRootDirDirectly();
         }
         return null;
     }
@@ -846,10 +846,10 @@ public class PluginPackageManager {
      */
     List<PluginLiteInfo> getInstalledPackagesDirectly() {
         List<PluginLiteInfo> installPlugins = Collections.emptyList();
-        if (sVerifyPluginInfo != null) {
-            installPlugins = sVerifyPluginInfo.getInstalledPackagesDirectly();
+        if (sPluginInfoProvider != null) {
+            installPlugins = sPluginInfoProvider.getInstalledPackagesDirectly();
         } else {
-            PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
+            PluginDebugLog.runtimeLog(TAG, "[warning] sPluginInfoProvider is null");
             installPlugins.addAll(mInstalledPlugins.values());
         }
         return installPlugins;
@@ -865,10 +865,10 @@ public class PluginPackageManager {
         if (TextUtils.isEmpty(packageName)) {
             return false;
         }
-        if (sVerifyPluginInfo != null) {
-            return sVerifyPluginInfo.isPackageInstalledDirectly(packageName);
+        if (sPluginInfoProvider != null) {
+            return sPluginInfoProvider.isPackageInstalledDirectly(packageName);
         } else {
-            PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
+            PluginDebugLog.runtimeLog(TAG, "[warning] sPluginInfoProvider is null");
         }
         return mInstalledPlugins.containsKey(packageName);
     }
@@ -881,10 +881,10 @@ public class PluginPackageManager {
      */
     List<String> getPluginRefsDirectly(String packageName) {
         List<String> mRefPlugins = Collections.emptyList();
-        if (sVerifyPluginInfo != null) {
-            mRefPlugins = sVerifyPluginInfo.getPluginRefsDirectly(packageName);
+        if (sPluginInfoProvider != null) {
+            mRefPlugins = sPluginInfoProvider.getPluginRefsDirectly(packageName);
         } else {
-            PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
+            PluginDebugLog.runtimeLog(TAG, "[warning] sPluginInfoProvider is null");
             PluginLiteInfo liteInfo = mInstalledPlugins.get(packageName);
             if (liteInfo != null && !TextUtils.isEmpty(liteInfo.plugin_refs)) {
                 String[] refs = liteInfo.plugin_refs.split(",");
@@ -906,10 +906,10 @@ public class PluginPackageManager {
      */
     PluginLiteInfo getPackageInfoDirectly(String packageName) {
         PluginLiteInfo liteInfo = null;
-        if (!TextUtils.isEmpty(packageName) && sVerifyPluginInfo != null) {
-            liteInfo = sVerifyPluginInfo.getPackageInfoDirectly(packageName);
+        if (!TextUtils.isEmpty(packageName) && sPluginInfoProvider != null) {
+            liteInfo = sPluginInfoProvider.getPackageInfoDirectly(packageName);
         } else {
-            PluginDebugLog.runtimeLog(TAG, "[warning] sVerifyPluginInfo is null");
+            PluginDebugLog.runtimeLog(TAG, "[warning] sPluginInfoProvider is null");
             liteInfo = mInstalledPlugins.get(packageName);
         }
 

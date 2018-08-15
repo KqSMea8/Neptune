@@ -366,8 +366,8 @@ public class PluginPackageManagerNative {
     }
 
 
-    public void setPackageInfoManager(IVerifyPluginInfo packageInfoManager) {
-        PluginPackageManager.setVerifyPluginInfoImpl(packageInfoManager);
+    public void setPackageInfoManager(IPluginInfoProvider packageInfoManager) {
+        PluginPackageManager.setPluginInfoProvider(packageInfoManager);
     }
 
     public boolean isConnected() {

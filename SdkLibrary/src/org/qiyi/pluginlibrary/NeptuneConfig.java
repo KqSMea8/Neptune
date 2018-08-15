@@ -18,7 +18,7 @@
 
 package org.qiyi.pluginlibrary;
 
-import org.qiyi.pluginlibrary.pm.IVerifyPluginInfo;
+import org.qiyi.pluginlibrary.pm.IPluginInfoProvider;
 import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
 
 /**
@@ -43,14 +43,14 @@ public final class NeptuneConfig {
     /** 插件框架运行模式，已经全面切换到Hook Instrumentation方案，适配Android P */
     private int sdkMode;
 
-    private IVerifyPluginInfo mVerifyPluginInfo;
+    private IPluginInfoProvider mPluginInfoProvider;
     private IRecoveryCallback mRecoveryCallback;
     /** Debug调试日志是否打开 */
     private boolean mIsDebug;
 
     NeptuneConfig(NeptuneConfigBuilder builder) {
         this.sdkMode = builder.sdkMode;
-        this.mVerifyPluginInfo = builder.verifyPluginInfo;
+        this.mPluginInfoProvider = builder.pluginInfoProvider;
         this.mRecoveryCallback = builder.recoveryCallback;
         this.mIsDebug = builder.isDebug;
     }
@@ -60,8 +60,8 @@ public final class NeptuneConfig {
         return sdkMode;
     }
 
-    public IVerifyPluginInfo getVerifyPluginInfo() {
-        return mVerifyPluginInfo;
+    public IPluginInfoProvider getPluginInfoProvider() {
+        return mPluginInfoProvider;
     }
 
     public IRecoveryCallback getRecoveryCallback() {
@@ -74,7 +74,7 @@ public final class NeptuneConfig {
 
     public static class NeptuneConfigBuilder {
         int sdkMode = 0;
-        IVerifyPluginInfo verifyPluginInfo;
+        IPluginInfoProvider pluginInfoProvider;
         IRecoveryCallback recoveryCallback;
         boolean isDebug;
 
@@ -83,8 +83,8 @@ public final class NeptuneConfig {
             return this;
         }
 
-        public NeptuneConfigBuilder setVerifyPluginInfo(IVerifyPluginInfo verifyPluginInfo) {
-            this.verifyPluginInfo = verifyPluginInfo;
+        public NeptuneConfigBuilder pluginInfoProvider(IPluginInfoProvider pluginInfoProvider) {
+            this.pluginInfoProvider = pluginInfoProvider;
             return this;
         }
 
