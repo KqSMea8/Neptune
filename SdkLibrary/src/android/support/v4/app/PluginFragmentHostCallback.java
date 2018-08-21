@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Copyright 2018 iQIYI.com
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package android.support.v4.app;
 
 import android.app.Activity;

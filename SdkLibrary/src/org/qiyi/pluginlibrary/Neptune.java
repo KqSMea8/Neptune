@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Copyright 2018 iQIYI.com
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package org.qiyi.pluginlibrary;
 
 import android.app.ActivityThread;
@@ -115,22 +114,6 @@ public class Neptune {
         } else {
             PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed, hostInstr==null");
         }
-
-//        Object activityThread = getActivityThread();
-//        Instrumentation hostInstr;
-//        try {
-//            hostInstr = ReflectionUtils.on(activityThread).call("getInstrumentation").get();
-//        } catch (ReflectException e) {
-//            hostInstr = ReflectionUtils.on(activityThread).get("mInstrumentation");
-//        }
-//
-//        if (hostInstr != null) {
-//            PluginInstrument pluginInstrument = new NeptuneInstrument(hostInstr);
-//            ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
-//            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
-//        } else {
-//            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed");
-//        }
     }
 
     /**

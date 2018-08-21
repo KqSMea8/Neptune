@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Copyright 2018 iQIYI.com
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package org.qiyi.pluginlibrary.utils;
 
 import android.app.Activity;
@@ -68,7 +67,7 @@ public class IntentUtils {
     public static String parsePkgNameFromActivity(Activity activity) {
         String pkgName = "";
         if (activity instanceof InstrActivityProxy1) {
-            pkgName = ((InstrActivityProxy1)activity).getPluginPackageName();
+            pkgName = ((InstrActivityProxy1) activity).getPluginPackageName();
         }
         if (TextUtils.isEmpty(pkgName) && activity.getIntent() != null) {
             String[] result = parsePkgAndClsFromIntent(activity.getIntent());
@@ -80,7 +79,7 @@ public class IntentUtils {
         if (TextUtils.isEmpty(pkgName)) {
             ClassLoader cl = activity.getClass().getClassLoader();
             if (cl instanceof PluginClassLoader) {
-                pkgName = ((PluginClassLoader)cl).getPackageName();
+                pkgName = ((PluginClassLoader) cl).getPackageName();
             }
         }
 
@@ -152,36 +151,21 @@ public class IntentUtils {
         if (intent == null) {
             return false;
         }
-//        try {
-            return intent.getBooleanExtra(IIntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
-//        } catch (Exception e) { // ClassNotFoundException
-//            e.printStackTrace();
-//        }
-//        return false;
+        return intent.getBooleanExtra(IIntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
     }
 
     public static String getTargetPackage(Intent intent) {
         if (intent == null) {
             return "";
         }
-//        try {
-            return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
-//        } catch (Exception e) {  // ClassNotFoundException
-//            e.printStackTrace();
-//        }
-//        return "";
+        return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
     }
 
     public static String getTargetClass(Intent intent) {
         if (intent == null) {
             return "";
         }
-//        try {
-            return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
-//        } catch (Exception e) {
-//            e.printStackTrace();  // ClassNotFoundException
-//        }
-//        return "";
+        return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
     }
 
     /**
@@ -209,13 +193,14 @@ public class IntentUtils {
 
     /**
      * 从Activity中dump优先的插件信息
+     *
      * @param activity
      * @return
      */
     public static String dump(Activity activity) {
         String info = "";
         if (activity instanceof InstrActivityProxy1) {
-            info = ((InstrActivityProxy1)activity).dump();
+            info = ((InstrActivityProxy1) activity).dump();
         } else {
             Intent intent = activity.getIntent();
             String[] pkgCls = parsePkgAndClsFromIntent(intent);

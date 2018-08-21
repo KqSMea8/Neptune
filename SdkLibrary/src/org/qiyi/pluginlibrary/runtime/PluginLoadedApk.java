@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Copyright 2018 iQIYI.com
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package org.qiyi.pluginlibrary.runtime;
 
 import android.app.Application;
@@ -24,6 +23,7 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
@@ -57,6 +57,7 @@ import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
@@ -406,7 +407,7 @@ public class PluginLoadedApk implements IIntentConstant {
             }
 
             Instrumentation hostInstr = Neptune.getHostInstrumentation();
-            hookInstrumentation(hostInstr);
+            mPluginInstrument = new PluginInstrument(hostInstr, mPluginPackageName);
             try {
                 // load plugin Application and call Application#attach()
                 this.mPluginApplication = hostInstr.newApplication(mPluginClassLoader, className, mPluginAppContext);
@@ -415,20 +416,6 @@ public class PluginLoadedApk implements IIntentConstant {
                 PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_LOAD_APPLICATION);
                 return false;
             }
-
-//            if (TextUtils.isEmpty(className) || Application.class.getName().equals(className)) {
-//                // 创建默认的虚拟Application
-//                mPluginApplication = new Application();
-//            } else {
-//                try {
-//                    mPluginApplication = ((Application) mPluginClassLoader.loadClass(className).asSubclass(Application.class).newInstance());
-//                } catch (Exception e) {
-//                    ErrorUtil.throwErrorIfNeed(e);
-//                    PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_CLIENT_INIT_PLUG_APP);
-//                    return false;
-//                }
-//            }
-//            invokeApplicationAttach();
             // 注册Application回调
             try {
                 mHostContext.registerComponentCallbacks(new ComponentCallbacks2() {
@@ -480,14 +467,14 @@ public class PluginLoadedApk implements IIntentConstant {
      * 反射获取ActivityThread中的Instrumentation对象
      * 从而拦截Activity跳转
      */
-    private void hookInstrumentation(Instrumentation hostInstr) {
+    @Deprecated
+    private void hookInstrumentation() {
         try {
-//            Context contextImpl = ((ContextWrapper) mHostContext).getBaseContext();
-//            Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
-//            Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
-//            instrumentationF.setAccessible(true);
-//            Instrumentation hostInstr = (Instrumentation) instrumentationF.get(activityThread);
-//            Instrumentation hostInstr = Neptune.getHostInstrumentation();
+            Context contextImpl = ((ContextWrapper) mHostContext).getBaseContext();
+            Object activityThread = ReflectionUtils.getFieldValue(contextImpl, "mMainThread");
+            Field instrumentationF = activityThread.getClass().getDeclaredField("mInstrumentation");
+            instrumentationF.setAccessible(true);
+            Instrumentation hostInstr = (Instrumentation) instrumentationF.get(activityThread);
             mPluginInstrument = new PluginInstrument(hostInstr, mPluginPackageName);
         } catch (Exception e) {
             ErrorUtil.throwErrorIfNeed(e);

@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Copyright 2018 iQIYI.com
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package org.qiyi.pluginlibrary.pm;
 
 import android.content.ComponentName;
@@ -220,15 +219,6 @@ public class PluginPackageManagerNative {
             }
         }
     }
-
-//    private static class BuildinPluginInstallAction extends PluginInstallAction {
-//        @Override
-//        public void doAction() {
-//            if (callbackHost != null) {
-//                callbackHost.installBuildinAppsInternal(info, listener);
-//            }
-//        }
-//    }
 
     /**
      * 插件卸载的Action
@@ -510,74 +500,6 @@ public class PluginPackageManagerNative {
         }
         onBindService(mContext);
     }
-
-
-    /**
-     * 通知安装插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
-     *
-     * @param filePath
-     * @param listener
-     * @param info
-     */
-//    @Deprecated
-//    public void installApkFile(String filePath, IInstallCallBack listener, PluginLiteInfo info) {
-//        PluginInstallAction action = new PluginInstallAction();
-//        action.listener = listener;
-//        action.info = info;
-//        action.callbackHost = this;
-//        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
-//            action.doAction();
-//        }
-//    }
-
-//    @Deprecated
-//    void installApkFileInternal(String filePath, IInstallCallBack listener, PluginLiteInfo info) {
-//        if (mService != null) {
-//            try {
-//                mService.deletePackage(info, null);
-//                mService.installApkFile(filePath, listener, info);
-//                return;
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        onBindService(mContext);
-//    }
-
-    /**
-     * 通知安装再asset中的插件，如果service不存在，则将事件加入列表，启动service，待service连接之后再执行。
-     *
-     * @param listener
-     * @param info
-     */
-//    @Deprecated
-//    public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener) {
-//        if (info == null) {
-//            PluginDebugLog.installLog(TAG, "installBuildInApps but PluginLiteInfo is null!");
-//            return;
-//        }
-//        BuildinPluginInstallAction action = new BuildinPluginInstallAction();
-//        action.listener = listener;
-//        action.info = info;
-//        action.callbackHost = this;
-//        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
-//            action.doAction();
-//        }
-//    }
-
-//    @Deprecated
-//    private void installBuildinAppsInternal(PluginLiteInfo info, IInstallCallBack listener) {
-//        if (mService != null) {
-//            try {
-//                mService.deletePackage(getPackageInfo(info.packageName), null);
-//                mService.installBuildinApps(info, listener);
-//                return;
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        onBindService(mContext);
-//    }
 
     /**
      * 提交一个PluginUninstallAction卸载插件的Action
@@ -873,26 +795,4 @@ public class PluginPackageManagerNative {
         }
         return target;
     }
-
-    /**
-     * 用于安装一个没有后台配置的apk
-     *
-     * @param mContext
-     * @param mApkFile
-     */
-//    public void installStrangeApkFile(Context mContext, File mApkFile, IInstallCallBack mInstallCallback) {
-//        if (mContext == null || mApkFile == null) {
-//            PluginDebugLog.installLog(TAG, "installStrangeApkFile mContext == null or mApkFile ==null");
-//            return;
-//        }
-//
-//        PluginLiteInfo mPluginLiteInfo = new PluginLiteInfo();
-//        PackageInfo mPackageInfo = mContext.getPackageManager()
-//                .getPackageArchiveInfo(mApkFile.getAbsolutePath(), 0);
-//        if (mPackageInfo != null) {
-//            mPluginLiteInfo.packageName = mPackageInfo.packageName;
-//            mPluginLiteInfo.pluginVersion = mPackageInfo.versionName;
-//            installApkFile(mApkFile.getAbsolutePath(), mInstallCallback, mPluginLiteInfo);
-//        }
-//    }
 }

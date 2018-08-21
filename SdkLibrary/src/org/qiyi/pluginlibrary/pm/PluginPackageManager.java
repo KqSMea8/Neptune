@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Copyright 2018 iQIYI.com
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package org.qiyi.pluginlibrary.pm;
 
 import android.annotation.SuppressLint;
@@ -586,36 +585,6 @@ public class PluginPackageManager {
         PluginDebugLog.installLog(TAG, "install plugin: " + pluginInfo);
         PluginInstaller.install(mContext, pluginInfo);
     }
-
-    /**
-     * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。
-     * 启动service进行安装操作。 安装完会有 {@link #ACTION_PACKAGE_INSTALLED} 广播。
-     *
-     * @param filePath   apk 文件目录 比如 /sdcard/xxxx.apk
-     * @param pluginInfo 插件信息
-     */
-//    @Deprecated
-//    public void installApkFile(final String filePath, IInstallCallBack listener, PluginLiteInfo pluginInfo) {
-//        if (TextUtils.isEmpty(pluginInfo.packageName)) {
-//            pluginInfo.packageName = PluginInstaller.extractPkgNameFromPath(filePath);
-//        }
-//        listenerMap.put(pluginInfo.packageName, listener);
-//        PluginDebugLog.installFormatLog(TAG, "installApkFile:%s", pluginInfo.packageName);
-//        PluginInstaller.installApkFile(mContext, pluginInfo);
-//    }
-
-    /**
-     * 安装内置在 assets/puginapp 目录下的 apk。 内置app必须以 packageName 命名，比如
-     * com.qiyi.xx.apk
-     *
-     * @param listener
-     * @param info     插件信息
-     */
-//    @Deprecated
-//    public void installBuildinApps(PluginLiteInfo info, IInstallCallBack listener) {
-//        listenerMap.put(info.packageName, listener);
-//        PluginInstaller.installBuiltinApps(mContext, info);
-//    }
 
     /**
      * 删除安装包。 卸载插件应用程序,目前只有在升级时调用此方法，把插件状态改成upgrading状态

@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Copyright 2018 iQIYI.com
  *
@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package org.qiyi.pluginlibrary.utils;
 
 import android.content.Context;
@@ -70,10 +69,7 @@ public class ManifestParser {
         pi.applicationInfo.publicSourceDir = apkPath;
 
         try {
-//            Resources res = pm.getResourcesForApplication(pi.applicationInfo);
-//            AssetManager am = res.getAssets();
             AssetManager am = AssetManager.class.newInstance();
-            // TODO FIXME here, not use reflect
             Method addAssetPath = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
             addAssetPath.setAccessible(true);
             int cookie = (int)addAssetPath.invoke(am, apkPath);
