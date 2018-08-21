@@ -73,11 +73,7 @@ import dalvik.system.DexClassLoader;
  * 保存当前插件的{@link android.content.res.Resources}<br/>
  * {@link ClassLoader}, {@link PackageInfo}等信息
  *
- * Author:yuanzeyao
- * Date:2017/7/3 17:01
- * Email:yuanzeyao@qiyi.com
  */
-
 public class PluginLoadedApk implements IIntentConstant {
     private static final String TAG = "PluginLoadedApk";
     /**

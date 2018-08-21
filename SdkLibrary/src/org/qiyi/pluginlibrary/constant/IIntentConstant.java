@@ -18,11 +18,6 @@
 
 package org.qiyi.pluginlibrary.constant;
 
-/**
- * Author:yuanzeyao
- * Date:2017/7/3 17:07
- * Email:yuanzeyao@qiyi.com
- */
 
 public interface IIntentConstant {
     /** 是否插件中的组件 */

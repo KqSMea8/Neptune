@@ -23,9 +23,6 @@ import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
 
 /**
  * 插件框架运行配置信息
- *
- * author: liuchun
- * date: 2018/6/4
  */
 public final class NeptuneConfig {
     /**

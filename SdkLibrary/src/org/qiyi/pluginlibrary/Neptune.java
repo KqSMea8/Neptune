@@ -40,9 +40,6 @@ import java.io.File;
 
 /**
  * Neptune对外暴露的统一调用类
- *
- * author: liuchun
- * date: 2018/6/4
  */
 public class Neptune {
     private static final String TAG = "Neptune";

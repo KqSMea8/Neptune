@@ -22,11 +22,7 @@ import android.os.Build;
 
 /**
  * Android 版本判断工具类
- * Author:yuanzeyao
- * Date:2017/11/8 15:38
- * Email:yuanzeyao@qiyi.com
  */
-
 public class VersionUtils {
     /**
      * 判断是否是6.0+

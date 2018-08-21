@@ -52,7 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * 插件的控制器<br> 派发插件事件和控制插件生命周期
+ * 插件的控制器，派发插件事件和控制插件生命周期
  */
 public class PluginActivityControl implements PluginActivityCallback {
     private static final String TAG = "PluginActivityControl";

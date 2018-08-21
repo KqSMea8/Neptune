@@ -26,8 +26,6 @@ import java.io.StringWriter;
 /**
  * 处理异常的工具类
  *
- * author: liuchun
- * date: 2018/6/6
  */
 public class ErrorUtil {
 

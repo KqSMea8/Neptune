@@ -41,9 +41,6 @@ import java.util.List;
  * 从AndroidManifest.xml中解析出Activity、Service、Receiver相关的组件信息及其Intent-Filter信息
  * 方便实现插件Intent的隐式查找，注册静态广播
  * 替换系统@hide 的PackageParser#parsePackage()方法
- *
- * author: liuchun
- * date: 2018/6/12
  */
 public class ManifestParser {
     private static final String TAG = "ManifestParser";

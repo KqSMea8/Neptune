@@ -33,8 +33,6 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
  * 插件内的BaseActivity, 提供给插件方继承此类，
  * 通过override方式来完成插件框架的一些功能替换和生命周期注入
  *
- * author: liuchun
- * date: 2018/6/13
  */
 public class PluginActivity extends Activity implements IPluginBase{
 

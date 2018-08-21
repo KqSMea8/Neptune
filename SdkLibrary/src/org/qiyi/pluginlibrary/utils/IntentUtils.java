@@ -34,11 +34,7 @@ import org.qiyi.pluginlibrary.runtime.PluginManager;
  * 如果插件在Intent中放入了自定义Bean,会出现ClassNotFoundException,
  * 除非插件的ClassLoader注入到基线的ClassLoader
  * <p>
- * Author:yuanzeyao
- * Date:2017/5/31 15:45
- * Email:yuanzeyao@qiyi.com
  */
-
 public class IntentUtils {
     private static final String TAG = "IntentUtils";
     private static final String TOKEN = "@#@#";

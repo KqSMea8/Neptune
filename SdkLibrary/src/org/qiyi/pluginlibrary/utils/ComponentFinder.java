@@ -35,7 +35,6 @@ import org.qiyi.pluginlibrary.component.processmgr.ProcessManager;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -45,11 +44,8 @@ import java.util.List;
 /**
  * 在{@link PluginLoadedApk}代表的插件中查找能够处理{@link Intent}的组件
  * 并设置组件代理,支持显式和隐式查找
- * Author:yuanzeyao
- * Date:2017/7/4 14:53
- * Email:yuanzeyao@qiyi.com
+ *
  */
-
 public class ComponentFinder implements IIntentConstant {
     private static final String TAG = "ComponentFinder";
 
@@ -122,9 +118,6 @@ public class ComponentFinder implements IIntentConstant {
             if (null != mIntent.getExtras()) {
                 intentInfo = intentInfo + mIntent.getExtras().toString();
             }
-            PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
-                    PluginCenterDebugHelper.getInstance().getCurrentSystemTime(),
-                    intentInfo);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -238,8 +231,6 @@ public class ComponentFinder implements IIntentConstant {
         if (null != mIntent.getExtras()) {
             intentInfo = intentInfo + mIntent.getExtras().toString();
         }
-        PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
-                PluginCenterDebugHelper.getInstance().getCurrentSystemTime(), intentInfo);
         return mIntent;
 
     }

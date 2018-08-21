@@ -29,10 +29,6 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 
-/**
- * author: liuchun
- * date: 2018/6/21
- */
 @Deprecated
 public class PluginActivityGroup extends ActivityGroup implements IPluginBase{
 

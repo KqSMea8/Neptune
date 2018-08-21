@@ -29,8 +29,6 @@ import org.qiyi.pluginlibrary.constant.IIntentConstant;
  * 发送广播通知业务层做一些特殊处理
  * 比如插件加载成功
  *
- * author: liuchun
- * date: 2018/6/7
  */
 public class NotifyCenter {
 

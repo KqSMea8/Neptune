@@ -29,9 +29,6 @@ import dalvik.system.DexClassLoader;
 /**
  * 插件的DexClassLoader，用来做一些"更高级"的特性，
  * 比如添加插件依赖，支持multidex
- *
- * author: liuchun
- * date: 2018/5/15
  */
 public class PluginClassLoader extends DexClassLoader{
     // 插件的包名

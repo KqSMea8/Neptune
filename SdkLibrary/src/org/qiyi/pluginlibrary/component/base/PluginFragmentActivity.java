@@ -29,10 +29,7 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 
-/**
- * author: liuchun
- * date: 2018/6/13
- */
+
 public class PluginFragmentActivity extends FragmentActivity implements IPluginBase{
 
     private PluginActivityDelegate mDelegate;

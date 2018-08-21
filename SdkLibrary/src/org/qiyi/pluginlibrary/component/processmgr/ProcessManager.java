@@ -22,12 +22,8 @@ package org.qiyi.pluginlibrary.component.processmgr;
 import android.content.Context;
 
 /**
- * 管理插件运行在哪个进程
- * Author:yuanzeyao
- * Date:2017/7/20 17:50
- * Email:yuanzeyao@qiyi.com
+ * 管理插件运行在哪个进程, 可以由外部配置
  */
-
 public class ProcessManager {
     private static final String PROXY_PROCESS0 = "";  //主进程
     private static final String PROXY_PROCESS1 = ":plugin1";

@@ -53,7 +53,6 @@ public class PluginDebugLog {
 
     public static void setIsDebug(boolean b) {
         sIsDebug = b;
-        LogCacheHelper.getInstance().pollAllCacheToFile();
     }
 
     /**
@@ -91,8 +90,6 @@ public class PluginDebugLog {
                     Log.v(tag, content);
                     break;
             }
-
-            LogCacheHelper.getInstance().addToCache(buildPersistLog(tag,content));
         }
     }
 
@@ -101,7 +98,6 @@ public class PluginDebugLog {
             if (!TextUtils.isEmpty(tag) && null != msg) {
                 String log = "[INFO " + identify + "] " + String.valueOf(msg);
                 Log.i(tag, log);
-                LogCacheHelper.getInstance().addToCache(buildPersistLog(tag,String.valueOf(log)));
             }
         }
     }

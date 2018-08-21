@@ -40,8 +40,6 @@ import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
  * 插件基线PluginActivity的代理实现
  * 每个PluginActivity持有一个PluginActivityDelegate对象，实现插件相关功能的注入
  *
- * author: liuchun
- * date: 2018/6/13
  */
 class PluginActivityDelegate implements InterfaceToGetHost {
     private static final String TAG = "PluginActivityDelegate";

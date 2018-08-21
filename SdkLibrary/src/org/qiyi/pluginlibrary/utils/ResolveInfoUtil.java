@@ -39,9 +39,7 @@ import android.util.DisplayMetrics;
 
 /**
  * Utility class to get activity/receiver/service's resolve info
- *
- * @author huangbo
- *
+ * in apk
  */
 public class ResolveInfoUtil {
     /**

@@ -4,13 +4,27 @@
 ![Release Version](https://img.shields.io/badge/release-2.5.0-red.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
-**Neptune is a flexible, powerful and lightweight plugin framework for Android developed by IQIYI Baseline Team.**
+**Neptune is a flexible, powerful and lightweight plugin framework for Android developed by IQIYI.**
 
-It can dynamically load and run a plugin APK file on billions of devices. It carries more than 20 separated business module of IQIYI, such as reader, movie tickets, live videos, and so on.
+It can load and run any plugin APK file dynamically on billions of devices. It carries tens of separated business module of IQIYI, such as reader, movie tickets, live videos, and so on.
 
-When Android P is arriving, we meet the non-sdk strict challenge on P. And now, Neptune can run on Android P devices seamless with only **ONE** hook (Instrumentaion in ActivityThread, same idea with other great plugin frameworks).
+With the public testing and release of Android P, we meet the restrictions on non-SDK interfaces. Until now, Neptune is compatible with Android P and bare APIs in light grey list are used. Neptune can run on Android P devices seamless and stably.
 
 [中文文档](README_CN.md)
+
+# Android P Compatibility
+
+| API List | API Used cnt |
+| :----    | :---- |
+| Black list | 0 |
+| Dark grey list | 0 |
+| light grey list | 3 |
+
+Details
+
+* Activity
+*
+* 
 
 # Supported Features
 
@@ -26,7 +40,7 @@ When Android P is arriving, we meet the non-sdk strict challenge on P. And now, 
 | Compatibility  | Almost all roms |
 | Process Isolation | Supported |
 | Plugin Dependency   | Supported |
-| Plugin Develop  | like normal app |
+| Plugin Development  | like normal app |
 | Supported Android versions | API Level 14+ |
 
 # Architecture

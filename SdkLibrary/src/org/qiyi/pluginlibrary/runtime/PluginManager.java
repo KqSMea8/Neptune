@@ -83,11 +83,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 管理所有插件的运行状态
- * Author:yuanzeyao
- * Date:2017/7/3 18:30
- * Email:yuanzeyao@qiyi.com
+ *
  */
-
 public class PluginManager implements IIntentConstant {
     public static final String TAG = "PluginManager";
     /**

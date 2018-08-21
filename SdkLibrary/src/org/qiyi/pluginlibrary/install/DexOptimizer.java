@@ -35,11 +35,6 @@ import java.util.concurrent.Executors;
 
 import dalvik.system.DexClassLoader;
 
-/**
- * Author:yuanzeyao
- * Date:2017/11/8 16:57
- * Email:yuanzeyao@qiyi.com
- */
 
 public class DexOptimizer {
     private static final String TAG = "DexOptimizer";
