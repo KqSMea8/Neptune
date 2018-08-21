@@ -606,7 +606,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         constructor.setAccessible(true);
         ArrayMap<String, ArrayMap<File, Object>> oSharedPrefs = ReflectionUtils.on(this.getBaseContext())
                 .<ArrayMap<String, ArrayMap<File, Object>>>get(S_SHARED_PREFS);
-        ArrayMap<String, File> oSharedPrefsPaths = ContextUtils.isAndroidP() ? null :
+        ArrayMap<String, File> oSharedPrefsPaths = VersionUtils.hasPie() ? null :
                 ReflectionUtils.on(this.getBaseContext()).<ArrayMap<String, File>>get(M_SHARED_PREFS_PATHS);
         synchronized (clazz) {
             if (oSharedPrefsPaths == null) {
