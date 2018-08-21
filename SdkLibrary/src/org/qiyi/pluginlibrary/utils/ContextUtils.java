@@ -23,17 +23,9 @@ import java.util.Map.Entry;
 public class ContextUtils {
     private static final String TAG = ContextUtils.class.getSimpleName();
 
-    //定义Android系统
-    private static final String ANDROID_P = "P";
-    private static final String ANDROID_N = "N";
-    private static final String ANDROID_O = "O";
-
     /**
      * Try to get host context in the plugin environment or the param context
      * will be return
-     *
-     * @param context
-     * @return
      */
     public static Context getOriginalContext(Context context) {
 
@@ -134,9 +126,6 @@ public class ContextUtils {
     /**
      * Try to get host ResourcesToolForPlugin in the plugin environment or the
      * ResourcesToolForPlugin with param context will be return
-     *
-     * @param context
-     * @return
      */
     public static ResourcesToolForPlugin getHostResourceTool(Context context) {
         if (context instanceof InterfaceToGetHost) {
@@ -170,8 +159,6 @@ public class ContextUtils {
     /**
      * Get the real package name for this plugin in plugin environment otherwise
      * return context's package name
-     *
-     * @return
      */
     public static String getPluginPackageName(Context context) {
         if (null == context) {
@@ -223,8 +210,6 @@ public class ContextUtils {
 
     /**
      * Try to exit current app and exit process
-     *
-     * @param context
      */
     public static void exitApp(Context context) {
         if (null != context) {
@@ -278,38 +263,5 @@ public class ContextUtils {
         }
         PackageInfo pkgInfo = mLoadedApk.getPackageInfo();
         return pkgInfo;
-    }
-
-    /**
-     * 判断是否Android P系统
-     */
-    public static boolean isAndroidP() {
-        return isParticularAndroidVersion(ANDROID_P);
-    }
-
-    /**
-     * 判断当前系统是否是Android N或者Android O
-     *
-     * @param sdk Android SDK名（“N”或者“O”）
-     */
-    private static boolean isParticularAndroidVersion(String sdk) {
-        int minSDKValue = 0;
-        int maxSDKValue = 100;
-        String compareSDKName = "";
-        if (TextUtils.equals(ANDROID_N, sdk)) {
-            minSDKValue = 24;
-            maxSDKValue = 25;
-            compareSDKName = "N";
-        } else if (TextUtils.equals(ANDROID_O, sdk)) {
-            minSDKValue = 26;
-            maxSDKValue = 27;
-            compareSDKName = "O";
-        } else if (TextUtils.equals(ANDROID_P, sdk)) {
-            minSDKValue = 27;
-            compareSDKName = "P";
-        }
-        return (Build.VERSION.SDK_INT >= minSDKValue && Build.VERSION.SDK_INT <= maxSDKValue)
-                && TextUtils.equals(Build.VERSION.CODENAME, compareSDKName)
-                && TextUtils.equals(Build.VERSION.RELEASE, compareSDKName);
     }
 }

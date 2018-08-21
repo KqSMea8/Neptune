@@ -17,6 +17,7 @@ import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
 
@@ -50,7 +51,7 @@ public class Neptune {
         sGlobalConfig = config != null ? config
                 : new NeptuneConfig.NeptuneConfigBuilder().build();
 
-        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() != NeptuneConfig.LEGACY_MODE;
+        boolean hookInstr = VersionUtils.hasPie() || sGlobalConfig.getSdkMode() != NeptuneConfig.LEGACY_MODE;
         if (hookInstr) {
             hookInstrumentation();
         }

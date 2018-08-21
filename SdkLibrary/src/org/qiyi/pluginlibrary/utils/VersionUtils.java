@@ -41,4 +41,13 @@ public class VersionUtils {
     public static boolean hasOreo_MR1(){
         return Build.VERSION.SDK_INT >= 27;
     }
+
+    /**
+     * 判断是否是Android P
+     * @return
+     */
+    public static boolean hasPie() {
+        return Build.VERSION.SDK_INT >= 28 ||
+                (Build.VERSION.SDK_INT == 27 && Build.VERSION.PREVIEW_SDK_INT > 0);
+    }
 }
