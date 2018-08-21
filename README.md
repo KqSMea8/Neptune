@@ -14,17 +14,29 @@ With the public testing and release of Android P, we meet the restrictions on no
 
 # Android P Compatibility
 
+Only android private APIs in light grey list are used in Neptune. No APIs in dark grey or black list.
+
 | API List | API Used cnt |
 | :----    | :---- |
 | Black list | 0 |
 | Dark grey list | 0 |
-| light grey list | 3 |
+| light grey list | 9 |
 
-Details
+### Details
 
-* Activity
-*
-* 
+```
+Accessing hidden field Landroid/app/ActivityThread;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
+Accessing hidden method Ldalvik/system/VMRuntime;->getCurrentInstructionSet()Ljava/lang/String; (light greylist, reflection)
+Accessing hidden method Landroid/content/res/AssetManager;->addAssetPath(Ljava/lang/String;)I (light greylist, reflection)
+Accessing hidden method Landroid/app/Instrumentation;->execStartActivity(Landroid/content/Context;Landroid/os/IBinder;Landroid/os/IBinder;Landroid/app/Activity;Landroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/Instrumentation$ActivityResult; (light greylist, reflection)
+Accessing hidden field Landroid/view/ContextThemeWrapper;->mResources:Landroid/content/res/Resources; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mApplication:Landroid/app/Application; (light greylist, reflection)
+Accessing hidden field Landroid/content/ContextWrapper;->mBase:Landroid/content/Context; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm/ActivityInfo; (light greylist, reflection)
+```
+
+Besides `ActivityThread#mInstrumentation` and `AssetManager#addAssetPath()` must be hooked, other APIs in light grey list, we also provided another way to avoid risk. We provide some basic `PluginActivity` for plugin apk to inherit and change Activity's parent in plugin when building plugin apk with gradle plugin.
 
 # Supported Features
 

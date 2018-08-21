@@ -4,11 +4,38 @@
 ![Release Version](https://img.shields.io/badge/release-2.5.0-red.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
-**Neptune是一套灵活，稳定，轻量级的插件化方案，由爱奇艺移动端基线Team研发。它可以在数以百万级的Android设备上动态加载和运行插件apk。**
+**Neptune是爱奇艺研发的一套灵活，稳定，轻量级的插件化方案。它可以在数以百万级的Android设备上动态加载和运行插件apk。**
 
-该框架支持了爱奇艺20个多独立业务的发展和需求开发，比如爱奇艺文学，电影票，爱奇艺直播等。
+该框架支持了爱奇艺数十个独立业务的发展和需求，比如爱奇艺文学，电影票，爱奇艺直播等。
 
-随着Android P即将发布，我们的框架遇到了非限制性SDK接口访问的挑战。短时间内，我们及时进行了跟进和适配，现在Neptune可以无缝运行在Android P设备上，目前只有一个Hook点（ActivityThread中的Instrumentation）。
+随着Android P的公测和发布，我们的框架遇到了非限制性私有SDK接口访问的限制。短时间内，我们及时进行了跟进测试和适配。现在Neptune已经完全兼容Android P，只有少数几个浅灰名单中的API被使用到。Neptune可以在Android P上无缝且稳定地运行。
+
+
+# Android P兼容性
+
+在Neptune项目中，只有在浅灰名单中的私有API会被访问，没有使用到深灰和黑名单中的API。
+
+| API List | API Used cnt |
+| :----    | :---- |
+| Black list | 0 |
+| Dark grey list | 0 |
+| light grey list | 9 |
+
+### 细节
+
+```
+Accessing hidden field Landroid/app/ActivityThread;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
+Accessing hidden method Ldalvik/system/VMRuntime;->getCurrentInstructionSet()Ljava/lang/String; (light greylist, reflection)
+Accessing hidden method Landroid/content/res/AssetManager;->addAssetPath(Ljava/lang/String;)I (light greylist, reflection)
+Accessing hidden method Landroid/app/Instrumentation;->execStartActivity(Landroid/content/Context;Landroid/os/IBinder;Landroid/os/IBinder;Landroid/app/Activity;Landroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/Instrumentation$ActivityResult; (light greylist, reflection)
+Accessing hidden field Landroid/view/ContextThemeWrapper;->mResources:Landroid/content/res/Resources; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mApplication:Landroid/app/Application; (light greylist, reflection)
+Accessing hidden field Landroid/content/ContextWrapper;->mBase:Landroid/content/Context; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm/ActivityInfo; (light greylist, reflection)
+```
+
+除了`ActivityThread#mInstrumentation`和`AssetManager#addAssetPath()`必须要使用到。其他浅灰名单中的API，我们提供了另外的方式去规避风险。我们为插件开发提供常用的基类PluginActivity作为父类继承，在插件编译期通过Gradle Plugin动态修改插件Activity的父类。
 
 
 # 支持的特性
