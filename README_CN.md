@@ -4,19 +4,18 @@
 ![Release Version](https://img.shields.io/badge/release-2.5.0-red.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
-**Neptune是爱奇艺研发的一套灵活，稳定，轻量级的插件化方案。它可以在数以百万级的Android设备上动态加载和运行插件apk。**
+**Neptune是一套灵活，稳定，轻量级的插件化方案。**
 
-该框架支持了爱奇艺数十个独立业务的发展和需求，比如爱奇艺文学，电影票，爱奇艺直播等。
+它现在每天在数亿的设备上动态加载和运行插件，支撑着爱奇艺许多独立业务模块的需求和发展，如爱奇艺文学，电影票等。
 
-随着Android P的公测和发布，我们的框架遇到了非限制性私有SDK接口访问的限制。短时间内，我们及时进行了跟进测试和适配。现在Neptune已经完全兼容Android P，只有少数几个浅灰名单中的API被使用到。Neptune可以在Android P上无缝且稳定地运行。
-
+Neptune现在完全兼容Android P系统，可以在Android P设备上稳定且无缝地运行。框架只使用了少数几个浅灰名单中的API。
 
 # Android P兼容性
 
-在Neptune项目中，只有在浅灰名单中的私有API会被访问，没有使用到深灰和黑名单中的API。
+在Neptune项目中，只有少量浅灰名单中的私有API会被访问，没有使用到深灰和黑名单中的API。
 
-| API List | API Used cnt |
-| :----    | :---- |
+| API List | API Used count |
+| :----    | :----: |
 | Black list | 0 |
 | Dark grey list | 0 |
 | light grey list | 9 |
@@ -35,8 +34,7 @@ Accessing hidden field Landroid/app/Activity;->mInstrumentation:Landroid/app/Ins
 Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm/ActivityInfo; (light greylist, reflection)
 ```
 
-除了`ActivityThread#mInstrumentation`和`AssetManager#addAssetPath()`必须要使用到。其他浅灰名单中的API，我们提供了另外的方式去规避风险。我们为插件开发提供常用的基类PluginActivity作为父类继承，在插件编译期通过Gradle Plugin动态修改插件Activity的父类。
-
+在使用到的浅灰名单API中，`ActivityThread#mInstrumentation`和`AssetManager#addAssetPath()`是Neptune项目必须使用的。对于其他的浅灰名单API，我们通过提供基类PluginActivity给插件继承、重写相关方法的方式来规避私有API调用的风险。
 
 # 支持的特性
 
@@ -69,7 +67,7 @@ Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm
     compile 'org.qiyi.video:neptune:2.5.0'
 ```
 
-在`Application#onCreate()`阶段初始化NoahDocker
+在`Application#onCreate()`阶段初始化Neptune
 
 ```Java
 public class XXXApplication extends Application {
@@ -118,7 +116,7 @@ neptune {
 
 # Contribution
 
-我们真诚的欢迎任何有价值的PR提交，包括代码，建议和文档。
+我们真诚地欢迎任何有价值的PR提交，包括代码，建议和文档。
 
 # License
 

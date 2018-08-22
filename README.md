@@ -4,20 +4,20 @@
 ![Release Version](https://img.shields.io/badge/release-2.5.0-red.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
-**Neptune is a flexible, powerful and lightweight plugin framework for Android developed by IQIYI.**
+**Neptune is a flexible, powerful and lightweight plugin framework for Android.**
 
-It can load and run any plugin APK file dynamically on billions of devices. It carries tens of separated business module of IQIYI, such as reader, movie tickets, live videos, and so on.
+It now runs plugins dynamically on billions of devices every day and carries many separated business modules of IQIYI such as Reader, Movie Tickets and etc..
 
-With the public testing and release of Android P, we meet the restrictions on non-SDK interfaces. Until now, Neptune is compatible with Android P and bare APIs in light grey list are used. Neptune can run on Android P devices seamless and stably.
+Especially, Neptune is greatly compatible with Android P . It can run on Android P devices seamlessly and stably. Only few APIs in light greylist are used.
 
 [中文文档](README_CN.md)
 
 # Android P Compatibility
 
-Only android private APIs in light grey list are used in Neptune. No APIs in dark grey or black list.
+Only few android private APIs in light greylist are used in Neptune. No APIs in dark grey or black list.
 
-| API List | API Used cnt |
-| :----    | :---- |
+| API List | API Used count |
+| :----    | :----: |
 | Black list | 0 |
 | Dark grey list | 0 |
 | light grey list | 9 |
@@ -36,7 +36,8 @@ Accessing hidden field Landroid/app/Activity;->mInstrumentation:Landroid/app/Ins
 Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm/ActivityInfo; (light greylist, reflection)
 ```
 
-Besides `ActivityThread#mInstrumentation` and `AssetManager#addAssetPath()` must be hooked, other APIs in light grey list, we also provided another way to avoid risk. We provide some basic `PluginActivity` for plugin apk to inherit and change Activity's parent in plugin when building plugin apk with gradle plugin.
+
+`ActivityThread#mInstrumentation` and `AssetManager#addAssetPath()` are required for the Neptune project in above light graylist APIs. For other light graylist APIs, we avoid the risk of private API calls by providing basic PluginActivity class to inherit and override related method for plugin development.
 
 # Supported Features
 
@@ -118,7 +119,7 @@ neptune {
 
 # Contribution
 
-We sincerely welcome and appreciate your PR contribution of any kind including code, suggestions or documentaion to improve the project. 
+We sincerely appreciate your PR contribution of any kind , including codes, suggestions or documentaion to improve our project.
 
 # License
 
