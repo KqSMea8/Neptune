@@ -5,6 +5,7 @@ buildscript {
     repositories {
         maven { url 'https://maven.google.com/' }  // google()
         jcenter()
+        // TODO 开源之后移除私有maven
         maven {
             url = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
         }
@@ -14,6 +15,7 @@ buildscript {
         classpath "com.iqiyi.tools.build:neptune-gradle:${NEPTUNE_GRADLE_VERSION}"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+        classpath 'com.iqiyi.gradle:base:0.5.4'  // TODO 开源化之后删除
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -23,7 +25,7 @@ allprojects {
     repositories {
         maven { url 'https://maven.google.com/' }  // google()
         jcenter()
-        // TODO 开源化，上传到jcenter
+        // TODO 开源化，上传到jcenter，移除私有maven
         maven {
             url = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
         }
@@ -36,6 +38,28 @@ allprojects {
         }
     }
 }
+
+// 接入Sonarqube，开源
+subprojects {
+    apply plugin: 'com.iqiyi.build.quality'
+
+    quality {
+        // 配置lint的规则xml文件
+        lintConfig file("lint/lint.xml")
+        // 配置lint的xml结果输出
+        lintXmlOutput file("lint/report/lint-results.xml")
+        // 配置lint的html结果输出
+        lintHtmlOutput file("lint/report/${project.name}-lint-results.html")
+
+        // 是否需要接入sonarqube
+        applySonarQube true
+        // 工程的key值 需要唯一并且带有前缀 便于在sonarqube中分清楚不同项目中模块
+        sonarProjectKey "plugin-${project.name}"
+        // 工程名 展示到sonarqube上的模块名称
+        sonarProjectName project.name
+    }
+}
+
 
 ext {
     COMPILE_SDK_VERSION = 26
