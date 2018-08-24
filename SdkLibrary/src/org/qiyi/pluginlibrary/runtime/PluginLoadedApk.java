@@ -41,7 +41,6 @@ import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
@@ -75,7 +74,7 @@ import dalvik.system.DexClassLoader;
  * {@link ClassLoader}, {@link PackageInfo}等信息
  *
  */
-public class PluginLoadedApk implements IIntentConstant {
+public class PluginLoadedApk {
     private static final String TAG = "PluginLoadedApk";
     /**
      * 保存注入到宿主ClassLoader的插件
@@ -317,10 +316,10 @@ public class PluginLoadedApk implements IIntentConstant {
             return false;
         }
         PluginDebugLog.runtimeLog(TAG, "createClassLoader");
-        File optimizedDirectory = getDataDir(mHostContext, mPluginPackageName);
-        if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
+        File optDir = getDataDir(mHostContext, mPluginPackageName);
+        if (optDir != null && optDir.exists()) {
 
-            mPluginClassLoader = new DexClassLoader(mPluginPath, optimizedDirectory.getAbsolutePath(),
+            mPluginClassLoader = new DexClassLoader(mPluginPath, optDir.getAbsolutePath(),
                     mPluginPackageInfo.getNativeLibraryDir(), mHostClassLoader);
 
             // 把插件 classloader 注入到host程序中，方便host app 能够找到 插件 中的class
@@ -344,13 +343,13 @@ public class PluginLoadedApk implements IIntentConstant {
                         "%s cannot inject to host classloader, inject meta: %s", String.valueOf(mPluginPackageInfo.isClassNeedInject()));
             }
             return true;
-        } else {
+        } else if (optDir != null){
             PluginDebugLog.runtimeLog(TAG,
-                    "createClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
-                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
-                            + " can write: " + optimizedDirectory.canWrite());
-            return false;
+                    "createClassLoader failed as " + optDir.getAbsolutePath() + " exist: "
+                            + optDir.exists() + " can read: " + optDir.canRead()
+                            + " can write: " + optDir.canWrite());
         }
+        return false;
     }
 
     /**
@@ -359,13 +358,13 @@ public class PluginLoadedApk implements IIntentConstant {
     private boolean createNewClassLoader() {
 
         PluginDebugLog.runtimeLog(TAG, "createNewClassLoader");
-        File optimizedDirectory = getDataDir(mHostContext, mPluginPackageName);
+        File optDir = getDataDir(mHostContext, mPluginPackageName);
         mParent = mPluginPackageInfo.isIndividualMode() ? mHostClassLoader.getParent() : mHostClassLoader;
-        if (optimizedDirectory.exists() && optimizedDirectory.canRead() && optimizedDirectory.canWrite()) {
+        if (optDir != null && isOptDirAccessbile(optDir)) {
             DexClassLoader classLoader = sAllPluginClassLoader.get(mPluginPackageName);
             if (classLoader == null) {
                 mPluginClassLoader = new PluginClassLoader(mPluginPackageInfo, mPluginPath,
-                        optimizedDirectory.getAbsolutePath(), mPluginPackageInfo.getNativeLibraryDir(), mParent);
+                        optDir.getAbsolutePath(), mPluginPackageInfo.getNativeLibraryDir(), mParent);
                 PluginDebugLog.runtimeLog(TAG, "createNewClassLoader success for plugin " + mPluginPackageName);
                 sAllPluginClassLoader.put(mPluginPackageName, mPluginClassLoader);
             } else {
@@ -374,13 +373,13 @@ public class PluginLoadedApk implements IIntentConstant {
             }
 
             return handleNewDependencies();
-        } else {
+        } else if (optDir != null){
             PluginDebugLog.runtimeLog(TAG,
-                    "createNewClassLoader failed as " + optimizedDirectory.getAbsolutePath() + " exist: "
-                            + optimizedDirectory.exists() + " can read: " + optimizedDirectory.canRead()
-                            + " can write: " + optimizedDirectory.canWrite());
-            return false;
+                    "createNewClassLoader failed as " + optDir.getAbsolutePath() + " exist: "
+                            + optDir.exists() + " can read: " + optDir.canRead()
+                            + " can write: " + optDir.canWrite());
         }
+        return false;
     }
 
     /**
@@ -393,6 +392,12 @@ public class PluginLoadedApk implements IIntentConstant {
         }
     }
 
+    /**
+     * dexopt的目录是否可访问
+     */
+    private boolean isOptDirAccessbile(File optDir) {
+        return optDir.exists() && optDir.canRead() && optDir.canWrite();
+    }
 
     /**
      * 创建插件的Application对象

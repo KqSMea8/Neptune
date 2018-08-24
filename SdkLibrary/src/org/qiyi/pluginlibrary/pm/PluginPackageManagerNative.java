@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.error.ErrorType;
@@ -31,7 +32,7 @@ import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 
 import java.io.File;
 import java.util.Iterator;
@@ -119,6 +120,7 @@ public class PluginPackageManagerNative {
 
         /**
          * 异步执行下一个Action
+         *
          * @param actions
          */
         private void executeNextAction(final List<Action> actions, final String packageName) {
@@ -290,6 +292,13 @@ public class PluginPackageManagerNative {
     private static class PluginPackageManagerServiceConnection implements ServiceConnection {
 
         private Context mContext;
+        private IBinder.DeathRecipient mDeathRecipient = new IBinder.DeathRecipient() {
+            @Override
+            public void binderDied() {
+                mService = null;
+                PluginDebugLog.runtimeLog(TAG, "binderDied called, remote binder is died");
+            }
+        };
 
         PluginPackageManagerServiceConnection(Context context) {
             mContext = context;
@@ -299,12 +308,20 @@ public class PluginPackageManagerNative {
         public void onServiceConnected(ComponentName name, IBinder service) {
             if (null != service) {
                 mService = IPluginPackageManager.Stub.asInterface(service);
+                try {
+                    // 监听远程Binder死亡通知
+                    service.linkToDeath(mDeathRecipient, 0);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
+
             PluginDebugLog.runtimeLog(TAG, "onServiceConnected called");
             if (mService != null) {
                 NotifyCenter.notifyServiceConnected(mContext, PluginPackageManagerService.class);
                 try {
-                    mService.setActionFinishCallback(new ActionFinishCallback(mProcessName));
+                    String processName = FileUtils.getCurrentProcessName(mContext);
+                    mService.setActionFinishCallback(new ActionFinishCallback(processName));
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
@@ -323,10 +340,8 @@ public class PluginPackageManagerNative {
     }
 
     private static IPluginPackageManager mService = null;
-    private static PluginPackageManagerNative sInstance = null;
     private Context mContext;
     private ServiceConnection mServiceConnection = null;
-    private static String mProcessName = null;
 
     /**
      * 安装包任务队列，目前仅处理插件依赖时使用
@@ -334,27 +349,29 @@ public class PluginPackageManagerNative {
     private static ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions =
             new ConcurrentLinkedQueue<ExecutionPackageAction>();
 
+    private static class InnerHolder {
+        @SuppressWarnings("StaticFieldLeak")
+        private static PluginPackageManagerNative sInstance = new PluginPackageManagerNative();
+    }
+
     public static PluginPackageManagerNative getInstance(Context context) {
-        if (sInstance == null) {
-            synchronized (PluginPackageManagerNative.class) {
-                if (sInstance == null) {
-                    sInstance = new PluginPackageManagerNative(context);
-                    sInstance.init();
-                }
-            }
+
+        PluginPackageManagerNative ppmn = InnerHolder.sInstance;
+        ppmn.init(context);
+
+        return ppmn;
+    }
+
+    private PluginPackageManagerNative() {
+        // no-op
+    }
+
+    private void init(@NonNull Context context) {
+        if (mContext == null) {
+            mContext = context.getApplicationContext();
         }
-        return sInstance;
+        onBindService(context);
     }
-
-    private PluginPackageManagerNative(Context context) {
-        mContext = context.getApplicationContext();
-        mProcessName = Util.getCurrentProcessName(context);
-    }
-
-    private void init() {
-        onBindService(mContext);
-    }
-
 
     public void setPackageInfoManager(IPluginInfoProvider packageInfoManager) {
         PluginPackageManager.setPluginInfoProvider(packageInfoManager);
@@ -364,8 +381,11 @@ public class PluginPackageManagerNative {
         return mService != null;
     }
 
-
     private void onBindService(Context context) {
+        if (isConnected()) {
+            return;
+        }
+
         Intent intent = new Intent(context, PluginPackageManagerService.class);
         try {
             context.startService(intent);
@@ -784,7 +804,7 @@ public class PluginPackageManagerNative {
                 }
             } else {
                 PluginPackageManager.updateSrcApkPath(context, mPackageInfo);
-                if (null != context && !TextUtils.isEmpty(mPackageInfo.srcApkPath)) {
+                if (!TextUtils.isEmpty(mPackageInfo.srcApkPath)) {
                     File file = new File(mPackageInfo.srcApkPath);
                     if (file.exists()) {
                         target = new PluginPackageInfo(ContextUtils.getOriginalContext(context), file);

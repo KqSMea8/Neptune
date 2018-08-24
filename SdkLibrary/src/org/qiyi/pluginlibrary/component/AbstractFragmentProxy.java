@@ -26,7 +26,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.listenter.IPluginElementLoadListener;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
@@ -59,8 +59,8 @@ public abstract class AbstractFragmentProxy extends Fragment {
     protected void loadPluginFragment() {
         Bundle arguments = getArguments();
         if (arguments != null) {
-            String packageName = arguments.getString(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
-            String className = arguments.getString(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+            String packageName = arguments.getString(IntentConstant.EXTRA_TARGET_PACKAGE_KEY);
+            String className = arguments.getString(IntentConstant.EXTRA_TARGET_CLASS_KEY);
             final Context hostContext = getContext().getApplicationContext();
             if (PluginPackageManagerNative.getInstance(hostContext).isPackageInstalled(packageName)) {
                 PluginManager.createFragment(hostContext, packageName, className, getArguments(), new IPluginElementLoadListener<Fragment>() {

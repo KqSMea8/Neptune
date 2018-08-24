@@ -27,7 +27,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.qiyi.pluginlibrary.R;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 
 /**
@@ -57,8 +57,8 @@ public class FragmentProxyFactory {
             }
         }
         Bundle bundle = new Bundle();
-        bundle.putString(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY, packageName);
-        bundle.putString(IIntentConstant.EXTRA_TARGET_CLASS_KEY, className);
+        bundle.putString(IntentConstant.EXTRA_TARGET_PACKAGE_KEY, packageName);
+        bundle.putString(IntentConstant.EXTRA_TARGET_CLASS_KEY, className);
         fragment.setArguments(bundle);
         return fragment;
     }

@@ -55,7 +55,7 @@ import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.plugin.InterfaceToGetHost;
@@ -72,7 +72,7 @@ import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -87,8 +87,6 @@ import java.io.PrintWriter;
  */
 public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost {
     private static final String TAG = InstrActivityProxy1.class.getSimpleName();
-
-    private static final String KEY_ID = "org.qiyi.recovery.key.id";
     /**
      * 保留 savedInstanceState，在真正恢复的时候模拟恢复
      * <p>
@@ -139,7 +137,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         String pluginActivityName = null;
         String pluginPkgName = null;
         final String[] pkgAndCls = parsePkgAndClsFromIntent();
-        if (pkgAndCls != null) {
+        if (pkgAndCls != null && pkgAndCls.length == 2) {
             pluginPkgName = pkgAndCls[0];
             pluginActivityName = pkgAndCls[1];
         } else {
@@ -157,7 +155,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (!PluginManager.isPluginLoadedAndInit(pluginPkgName)) {
             Intent intent = new Intent();
             intent.setComponent(new ComponentName(pluginPkgName,
-                    IIntentConstant.EXTRA_VALUE_LOADTARGET_STUB));
+                    IntentConstant.EXTRA_VALUE_LOADTARGET_STUB));
             PluginManager.readyToStartSpecifyPlugin(this, null, intent, true);
         }
 
@@ -260,7 +258,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     private String[] parsePkgAndClsFromIntent() {
         Intent mIntent = getIntent();
         if (mIntent == null) {
-            return null;
+            return new String[0];
         }
 
         //从action里面拿到pkg,并全局保存，然后还原action
@@ -293,7 +291,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
             return result;
         }
-        return null;
+        return new String[0];
     }
 
 
@@ -337,19 +335,19 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             mLaunchPluginReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    Class<?> service = (Class<?>) intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS);
+                    Class<?> service = (Class<?>) intent.getSerializableExtra(IntentConstant.EXTRA_SERVICE_CLASS);
                     PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", pkgName, service);
                     boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
                     boolean readyLaunch = mRecoveryCallback.beforeLaunch(context, pkgName, activityName);
                     if (ppmsReady && readyLaunch) {
                         PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#launch %s", activityName);
-                        PluginManager.launchPlugin(context, pluginIntent, Util.getCurrentProcessName(context));
+                        PluginManager.launchPlugin(context, pluginIntent, FileUtils.getCurrentProcessName(context));
                         unregisterReceiver(mLaunchPluginReceiver);
                         mLaunchPluginReceiver = null;
                     }
                 }
             };
-            IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+            IntentFilter serviceConnectedFilter = new IntentFilter(IntentConstant.ACTION_SERVICE_CONNECTED);
             // 设置 priority 保证恢复透明主题 Activity 时的顺序，详见 sLaunchPluginReceiverPriority 注释
             serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
             registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
@@ -362,8 +360,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 }
             };
             IntentFilter filter = new IntentFilter();
-            filter.addAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
-            filter.addAction(IIntentConstant.ACTION_PLUGIN_LOADED);
+            filter.addAction(IntentConstant.ACTION_START_PLUGIN_ERROR);
+            filter.addAction(IntentConstant.ACTION_PLUGIN_LOADED);
             registerReceiver(mFinishSelfReceiver, filter);
         }
     }
@@ -390,7 +388,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         if (VersionUtils.hasNougat()) {
             String[] temp = parsePkgAndClsFromIntent();
             if (mNeedUpdateConfiguration && (temp != null || mLoadedApk != null)) {
-                if (null != temp) {
+                if (null != temp && temp.length == 2) {
                     tryToInitPluginLoadApk(temp[0]);
                 }
                 if (mLoadedApk != null && temp != null) {
@@ -429,7 +427,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     public Resources.Theme getTheme() {
         if (mLoadedApk == null) {
             String[] temp = parsePkgAndClsFromIntent();
-            if (null != temp) {
+            if (null != temp && temp.length == 2) {
                 tryToInitPluginLoadApk(temp[0]);
             }
         }
@@ -671,6 +669,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     }
 
 
+    @Override
     public void startActivityForResult(Intent intent, int requestCode) {
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy startActivityForResult one....");
         if (mLoadedApk != null) {
@@ -683,7 +682,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
-    @SuppressLint("NewApi")
+
+    @Override @SuppressLint("NewApi")
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy startActivityForResult two....");
         if (mLoadedApk != null) {
@@ -927,6 +927,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
+    @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (getController() != null) {
             ReflectionUtils pluginRef = getController().getPluginRef();
@@ -946,6 +947,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
+    @Override
     public void onStateNotSaved() {
         super.onStateNotSaved();
         if (getController() != null) {
@@ -953,6 +955,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
+    @Override
     public boolean onSearchRequested(SearchEvent searchEvent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (getController() != null) {
@@ -964,6 +967,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
+    @Override
     public boolean onSearchRequested() {
         if (getController() != null) {
             getController().getPlugin().onSearchRequested();
@@ -971,6 +975,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         return super.onSearchRequested();
     }
 
+    @Override
     public void onProvideAssistContent(AssistContent outContent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             super.onProvideAssistContent(outContent);
@@ -982,8 +987,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     /**
      * Get the context which start this plugin
-     *
-     * @return
      */
     @Override
     public Context getOriginalContext() {
@@ -995,7 +998,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     /**
      * Get host resource
-     *
      * @return host resource tool
      */
     @Override
@@ -1031,17 +1033,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
-    public void dump(PrintWriter printWriter) {
-        String[] pkgCls = parsePkgAndClsFromIntent();
-        if (null != pkgCls && pkgCls.length == 2) {
-            printWriter.print("Package&Cls is: " + this + " " + (pkgCls[0] + " " + pkgCls[1]) + " flg=0x"
-                    + Integer.toHexString(getIntent().getFlags()));
-        } else {
-            printWriter.print("Package&Cls is: " + this + " flg=0x" + Integer.toHexString(getIntent().getFlags()));
-        }
-    }
-
-
     @Override
     public ApplicationInfo getApplicationInfo() {
         if (mPluginContextWrapper != null) {
@@ -1067,10 +1058,10 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     private void changeActivityInfo(Activity activity, String pkgName, ActivityInfo mActivityInfo) {
 
         ActivityInfo origActInfo = ReflectionUtils.on(activity).get("mActivityInfo");
-        PluginLoadedApk mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
+        PluginLoadedApk mPlugin = PluginManager.getPluginLoadedApkByPkgName(pkgName);
         if (null != mActivityInfo) {
-            if (null != mLoadedApk && null != mLoadedApk.getPluginPackageInfo()) {
-                mActivityInfo.applicationInfo = mLoadedApk.getPluginPackageInfo().getPackageInfo().applicationInfo;
+            if (null != mPlugin && null != mPlugin.getPluginPackageInfo()) {
+                mActivityInfo.applicationInfo = mPlugin.getPluginPackageInfo().getPackageInfo().applicationInfo;
             }
             if (origActInfo != null) {
                 origActInfo.applicationInfo = mActivityInfo.applicationInfo;

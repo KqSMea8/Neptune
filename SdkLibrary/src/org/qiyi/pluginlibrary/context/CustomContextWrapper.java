@@ -34,7 +34,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.FileUtils;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 
@@ -45,12 +44,11 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -68,6 +66,9 @@ import java.util.concurrent.ConcurrentMap;
 
 public abstract class CustomContextWrapper extends ContextWrapper implements InterfaceToGetHost {
     private static final String TAG = "CustomContextWrapper";
+
+    private static final String DATABASE_PATH = "/databases/";
+    private static final String SHAREDPREF_PATH = "/shared_prefs/";
 
     private static final String S_SHARED_PREFS =
             VersionUtils.hasNougat() ? "sSharedPrefsCache" : "sSharedPrefs";
@@ -197,7 +198,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
         File fileDir = new File(getPluginPackageInfo().getDataDir() + "/files/");
         if (!fileDir.exists()) {
-            fileDir.mkdir();
+            fileDir.mkdirs();
         }
         return mLoadedApk.getPluginAssetManager() == null ? superFile : fileDir;
     }
@@ -210,7 +211,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
         File cacheDir = new File(getPluginPackageInfo().getDataDir() + "/cache/");
         if (!cacheDir.exists()) {
-            cacheDir.mkdir();
+            cacheDir.mkdirs();
         }
         return mLoadedApk.getPluginAssetManager() == null ? super.getCacheDir() : cacheDir;
     }
@@ -224,7 +225,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
             if (null != mLoadedApk && null != pluginExternalFileRootDir && pluginExternalFileRootDir.exists()) {
                 File subPluginFileRootDir = new File(pluginExternalFileRootDir, mLoadedApk.getPluginPackageName());
-                if (subPluginFileRootDir.exists() || subPluginFileRootDir.mkdir()) {
+                if (subPluginFileRootDir.exists() || subPluginFileRootDir.mkdirs()) {
                     if (TextUtils.isEmpty(type)) {
                         PluginDebugLog.runtimeFormatLog(
                                 TAG, "getExternalFilesDir subPluginFileRootDir %s : ",
@@ -233,7 +234,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                         return subPluginFileRootDir;
                     } else {
                         File targetSubFileDir = new File(subPluginFileRootDir, type);
-                        if (targetSubFileDir.exists() || targetSubFileDir.mkdir()) {
+                        if (targetSubFileDir.exists() || targetSubFileDir.mkdirs()) {
                             PluginDebugLog.runtimeFormatLog(
                                     TAG, "getExternalFilesDir targetSubFileDir %s : ",
                                     targetSubFileDir.getAbsolutePath());
@@ -261,7 +262,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
             if (null != mLoadedApk && null != pluginExternalCacheRootDir && pluginExternalCacheRootDir.exists()) {
                 File subPluginCacheRootDir = new File(pluginExternalCacheRootDir, mLoadedApk.getPluginPackageName());
-                if (subPluginCacheRootDir.exists() || subPluginCacheRootDir.mkdir()) {
+                if (subPluginCacheRootDir.exists() || subPluginCacheRootDir.mkdirs()) {
                     PluginDebugLog.runtimeFormatLog(
                             TAG, "getExternalCacheDir subPluginCacheRootDir %s : ",
                             subPluginCacheRootDir.getAbsolutePath());
@@ -296,7 +297,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         }
         File fileDir = new File(getPluginPackageInfo().getDataDir() + "/app_" + name + "/");
         if (!fileDir.exists()) {
-            fileDir.mkdir();
+            fileDir.mkdirs();
         }
         return mLoadedApk.getPluginAssetManager() == null ? super.getDir(name, mode) : fileDir;
 
@@ -304,7 +305,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     private static void setFilePermissionsForDb(String dbPath, int perms) {
         //int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
-        FileUtils.setPermissions(dbPath, perms, -1, -1);
+        android.os.FileUtils.setPermissions(dbPath, perms, -1, -1);
     }
 
     @Override
@@ -322,14 +323,14 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             if (mLoadedApk == null) {
                 return super.getDatabasePath(name);
             }
-            File tmpDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
+            File tmpDir = new File(getPluginPackageInfo().getDataDir() + DATABASE_PATH);
             if (!tmpDir.exists()) {
                 tmpDir.mkdirs();
             }
             if (tmpDir.exists() && VersionUtils.hasOreo_MR1()) {
-                int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IXUSR
-                        | FileUtils.S_IRGRP | FileUtils.S_IWGRP | FileUtils.S_IXGRP
-                        | FileUtils.S_IXOTH;
+                int perms = android.os.FileUtils.S_IRUSR | android.os.FileUtils.S_IWUSR | android.os.FileUtils.S_IXUSR
+                        | android.os.FileUtils.S_IRGRP | android.os.FileUtils.S_IWGRP | android.os.FileUtils.S_IXGRP
+                        | android.os.FileUtils.S_IXOTH;
                 setFilePermissionsForDb(tmpDir.getAbsolutePath(), perms);
 
             }
@@ -342,7 +343,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                         e.printStackTrace();
                     }
                 }
-                int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
+                int perms = android.os.FileUtils.S_IRUSR | android.os.FileUtils.S_IWUSR | android.os.FileUtils.S_IRGRP | android.os.FileUtils.S_IWGRP;
                 setFilePermissionsForDb(f.getAbsolutePath(), perms);
             }
         }
@@ -373,7 +374,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
         }
         File parent = f.getParentFile();
-        parent.mkdir();
+        parent.mkdirs();
         FileOutputStream fos = new FileOutputStream(f, append);
         return fos;
     }
@@ -397,9 +398,9 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory) {
-        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + DATABASE_PATH);
         if (!databaseDir.exists()) {
-            databaseDir.mkdir();
+            databaseDir.mkdirs();
         }
         // backup database for old version start
         checkBackupDB(name);
@@ -422,27 +423,27 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
         String dbName = name.substring(0, name.lastIndexOf("."));
 
-        String dbPath = "/data/data/" + this.getPackageName() + "/databases/";
+        String dbPath = "/data/data/" + this.getPackageName() + DATABASE_PATH;
         File file = new File(dbPath, name);
         if (file.exists()) {
-            File targetFile = new File(getPluginPackageInfo().getDataDir() + "/databases/" + name);
+            File targetFile = new File(getPluginPackageInfo().getDataDir() + DATABASE_PATH + name);
             if (!targetFile.exists()) {
-                Util.moveFile(file, targetFile);
+                FileUtils.moveFile(file, targetFile);
             }
             File bakFile = new File(dbPath, dbName + ".db-journal");
             File targetBakFile = new File(
-                    getPluginPackageInfo().getDataDir() + "/databases/" + dbName + ".db-journal");
+                    getPluginPackageInfo().getDataDir() + DATABASE_PATH + dbName + ".db-journal");
             if (bakFile.exists() && !targetBakFile.exists()) {
-                Util.moveFile(bakFile, targetBakFile);
+                FileUtils.moveFile(bakFile, targetBakFile);
             }
         }
     }
 
     @Override
     public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory, DatabaseErrorHandler errorHandler) {
-        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + DATABASE_PATH);
         if (!databaseDir.exists()) {
-            databaseDir.mkdir();
+            databaseDir.mkdirs();
         }
         // backup database for old version start
         checkBackupDB(name);
@@ -453,26 +454,26 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public boolean deleteDatabase(String name) {
-        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + DATABASE_PATH);
         if (!databaseDir.exists()) {
-            databaseDir.mkdir();
+            databaseDir.mkdirs();
         }
         return super.deleteDatabase(databaseDir.getAbsolutePath() + "/" + name);
     }
 
     @Override
     public String[] databaseList() {
-        File databaseDir = new File(getPluginPackageInfo().getDataDir() + "/databases/");
+        File databaseDir = new File(getPluginPackageInfo().getDataDir() + DATABASE_PATH);
         if (!databaseDir.exists()) {
-            databaseDir.mkdir();
+            databaseDir.mkdirs();
         }
         return databaseDir.list();
     }
 
     public File getSharedPrefsFile(String name) {
-        File base = new File(getPluginPackageInfo().getDataDir() + "/shared_prefs/");
+        File base = new File(getPluginPackageInfo().getDataDir() + SHAREDPREF_PATH);
         if (!base.exists()) {
-            base.mkdir();
+            base.mkdirs();
         }
         return new File(base, name + ".xml");
     }
@@ -506,7 +507,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     }
 
     private void backupSharedPreference(String name) {
-        String sharePath = "/data/data/" + this.getPackageName() + "/shared_prefs/";
+        String sharePath = "/data/data/" + this.getPackageName() + SHAREDPREF_PATH;
         File sFile = new File(sharePath);
         String[] fileList = sFile.list();
         if (fileList == null) {
@@ -517,7 +518,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 File oriFile = new File(sharePath + file);
                 File tarFile = getSharedPrefsFile(name);
                 if (oriFile.exists() && !tarFile.exists()) {
-                    Util.moveFile(oriFile, tarFile, false);
+                    FileUtils.moveFile(oriFile, tarFile, false);
                 }
             }
         }
@@ -525,8 +526,8 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @TargetApi(Build.VERSION_CODES.O)
     private void backupSharedPreferenceV28(String name) {
-        File pluginSharePath = new File(getPluginPackageInfo().getDataDir() + "/shared_prefs/");
-        File sharePath = new File("/data/data/" + this.getPackageName() + "/shared_prefs/");
+        File pluginSharePath = new File(getPluginPackageInfo().getDataDir() + SHAREDPREF_PATH);
+        File sharePath = new File("/data/data/" + this.getPackageName() + SHAREDPREF_PATH);
         String[] fileList = pluginSharePath.list();
         if (fileList == null) {
             return;
@@ -537,7 +538,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 File oriFile = new File(pluginSharePath, file);
                 File tarFile = new File(sharePath, packageName + "_" + file);
                 if (oriFile.exists() && !tarFile.exists()) {
-                    Util.moveFile(oriFile, tarFile, false);
+                    FileUtils.moveFile(oriFile, tarFile, false);
                 }
             }
         }

@@ -23,13 +23,13 @@ import android.content.pm.ActivityInfo;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -357,7 +357,7 @@ public class PActivityStackSupervisor {
                 for (Activity act : popActivities) {
                     PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + IntentUtils.dump(act));
                     popActivityFromStack(act);
-                    if (!Util.isFinished(act)) {
+                    if (!FileUtils.isFinished(act)) {
                         act.finish();
                     }
                 }
@@ -469,14 +469,14 @@ public class PActivityStackSupervisor {
                 }
             }
 
-            PluginLoadedApk mLoadedApk = null;
+            PluginLoadedApk mPlugin = null;
             for (Activity removeItem : needRemove) {
                 if (null != removeItem) {
                     String pkgName = IntentUtils.parsePkgNameFromActivity(removeItem);
-                    mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
-                    if (mLoadedApk != null) {
+                    mPlugin = PluginManager.getPluginLoadedApkByPkgName(pkgName);
+                    if (mPlugin != null) {
                         popActivityFromStack(removeItem);
-                        if (!Util.isFinished(removeItem)) {
+                        if (!FileUtils.isFinished(removeItem)) {
                             removeItem.finish();
                         }
                     }
@@ -586,8 +586,8 @@ public class PActivityStackSupervisor {
         Intent toBeRemoved = null;
         if (null != intents) {
             for (Intent temp : intents) {
-                if (TextUtils.equals(temp.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY),
-                        intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY))) {
+                if (TextUtils.equals(temp.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY),
+                        intent.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY))) {
                     toBeRemoved = temp;
                     break;
                 }
@@ -609,7 +609,7 @@ public class PActivityStackSupervisor {
      */
     private String matchTaskName(String affinity) {
 
-        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IIntentConstant.TASK_AFFINITY_CONTAINER)) {
+        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)) {
             return affinity;
         } else {
             return mLoadedApk.getPluginPackageName();

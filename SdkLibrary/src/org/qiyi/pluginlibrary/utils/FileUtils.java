@@ -20,8 +20,6 @@ package org.qiyi.pluginlibrary.utils;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.pm.Signature;
 import android.os.Build;
 import android.os.Process;
 import android.text.TextUtils;
@@ -30,7 +28,6 @@ import android.util.Log;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,13 +37,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
@@ -54,7 +46,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 
-public final class Util {
+public final class FileUtils {
     private static final String TAG = PluginDebugLog.TAG;
     /** apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so */
     private static final String APK_LIB_DIR_PREFIX = "lib/";
@@ -62,7 +54,7 @@ public final class Util {
     private static final String APK_LIB_SUFFIX = ".so";
 
     /** utility class private constructor */
-    private Util() {
+    private FileUtils() {
     }
 
 
@@ -81,35 +73,30 @@ public final class Util {
             return false;
         }
 
+        FileOutputStream out = null;
+        BufferedOutputStream bos = null;
         try {
             if (destFile.exists()) {
                 destFile.delete();
+                destFile.createNewFile();
             }
-            FileOutputStream out = null;
-            try {
-                out = new FileOutputStream(destFile);
-                byte[] buffer = new byte[4096]; // SUPPRESS CHECKSTYLE
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) >= 0) {
-                    out.write(buffer, 0, bytesRead);
-                }
-            } finally {
-                if (null != out) {
-                    try {
-                        out.flush();
-                        out.getFD().sync();
-                        out.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+            out = new FileOutputStream(destFile);
+            bos = new BufferedOutputStream(out);
+            byte[] buffer = new byte[4096];
+            int bytesRead = -1;
+            while ((bytesRead = inputStream.read(buffer)) >= 0) {
+                bos.write(buffer, 0, bytesRead);
             }
+            bos.flush();
             PluginDebugLog.log(TAG, "拷贝成功");
             return true;
         } catch (IOException e) {
             e.printStackTrace();
             PluginDebugLog.log(TAG, "拷贝失败");
             return false;
+        } finally {
+            closeQuietly(out);
+            closeQuietly(bos);
         }
     }
 
@@ -127,23 +114,22 @@ public final class Util {
         if (srcFile == null || !srcFile.exists() || destFile == null) {
             return false;
         }
+
+        boolean result = false;
         InputStream inputStream = null;
+        BufferedInputStream bis = null;
         try {
             inputStream = new FileInputStream(srcFile);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            inputStream = null;
-        }
-        boolean result = false;
-        if (null != inputStream) {
-            result = copyToFile(inputStream, destFile);
-        }
-        try {
-            if (null != inputStream) {
-                inputStream.close();
-            }
+            bis = new BufferedInputStream(inputStream);
+
+            result = copyToFile(bis, destFile);
         } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            closeQuietly(inputStream);
+            closeQuietly(bis);
         }
+
         return result;
     }
 
@@ -169,13 +155,7 @@ public final class Util {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if (zipFile != null) {
-                try {
-                    zipFile.close();
-                } catch (IOException ioe) {
-                    // ignore
-                }
-            }
+            closeQuietly(zipFile);
         }
 
         return installResult;
@@ -213,79 +193,10 @@ public final class Util {
             } catch (ArrayIndexOutOfBoundsException e) {
                 e.printStackTrace();
             } finally {
-                try {
-                    if (entryInputStream != null) {
-                        entryInputStream.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                closeQuietly(entryInputStream);
             }
         }
         return installResult;
-    }
-
-    /**
-     * Write byte array to file
-     *
-     * @param data source byte array
-     * @param target the target file to write
-     * @return success or not
-     */
-    public static boolean writeToFile(byte[] data, File target) {
-        if (data == null || target == null) {
-            PluginDebugLog.log(TAG, "writeToFile failed will null check!");
-            return false;
-        }
-        FileOutputStream fo = null;
-        ReadableByteChannel src = null;
-        FileChannel out = null;
-        try {
-            src = Channels.newChannel(new ByteArrayInputStream(data));
-            fo = new FileOutputStream(target);
-            out = fo.getChannel();
-            out.transferFrom(src, 0, data.length);
-            PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " success!");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " failed!");
-            return false;
-        } catch (IOException e) {
-            e.printStackTrace();
-            PluginDebugLog.log(TAG, "write to file: " + target.getAbsolutePath() + " failed!");
-            return false;
-        } finally {
-            if (src != null) {
-                try {
-                    src.close();
-                } catch (IOException e) {
-                }
-
-            }
-            if (out != null) {
-                try {
-                    out.force(true);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-                try {
-                    out.close();
-                } catch (IOException e) {
-                }
-            }
-            if (fo != null) {
-                try {
-                    fo.flush();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-                try {
-                    fo.close();
-                } catch (IOException e) {
-                }
-            }
-        }
-        return true;
     }
 
     /**
@@ -295,12 +206,7 @@ public final class Util {
      * @throws IOException in case deletion is unsuccessful
      */
     public static boolean deleteDirectory(File directory) {
-        if (directory == null) {
-            PluginDebugLog.log(TAG, "deleteDirectory pkgName is empty return");
-            return true;
-        }
-
-        if (!directory.exists()) {
+        if (directory == null || !directory.exists()) {
             return true;
         }
 
@@ -311,10 +217,8 @@ public final class Util {
         } catch (Exception e) {
             // ignore
         }
-        if (!directory.delete()) {
-            return false;
-        }
-        return deleted;
+        // delete directory self
+        return directory.delete() && deleted;
     }
 
     /**
@@ -340,8 +244,7 @@ public final class Util {
         }
 
         IOException exception = null;
-        for (int i = 0; i < files.length; i++) {
-            File file = files[i];
+        for (File file : files) {
             try {
                 forceDelete(file);
             } catch (IOException ioe) {
@@ -382,94 +285,30 @@ public final class Util {
     }
 
     /**
-     * 比较两个签名是否相同
-     *
-     * @param s1
-     * @param s2
-     * @return
+     * 迁移文件
+     * @param sourceFile  源文件
+     * @param targetFile  目标文件
      */
-    public static int compareSignatures(Signature[] s1, Signature[] s2) {
-        if (s1 == null) {
-            return s2 == null ? PackageManager.SIGNATURE_NEITHER_SIGNED : PackageManager.SIGNATURE_FIRST_NOT_SIGNED;
-        }
-        if (s2 == null) {
-            return PackageManager.SIGNATURE_SECOND_NOT_SIGNED;
-        }
-        HashSet<Signature> set1 = new HashSet<Signature>();
-        for (Signature sig : s1) {
-            set1.add(sig);
-        }
-        HashSet<Signature> set2 = new HashSet<Signature>();
-        for (Signature sig : s2) {
-            set2.add(sig);
-        }
-        // Make sure s2 contains all signatures in s1.
-        if (set1.equals(set2)) {
-            return PackageManager.SIGNATURE_MATCH;
-        }
-        return PackageManager.SIGNATURE_NO_MATCH;
-    }
-
-
-    private static void copyFile(File sourceFile, File targetFile) throws IOException {
-
-        BufferedInputStream inBuff = null;
-
-        BufferedOutputStream outBuff = null;
-
-        try {
-            FileInputStream input = new FileInputStream(sourceFile);
-            FileOutputStream output = new FileOutputStream(targetFile);
-            inBuff = new BufferedInputStream(input);
-            outBuff = new BufferedOutputStream(output);
-            byte[] b = new byte[1024 * 5];
-            int len;
-            while ((len = inBuff.read(b)) != -1) {
-                outBuff.write(b, 0, len);
-            }
-
-            outBuff.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (null != inBuff) {
-                try {
-                    inBuff.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (null != outBuff) {
-                try {
-                    outBuff.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
     public static void moveFile(File sourceFile, File targetFile) {
         moveFile(sourceFile, targetFile, true);
     }
 
+    /**
+     * 迁移文件
+     * @param sourceFile  源文件
+     * @param targetFile  目标文件
+     * @param needDeleteSource  是否删除源文件
+     */
     public static void moveFile(File sourceFile, File targetFile, boolean needDeleteSource) {
-        try {
-            copyFile(sourceFile, targetFile);
-            if (needDeleteSource) {
-                sourceFile.delete();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        copyToFile(sourceFile, targetFile);
+        if (needDeleteSource) {
+            sourceFile.delete();
         }
     }
 
     /**
      * 判断Activity是否已经销毁或正在销毁，这时候就不再调用Activity.finish方法
      * 防止插件重写finish方法造成循环调用
-     *
-     * @param activity
-     * @return
      */
     public static boolean isFinished(Activity activity) {
         boolean isFinished = false;
@@ -478,44 +317,6 @@ public final class Util {
         }
         return isFinished || activity.isFinishing();
     }
-
-
-    /**
-     * Judge activity is resume or not by reflection
-     *
-     * @param activity
-     * @return
-     */
-    public static boolean isResumed(Activity activity) {
-        boolean result = true;
-        try {
-            Class<?> clazz = Class.forName("android.app.Activity");
-            Method isResumed = clazz.getDeclaredMethod("isResumed");
-            result = (Boolean) isResumed.invoke(activity);
-        } catch (ClassNotFoundException e) {
-            if (PluginDebugLog.isDebug()) {
-                e.printStackTrace();
-            }
-        } catch (NoSuchMethodException e) {
-            if (PluginDebugLog.isDebug()) {
-                e.printStackTrace();
-            }
-        } catch (IllegalAccessException e) {
-            if (PluginDebugLog.isDebug()) {
-                e.printStackTrace();
-            }
-        } catch (IllegalArgumentException e) {
-            if (PluginDebugLog.isDebug()) {
-                e.printStackTrace();
-            }
-        } catch (InvocationTargetException e) {
-            if (PluginDebugLog.isDebug()) {
-                e.printStackTrace();
-            }
-        }
-        return result;
-    }
-
 
     /**
      * 判断当前手机的指令集
@@ -568,22 +369,22 @@ public final class Util {
 
 
     public static void closeQuietly(Closeable c) {
-        try {
-            if (c != null) {
+        if (c != null) {
+            try {
                 c.close();
+            } catch (IOException e) {
+                // ignore
             }
-        } catch (IOException e) {
-            // ignore
         }
     }
 
-    public static void closeQuietly(ZipFile c) {
-        try {
-            if (c != null) {
-                c.close();
+    public static void closeQuietly(ZipFile zipFile) {
+        if (zipFile != null) {
+            try {
+                zipFile.close();
+            } catch (Exception e) {
+                // ignore
             }
-        } catch (Exception e) {
-            // ignore
         }
     }
 

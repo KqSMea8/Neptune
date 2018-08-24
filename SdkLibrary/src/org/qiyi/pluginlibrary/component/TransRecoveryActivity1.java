@@ -29,7 +29,7 @@ import android.support.annotation.Nullable;
 import android.view.KeyEvent;
 
 import org.qiyi.pluginlibrary.Neptune;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
@@ -37,7 +37,7 @@ import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 
 /**
  * 主进程恢复 中转Activity
@@ -93,18 +93,18 @@ public class TransRecoveryActivity1 extends Activity {
         mLaunchPluginReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(final Context context, Intent intent) {
-                PluginDebugLog.runtimeFormatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", mPluginClassName, intent.getSerializableExtra(IIntentConstant.EXTRA_SERVICE_CLASS));
+                PluginDebugLog.runtimeFormatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", mPluginClassName, intent.getSerializableExtra(IntentConstant.EXTRA_SERVICE_CLASS));
                 boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
                 boolean hostReady = mRecoveryCallback.beforeLaunch(context, mPluginPackageName, mPluginClassName);
                 if (ppmsReady && hostReady) {
                     PluginDebugLog.runtimeFormatLog(TAG, "LaunchPluginReceiver#launch %s", mPluginClassName);
-                    PluginManager.launchPlugin(context, createLaunchPluginIntent(), Util.getCurrentProcessName(context));
+                    PluginManager.launchPlugin(context, createLaunchPluginIntent(), FileUtils.getCurrentProcessName(context));
                     unregisterReceiver(mLaunchPluginReceiver);
                     mLaunchPluginReceiver = null;
                 }
             }
         };
-        IntentFilter serviceConnectedFilter = new IntentFilter(IIntentConstant.ACTION_SERVICE_CONNECTED);
+        IntentFilter serviceConnectedFilter = new IntentFilter(IntentConstant.ACTION_SERVICE_CONNECTED);
         serviceConnectedFilter.setPriority(sLaunchPluginReceiverPriority++);
         registerReceiver(mLaunchPluginReceiver, serviceConnectedFilter);
 
@@ -117,8 +117,8 @@ public class TransRecoveryActivity1 extends Activity {
             }
         };
         IntentFilter filter = new IntentFilter();
-        filter.addAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
-        filter.addAction(IIntentConstant.ACTION_PLUGIN_LOADED);
+        filter.addAction(IntentConstant.ACTION_START_PLUGIN_ERROR);
+        filter.addAction(IntentConstant.ACTION_PLUGIN_LOADED);
         registerReceiver(mFinishSelfReceiver, filter);
     }
 

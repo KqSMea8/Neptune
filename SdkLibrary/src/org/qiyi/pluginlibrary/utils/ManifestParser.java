@@ -68,8 +68,9 @@ public class ManifestParser {
         pi.applicationInfo.sourceDir = apkPath;
         pi.applicationInfo.publicSourceDir = apkPath;
 
+        AssetManager am = null;
         try {
-            AssetManager am = AssetManager.class.newInstance();
+            am = AssetManager.class.newInstance();
             Method addAssetPath = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
             addAssetPath.setAccessible(true);
             int cookie = (int)addAssetPath.invoke(am, apkPath);
@@ -78,6 +79,10 @@ public class ManifestParser {
             parseManifest(parser);
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (am != null) {
+                am.close();
+            }
         }
     }
 

@@ -25,11 +25,11 @@ import android.net.Uri;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -115,7 +115,11 @@ public class PluginInstaller {
         if (filePath.startsWith(SCHEME_FILE)) {
             Uri uri = Uri.parse(filePath);
             filePath = uri.getPath();
-            if (filePath != null && filePath.startsWith(ANDROID_ASSETS)) {
+            if (TextUtils.isEmpty(filePath)) {
+                throw new IllegalArgumentException("illegal install file path: " + info.mPath);
+            }
+
+            if (filePath.startsWith(ANDROID_ASSETS)) {
                 String buildInPath = SCHEME_ASSETS + filePath.substring(ANDROID_ASSETS.length());
                 PluginDebugLog.installFormatLog(TAG, "install buildIn apk: %s, info: %s", buildInPath, info);
                 startInstall(context, buildInPath, info);
@@ -206,8 +210,8 @@ public class PluginInstaller {
         try {
             Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
             intent.setClass(context, PluginInstallerService.class);
-            intent.putExtra(IIntentConstant.EXTRA_SRC_FILE, filePath);
-            intent.putExtra(IIntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);
+            intent.putExtra(IntentConstant.EXTRA_SRC_FILE, filePath);
+            intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);
 
             context.startService(intent);
         } catch (Exception e) {
@@ -224,7 +228,7 @@ public class PluginInstaller {
         @Override
         public void onReceive(Context context, Intent intent) {
             try {
-                String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
+                String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
                 if (!TextUtils.isEmpty(pkgName)) {
                     PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
                     sInstallingList.remove(pkgName);
@@ -333,7 +337,7 @@ public class PluginInstaller {
 
         File lib = new File(dataDir, "lib");
         // 删除lib目录下的so库
-        boolean deleted = Util.deleteDirectory(lib);
+        boolean deleted = FileUtils.deleteDirectory(lib);
         PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage lib %s success: %s", packageName, deleted);
 
         File apk = null;
@@ -365,7 +369,7 @@ public class PluginInstaller {
             //删除odex和vdex文件
             String currentInstructionSet = "";
             try {
-                currentInstructionSet = Util.getCurrentInstructionSet();
+                currentInstructionSet = FileUtils.getCurrentInstructionSet();
             } catch (Exception e) {
                 currentInstructionSet = "arm";
                 e.printStackTrace();
@@ -408,16 +412,16 @@ public class PluginInstaller {
         File file = new File(dataDir, "files");
         File cache = new File(dataDir, "cache");
 
-        boolean deleted = Util.deleteDirectory(db);
+        boolean deleted = FileUtils.deleteDirectory(db);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData db %s success: %s", packageName, deleted);
 
-        deleted = Util.deleteDirectory(sharedPreference);
+        deleted = FileUtils.deleteDirectory(sharedPreference);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData sp %s success: %s", packageName, deleted);
 
-        deleted = Util.deleteDirectory(file);
+        deleted = FileUtils.deleteDirectory(file);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData file %s success: %s", packageName, deleted);
 
-        deleted = Util.deleteDirectory(cache);
+        deleted = FileUtils.deleteDirectory(cache);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData cache %s success: %s", packageName, deleted);
     }
 

@@ -816,10 +816,8 @@ public class ReflectionUtils {
     /**
      * 得到包装的对象的类型， 如果是基本类型,像int,float,boolean这种, 那么将被转换成相应的对象类型。
      */
-    public static Class<?> wrapper(Class<?> type) {
-        if (type == null) {
-            return null;
-        } else if (type.isPrimitive()) {
+    private static Class<?> wrapper(Class<?> type) {
+        if (type.isPrimitive()) {
             if (boolean.class == type) {
                 return Boolean.class;
             } else if (int.class == type) {
@@ -845,7 +843,7 @@ public class ReflectionUtils {
     }
 
     /**
-     * 定义了一个null类型
+     * 定义了一个NULL类型
      */
     private static class NULL {
     }

@@ -22,7 +22,7 @@ import android.content.Intent;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -151,21 +151,21 @@ public class IntentUtils {
         if (intent == null) {
             return false;
         }
-        return intent.getBooleanExtra(IIntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
+        return intent.getBooleanExtra(IntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
     }
 
     public static String getTargetPackage(Intent intent) {
         if (intent == null) {
             return "";
         }
-        return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
+        return intent.getStringExtra(IntentConstant.EXTRA_TARGET_PACKAGE_KEY);
     }
 
     public static String getTargetClass(Intent intent) {
         if (intent == null) {
             return "";
         }
-        return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+        return intent.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY);
     }
 
     /**

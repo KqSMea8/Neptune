@@ -21,7 +21,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -43,10 +43,10 @@ public class DexOptimizer {
 
 
     public static boolean optimize(File  dexFile, File optimizedDir,
-                                      boolean useInterpretMode, ResultCallback cb) {
+                  boolean useInterpretMode, ResultCallback cb) {
         String isa = null;
         try {
-            isa = Util.getCurrentInstructionSet();
+            isa = FileUtils.getCurrentInstructionSet();
         } catch (Exception e) {
             isa= null;
             e.printStackTrace();
@@ -84,7 +84,7 @@ public class DexOptimizer {
         }
 
         private boolean isLegalFile(File file) {
-            return file != null && file.exists() && file.canRead() && file.isFile() && file.length() > 0;
+            return file.exists() && file.canRead() && file.isFile() && file.length() > 0;
         }
 
         public static String optimizedPathFor(File path, File optimizedDirectory,String isa) {

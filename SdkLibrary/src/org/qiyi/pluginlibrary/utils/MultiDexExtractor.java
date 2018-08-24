@@ -195,7 +195,7 @@ class MultiDexExtractor {
                 dexEntry = apkFile.getEntry(entryName);
             }
         } finally {
-            Util.closeQuietly(apkFile);
+            FileUtils.closeQuietly(apkFile);
         }
 
         return files;
@@ -240,7 +240,7 @@ class MultiDexExtractor {
                         "\" to \"" + outDex.getAbsolutePath() + "\"");
             }
         } finally {
-            Util.closeQuietly(in);
+            FileUtils.closeQuietly(in);
             tmp.delete();
         }
     }
@@ -253,7 +253,7 @@ class MultiDexExtractor {
         SharedPreferences.Editor editor = prefs.edit();
         editor.putLong(keyPrefix + KEY_TIME_STAMP, timeStamp);
         editor.putLong(keyPrefix + KEY_CRC, crc);
-        editor.putLong(keyPrefix + KEY_DEX_NUMBER, dexFiles.size() + 1);
+        editor.putLong(keyPrefix + KEY_DEX_NUMBER, dexFiles.size() + 1L);
 
         int dexNumber = 2;
         for (ExtractedDex dex : dexFiles) {
@@ -291,7 +291,7 @@ class MultiDexExtractor {
     private static long getZipCrc(File archive) {
         long crc = 0;
         try {
-            crc = Util.getZipCrc(archive);
+            crc = FileUtils.getZipCrc(archive);
         } catch (IOException e) {
             crc = NO_VALUE;
         }

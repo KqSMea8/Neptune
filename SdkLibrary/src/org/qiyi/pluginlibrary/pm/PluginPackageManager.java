@@ -30,7 +30,7 @@ import android.text.TextUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
@@ -257,11 +257,11 @@ public class PluginPackageManager {
                 String action = intent.getAction();
                 if (ACTION_PACKAGE_INSTALLED.equals(action)) {
                     // 插件安装成功
-                    PluginLiteInfo pkgInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
+                    PluginLiteInfo pkgInfo = intent.getParcelableExtra(IntentConstant.EXTRA_PLUGIN_INFO);
                     if (pkgInfo == null) {
                         pkgInfo = new PluginLiteInfo();
-                        String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
-                        String destApkPath = intent.getStringExtra(IIntentConstant.EXTRA_DEST_FILE);
+                        String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
+                        String destApkPath = intent.getStringExtra(IntentConstant.EXTRA_DEST_FILE);
                         pkgInfo.packageName = pkgName;
                         pkgInfo.srcApkPath = destApkPath;
                         pkgInfo.installStatus = PluginLiteInfo.PLUGIN_INSTALLED;
@@ -286,11 +286,11 @@ public class PluginPackageManager {
                     onActionFinish(pkgInfo.packageName, INSTALL_SUCCESS);
                 } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
                     // 插件安装失败
-                    PluginLiteInfo pkgInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
+                    PluginLiteInfo pkgInfo = intent.getParcelableExtra(IntentConstant.EXTRA_PLUGIN_INFO);
                     if (pkgInfo == null) {
                         pkgInfo = new PluginLiteInfo();
-                        String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
-                        String filePath = intent.getStringExtra(IIntentConstant.EXTRA_SRC_FILE);
+                        String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
+                        String filePath = intent.getStringExtra(IntentConstant.EXTRA_SRC_FILE);
                         if (!TextUtils.isEmpty(pkgName)) {
                             pkgInfo.packageName = pkgName;
                         } else if (!TextUtils.isEmpty(filePath)) {
@@ -315,7 +315,7 @@ public class PluginPackageManager {
                     executePackageAction(pkgInfo, false, failReason);
                     onActionFinish(pkgInfo.packageName, INSTALL_FAILED);
                 } else if (TextUtils.equals(ACTION_HANDLE_PLUGIN_EXCEPTION, action)) {
-                    String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
+                    String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
                     String exception = intent.getStringExtra(ErrorType.ERROR_REASON);
                     PluginDebugLog.installFormatLog(TAG,
                             "plugin install exception:%s,exception:%s", pkgName
@@ -637,8 +637,8 @@ public class PluginPackageManager {
                     // 发送广播给插件进程，清理PluginLoadedApk数据
                     Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_UNINSTALL);
                     intent.setPackage(mContext.getPackageName());
-                    intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, packageInfo.packageName);
-                    intent.putExtra(IIntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) packageInfo);// 同时返回APK的插件信息
+                    intent.putExtra(IntentConstant.EXTRA_PKG_NAME, packageInfo.packageName);
+                    intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) packageInfo);// 同时返回APK的插件信息
                     mContext.sendBroadcast(intent);
                 }
             } catch (Exception e) {
@@ -890,7 +890,7 @@ public class PluginPackageManager {
         try {
             Intent intent = new Intent(ACTION_HANDLE_PLUGIN_EXCEPTION);
             intent.setPackage(context.getPackageName());
-            intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, pkgName);
+            intent.putExtra(IntentConstant.EXTRA_PKG_NAME, pkgName);
             intent.putExtra(ErrorType.ERROR_REASON, exceptionMsg);
             context.sendBroadcast(intent);
         } catch (Exception e) {

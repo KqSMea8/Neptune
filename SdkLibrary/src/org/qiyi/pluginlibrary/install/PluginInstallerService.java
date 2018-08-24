@@ -31,13 +31,13 @@ import android.os.Message;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -134,8 +134,8 @@ public class PluginInstallerService extends Service {
 
         String action = intent.getAction();
         if (ACTION_INSTALL.equals(action)) { // 插件安装
-            String srcFile = intent.getStringExtra(IIntentConstant.EXTRA_SRC_FILE);
-            PluginLiteInfo pluginInfo = intent.getParcelableExtra(IIntentConstant.EXTRA_PLUGIN_INFO);
+            String srcFile = intent.getStringExtra(IntentConstant.EXTRA_SRC_FILE);
+            PluginLiteInfo pluginInfo = intent.getParcelableExtra(IntentConstant.EXTRA_PLUGIN_INFO);
             handleInstall(srcFile, pluginInfo);
         }
     }
@@ -182,14 +182,14 @@ public class PluginInstallerService extends Service {
             return;
         }
 
-        boolean copyResult = Util.copyToFile(soFile, destFileTemp);
+        boolean copyResult = FileUtils.copyToFile(soFile, destFileTemp);
         if (copyResult && null != info && !TextUtils.isEmpty(info.packageName)) {
             File destFile = new File(PluginInstaller.getPluginappRootPath(this), info.packageName + PluginInstaller.SO_SUFFIX);
             if (destFileTemp.exists() && destFileTemp.renameTo(destFile)) {
 
                 String libDir = PluginInstaller.getPluginappRootPath(this).getAbsolutePath() + File.separator + info.packageName;
-                Util.deleteDirectory(new File(libDir));
-                boolean flag = Util.installNativeLibrary(destFile.getAbsolutePath(), libDir);
+                FileUtils.deleteDirectory(new File(libDir));
+                boolean flag = FileUtils.installNativeLibrary(destFile.getAbsolutePath(), libDir);
                 if (flag) {
                     setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
                     return;
@@ -220,7 +220,7 @@ public class PluginInstallerService extends Service {
             return;
         }
 
-        boolean copyResult = Util.copyToFile(new File(dexFilePath), destFileTemp);
+        boolean copyResult = FileUtils.copyToFile(new File(dexFilePath), destFileTemp);
         if (copyResult && null != info && !TextUtils.isEmpty(info.packageName)) {
             File destFile = new File(PluginInstaller.getPluginappRootPath(this), info.packageName + PluginInstaller.DEX_SUFFIX);
             if (destFileTemp.exists() && destFileTemp.renameTo(destFile)) {
@@ -329,7 +329,7 @@ public class PluginInstallerService extends Service {
         } else if (srcPathWithScheme.startsWith(PluginInstaller.SCHEME_ASSETS)) {
             // 解压拷贝Asset目录下的插件
             tempFile = new File(PluginInstaller.getPluginappRootPath(this), System.currentTimeMillis() + ".tmp");
-            boolean result = Util.copyToFile(is, tempFile);
+            boolean result = FileUtils.copyToFile(is, tempFile);
             PluginDebugLog.installLog(TAG, "doInstall copy result" + result);
             if (!result) {
                 tempFile.delete();
@@ -419,7 +419,7 @@ public class PluginInstallerService extends Service {
             PluginDebugLog.installFormatLog(TAG,
                     "doInstall:%s tmpFile and destFile in same directory!", packageName);
             if (!srcApkFile.renameTo(destFile)) {
-                boolean copyResult = Util.copyToFile(srcApkFile, destFile);
+                boolean copyResult = FileUtils.copyToFile(srcApkFile, destFile);
                 if (!copyResult) {
                     setInstallFail(srcPathWithScheme, ErrorType.INSTALL_ERROR_RENAME_FAILED, info);
                     return;
@@ -429,7 +429,7 @@ public class PluginInstallerService extends Service {
             // 拷贝到其他目录，比如安装到 sdcard
             PluginDebugLog.installFormatLog(TAG,
                     "doInstall:%s tmpFile and destFile in different directory!", packageName);
-            boolean tempResult = Util.copyToFile(srcApkFile, destFile);
+            boolean tempResult = FileUtils.copyToFile(srcApkFile, destFile);
             if (!tempResult) {
                 PluginDebugLog.installFormatLog(TAG, "doInstall:%s copy apk failed!", packageName);
                 setInstallFail(srcPathWithScheme, ErrorType.INSTALL_ERROR_APK_COPY_FAILED, info);
@@ -454,7 +454,7 @@ public class PluginInstallerService extends Service {
             return;
         }
 
-        Util.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());  //拷贝so库
+        FileUtils.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());  //拷贝so库
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService finish install lib,pkgName:%s", packageName);
         setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
@@ -479,10 +479,10 @@ public class PluginInstallerService extends Service {
         }
         Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         intent.setPackage(getPackageName());
-        intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, info != null ? info.packageName : "");
-        intent.putExtra(IIntentConstant.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
+        intent.putExtra(IntentConstant.EXTRA_PKG_NAME, info != null ? info.packageName : "");
+        intent.putExtra(IntentConstant.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
         intent.putExtra(ErrorType.ERROR_REASON, failReason);               // 同时返回安装失败的原因
-        intent.putExtra(IIntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
+        intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
         sendBroadcast(intent);
         if (info != null) {
             PluginDebugLog.installLog(TAG, "Send setInstallFail with reason: " + failReason + " PluginPackageInfoExt: " + info);
@@ -504,10 +504,10 @@ public class PluginInstallerService extends Service {
         }
         Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_INSTALLED);
         intent.setPackage(getPackageName());
-        intent.putExtra(IIntentConstant.EXTRA_PKG_NAME, pkgName);
-        intent.putExtra(IIntentConstant.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
-        intent.putExtra(IIntentConstant.EXTRA_DEST_FILE, destPath);        // 同时返回安装后的安装文件目录。
-        intent.putExtra(IIntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
+        intent.putExtra(IntentConstant.EXTRA_PKG_NAME, pkgName);
+        intent.putExtra(IntentConstant.EXTRA_SRC_FILE, srcPathWithScheme);// 同时返回安装前的安装文件目录。
+        intent.putExtra(IntentConstant.EXTRA_DEST_FILE, destPath);        // 同时返回安装后的安装文件目录。
+        intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);// 同时返回APK的插件信息
         sendBroadcast(intent);
         if (info != null) {
             PluginDebugLog.installLog(TAG, "Send setInstallSuccess " + " PluginPackageInfoExt: " + info);

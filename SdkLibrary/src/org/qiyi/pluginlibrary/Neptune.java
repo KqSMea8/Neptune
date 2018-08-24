@@ -31,7 +31,6 @@ import org.qiyi.pluginlibrary.pm.IPluginUninstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
@@ -131,26 +130,6 @@ public class Neptune {
         }
 
         return mHostInstr;
-    }
-
-    /**
-     * 反射获取ActivityThread对象
-     */
-    private static Object getActivityThread() {
-        ReflectionUtils ref = ReflectionUtils.on("android.app.ActivityThread");
-        Object obj = null;
-        try {
-            obj = ref.call("currentActivityThread").get();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        if (obj == null) {
-            obj = ref.get("sCurrentActivityThread");
-        }
-        if (obj == null) {
-            obj = ((ThreadLocal<?>)ref.get("sThreadLocal")).get();
-        }
-        return obj;
     }
 
     /**

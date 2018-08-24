@@ -91,54 +91,6 @@ public class ContextUtils {
         }
     }
 
-    public static String getTopActivityName(Context context, String packName) {
-        String topActivity = getTopActivity(context);
-        if (!TextUtils.isEmpty(topActivity)) {
-            if (topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxyTranslucent1")
-                    || topActivity.startsWith("org.qiyi.pluginlibrary.component.InstrActivityProxy1")) {
-                return "plugin:" + getTopActivity();
-            } else {
-                return topActivity;
-            }
-        }
-        return null;
-    }
-
-    private static String getTopActivity(Context context) {
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningTaskInfo> runningTaskInfos = manager.getRunningTasks(1);
-        if (runningTaskInfos != null)
-            return runningTaskInfos.get(0).topActivity.getClassName();
-        else
-            return null;
-    }
-
-    public static String getTopActivity() {
-        String topPackage = null;
-        for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
-            String packageName = (String) entry.getKey();
-            PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
-            Activity topActivity = mLoadedApk.getActivityStackSupervisor().getTopActivity();
-            if (topActivity != null && Util.isResumed(topActivity)) {
-                topPackage = packageName;
-                break;
-            }
-        }
-        return topPackage;
-    }
-
-    public static List<String> getRunningPluginPackage() {
-        List<String> mRunningPackage = new ArrayList<String>();
-        for (Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
-            String packageName = (String) entry.getKey();
-            PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
-            if (mLoadedApk.getActivityStackSupervisor().hasActivityRunning()) {
-                mRunningPackage.add(packageName);
-            }
-        }
-
-        return mRunningPackage;
-    }
 
     /**
      * Try to get host ResourcesToolForPlugin in the plugin environment or the
