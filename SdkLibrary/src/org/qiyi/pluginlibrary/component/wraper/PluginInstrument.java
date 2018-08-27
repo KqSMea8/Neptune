@@ -87,7 +87,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class, Bundle.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -104,7 +104,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -122,7 +122,7 @@ public class PluginInstrument extends Instrumentation {
             return mInstrumentRef.call("execStartActivityAsCaller", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options, userId)
                     .get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -141,7 +141,7 @@ public class PluginInstrument extends Instrumentation {
             return mInstrumentRef.call("execStartActivityAsCaller", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options,
                     ignoreTargetSecurity, userId).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -160,7 +160,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent[].class, Bundle.class, int.class};
             mInstrumentRef.call("execStartActivitiesAsUser", sMethods, paramTypes, who, contextThread, token, target, intents, options, userId);
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
     }
 
@@ -176,7 +176,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class, Bundle.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -193,7 +193,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class, Bundle.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }

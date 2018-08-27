@@ -55,7 +55,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class PluginActivityControl implements PluginActivityCallback {
     private static final String TAG = "PluginActivityControl";
-    public static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>();
+    public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(10);
     private Activity mProxy;// 代理Activity
     private Activity mPlugin;// 插件Activity
     private ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类
