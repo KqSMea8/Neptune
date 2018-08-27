@@ -44,6 +44,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
@@ -246,7 +247,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             }
         } catch (Exception e) {
             PluginDebugLog.runtimeFormatLog(TAG, "getExternalFilesDir throws exception %s : ", e.getMessage());
-            e.printStackTrace();
         }
         PluginDebugLog.runtimeFormatLog(TAG, "get hooked external files dir failed, return default");
 
@@ -272,7 +272,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             }
         } catch (Exception e) {
             PluginDebugLog.runtimeFormatLog(TAG, "getExternalCacheDir throws exception %s : ", e.getMessage());
-            e.printStackTrace();
         }
         PluginDebugLog.runtimeLog(TAG, "get hooked external cache dir failed, return default");
 
@@ -336,15 +335,15 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
             }
             f = new File(tmpDir, name);
             if (VersionUtils.hasOreo_MR1()) {
-                if (!f.exists()) {
-                    try {
+                try {
+                    if (!f.exists()) {
                         f.createNewFile();
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
+                    int perms = android.os.FileUtils.S_IRUSR | android.os.FileUtils.S_IWUSR | android.os.FileUtils.S_IRGRP | android.os.FileUtils.S_IWGRP;
+                    setFilePermissionsForDb(f.getAbsolutePath(), perms);
+                } catch (IOException | SecurityException e) {
+                    // ignore
                 }
-                int perms = android.os.FileUtils.S_IRUSR | android.os.FileUtils.S_IWUSR | android.os.FileUtils.S_IRGRP | android.os.FileUtils.S_IWGRP;
-                setFilePermissionsForDb(f.getAbsolutePath(), perms);
             }
         }
 
@@ -567,7 +566,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
                 return getSharedPreferencesV4(name, mode);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            ErrorUtil.throwErrorIfNeed(e);
         }
         return null;
     }
@@ -749,7 +748,7 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         Class<?> clazz = Class.forName("android.app.ContextImpl");
         File prefsFile;
         boolean needInitialLoad = false;
-        HashMap<String, Object> oSharedPrefs = ReflectionUtils.on(this.getBaseContext()).get(S_SHARED_PREFS);
+        final HashMap<String, Object> oSharedPrefs = ReflectionUtils.on(this.getBaseContext()).get(S_SHARED_PREFS);
         synchronized (oSharedPrefs) {
             sp = oSharedPrefs.get(name);
             Method hasFileChangedUnexpectedly = SharedPreferencesImpl.getDeclaredMethod("hasFileChangedUnexpectedly");
@@ -785,23 +784,17 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
             Method getFileStatus = fileUtilsClass.getDeclaredMethod("getFileStatus", String.class, fileStatusClass);
             boolean getFileStatusResult = (Boolean) getFileStatus.invoke(FileStatus, prefsFile.getPath(), FileStatus);
-            FileInputStream str = null;
+            FileInputStream fis = null;
             if (getFileStatusResult && prefsFile.canRead()) {
                 try {
-                    str = new FileInputStream(prefsFile);
+                    fis = new FileInputStream(prefsFile);
                     Class<?> xmlUtilClass = Class.forName("com.android.internal.util.XmlUtils");
                     map = (Map) xmlUtilClass.getDeclaredMethod("readMapXml", FileInputStream.class)
-                            .invoke(xmlUtilClass.newInstance(), str);
+                            .invoke(xmlUtilClass.newInstance(), fis);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // ignore
                 } finally {
-                    if (null != str) {
-                        try {
-                            str.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    FileUtils.closeQuietly(fis);
                 }
             }
             SharedPreferencesImpl.getMethod("replace", Map.class, fileStatusClass).invoke(sp, map, FileStatus);

@@ -49,7 +49,6 @@ public class DexOptimizer {
             isa = FileUtils.getCurrentInstructionSet();
         } catch (Exception e) {
             isa= null;
-            e.printStackTrace();
         }
         OptimizeWorker worker = new OptimizeWorker(dexFile, optimizedDir, useInterpretMode, isa, cb);
         if (!worker.run()) {

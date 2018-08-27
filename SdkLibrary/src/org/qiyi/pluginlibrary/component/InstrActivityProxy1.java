@@ -939,7 +939,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 try {
                     pluginRef.set("mHasCurrentPermissionsRequest", false);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // ignore
                 }
                 Class<?>[] paramTyps = new Class[]{int.class, String[].class, int[].class};
                 pluginRef.call("onRequestPermissionsResult", PluginActivityControl.sMethods, paramTyps, requestCode, permissions, grantResults);
@@ -1104,11 +1104,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             }
         }
         if (null != mActivityInfo) {
-            try {
-                getWindow().setSoftInputMode(mActivityInfo.softInputMode);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            getWindow().setSoftInputMode(mActivityInfo.softInputMode);
 
             PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +
                     mActivityInfo.getThemeResource() + ", icon = " + mActivityInfo.getIconResource()

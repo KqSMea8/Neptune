@@ -64,7 +64,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import dalvik.system.DexClassLoader;
 
@@ -77,6 +79,8 @@ import dalvik.system.DexClassLoader;
  */
 public class PluginLoadedApk {
     private static final String TAG = "PluginLoadedApk";
+
+    public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(1);
     /**
      * 保存注入到宿主ClassLoader的插件
      */
@@ -217,7 +221,6 @@ public class PluginLoadedApk {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-
                 }
             }
         }
@@ -235,11 +238,11 @@ public class PluginLoadedApk {
             AssetManager am = AssetManager.class.newInstance();
             // 添加插件的资源
             Class<?>[] paramTypes = new Class[]{String.class};
-            ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, paramTypes, mPluginPath);
+            ReflectionUtils.on(am).call("addAssetPath", sMethods, paramTypes, mPluginPath);
             boolean shouldAddHostRes = !mPluginPackageInfo.isIndividualMode() && mPluginPackageInfo.isResourceNeedMerge();
             if (shouldAddHostRes) {
                 // 添加宿主的资源到插件的AssetManager
-                ReflectionUtils.on(am).call("addAssetPath", PluginActivityControl.sMethods, paramTypes,
+                ReflectionUtils.on(am).call("addAssetPath", sMethods, paramTypes,
                         mHostContext.getApplicationInfo().sourceDir);
                 PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
             }
@@ -282,7 +285,7 @@ public class PluginLoadedApk {
                 mPluginAssetManager = resources.getAssets();
                 if (mPluginPackageInfo.isResourceNeedMerge()) {
                     Class<?>[] paramTypes = new Class[]{String.class};
-                    ReflectionUtils.on(mPluginAssetManager).call("addAssetPath", PluginActivityControl.sMethods,
+                    ReflectionUtils.on(mPluginAssetManager).call("addAssetPath", sMethods,
                             paramTypes, mHostContext.getApplicationInfo().sourceDir);
                     PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
                 }
@@ -511,7 +514,7 @@ public class PluginLoadedApk {
         } catch (Exception e) {
             PluginManager.deliver(mHostContext, false, mPluginPackageName,
                     ErrorType.ERROR_PLUGIN_APPLICATION_ATTACH_BASE);
-            e.printStackTrace();
+            ErrorUtil.throwErrorIfNeed(e);
         }
     }
 
@@ -619,6 +622,10 @@ public class PluginLoadedApk {
                 if (null != libraryInfo && !TextUtils.isEmpty(libraryInfo.packageName)) {
                     libraryPackageInfo = PluginPackageManagerNative.getInstance(mHostContext)
                             .getPluginPackageInfo(mHostContext, libraryInfo);
+                    if (libraryPackageInfo == null) {
+                        PluginDebugLog.warningLog(TAG, "handleNewDependencies get libraryPackageInfo null " + libraryInfo.packageName);
+                        return false;
+                    }
 
                     dependency = sAllPluginClassLoader.get(libraryInfo.packageName);
                     if (dependency == null) {
@@ -637,13 +644,8 @@ public class PluginLoadedApk {
 
                         PluginDebugLog.runtimeLog(TAG,
                                 "handleNewDependencies src apk path : " + libraryInfo.srcApkPath);
-                        File dataDir = libraryPackageInfo != null ? new File(libraryPackageInfo.getDataDir()) :
-                                new File(PluginInstaller.getPluginappRootPath(mHostContext), libraryInfo.packageName);
-                        String nativeLibraryDir = libraryPackageInfo != null ? libraryPackageInfo.getNativeLibraryDir() :
-                                new File(dataDir, PluginInstaller.NATIVE_LIB_PATH).getAbsolutePath();
-
-                        ClassLoader parent = (libraryPackageInfo != null && libraryPackageInfo.isIndividualMode())
-                                ? mHostClassLoader.getParent() : mHostClassLoader;
+                        String nativeLibraryDir = libraryPackageInfo.getNativeLibraryDir();
+                        ClassLoader parent = libraryPackageInfo.isIndividualMode() ? mHostClassLoader.getParent() : mHostClassLoader;
                         File optDir = PluginInstaller.getPluginInjectRootPath(mHostContext);
                         FileUtils.checkOtaFileValid(optDir, new File(libraryInfo.srcApkPath)); //检查oat文件是否损坏
                         dependency = new PluginClassLoader(libraryPackageInfo, libraryInfo.srcApkPath,
@@ -683,14 +685,9 @@ public class PluginLoadedApk {
      */
     private File getDataDir(Context context, String packageName) {
         PluginDebugLog.runtimeLog(TAG, "packageName:" + packageName + " context:" + context);
-        File dataDir = null;
-        try {
-            dataDir = new File(mPluginPackageInfo.getDataDir());
-            if (!dataDir.exists()) {
-                dataDir.mkdirs();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        File dataDir = new File(mPluginPackageInfo.getDataDir());
+        if (!dataDir.exists()) {
+            dataDir.mkdirs();
         }
         return dataDir;
     }
@@ -748,7 +745,7 @@ public class PluginLoadedApk {
                                     PluginDebugLog.runtimeLog(TAG, "quitapp unbindService" + connection);
                                     mPluginAppContext.unbindService(connection);
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    // ignore
                                 }
                             }
                         }

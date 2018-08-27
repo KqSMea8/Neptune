@@ -44,9 +44,9 @@ public class PluginDebugLog {
 
     private static final String GENERAL_TAG = "general_plugin";
 
-    private static SimpleDateFormat formatter = new SimpleDateFormat("MM-dd HH:mm:ss:SSS");
+    private static SimpleDateFormat formatter = new SimpleDateFormat("MM-dd HH:mm:ss:SSS", Locale.getDefault());
 
-    public static final int SINGLE_LOG_SIZE_LIMIT = 512;
+    private static final int SINGLE_LOG_SIZE_LIMIT = 512;
 
     private static boolean sIsDebug = false;
 

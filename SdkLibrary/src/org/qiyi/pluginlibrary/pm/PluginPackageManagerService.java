@@ -17,7 +17,6 @@
  */
 package org.qiyi.pluginlibrary.pm;
 
-import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
@@ -37,12 +36,12 @@ import java.util.List;
  */
 public class PluginPackageManagerService extends Service {
     private static final String TAG = "PluginPackageManagerService";
-    @SuppressLint("StaticFieldLeak")
-    private static PluginPackageManager mManager;
+    // 插件信息管理
+    private PluginPackageManager mManager;
 
     @Override
     public void onCreate() {
-        mManager = PluginPackageManager.getInstance(this);
+        mManager = new PluginPackageManager(this);
     }
 
     @Override

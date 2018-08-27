@@ -31,10 +31,10 @@ public class PServiceSupervisor {
     /**
      * 记录正在运行的service
      */
-    public static ConcurrentMap<String, PluginServiceWrapper> sAliveServices = new ConcurrentHashMap<String, PluginServiceWrapper>(
+    private final static ConcurrentMap<String, PluginServiceWrapper> sAliveServices = new ConcurrentHashMap<String, PluginServiceWrapper>(
             1);
 
-    public static ConcurrentMap<String, ServiceConnection> sAliveServiceConnection = new ConcurrentHashMap<String, ServiceConnection>();
+    private final static ConcurrentMap<String, ServiceConnection> sAliveServiceConnection = new ConcurrentHashMap<String, ServiceConnection>();
 
     public static ConcurrentMap<String, PluginServiceWrapper> getAliveServices() {
         return sAliveServices;
@@ -47,14 +47,14 @@ public class PServiceSupervisor {
         return sAliveServices.get(identity);
     }
 
-    public static void removeServiceByIdentifer(String identity) {
+    public static void removeServiceByIdentity(String identity) {
         if (TextUtils.isEmpty(identity)) {
             return;
         }
         sAliveServices.remove(identity);
     }
 
-    public static void addServiceByIdentifer(String identity, PluginServiceWrapper serviceWrapper) {
+    public static void addServiceByIdentity(String identity, PluginServiceWrapper serviceWrapper) {
         if (TextUtils.isEmpty(identity) || null == serviceWrapper) {
             return;
         }

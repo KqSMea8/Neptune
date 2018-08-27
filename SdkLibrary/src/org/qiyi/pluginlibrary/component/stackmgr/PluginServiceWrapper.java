@@ -19,6 +19,8 @@ package org.qiyi.pluginlibrary.component.stackmgr;
 
 import android.app.Service;
 
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
+
 /**
  * 对插件Service的包装，记录每个Service的状态，便于对
  * Service的生命周期进行管理
@@ -31,7 +33,7 @@ public class PluginServiceWrapper {
     public static final int PLUGIN_SERVICE_STOPED = PLUGIN_SERVICE_STARTED + 1;
     public static final int PLUGIN_SERVICE_DESTROYED = PLUGIN_SERVICE_STOPED + 1;
 
-    int mState = PLUGIN_SERVICE_DEFAULT;
+    private int mState = PLUGIN_SERVICE_DEFAULT;
     /**插件中被代理Service的类名*/
     private String mServiceClassName;
     /**插件包名*/
@@ -48,7 +50,7 @@ public class PluginServiceWrapper {
      * {@link android.app.Service#START_REDELIVER_INTENT}
      * {@link android.app.Service#START_STICKY}
      */
-    public volatile boolean mNeedSelfLaunch = false;
+    private volatile boolean mNeedSelfLaunch = false;
 
     public PluginServiceWrapper(String serviceClsName, String pkgName, Service parent, Service current) {
         mServiceClassName = serviceClsName;
@@ -84,10 +86,16 @@ public class PluginServiceWrapper {
         }
     }
 
+    public boolean needSelfLaunch() {
+        return mNeedSelfLaunch;
+    }
+
+    public void setSelfLaunch(boolean selfLaunch) {
+        mNeedSelfLaunch = selfLaunch;
+    }
 
     /**
      * 判断当前Service 是否可以执行onDestroy
-     * @return
      */
     private boolean shouldDestroy() {
         return mBindCounter == 0 &&
@@ -103,10 +111,10 @@ public class PluginServiceWrapper {
                 mCurrentService.onDestroy();
                 mState = PLUGIN_SERVICE_DESTROYED;
             } catch (Exception e) {
-                e.printStackTrace();
+                ErrorUtil.throwErrorIfNeed(e);
             }
             // remove service record.
-            PServiceSupervisor.removeServiceByIdentifer(getIdentify(mPkgName, mServiceClassName));
+            PServiceSupervisor.removeServiceByIdentity(getIdentify(mPkgName, mServiceClassName));
             if (PServiceSupervisor.getAliveServices().size() == 0 && mParentService != null) {
                 mParentService.stopSelf();
             }
@@ -117,7 +125,6 @@ public class PluginServiceWrapper {
      * 获取当前Service保存的key值
      * @param pkg
      * @param serviceClsName
-     * @return
      */
     public static String getIdentify(String pkg, String serviceClsName) {
         return pkg + "." + serviceClsName;

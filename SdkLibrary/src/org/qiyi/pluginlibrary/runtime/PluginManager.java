@@ -470,7 +470,6 @@ public class PluginManager {
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-            // TODO ServiceConnection如何中转处理
             return;
         }
 
@@ -1272,37 +1271,16 @@ public class PluginManager {
         }
         PServiceSupervisor.clearConnections();
         // sAliveServices will be cleared, when on ServiceProxy1 destroy.
-
-        if (mContext != null) {
-            Intent intent = new Intent();
-            String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(mProcessName);
-            try {
-                PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
-                intent.setClass(mContext, Class.forName(proxyServiceName));
-                intent.setAction(IntentConstant.ACTION_QUIT_SERVICE);
-                mContext.startService(intent);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public static void dump(PrintWriter printWriter) {
+        Intent intent = new Intent();
+        String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(mProcessName);
         try {
-            printWriter.print("================start dump plugin activity stack====================");
-            Iterator<Map.Entry<String, PluginLoadedApk>> mIterator = sPluginsMap.entrySet().iterator();
-            while (mIterator.hasNext()) {
-                Map.Entry<String, PluginLoadedApk> tmp = mIterator.next();
-                printWriter.print("packageName:" + tmp.getKey());
-                printWriter.print("\n");
-                tmp.getValue().getActivityStackSupervisor().dump(printWriter);
-            }
-            printWriter.print("================end dump plugin activity stack====================");
-        } catch (Exception e) {
+            PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
+            intent.setClass(mContext, Class.forName(proxyServiceName));
+            intent.setAction(IntentConstant.ACTION_QUIT_SERVICE);
+            mContext.startService(intent);
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
-            printWriter.print("error:" + e.getMessage());
         }
-
     }
 
     /**

@@ -68,8 +68,8 @@ public class ServiceProxy1 extends Service {
     private void handleSelfLaunchPluginService() {
         List<PluginServiceWrapper> selfLaunchServices = new ArrayList<PluginServiceWrapper>(1);
         for (PluginServiceWrapper plugin : PServiceSupervisor.getAliveServices().values()) {
-            PServiceSupervisor.removeServiceByIdentifer(PluginServiceWrapper.getIdentify(plugin.getPkgName(), plugin.getServiceClassName()));
-            if (plugin.mNeedSelfLaunch) {
+            PServiceSupervisor.removeServiceByIdentity(PluginServiceWrapper.getIdentify(plugin.getPkgName(), plugin.getServiceClassName()));
+            if (plugin.needSelfLaunch()) {
                 selfLaunchServices.add(plugin);
             }
         }
@@ -117,7 +117,7 @@ public class ServiceProxy1 extends Service {
                 targetService.onCreate();
                 currentPlugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_CREATED);
 
-                PServiceSupervisor.addServiceByIdentifer(targetPackageName + "." + targetClassName, currentPlugin);
+                PServiceSupervisor.addServiceByIdentity(targetPackageName + "." + targetClassName, currentPlugin);
 
                 PluginDebugLog.log(TAG, "ServiceProxy1>>>start service, pkgName: " + targetPackageName + ", clsName: "
                         + targetClassName);
@@ -240,7 +240,7 @@ public class ServiceProxy1 extends Service {
             int result = currentPlugin.getCurrentService().onStartCommand(paramIntent, paramInt1, paramInt2);
             PluginDebugLog.log(TAG, "ServiceProxy1>>>>>onStartCommand() result: " + result);
             if (result == START_REDELIVER_INTENT || result == START_STICKY) {
-                currentPlugin.mNeedSelfLaunch = true;
+                currentPlugin.setSelfLaunch(true);
             }
             mKillProcessOnDestroy = false;
             return START_NOT_STICKY;

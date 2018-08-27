@@ -70,13 +70,7 @@ public class ClassLoaderInjectHelper {
     }
 
     public static InjectResult inject(ClassLoader parentClassLoader, ClassLoader childClassLoader, String someClass) {
-        // ali云 暂不实现，后边再看。
-        // try {
-        // Class.forName("dalvik.system.LexClassLoader");
-        // return injectInAliyunOs(aApp, aLibPath);
-        // } catch (ClassNotFoundException e) {
-        // e.printStackTrace();
-        // }
+
         boolean hasBaseDexClassLoader = true;
         try {
             Class.forName("dalvik.system.BaseDexClassLoader");
@@ -531,13 +525,7 @@ public class ClassLoaderInjectHelper {
     }
 
     public static InjectResult eject(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
-        // ali云 暂不实现，后边再看。
-        // try {
-        // Class.forName("dalvik.system.LexClassLoader");
-        // return injectInAliyunOs(aApp, aLibPath);
-        // } catch (ClassNotFoundException e) {
-        // e.printStackTrace();
-        // }
+
         boolean hasBaseDexClassLoader = true;
         try {
             Class.forName("dalvik.system.BaseDexClassLoader");

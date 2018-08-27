@@ -215,7 +215,7 @@ public class PluginInstaller {
 
             context.startService(intent);
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
     }
 
@@ -227,14 +227,10 @@ public class PluginInstaller {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            try {
-                String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
-                if (!TextUtils.isEmpty(pkgName)) {
-                    PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
-                    sInstallingList.remove(pkgName);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
+            if (!TextUtils.isEmpty(pkgName)) {
+                PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
+                sInstallingList.remove(pkgName);
             }
         }
     };
@@ -372,7 +368,6 @@ public class PluginInstaller {
                 currentInstructionSet = FileUtils.getCurrentInstructionSet();
             } catch (Exception e) {
                 currentInstructionSet = "arm";
-                e.printStackTrace();
             }
 
             String pathPrefix = apk.getParent() + "/oat/"
