@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component.base;
 
 import android.app.Activity;
@@ -15,8 +32,6 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
  * 插件内的BaseActivity, 提供给插件方继承此类，
  * 通过override方式来完成插件框架的一些功能替换和生命周期注入
  *
- * author: liuchun
- * date: 2018/6/13
  */
 public class PluginActivity extends Activity implements IPluginBase{
 

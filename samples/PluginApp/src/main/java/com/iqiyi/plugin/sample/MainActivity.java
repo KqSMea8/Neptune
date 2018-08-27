@@ -23,17 +23,11 @@ public class MainActivity extends AppCompatActivity{
     private static final String TAG = "MainActivity";
 
     private static final String[] URL_LINKS = {
-//            "https://78.media.tumblr.com/2acd0cd79d1c0fa42feee28e3decde40/tumblr_oxg2jk26g71shn04do1_500.gif",
-//            "https://78.media.tumblr.com/f7c41c1435b0934f95670d9e3c511e06/tumblr_oxg2x8Fh7x1shn04do1_500.gif",
-//            "https://78.media.tumblr.com/4cc1832f2793185d5f860842b76356c4/tumblr_oxg2uwK2nC1shn04do1_500.gif",
-//            "https://78.media.tumblr.com/d970004bf2c225c21813098b3b58fcb1/tumblr_oxg2v2sEvL1shn04do1_500.gif",
-//            "https://78.media.tumblr.com/eb96a9f1225011bf5b035f7bb96095e9/tumblr_oxg2wyIhtY1shn04do1_500.gif",
             "http://desk.fd.zol-img.com.cn/t_s1440x900c5/g5/M00/0F/09/ChMkJlauzbOIb6JqABF4o12gc_AAAH9HgF1sh0AEXi7441.jpg",
             "http://desk.fd.zol-img.com.cn/t_s1440x900c5/g5/M00/08/0A/ChMkJli9XIOIHZlxACrBWTH-3-kAAae8QCVIF4AKsFx521.jpg",
             "http://desk.fd.zol-img.com.cn/t_s1440x900c5/g5/M00/08/0A/ChMkJ1i9XJmIJnFtABXosJGWaOkAAae8QGrHE8AFejI057.jpg",
             "http://desk.fd.zol-img.com.cn/t_s1440x900c5/g5/M00/08/0A/ChMkJ1i9XIWIfPrHACa8wnLl-YYAAae8QDvfUkAJrza322.jpg",
             "http://desk.fd.zol-img.com.cn/t_s1440x900c5/g5/M00/08/0A/ChMkJli9XJuIGhrMADspbh_OzE4AAae8QHCouwAOymG127.jpg",
-//            "http://pic6.qiyipic.com/common/20170324/43b5a409192a4890821042efa5aba1d7.gif"
     };
 
     private static final String[] ANIM_WEBP = {

@@ -2,5 +2,5 @@
 package org.qiyi.pluginlibrary.pm;
 
 interface IPluginUninstallCallBack {
-    oneway void onPluginUninstall(String packageName, int returnCode);
+    oneway void onPluginUninstall(String packageName, int resultCode);
 }

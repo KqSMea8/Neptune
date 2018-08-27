@@ -20,7 +20,7 @@ import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.IPluginUninstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
             File targetFile = new File(getFilesDir(), apkName);
             try {
                 InputStream is = getAssets().open("pluginapp/" + apkName);
-                Util.copyToFile(is, targetFile);
+                FileUtils.copyToFile(is, targetFile);
 
                 installPluginInternal(targetFile.getAbsolutePath());
             } catch (IOException e) {
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
     @OnClick(R.id.uninstall_plugin) void uninstallPlugin() {
         Neptune.uninstall(this, SAMPLE_PLUGIN_PKG, new IPluginUninstallCallBack.Stub() {
             @Override
-            public void onPluginUninstall(String packageName, int returnCode) throws RemoteException {
+            public void onPluginUninstall(String packageName, int resultCode) throws RemoteException {
                 Toast.makeText(MainActivity.this, "sample plugin uninstall success", Toast.LENGTH_SHORT).show();
                 updatePluginState();
             }

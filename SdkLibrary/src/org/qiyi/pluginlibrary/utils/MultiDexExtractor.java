@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2013 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.qiyi.pluginlibrary.utils;
 
 import android.content.Context;
@@ -180,7 +195,7 @@ class MultiDexExtractor {
                 dexEntry = apkFile.getEntry(entryName);
             }
         } finally {
-            Util.closeQuietly(apkFile);
+            FileUtils.closeQuietly(apkFile);
         }
 
         return files;
@@ -225,7 +240,7 @@ class MultiDexExtractor {
                         "\" to \"" + outDex.getAbsolutePath() + "\"");
             }
         } finally {
-            Util.closeQuietly(in);
+            FileUtils.closeQuietly(in);
             tmp.delete();
         }
     }
@@ -238,7 +253,7 @@ class MultiDexExtractor {
         SharedPreferences.Editor editor = prefs.edit();
         editor.putLong(keyPrefix + KEY_TIME_STAMP, timeStamp);
         editor.putLong(keyPrefix + KEY_CRC, crc);
-        editor.putLong(keyPrefix + KEY_DEX_NUMBER, dexFiles.size() + 1);
+        editor.putLong(keyPrefix + KEY_DEX_NUMBER, dexFiles.size() + 1L);
 
         int dexNumber = 2;
         for (ExtractedDex dex : dexFiles) {
@@ -276,7 +291,7 @@ class MultiDexExtractor {
     private static long getZipCrc(File archive) {
         long crc = 0;
         try {
-            crc = Util.getZipCrc(archive);
+            crc = FileUtils.getZipCrc(archive);
         } catch (IOException e) {
             crc = NO_VALUE;
         }

@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component.stackmgr;
 
 import android.app.Activity;
@@ -6,13 +23,13 @@ import android.content.pm.ActivityInfo;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
+import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -340,7 +357,7 @@ public class PActivityStackSupervisor {
                 for (Activity act : popActivities) {
                     PluginDebugLog.runtimeLog(TAG, "dealLaunchMode popActivities finish " + IntentUtils.dump(act));
                     popActivityFromStack(act);
-                    if (!Util.isFinished(act)) {
+                    if (!ContextUtils.isFinished(act)) {
                         act.finish();
                     }
                 }
@@ -452,14 +469,14 @@ public class PActivityStackSupervisor {
                 }
             }
 
-            PluginLoadedApk mLoadedApk = null;
+            PluginLoadedApk mPlugin = null;
             for (Activity removeItem : needRemove) {
                 if (null != removeItem) {
                     String pkgName = IntentUtils.parsePkgNameFromActivity(removeItem);
-                    mLoadedApk = PluginManager.getPluginLoadedApkByPkgName(pkgName);
-                    if (mLoadedApk != null) {
+                    mPlugin = PluginManager.getPluginLoadedApkByPkgName(pkgName);
+                    if (mPlugin != null) {
                         popActivityFromStack(removeItem);
-                        if (!Util.isFinished(removeItem)) {
+                        if (!ContextUtils.isFinished(removeItem)) {
                             removeItem.finish();
                         }
                     }
@@ -569,8 +586,8 @@ public class PActivityStackSupervisor {
         Intent toBeRemoved = null;
         if (null != intents) {
             for (Intent temp : intents) {
-                if (TextUtils.equals(temp.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY),
-                        intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY))) {
+                if (TextUtils.equals(temp.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY),
+                        intent.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY))) {
                     toBeRemoved = temp;
                     break;
                 }
@@ -592,7 +609,7 @@ public class PActivityStackSupervisor {
      */
     private String matchTaskName(String affinity) {
 
-        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IIntentConstant.TASK_AFFINITY_CONTAINER)) {
+        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)) {
             return affinity;
         } else {
             return mLoadedApk.getPluginPackageName();

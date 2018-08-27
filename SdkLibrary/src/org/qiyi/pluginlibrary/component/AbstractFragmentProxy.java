@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component;
 
 import android.content.Context;
@@ -9,7 +26,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.listenter.IPluginElementLoadListener;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
@@ -42,8 +59,8 @@ public abstract class AbstractFragmentProxy extends Fragment {
     protected void loadPluginFragment() {
         Bundle arguments = getArguments();
         if (arguments != null) {
-            String packageName = arguments.getString(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
-            String className = arguments.getString(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
+            String packageName = arguments.getString(IntentConstant.EXTRA_TARGET_PACKAGE_KEY);
+            String className = arguments.getString(IntentConstant.EXTRA_TARGET_CLASS_KEY);
             final Context hostContext = getContext().getApplicationContext();
             if (PluginPackageManagerNative.getInstance(hostContext).isPackageInstalled(packageName)) {
                 PluginManager.createFragment(hostContext, packageName, className, getArguments(), new IPluginElementLoadListener<Fragment>() {

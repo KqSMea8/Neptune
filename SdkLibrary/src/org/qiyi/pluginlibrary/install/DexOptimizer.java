@@ -1,10 +1,27 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.install;
 
 import android.text.TextUtils;
 import android.util.Log;
 
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -17,11 +34,6 @@ import java.util.concurrent.Executors;
 
 import dalvik.system.DexClassLoader;
 
-/**
- * Author:yuanzeyao
- * Date:2017/11/8 16:57
- * Email:yuanzeyao@qiyi.com
- */
 
 public class DexOptimizer {
     private static final String TAG = "DexOptimizer";
@@ -31,10 +43,10 @@ public class DexOptimizer {
 
 
     public static boolean optimize(File  dexFile, File optimizedDir,
-                                      boolean useInterpretMode, ResultCallback cb) {
+                  boolean useInterpretMode, ResultCallback cb) {
         String isa = null;
         try {
-            isa = Util.getCurrentInstructionSet();
+            isa = FileUtils.getCurrentInstructionSet();
         } catch (Exception e) {
             isa= null;
             e.printStackTrace();
@@ -72,7 +84,7 @@ public class DexOptimizer {
         }
 
         private boolean isLegalFile(File file) {
-            return file != null && file.exists() && file.canRead() && file.isFile() && file.length() > 0;
+            return file.exists() && file.canRead() && file.isFile() && file.length() > 0;
         }
 
         public static String optimizedPathFor(File path, File optimizedDirectory,String isa) {

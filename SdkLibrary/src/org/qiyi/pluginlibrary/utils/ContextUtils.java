@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.utils;
 
 import android.app.Activity;
@@ -16,6 +33,7 @@ import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -102,7 +120,7 @@ public class ContextUtils {
             String packageName = (String) entry.getKey();
             PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
             Activity topActivity = mLoadedApk.getActivityStackSupervisor().getTopActivity();
-            if (topActivity != null && Util.isResumed(topActivity)) {
+            if (topActivity != null && isResumed(topActivity)) {
                 topPackage = packageName;
                 break;
             }
@@ -203,7 +221,6 @@ public class ContextUtils {
                     return getPluginPackageName(base);
                 }
             }
-            //PluginDebugLog.log(TAG, getInvokeInfo() + "getPluginPackageName context dont't match!");
             return context.getPackageName();
         }
     }
@@ -263,5 +280,32 @@ public class ContextUtils {
         }
         PackageInfo pkgInfo = mLoadedApk.getPackageInfo();
         return pkgInfo;
+    }
+
+    /**
+     * 判断Activity是否已经销毁或正在销毁，这时候就不再调用Activity.finish方法
+     * 防止插件重写finish方法造成循环调用
+     */
+    public static boolean isFinished(Activity activity) {
+        boolean isFinished = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            isFinished = activity.isDestroyed();
+        }
+        return isFinished || activity.isFinishing();
+    }
+
+    /**
+     * 判断Activity是否Resumed
+     */
+    public static boolean isResumed(Activity activity) {
+        boolean result = true;
+        try {
+            Class<?> clazz = Class.forName("android.app.Activity");
+            Method isResumed = clazz.getDeclaredMethod("isResumed");
+            result = (Boolean) isResumed.invoke(activity);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 }

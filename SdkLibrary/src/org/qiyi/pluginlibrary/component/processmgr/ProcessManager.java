@@ -1,15 +1,28 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component.processmgr;
 
 
 import android.content.Context;
 
 /**
- * 管理插件运行在哪个进程
- * Author:yuanzeyao
- * Date:2017/7/20 17:50
- * Email:yuanzeyao@qiyi.com
+ * 管理插件运行在哪个进程, 可以由外部配置
  */
-
 public class ProcessManager {
     private static final String PROXY_PROCESS0 = "";  //主进程
     private static final String PROXY_PROCESS1 = ":plugin1";

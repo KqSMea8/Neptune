@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.runtime;
 
 import android.annotation.NonNull;
@@ -30,7 +47,7 @@ import org.qiyi.pluginlibrary.component.processmgr.ProcessManager;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.wraper.ActivityWrapper;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
@@ -46,7 +63,7 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.ViewPluginHelper;
 
 import java.io.File;
@@ -65,12 +82,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 管理所有插件的运行状态
- * Author:yuanzeyao
- * Date:2017/7/3 18:30
- * Email:yuanzeyao@qiyi.com
+ *
  */
-
-public class PluginManager implements IIntentConstant {
+public class PluginManager {
     public static final String TAG = "PluginManager";
     /**
      * 已经加载到内存了的插件集合
@@ -240,7 +254,7 @@ public class PluginManager implements IIntentConstant {
                         args.putAll(arguments);
                     }
                     //  告诉 Fragment 当前所在包名 可以处理资源访问问题
-                    args.putString(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY, packageName);
+                    args.putString(IntentConstant.EXTRA_TARGET_PACKAGE_KEY, packageName);
                     fragment.setArguments(args);
                     listener.onSuccess(fragment, packageName);
                 } catch (Throwable e) {
@@ -383,7 +397,7 @@ public class PluginManager implements IIntentConstant {
             public void onLoadFailed(String packageName) {
                 listener.onFail(ErrorType.ERROR_PLUGIN_CREATE_LOADEDAPK, packageName);
             }
-        }, Util.getCurrentProcessName(hostContext));
+        }, FileUtils.getCurrentProcessName(hostContext));
     }
 
     /**
@@ -442,13 +456,13 @@ public class PluginManager implements IIntentConstant {
         // 处理不同进程跳转
         final String targetProcessName = TextUtils.isEmpty(mProcessName) ?
                 ProcessManager.chooseDefaultProcess(mHostContext, packageName) : mProcessName;
-        String currentProcess = Util.getCurrentProcessName(mHostContext);
+        String currentProcess = FileUtils.getCurrentProcessName(mHostContext);
         if (!TextUtils.equals(currentProcess, targetProcessName)) {
             // 启动进程和目标进程不一致，需要先启动目标进程，初始化PluginLoadedApk
             Intent transIntent = new Intent();
-            transIntent.setAction(IIntentConstant.ACTION_START_PLUGIN);
-            transIntent.putExtra(EXTRA_START_INTENT_KEY, mIntent);
-            transIntent.putExtra(EXTRA_TARGET_PROCESS, targetProcessName);
+            transIntent.setAction(IntentConstant.ACTION_START_PLUGIN);
+            transIntent.putExtra(IntentConstant.EXTRA_START_INTENT_KEY, mIntent);
+            transIntent.putExtra(IntentConstant.EXTRA_TARGET_PROCESS, targetProcessName);
             try {
                 String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(targetProcessName);
                 transIntent.setClass(mHostContext, Class.forName(proxyServiceName));
@@ -556,7 +570,7 @@ public class PluginManager implements IIntentConstant {
         BroadcastReceiver recv = new BroadcastReceiver() {
             public void onReceive(Context ctx, Intent intent) {
                 String curPkg = IntentUtils.getTargetPackage(intent);
-                if (IIntentConstant.ACTION_PLUGIN_INIT.equals(intent.getAction()) && TextUtils.equals(packageName, curPkg)) {
+                if (IntentConstant.ACTION_PLUGIN_INIT.equals(intent.getAction()) && TextUtils.equals(packageName, curPkg)) {
                     PluginDebugLog.runtimeLog(TAG, "收到自定义的广播org.qiyi.pluginapp.action.TARGET_LOADED");
                     if (mListener != null) {
                         mListener.onInitFinished(packageName);
@@ -567,11 +581,11 @@ public class PluginManager implements IIntentConstant {
         };
         PluginDebugLog.runtimeLog(TAG, "注册自定义广播org.qiyi.pluginapp.action.TARGET_LOADED");
         IntentFilter filter = new IntentFilter();
-        filter.addAction(IIntentConstant.ACTION_PLUGIN_INIT);
+        filter.addAction(IntentConstant.ACTION_PLUGIN_INIT);
         mHostContext.getApplicationContext().registerReceiver(recv, filter);
 
         Intent intent = new Intent();
-        intent.setAction(IIntentConstant.ACTION_PLUGIN_INIT);
+        intent.setAction(IntentConstant.ACTION_PLUGIN_INIT);
         intent.setComponent(new ComponentName(packageName, recv.getClass().getName()));
         launchPlugin(mHostContext, intent, processName);
     }
@@ -671,7 +685,7 @@ public class PluginManager implements IIntentConstant {
 
         Class<?> targetClass = null;
         if (!TextUtils.isEmpty(targetClassName)
-                && !TextUtils.equals(targetClassName, EXTRA_VALUE_LOADTARGET_STUB)) {
+                && !TextUtils.equals(targetClassName, IntentConstant.EXTRA_VALUE_LOADTARGET_STUB)) {
             try {
                 targetClass = mLoadedApk.getPluginClassLoader().loadClass(targetClassName);
             } catch (Exception e) {
@@ -685,14 +699,14 @@ public class PluginManager implements IIntentConstant {
         }
 
         String action = mIntent.getAction();
-        if (TextUtils.equals(action, IIntentConstant.ACTION_PLUGIN_INIT)
-                || TextUtils.equals(targetClassName, EXTRA_VALUE_LOADTARGET_STUB)) {
+        if (TextUtils.equals(action, IntentConstant.ACTION_PLUGIN_INIT)
+                || TextUtils.equals(targetClassName, IntentConstant.EXTRA_VALUE_LOADTARGET_STUB)) {
             PluginDebugLog.runtimeLog(TAG, "launchIntent load target stub!");
             //通知插件初始化完毕
             if (targetClass != null && BroadcastReceiver.class.isAssignableFrom(targetClass)) {
                 Intent newIntent = new Intent(mIntent);
                 newIntent.setComponent(null);
-                newIntent.putExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY,
+                newIntent.putExtra(IntentConstant.EXTRA_TARGET_PACKAGE_KEY,
                         mLoadedApk.getPluginPackageName());
                 newIntent.setPackage(mHostContext.getPackageName());
                 mHostContext.sendBroadcast(newIntent);
@@ -711,7 +725,7 @@ public class PluginManager implements IIntentConstant {
                 mHostContext.startService(mIntent);
             } else {
                 mHostContext.bindService(mIntent, mConnection,
-                        mIntent.getIntExtra(BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
+                        mIntent.getIntExtra(IntentConstant.BIND_SERVICE_FLAGS, Context.BIND_AUTO_CREATE));
             }
         } else {
             //处理的是Activity
@@ -1090,7 +1104,7 @@ public class PluginManager implements IIntentConstant {
 
                 if (PluginPackageManager.ACTION_PACKAGE_UNINSTALL.equals(intent.getAction())) {
                     // 卸载广播
-                    String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
+                    String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
                     exitPlugin(pkgName);
                 }
             }
@@ -1265,7 +1279,7 @@ public class PluginManager implements IIntentConstant {
             try {
                 PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
                 intent.setClass(mContext, Class.forName(proxyServiceName));
-                intent.setAction(ACTION_QUIT_SERVICE);
+                intent.setAction(IntentConstant.ACTION_QUIT_SERVICE);
                 mContext.startService(intent);
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();

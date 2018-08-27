@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.utils;
 
 import android.text.TextUtils;
@@ -799,10 +816,8 @@ public class ReflectionUtils {
     /**
      * 得到包装的对象的类型， 如果是基本类型,像int,float,boolean这种, 那么将被转换成相应的对象类型。
      */
-    public static Class<?> wrapper(Class<?> type) {
-        if (type == null) {
-            return null;
-        } else if (type.isPrimitive()) {
+    private static Class<?> wrapper(Class<?> type) {
+        if (type.isPrimitive()) {
             if (boolean.class == type) {
                 return Boolean.class;
             } else if (int.class == type) {
@@ -828,7 +843,7 @@ public class ReflectionUtils {
     }
 
     /**
-     * 定义了一个null类型
+     * 定义了一个NULL类型
      */
     private static class NULL {
     }
