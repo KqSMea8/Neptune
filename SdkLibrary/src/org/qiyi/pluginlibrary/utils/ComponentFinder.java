@@ -112,11 +112,11 @@ public class ComponentFinder{
         try {
             mIntent.setClass(mLoadedApk.getHostContext(),
                     Class.forName(matchServiceProxyByFeature(mLoadedApk.getProcessName())));
-            String intentInfo = "";
-            intentInfo = mIntent.toString();
+            String intentInfo = mIntent.toString();
             if (null != mIntent.getExtras()) {
                 intentInfo = intentInfo + mIntent.getExtras().toString();
             }
+            PluginDebugLog.runtimeLog(TAG, "switchToServiceProxy intent info: " + intentInfo);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -316,7 +316,7 @@ public class ComponentFinder{
         }
         if (!isTranslucent) {
             //兼容遗留逻辑
-            if (actInfo != null && actInfo.metaData != null) {
+            if (actInfo.metaData != null) {
                 String special_cfg = actInfo.metaData.getString(IntentConstant.META_KEY_ACTIVITY_SPECIAL);
                 if (!TextUtils.isEmpty(special_cfg)) {
                     if (special_cfg.contains(IntentConstant.PLUGIN_ACTIVITY_TRANSLUCENT)) {
@@ -334,25 +334,23 @@ public class ComponentFinder{
             }
         }
 
-        if (actInfo != null) {
-            if (TextUtils.equals(actInfo.taskAffinity,
-                    mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)
-                    && actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
-                        + actInfo.taskAffinity + " hasTaskAffinity = true");
-                hasTaskAffinity = true;
-            }
+        if (TextUtils.equals(actInfo.taskAffinity,
+                mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)
+                && actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                    + actInfo.taskAffinity + " hasTaskAffinity = true");
+            hasTaskAffinity = true;
+        }
 
-            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity screenOrientation: "
-                        + actInfo.screenOrientation + " isHandleConfigChange = false");
-                isHandleConfigChange = false;
-            }
+        if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity screenOrientation: "
+                    + actInfo.screenOrientation + " isHandleConfigChange = false");
+            isHandleConfigChange = false;
+        }
 
-            if (actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy isLandscape = true");
-                isLandscape = true;
-            }
+        if (actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy isLandscape = true");
+            isLandscape = true;
         }
 
         return matchActivityProxyByFeature(hasTaskAffinity, isTranslucent, isLandscape,

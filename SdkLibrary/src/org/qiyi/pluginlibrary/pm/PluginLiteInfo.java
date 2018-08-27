@@ -112,7 +112,7 @@ public class PluginLiteInfo implements Parcelable {
             enableRecovery = jObj.optBoolean("enableRecovery");
             plugin_refs = jObj.optString("plugin_refs");
         } catch (JSONException e) {
-            e.printStackTrace();
+            // ignore
         }
     }
 
@@ -181,7 +181,7 @@ public class PluginLiteInfo implements Parcelable {
             jObj.put("enableRecovery", enableRecovery);
             jObj.put("plugin_refs", plugin_refs);
         } catch (JSONException e) {
-            e.printStackTrace();
+            // ignore
         }
         return jObj.toString();
     }

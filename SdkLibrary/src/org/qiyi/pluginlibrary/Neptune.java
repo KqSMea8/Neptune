@@ -17,6 +17,7 @@
  */
 package org.qiyi.pluginlibrary;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityThread;
 import android.app.Application;
 import android.app.Instrumentation;
@@ -47,11 +48,15 @@ public class Neptune {
     public static final boolean NEW_RESOURCE_CREATOR = true;
     public static final boolean NEW_COMPONENT_PARSER = true;
 
+    @SuppressLint("StaticFieldLeak")
     private static Context sHostContext;
 
     private static NeptuneConfig sGlobalConfig;
 
     private static Instrumentation mHostInstr;
+
+    private Neptune() {}
+
     /**
      * 初始化Neptune插件环境
      *

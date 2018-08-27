@@ -93,12 +93,11 @@ public final class FileUtils {
             PluginDebugLog.log(TAG, "拷贝成功");
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
             PluginDebugLog.log(TAG, "拷贝失败");
             return false;
         } finally {
-            closeQuietly(out);
             closeQuietly(bos);
+            closeQuietly(out);
         }
     }
 
@@ -125,11 +124,11 @@ public final class FileUtils {
             bis = new BufferedInputStream(inputStream);
 
             result = copyToFile(bis, destFile);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            /* ignore */
         } finally {
-            closeQuietly(inputStream);
             closeQuietly(bis);
+            closeQuietly(inputStream);
         }
 
         return result;
@@ -155,7 +154,7 @@ public final class FileUtils {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            /* ignore */
         } finally {
             closeQuietly(zipFile);
         }
@@ -191,9 +190,9 @@ public final class FileUtils {
                     installResult = copyToFile(entryInputStream, targetSo);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                // ignore
             } catch (ArrayIndexOutOfBoundsException e) {
-                e.printStackTrace();
+                // ignore
             } finally {
                 closeQuietly(entryInputStream);
             }

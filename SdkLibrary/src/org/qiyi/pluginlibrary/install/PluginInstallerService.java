@@ -35,6 +35,7 @@ import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
+import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.FileUtils;
@@ -247,21 +248,15 @@ public class PluginInstallerService extends Service {
         // 先把 asset 拷贝到临时文件。
         InputStream is = null;
         try {
+
             is = this.getAssets().open(assetsPath);
             doInstall(is, assetsPathWithScheme, info);
 
         } catch (IOException e) {
-            e.printStackTrace();
             setInstallFail(assetsPathWithScheme, e instanceof FileNotFoundException ?
                     ErrorType.INSTALL_ERROR_ASSET_APK_NOT_FOUND : ErrorType.INSTALL_ERROR_FILE_IOEXCEPTION, info);
         } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException ignore) {
-                    /* ignore */
-                }
-            }
+            FileUtils.closeQuietly(is);
         }
     }
 
@@ -291,16 +286,9 @@ public class PluginInstallerService extends Service {
             is = new FileInputStream(source);
             doInstall(is, apkFilePathWithScheme, info);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
             setInstallFail(apkFilePathWithScheme, ErrorType.INSTALL_ERROR_APK_NOT_EXIST, info);
         } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException ignore) {
-                    /* ignore */
-                }
-            }
+            FileUtils.closeQuietly(is);
         }
     }
 
@@ -352,12 +340,9 @@ public class PluginInstallerService extends Service {
         PackageInfo pkgInfo = null;
         try {
             pkgInfo = pm.getPackageArchiveInfo(apkFilePath, PackageManager.GET_ACTIVITIES);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } catch (Error e) {
-            e.printStackTrace();
+        } catch (Throwable e) {
+            ErrorUtil.throwErrorIfNeed(e);
         }
-
 
         if (pkgInfo == null) {
             setInstallFail(srcPathWithScheme, ErrorType.INSTALL_ERROR_APK_PARSE_FAILED, info);
@@ -554,23 +539,6 @@ public class PluginInstallerService extends Service {
 
             }
         });
-
-//        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO){
-//            PluginDebugLog.installFormatLog(TAG,"installDex return direct!");
-//            return;
-//        }
-//        File pkgDir = new File(pkgDirPath, packageName);
-//        if (pkgDir.exists() && pkgDir.canRead() && pkgDir.canWrite()) {
-//            // android 2.3以及以上会执行dexopt，2.2以及下不会执行。需要额外主动load一次类才可以
-//            try {
-//                // 构造函数会执行loaddex底层函数。
-//                PluginDebugLog.installFormatLog(TAG,"installDex  load R file..");
-//                ClassLoader classloader = new DexClassLoader(apkFile, pkgDir.getAbsolutePath(), null, clsLoader);
-//                classloader.loadClass(packageName + ".R");
-//            } catch (ClassNotFoundException e) {
-//                e.printStackTrace();
-//            }
-//        }
     }
 
     /**

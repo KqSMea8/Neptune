@@ -126,7 +126,6 @@ public class NeptuneInstrument extends PluginInstrument {
                             PluginActivityControl.changeActivityInfo(activity, targetClass, loadedApk);
                         } catch (Exception e) {
                             PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate with exception: " + e.getMessage());
-                            e.printStackTrace();
                         }
 
                     }

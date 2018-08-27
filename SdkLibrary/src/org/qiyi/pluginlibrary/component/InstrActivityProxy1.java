@@ -256,16 +256,16 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
      * 失败则返回null
      */
     private String[] parsePkgAndClsFromIntent() {
-        Intent mIntent = getIntent();
-        if (mIntent == null) {
-            return new String[0];
+        Intent intent = getIntent();
+        if (intent == null) {
+            return null;
         }
 
         //从action里面拿到pkg,并全局保存，然后还原action
         if (TextUtils.isEmpty(mPluginPackage)) {
-            mPluginPackage = IntentUtils.getPluginPackage(mIntent);
+            mPluginPackage = IntentUtils.getPluginPackage(intent);
         }
-        IntentUtils.resetAction(mIntent);
+        IntentUtils.resetAction(intent);
 
         if (!TextUtils.isEmpty(mPluginPackage)) {
             if (mLoadedApk == null) {
@@ -273,14 +273,14 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             }
             if (mLoadedApk != null) {
                 //解决插件中跳转自定义Bean对象失败的问题
-                mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
+                intent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
             }
         }
 
         String[] result = new String[2];
         try {
-            result[0] = IntentUtils.getTargetPackage(mIntent);
-            result[1] = IntentUtils.getTargetClass(mIntent);
+            result[0] = IntentUtils.getTargetPackage(intent);
+            result[1] = IntentUtils.getTargetClass(intent);
         } catch (RuntimeException e) {
             // Intent里放置了插件自定义的序列化数据
             // 进程恢复时，android.os.BadParcelableException: ClassNotFoundException when unmarshalling:
@@ -291,7 +291,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             PluginDebugLog.runtimeFormatLog(TAG, "pluginPkg:%s, pluginCls:%s", result[0], result[1]);
             return result;
         }
-        return new String[0];
+        return null;
     }
 
 
@@ -939,7 +939,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 try {
                     pluginRef.set("mHasCurrentPermissionsRequest", false);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // ignore
                 }
                 Class<?>[] paramTyps = new Class[]{int.class, String[].class, int[].class};
                 pluginRef.call("onRequestPermissionsResult", PluginActivityControl.sMethods, paramTyps, requestCode, permissions, grantResults);
@@ -1104,11 +1104,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             }
         }
         if (null != mActivityInfo) {
-            try {
-                getWindow().setSoftInputMode(mActivityInfo.softInputMode);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            getWindow().setSoftInputMode(mActivityInfo.softInputMode);
 
             PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +
                     mActivityInfo.getThemeResource() + ", icon = " + mActivityInfo.getIconResource()

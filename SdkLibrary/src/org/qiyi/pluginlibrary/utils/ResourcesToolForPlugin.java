@@ -72,8 +72,8 @@ public class ResourcesToolForPlugin {
      *
      * @param resource
      * @param packageName
-     * @param clsLoader corresponding classloader for resource/view.java, can be
-     * null, if null will use Class.forName(xx)
+     * @param clsLoader   corresponding classloader for resource/view.java, can be
+     *                    null, if null will use Class.forName(xx)
      */
     public ResourcesToolForPlugin(Resources resource, String packageName, ClassLoader clsLoader) {
         if (resource != null && !TextUtils.isEmpty(packageName)) {
@@ -88,8 +88,8 @@ public class ResourcesToolForPlugin {
      *
      * @param resource
      * @param packageName
-     * @param clsLoader corresponding classloader for resource/view.java, can be
-     * null, if null will use Class.forName(xx)
+     * @param clsLoader   corresponding classloader for resource/view.java, can be
+     *                    null, if null will use Class.forName(xx)
      */
     public ResourcesToolForPlugin(Resources resource, String packageName, ClassLoader clsLoader, boolean resolveByReflect) {
         if (resource != null && !TextUtils.isEmpty(packageName)) {
@@ -220,10 +220,10 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForBool(String sourceName) {
-        if(mResolveByReflect){
+        if (mResolveByReflect) {
             return optValue(sourceName, BOOL);
         }
-        return getResourceId(sourceName,BOOL);
+        return getResourceId(sourceName, BOOL);
 
     }
 
@@ -235,26 +235,26 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForInteger(String sourceName) {
-        if(mResolveByReflect){
+        if (mResolveByReflect) {
             return optValue(sourceName, INTEGER);
         }
-        return getResourceId(sourceName,INTEGER);
+        return getResourceId(sourceName, INTEGER);
 
     }
 
     public int getResourceForInterpolator(String sourceName) {
-        if(mResolveByReflect){
+        if (mResolveByReflect) {
             return optValue(sourceName, INTERPOLATOR);
         }
-        return getResourceId(sourceName,INTERPOLATOR);
+        return getResourceId(sourceName, INTERPOLATOR);
 
     }
 
     public int getResourceForMenu(String sourceName) {
-        if(mResolveByReflect){
+        if (mResolveByReflect) {
             return optValue(sourceName, MENU);
         }
-        return getResourceId(sourceName,MENU);
+        return getResourceId(sourceName, MENU);
 
     }
 
@@ -267,10 +267,10 @@ public class ResourcesToolForPlugin {
     }
 
     public int getResourceForTransition(String sourceName) {
-        if(mResolveByReflect){
+        if (mResolveByReflect) {
             return optValue(sourceName, TRANSITION);
         }
-        return getResourceId(sourceName,TRANSITION);
+        return getResourceId(sourceName, TRANSITION);
 
     }
 
@@ -307,12 +307,6 @@ public class ResourcesToolForPlugin {
                 field.setAccessible(true);
                 result = field.getInt(cls);
             }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -348,12 +342,6 @@ public class ResourcesToolForPlugin {
                     result = (int[]) res;
                 }
             }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
