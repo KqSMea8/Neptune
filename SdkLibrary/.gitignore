@@ -6,3 +6,4 @@ build/
 /gen/
 /bin/
 addCopyRight.gradle
+lint/report

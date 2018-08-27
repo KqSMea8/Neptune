@@ -457,13 +457,14 @@ public class PluginInstallerService extends Service {
         FileUtils.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());  //拷贝so库
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService finish install lib,pkgName:%s", packageName);
-        setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
-        // dexopt, 不是必须的
+        // dexopt, 提前优化插件的dex
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService began install dex,pkgName:%s", packageName);
         installDex(destFile, packageName, PluginInstaller.getPluginappRootPath(this).getAbsolutePath());
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService finish install dex,pkgName:%s", packageName);
+        // dexoat结束之后，再通知插件安装完成
+        setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
     }
 
     /**

@@ -25,6 +25,8 @@ import android.os.Process;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -316,6 +318,44 @@ public final class FileUtils {
             isFinished = activity.isDestroyed();
         }
         return isFinished || activity.isFinishing();
+    }
+
+    /**
+     * 检测生成的oat文件是否损坏，如果已经损坏则删除
+     * @param optDir
+     * @param apkFile
+     */
+    public static void checkOtaFileValid(File optDir, File apkFile) {
+        // see issue https://github.com/Tencent/tinker/issues/328
+        String apkName = apkFile.getName();
+        String oatName = apkName.substring(0, apkName.indexOf(PluginInstaller.APK_SUFFIX)) + PluginInstaller.DEX_SUFFIX;
+        File oatFile = new File(optDir, oatName);
+        if (!oatFile.exists() || !oatFile.canRead()) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            PluginDebugLog.runtimeFormatLog(TAG, "check dexopt oat file format: %s, size: %d",
+                    oatFile.getAbsolutePath(), oatFile.length());
+            int type;
+            try {
+                type = ShareElfFile.getFileTypeByMagic(oatFile);
+            } catch (IOException e) {
+                // read error just ignore
+                return;
+            }
+            if (type == ShareElfFile.FILE_TYPE_ELF) {
+                ShareElfFile elfFile = null;
+                try {
+                    elfFile = new ShareElfFile(oatFile);
+                } catch (Throwable tr) {
+                    PluginDebugLog.warningFormatLog("oat file %s is not elf format, try to delete it", oatFile.getAbsolutePath());
+                    oatFile.delete();
+                    ErrorUtil.throwErrorIfNeed(tr);
+                } finally {
+                    closeQuietly(elfFile);
+                }
+            }
+        }
     }
 
     /**

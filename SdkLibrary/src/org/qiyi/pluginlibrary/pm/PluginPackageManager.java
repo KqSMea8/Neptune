@@ -114,20 +114,6 @@ public class PluginPackageManager {
 
     public static final int UNINSTALL_FAILED = -3;
 
-    private PluginPackageManager(Context context) {
-        mContext = context.getApplicationContext();
-        registerInstallReceiver();
-        restoreInstallPluginInfos();
-    }
-
-    /**
-     * 设置 IPluginInfoProvider 接口，由应用层实现更高级的控制
-     *
-     * @param packageInfoManager
-     */
-    public static void setPluginInfoProvider(IPluginInfoProvider packageInfoManager) {
-        sPluginInfoProvider = packageInfoManager;
-    }
 
     /**
      * 获取PluginPackageManager实例对象
@@ -143,6 +129,22 @@ public class PluginPackageManager {
         }
         return sInstance;
     }
+
+    private PluginPackageManager(Context context) {
+        mContext = context.getApplicationContext();
+        registerInstallReceiver();
+        restoreInstallPluginInfos();
+    }
+
+    /**
+     * 设置 IPluginInfoProvider 接口，由应用层实现更高级的控制
+     *
+     * @param packageInfoManager
+     */
+    public static void setPluginInfoProvider(IPluginInfoProvider packageInfoManager) {
+        sPluginInfoProvider = packageInfoManager;
+    }
+
 
     /**
      * 保护性的更新srcApkPath

@@ -51,6 +51,7 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ClassLoaderInjectHelper;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
@@ -317,8 +318,9 @@ public class PluginLoadedApk {
         }
         PluginDebugLog.runtimeLog(TAG, "createClassLoader");
         File optDir = getDataDir(mHostContext, mPluginPackageName);
-        if (optDir != null && optDir.exists()) {
+        if (optDir != null && isOptDirAccessbile(optDir)) {
 
+            FileUtils.checkOtaFileValid(optDir, new File(mPluginPath));  // 创建ClassLoader之前check上次生成的oat文件是否损坏
             mPluginClassLoader = new DexClassLoader(mPluginPath, optDir.getAbsolutePath(),
                     mPluginPackageInfo.getNativeLibraryDir(), mHostClassLoader);
 
@@ -363,6 +365,7 @@ public class PluginLoadedApk {
         if (optDir != null && isOptDirAccessbile(optDir)) {
             DexClassLoader classLoader = sAllPluginClassLoader.get(mPluginPackageName);
             if (classLoader == null) {
+                FileUtils.checkOtaFileValid(optDir, new File(mPluginPath));  //检测oat文件是否损坏
                 mPluginClassLoader = new PluginClassLoader(mPluginPackageInfo, mPluginPath,
                         optDir.getAbsolutePath(), mPluginPackageInfo.getNativeLibraryDir(), mParent);
                 PluginDebugLog.runtimeLog(TAG, "createNewClassLoader success for plugin " + mPluginPackageName);
@@ -641,8 +644,10 @@ public class PluginLoadedApk {
 
                         ClassLoader parent = (libraryPackageInfo != null && libraryPackageInfo.isIndividualMode())
                                 ? mHostClassLoader.getParent() : mHostClassLoader;
+                        File optDir = PluginInstaller.getPluginInjectRootPath(mHostContext);
+                        FileUtils.checkOtaFileValid(optDir, new File(libraryInfo.srcApkPath)); //检查oat文件是否损坏
                         dependency = new PluginClassLoader(libraryPackageInfo, libraryInfo.srcApkPath,
-                                PluginInstaller.getPluginInjectRootPath(mHostContext).getAbsolutePath(), nativeLibraryDir, parent);
+                                optDir.getAbsolutePath(), nativeLibraryDir, parent);
                         sAllPluginClassLoader.put(libraryInfo.packageName, dependency);
                     }
                     // 把依赖插件的ClassLoader添加到当前的ClassLoader
