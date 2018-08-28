@@ -1254,7 +1254,7 @@ public class PluginManager {
 
 
     /**
-     * 退出插件
+     * 退出插件进程
      *
      * @param mContext     主进程Context
      * @param mProcessName 要退出进程

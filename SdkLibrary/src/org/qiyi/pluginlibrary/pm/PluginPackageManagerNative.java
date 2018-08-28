@@ -80,8 +80,8 @@ public class PluginPackageManagerNative {
         @Override
         public void onActionComplete(String packageName, int errorCode) throws RemoteException {
             PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, errorCode:%d", packageName, errorCode);
-            if (mActionMap.containsKey(packageName)) {
-                final CopyOnWriteArrayList<Action> actions = mActionMap.get(packageName);
+            if (sActionMap.containsKey(packageName)) {
+                final CopyOnWriteArrayList<Action> actions = sActionMap.get(packageName);
                 if (actions != null && actions.size() > 0) {
                     PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!", packageName, actions.size());
 
@@ -108,7 +108,7 @@ public class PluginPackageManagerNative {
                         if (actions.isEmpty()) {
                             PluginDebugLog.installFormatLog(TAG,
                                     "remove empty action list of %s", packageName);
-                            mActionMap.remove(packageName);
+                            sActionMap.remove(packageName);
                         }
                     }
                 }
@@ -148,7 +148,7 @@ public class PluginPackageManagerNative {
                     if (actions.isEmpty()) {
                         PluginDebugLog.installFormatLog(TAG,
                                 "remove empty action list of %s", packageName);
-                        mActionMap.remove(packageName);
+                        sActionMap.remove(packageName);
                     }
                 }
             });
@@ -191,13 +191,10 @@ public class PluginPackageManagerNative {
         @Override
         public boolean meetCondition() {
             boolean canMeetCondition = false;
-            if (mService != null && info != null) {
-                try {
-                    canMeetCondition = mService.canInstallPackage(info);
-                } catch (RemoteException e) {
-                    // ignore
-                }
-            } else if (mService == null) {
+            boolean serviceConnected = callbackHost.isConnected();
+            if (serviceConnected && info != null) {
+                canMeetCondition = callbackHost.canInstallPackage(info);
+            } else if (!serviceConnected) {
                 // set canMeetCondition to true in case of
                 // PluginPackageManagerService
                 // is not connected, so that the action can be added in action list.
@@ -251,17 +248,13 @@ public class PluginPackageManagerNative {
         @Override
         public boolean meetCondition() {
             boolean canMeetCondition = false;
-            if (mService != null && info != null) {
-                try {
-                    canMeetCondition = mService.canUninstallPackage(info);
-                } catch (RemoteException e) {
-                    // ignore
-                }
-            } else if (mService == null) {
+            boolean serviceConnected = callbackHost.isConnected();
+            if (serviceConnected && info != null) {
+                canMeetCondition = callbackHost.canUninstallPackage(info);
+            } else if (!serviceConnected) {
                 // set canMeetCondition to true in case of
                 // PluginPackageManagerService
-                // is not connected, so that the action can be added in action
-                // list.
+                // is not connected, so that the action can be added in action list.
                 canMeetCondition = true;
             }
             if (null != info) {
@@ -280,20 +273,22 @@ public class PluginPackageManagerNative {
     }
 
     // 插件安装/卸载Action的mapping
-    private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> mActionMap =
+    private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> sActionMap =
             new ConcurrentHashMap<String, CopyOnWriteArrayList<Action>>();
 
     /**
      * 与{@link PluginPackageManagerService}交互的ServiceConnection
      */
-    private static class PluginPackageManagerServiceConnection implements ServiceConnection {
+    private class PluginPackageManagerServiceConnection implements ServiceConnection {
 
         private Context mContext;
         private IBinder.DeathRecipient mDeathRecipient = new IBinder.DeathRecipient() {
             @Override
             public void binderDied() {
-                mService = null;
-                PluginDebugLog.runtimeLog(TAG, "binderDied called, remote binder is died");
+                synchronized (sLock) {
+                    mService = null;
+                    PluginDebugLog.runtimeLog(TAG, "binderDied called, remote binder is died");
+                }
             }
         };
 
@@ -303,7 +298,7 @@ public class PluginPackageManagerNative {
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            if (null != service) {
+            synchronized (sLock) {
                 mService = IPluginPackageManager.Stub.asInterface(service);
                 try {
                     // 监听远程Binder死亡通知
@@ -311,35 +306,38 @@ public class PluginPackageManagerNative {
                 } catch (RemoteException e) {
                     // ignore
                 }
-            }
 
-            PluginDebugLog.runtimeLog(TAG, "onServiceConnected called");
-            if (mService != null) {
-                NotifyCenter.notifyServiceConnected(mContext, PluginPackageManagerService.class);
-                try {
-                    String processName = FileUtils.getCurrentProcessName(mContext);
-                    mService.setActionFinishCallback(new ActionFinishCallback(processName));
-                } catch (RemoteException e) {
-                    // ignore
+                PluginDebugLog.runtimeLog(TAG, "onServiceConnected called");
+                if (mService != null) {
+                    NotifyCenter.notifyServiceConnected(mContext, PluginPackageManagerService.class);
+                    try {
+                        String processName = FileUtils.getCurrentProcessName(mContext);
+                        mService.setActionFinishCallback(new ActionFinishCallback(processName));
+                    } catch (RemoteException e) {
+                        // ignore
+                    }
+                    executePackageAction(mContext);
+                    executePendingAction();
+                } else {
+                    PluginDebugLog.runtimeLog(TAG, "onServiceConnected, mService is null");
                 }
-                executePackageAction(mContext);
-                executePendingAction();
-            } else {
-                PluginDebugLog.runtimeLog(TAG, "onServiceConnected, mService is null");
             }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mService = null;
-            PluginDebugLog.runtimeLog(TAG, "onServiceDisconnected called");
+            synchronized (sLock) {
+                mService = null;
+                PluginDebugLog.runtimeLog(TAG, "onServiceDisconnected called");
+            }
         }
     }
 
-    private static IPluginPackageManager mService = null;
+    private static final Object sLock = new Object();  //同步锁
     private boolean mIsInitialized = false;
     private Context mContext;
     private PluginPackageManager mPackageManager;
+    private IPluginPackageManager mService = null;
     private ServiceConnection mServiceConnection = null;
 
     /**
@@ -374,28 +372,26 @@ public class PluginPackageManagerNative {
         mPackageManager = new PluginPackageManager(mContext);
         mIsInitialized = true;
 
-        onBindService(context);
+        onBindService(mContext);
     }
 
     public void setPackageInfoManager(IPluginInfoProvider packageInfoManager) {
         PluginPackageManager.setPluginInfoProvider(packageInfoManager);
     }
 
-    public boolean isConnected() {
+    public synchronized boolean isConnected() {
         return mService != null;
     }
 
     private void onBindService(Context context) {
-        if (isConnected()) {
-            return;
-        }
-
-        Intent intent = new Intent(context, PluginPackageManagerService.class);
-        try {
-            context.startService(intent);
-            context.bindService(intent, getConnection(context), Context.BIND_AUTO_CREATE);
-        } catch (Exception e) {
-            // ignore
+        if (context != null) {
+            try {
+                Intent intent = new Intent(context, PluginPackageManagerService.class);
+                context.startService(intent);
+                context.bindService(intent, getConnection(context), Context.BIND_AUTO_CREATE);
+            } catch (Exception e) {
+                // ignore
+            }
         }
     }
 
@@ -404,7 +400,7 @@ public class PluginPackageManagerNative {
      */
     private static void executePendingAction() {
         PluginDebugLog.runtimeLog(TAG, "executePendingAction start....");
-        for (Map.Entry<String, CopyOnWriteArrayList<Action>> entry : mActionMap.entrySet()) {
+        for (Map.Entry<String, CopyOnWriteArrayList<Action>> entry : sActionMap.entrySet()) {
             if (entry != null) {
                 CopyOnWriteArrayList<Action> actions = entry.getValue();
                 PluginDebugLog.installFormatLog(TAG, "execute %d pending actions!", actions.size());
@@ -455,8 +451,8 @@ public class PluginPackageManagerNative {
         if (action != null) {
             String packageName = action.getPackageName();
             if (!TextUtils.isEmpty(packageName)) {
-                if (mActionMap.containsKey(packageName)) {
-                    List<Action> actionList = mActionMap.get(packageName);
+                if (sActionMap.containsKey(packageName)) {
+                    List<Action> actionList = sActionMap.get(packageName);
                     if (actionList != null && actionList.indexOf(action) == 0) {
                         PluginDebugLog.log(TAG, "action is ready for " + action.toString());
                         return true;
@@ -473,10 +469,10 @@ public class PluginPackageManagerNative {
         }
 
         String packageName = action.getPackageName();
-        CopyOnWriteArrayList<Action> actionList = mActionMap.get(packageName);
+        CopyOnWriteArrayList<Action> actionList = sActionMap.get(packageName);
         if (actionList == null) {
             actionList = new CopyOnWriteArrayList<Action>();
-            mActionMap.put(packageName, actionList);
+            sActionMap.put(packageName, actionList);
         }
         PluginDebugLog.log(TAG, "add action in action list for " + action.toString());
         actionList.add(action);
@@ -500,13 +496,28 @@ public class PluginPackageManagerNative {
     }
 
     /**
+     * 能否安装这个插件
+     */
+    private boolean canInstallPackage(PluginLiteInfo info) {
+        if (isConnected()) {
+            try {
+                return mService.canInstallPackage(info);
+            } catch (RemoteException e) {
+                // ignore
+            }
+        }
+        onBindService(mContext);
+        return false;
+    }
+
+    /**
      * 通过aidl调用{@link PluginPackageManagerService}进行安装
      *
      * @param info
      * @param listener
      */
     private void installInternal(PluginLiteInfo info, IInstallCallBack listener) {
-        if (mService != null) {
+        if (isConnected()) {
             try {
                 mService.install(info, listener);
                 return;
@@ -534,13 +545,27 @@ public class PluginPackageManagerNative {
     }
 
     /**
+     * 能否卸载这个插件
+     */
+    private boolean canUninstallPackage(PluginLiteInfo info) {
+        if (isConnected()) {
+            try {
+                return mService.canUninstallPackage(info);
+            } catch (RemoteException e) {
+                // ignore
+            }
+        }
+        return false;
+    }
+
+    /**
      * 通过aidl调用{@link PluginPackageManagerService}进行卸载
      *
      * @param info PluginLiteInfo
      * @return
      */
-    public void uninstallInternal(PluginLiteInfo info) {
-        if (mService != null) {
+    private void uninstallInternal(PluginLiteInfo info) {
+        if (isConnected()) {
             try {
                 mService.uninstall(info);
                 return;
@@ -559,7 +584,7 @@ public class PluginPackageManagerNative {
      * @param callBack
      */
     public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callBack) {
-        if (mService != null) {
+        if (isConnected()) {
             try {
                 PluginDebugLog.runtimeLog(TAG, "packageAction service is connected and not null, call remote service");
                 mService.packageAction(packageInfo, callBack);
@@ -624,7 +649,7 @@ public class PluginPackageManagerNative {
         UNINSTALL_ACTION,// uninstall
     }
 
-    public ServiceConnection getConnection(Context context) {
+    private ServiceConnection getConnection(Context context) {
         if (mServiceConnection == null) {
             mServiceConnection = new PluginPackageManagerServiceConnection(context);
         }
@@ -641,7 +666,6 @@ public class PluginPackageManagerNative {
                     // ignore
                 }
             }
-            mService = null;
             Intent intent = new Intent(applicationContext, PluginPackageManagerService.class);
             applicationContext.stopService(intent);
         }
@@ -655,7 +679,7 @@ public class PluginPackageManagerNative {
      * @return 返回所有安装插件信息
      */
     public List<PluginLiteInfo> getInstalledApps() {
-        if (mService != null) {
+        if (isConnected()) {
             try {
                 return mService.getInstalledApps();
             } catch (RemoteException e) {
@@ -675,7 +699,7 @@ public class PluginPackageManagerNative {
      * @return
      */
     public List<String> getPluginRefs(String pkgName) {
-        if (mService != null) {
+        if (isConnected()) {
             try {
                 return mService.getPluginRefs(pkgName);
             } catch (RemoteException e) {
@@ -695,7 +719,7 @@ public class PluginPackageManagerNative {
      * @return 返回是否安装
      */
     public boolean isPackageInstalled(String pkgName) {
-        if (mService != null) {
+        if (isConnected()) {
             try {
                 return mService.isPackageInstalled(pkgName);
             } catch (RemoteException e) {
@@ -716,8 +740,8 @@ public class PluginPackageManagerNative {
      */
     public boolean isPackageAvailable(String pkgName) {
 
-        if (mActionMap.containsKey(pkgName) && !TextUtils.isEmpty(pkgName)) {
-            List<Action> actions = mActionMap.get(pkgName);
+        if (sActionMap.containsKey(pkgName) && !TextUtils.isEmpty(pkgName)) {
+            List<Action> actions = sActionMap.get(pkgName);
             if (actions != null && actions.size() > 0) {
                 PluginDebugLog.log(TAG, actions.size() + " actions in action list for " + pkgName + " isPackageAvailable : true");
                 if (PluginDebugLog.isDebug()) {
@@ -746,7 +770,7 @@ public class PluginPackageManagerNative {
      * @return 返回插件信息
      */
     public PluginLiteInfo getPackageInfo(String pkg) {
-        if (mService != null) {
+        if (isConnected()) {
             try {
                 PluginDebugLog.runtimeLog(TAG, "getPackageInfo service is connected and not null, call remote service");
                 return mService.getPackageInfo(pkg);
@@ -790,7 +814,7 @@ public class PluginPackageManagerNative {
     public PluginPackageInfo getPluginPackageInfo(Context context, PluginLiteInfo mPackageInfo) {
         PluginPackageInfo target = null;
         if (mPackageInfo != null && !TextUtils.isEmpty(mPackageInfo.packageName)) {
-            if (mService != null) {
+            if (isConnected()) {
                 try {
                     target = mService.getPluginPackageInfo(mPackageInfo.packageName);
                 } catch (RemoteException e) {
@@ -801,10 +825,10 @@ public class PluginPackageManagerNative {
                 if (!TextUtils.isEmpty(mPackageInfo.srcApkPath)) {
                     File file = new File(mPackageInfo.srcApkPath);
                     if (file.exists()) {
-                        target = new PluginPackageInfo(ContextUtils.getOriginalContext(context), file);
+                        target = new PluginPackageInfo(ContextUtils.getOriginalContext(mContext), file);
                     }
                 }
-                onBindService(context);
+                onBindService(mContext);
             }
         }
         return target;
