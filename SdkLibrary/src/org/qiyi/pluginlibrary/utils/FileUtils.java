@@ -94,8 +94,8 @@ public final class FileUtils {
             PluginDebugLog.log(TAG, "拷贝失败");
             return false;
         } finally {
-            closeQuietly(out);
             closeQuietly(bos);
+            closeQuietly(out);
         }
     }
 
@@ -125,8 +125,8 @@ public final class FileUtils {
         } catch (IOException e) {
             /* ignore */
         } finally {
-            closeQuietly(inputStream);
             closeQuietly(bis);
+            closeQuietly(inputStream);
         }
 
         return result;
