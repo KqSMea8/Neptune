@@ -1284,6 +1284,27 @@ public class PluginManager {
     }
 
     /**
+     * dump 当前的插件栈信息
+     */
+    public static void dump(PrintWriter printWriter) {
+        try {
+            printWriter.print("================start dump plugin activity stack====================");
+            Iterator<Map.Entry<String, PluginLoadedApk>> mIterator = sPluginsMap.entrySet().iterator();
+            while (mIterator.hasNext()) {
+                Map.Entry<String, PluginLoadedApk> tmp = mIterator.next();
+                printWriter.print("packageName:" + tmp.getKey());
+                printWriter.print("\n");
+                tmp.getValue().getActivityStackSupervisor().dump(printWriter);
+            }
+            printWriter.print("================end dump plugin activity stack====================");
+        } catch (Exception e) {
+            e.printStackTrace();
+            printWriter.print("error:" + e.getMessage());
+        }
+
+    }
+
+    /**
      * 宿主注册到插件里的ActivityLifeCycle监听器
      * 插件重写了Application，需要注册到插件的Application类里去
      */
