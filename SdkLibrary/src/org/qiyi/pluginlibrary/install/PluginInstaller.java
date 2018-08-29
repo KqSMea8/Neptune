@@ -35,6 +35,7 @@ import org.qiyi.pluginlibrary.utils.VersionUtils;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -62,11 +63,11 @@ public class PluginInstaller {
     /**
      * 存放正在安装的插件列表
      */
-    private static LinkedList<String> sInstallingList = new LinkedList<String>();
+    private static List<String> sInstallingList = Collections.synchronizedList(new LinkedList<String>());
     /**
      * 内置插件列表
      */
-    private static ArrayList<String> sBuiltinAppList = new ArrayList<String>();
+    private static List<String> sBuiltinAppList = Collections.synchronizedList(new ArrayList<String>());
 
     /**
      * 获取插件安装的根目录
