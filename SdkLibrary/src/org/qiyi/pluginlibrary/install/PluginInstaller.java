@@ -205,19 +205,15 @@ public class PluginInstaller {
             }
         } else {
             PluginDebugLog.installLog(TAG, "startInstall PluginLiteInfo.packageName is null, just return!");
-            return;
+            throw new IllegalArgumentException("startInstall plugin lite info packageName is empty");
         }
 
-        try {
-            Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
-            intent.setClass(context, PluginInstallerService.class);
-            intent.putExtra(IntentConstant.EXTRA_SRC_FILE, filePath);
-            intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);
+        Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
+        intent.setClass(context, PluginInstallerService.class);
+        intent.putExtra(IntentConstant.EXTRA_SRC_FILE, filePath);
+        intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);
 
-            context.startService(intent);
-        } catch (Exception e) {
-            // ignore
-        }
+        context.startService(intent);
     }
 
 
@@ -246,14 +242,15 @@ public class PluginInstaller {
             // 已经注册过就不再注册
             return;
         }
-        sInstallerReceiverRegistered = true;
-        Context appContext = context.getApplicationContext();
 
+        Context appContext = context.getApplicationContext();
         IntentFilter filter = new IntentFilter();
         filter.addAction(PluginPackageManager.ACTION_PACKAGE_INSTALLED);
         filter.addAction(PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
         appContext.registerReceiver(sApkInstallerReceiver, filter);
+
+        sInstallerReceiverRegistered = true;
     }
 
     /**
@@ -449,6 +446,7 @@ public class PluginInstaller {
             end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         }
         String mapPackagename = filePath.substring(start + 1, end);
+        PluginDebugLog.runtimeFormatLog(TAG, "filePath: %s, pkgName: ", filePath, mapPackagename);
         return mapPackagename;
     }
 }

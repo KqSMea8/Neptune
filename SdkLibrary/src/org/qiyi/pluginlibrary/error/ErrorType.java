@@ -68,6 +68,9 @@ public class ErrorType {
     public static final int INSTALL_ERROR_DEX_COPY_FAILED = 4201;
     /** 安装错误，远程Service超时 */
     public static final int INSTALL_ERROR_CLIENT_TIME_OUT = 4300;
+    /** 安装错误，启动PluginInstallerService异常 */
+    public static final int INSTALL_ERROR_BEFORE_START_SERVICE = 4301;
+
 
 
     /* 插件加载等错误, 区间字段5000~6000 */

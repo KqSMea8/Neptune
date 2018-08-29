@@ -90,6 +90,7 @@ public class PluginPackageManager {
     private ConcurrentHashMap<String, PluginLiteInfo> mInstalledPlugins =
             new ConcurrentHashMap<>();
 
+    private boolean mInstallerReceiverRegistered = false;
     /**
      * 插件安装任务列表
      */
@@ -98,6 +99,7 @@ public class PluginPackageManager {
      * 插件安装监听列表
      */
     private Map<String, IInstallCallBack> listenerMap = new HashMap<String, IInstallCallBack>();
+
     /**
      * 验证插件基本信息、获取插件状态等信息接口，该接口通常交由主工程实现，并设置
      */
@@ -253,25 +255,8 @@ public class PluginPackageManager {
                         PluginDebugLog.installFormatLog(TAG, "plugin install received wrong broadcast with empty packageName");
                         return;
                     }
-
-                    PluginDebugLog.installFormatLog(TAG, "plugin install success: %s", pkgInfo.packageName);
-                    // 先更新内存状态，再回调给上层
-                    mInstalledPlugins.put(pkgInfo.packageName, pkgInfo);
-                    saveInstallPluginInfos();
-
-                    IInstallCallBack callback = listenerMap.get(pkgInfo.packageName);
-                    if (callback != null) {
-                        try {
-                            callback.onPackageInstalled(pkgInfo);
-                        } catch (RemoteException e) {
-                            // ignore
-                        } finally {
-                            listenerMap.remove(pkgInfo.packageName);
-                        }
-                    }
-                    // 执行等待执行的action
-                    executePackageAction(pkgInfo, true, 0);
-                    onActionFinish(pkgInfo.packageName, INSTALL_SUCCESS);
+                    // 回调给应用层
+                    onPackageInstalled(pkgInfo);
                 } else if (ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
                     // 插件安装失败
                     PluginLiteInfo pkgInfo = intent.getParcelableExtra(IntentConstant.EXTRA_PLUGIN_INFO);
@@ -293,20 +278,8 @@ public class PluginPackageManager {
 
                     // 失败原因
                     int failReason = intent.getIntExtra(ErrorType.ERROR_REASON, ErrorType.SUCCESS);
-                    PluginDebugLog.installFormatLog(TAG,
-                            "plugin install fail:%s,reason:%d ", pkgInfo.packageName, failReason);
-                    IInstallCallBack callBack = listenerMap.get(pkgInfo.packageName);
-                    if (callBack != null) {
-                        try {
-                            callBack.onPackageInstallFail(pkgInfo, failReason);
-                        } catch (RemoteException e) {
-                            // ignore
-                        } finally {
-                            listenerMap.remove(pkgInfo.packageName);
-                        }
-                    }
-                    executePackageAction(pkgInfo, false, failReason);
-                    onActionFinish(pkgInfo.packageName, INSTALL_FAILED);
+                    // 回调给应用层
+                    onPackageInstallFailed(pkgInfo, failReason);
                 } else if (TextUtils.equals(ACTION_HANDLE_PLUGIN_EXCEPTION, action)) {
                     String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
                     String exception = intent.getStringExtra(ErrorType.ERROR_REASON);
@@ -327,6 +300,10 @@ public class PluginPackageManager {
      * 注册插件安装成功/失败广播
      */
     private void registerInstallReceiver() {
+        if (mInstallerReceiverRegistered) {
+            return;
+        }
+
         try {
             IntentFilter filter = new IntentFilter();
             filter.addAction(ACTION_PACKAGE_INSTALLED);
@@ -336,6 +313,7 @@ public class PluginPackageManager {
             // 注册一个安装广播
             mContext.registerReceiver(pluginInstallerReceiver, filter);
 
+            mInstallerReceiverRegistered = true;
         } catch (Exception e) {
             // 该广播被其他应用UID 抢先注册
             // Receiver requested to register for uid 10100 was previously
@@ -404,8 +382,8 @@ public class PluginPackageManager {
         if (packageInfo == null) {
             return;
         }
-        ArrayList<PackageAction> executeList = new ArrayList<>();
 
+        ArrayList<PackageAction> executeList = new ArrayList<>();
         String packageName = packageInfo.packageName;
         if (!TextUtils.isEmpty(packageName)) {
             for (PackageAction action : mPackageActions) {
@@ -484,6 +462,54 @@ public class PluginPackageManager {
                 // ignore
             }
         }
+    }
+
+    /**
+     * 插件安装成功，回调给应用层
+     * @param pkgInfo
+     */
+    private void onPackageInstalled(PluginLiteInfo pkgInfo) {
+        PluginDebugLog.installFormatLog(TAG, "plugin install success: %s", pkgInfo.packageName);
+        // 先更新内存状态，再回调给上层
+        mInstalledPlugins.put(pkgInfo.packageName, pkgInfo);
+        saveInstallPluginInfos();
+
+        IInstallCallBack callback = listenerMap.get(pkgInfo.packageName);
+        if (callback != null) {
+            try {
+                callback.onPackageInstalled(pkgInfo);
+            } catch (RemoteException e) {
+                // ignore
+            } finally {
+                listenerMap.remove(pkgInfo.packageName);
+            }
+        }
+        // 等待执行的安装action直接回调
+        executePackageAction(pkgInfo, true, 0);
+        onActionFinish(pkgInfo.packageName, INSTALL_SUCCESS);
+    }
+
+    /**
+     * 插件安装失败，回调给应用层
+     * @param pkgInfo
+     * @param failReason
+     */
+    private void onPackageInstallFailed(PluginLiteInfo pkgInfo, int failReason) {
+        PluginDebugLog.installFormatLog(TAG,
+                "plugin install fail:%s,reason:%d ", pkgInfo.packageName, failReason);
+        IInstallCallBack callBack = listenerMap.get(pkgInfo.packageName);
+        if (callBack != null) {
+            try {
+                callBack.onPackageInstallFail(pkgInfo, failReason);
+            } catch (RemoteException e) {
+                // ignore
+            } finally {
+                listenerMap.remove(pkgInfo.packageName);
+            }
+        }
+        // 等待执行的安装action直接回调
+        executePackageAction(pkgInfo, false, failReason);
+        onActionFinish(pkgInfo.packageName, INSTALL_FAILED);
     }
 
     /**
@@ -570,12 +596,17 @@ public class PluginPackageManager {
      * @param listener    监听器
      */
     public void install(PluginLiteInfo pluginInfo, IInstallCallBack listener) {
+        registerInstallReceiver();  //注册广播
         // 安装插件前，先清理部分遗留数据
         deletePackage(pluginInfo, null);
 
         listenerMap.put(pluginInfo.packageName, listener);
         PluginDebugLog.installLog(TAG, "install plugin: " + pluginInfo);
-        PluginInstaller.install(mContext, pluginInfo);
+        try {
+            PluginInstaller.install(mContext, pluginInfo);
+        } catch (Exception e) {
+            onPackageInstallFailed(pluginInfo, ErrorType.INSTALL_ERROR_BEFORE_START_SERVICE);
+        }
     }
 
     /**
@@ -630,11 +661,15 @@ public class PluginPackageManager {
                     e.printStackTrace();
                 }
                 // 发送广播给插件进程，清理PluginLoadedApk数据
-                Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_UNINSTALL);
-                intent.setPackage(mContext.getPackageName());
-                intent.putExtra(IntentConstant.EXTRA_PKG_NAME, packageInfo.packageName);
-                intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) packageInfo);// 同时返回APK的插件信息
-                mContext.sendBroadcast(intent);
+                try {
+                    Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_UNINSTALL);
+                    intent.setPackage(mContext.getPackageName());
+                    intent.putExtra(IntentConstant.EXTRA_PKG_NAME, packageInfo.packageName);
+                    intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) packageInfo);// 同时返回APK的插件信息
+                    mContext.sendBroadcast(intent);
+                } catch (Exception e) {
+                    ErrorUtil.throwErrorIfNeed(e);
+                }
             }
         }
     }

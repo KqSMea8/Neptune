@@ -107,10 +107,10 @@ public class PluginInstallerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         if (mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
-            PluginDebugLog.installLog(TAG, "pluginIntallerService removeMessages MSG_ACTION_QUIT");
+            PluginDebugLog.installLog(TAG, "pluginInstallerService removeMessages MSG_ACTION_QUIT");
             mServiceHandler.removeMessages(MSG_ACTION_QUIT);
         }
-        PluginDebugLog.installLog(TAG, "pluginIntallerService onStartCommond MSG_ACTION_INSTALL");
+        PluginDebugLog.installLog(TAG, "pluginInstallerService onStartCommond MSG_ACTION_INSTALL");
         Message msg = mServiceHandler.obtainMessage(MSG_ACTION_INSTALL);
         msg.arg1 = startId;
         msg.obj = intent;
