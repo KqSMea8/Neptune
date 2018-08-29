@@ -55,7 +55,7 @@ import dalvik.system.DexClassLoader;
 public class PluginInstallerService extends Service {
 
     public static final String TAG = "PluginInstallerService";
-    public static final String ACTION_INSTALL = "com.qiyi.plugin.installed";
+    public static final String ACTION_INSTALL = "com.qiyi.neptune.action.INSTALL";
 
 
     private static int MSG_ACTION_INSTALL = 0;
