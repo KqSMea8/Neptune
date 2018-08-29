@@ -70,16 +70,6 @@ Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm
 在`Application#onCreate()`阶段初始化Neptune
 
 ```Java
-<<<<<<< HEAD
-@Override
-public void onCreate() {
-    NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
-                .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
-                .build();
-    Neptune.init(this, config);
-
-    PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
-=======
 public class XXXApplication extends Application {
     
     @Override
@@ -90,7 +80,6 @@ public class XXXApplication extends Application {
                     .build();
         Neptune.init(this, config);
     }
->>>>>>> sdk_open
 }
 
 ```

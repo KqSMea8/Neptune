@@ -40,12 +40,6 @@ import java.io.File;
 
 /**
  * Neptune对外暴露的统一调用类
-<<<<<<< HEAD:SdkLibrary/src/org/qiyi/pluginlibrary/Neptune.java
- *
- * author: liuchun
- * date: 2018/6/4
-=======
->>>>>>> sdk_open:SdkLibrary/src/org/qiyi/pluginlibrary/Neptune.java
  */
 public class Neptune {
     private static final String TAG = "Neptune";
