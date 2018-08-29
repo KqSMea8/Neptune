@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -74,7 +75,7 @@ public class PluginPackageManagerNative {
 
         public ActionFinishCallback(String processName) {
             mProcessName = processName;
-            mActionExecutor = Executors.newFixedThreadPool(2);
+            mActionExecutor = Executors.newFixedThreadPool(1);
         }
 
         @Override
@@ -117,31 +118,31 @@ public class PluginPackageManagerNative {
 
         /**
          * 异步执行下一个Action
-         *
-         * @param actions
          */
         private void executeNextAction(final List<Action> actions, final String packageName) {
             mActionExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
 
-                    int index = 0;
                     PluginDebugLog.installFormatLog(TAG, "start find can execute action ...");
-                    while (index < actions.size()) {
-                        Action action = actions.get(index);
-                        if (action != null) {
-                            if (action.meetCondition()) {
-                                PluginDebugLog.installFormatLog(TAG,
-                                        "doAction for %s and action is %s", packageName,
-                                        action.toString());
-                                action.doAction();
-                                break;
-                            } else {
-                                PluginDebugLog.installFormatLog(TAG,
-                                        "remove deprecate action of %s,and action:%s "
-                                        , packageName, action.toString());
-                                actions.remove(index);
-                            }
+                    Iterator<Action> iterator = actions.iterator();
+                    while (iterator.hasNext()) {
+                        Action action = iterator.next();
+                        if (action == null) {
+                            continue;
+                        }
+
+                        if (action.meetCondition()) {
+                            PluginDebugLog.installFormatLog(TAG,
+                                    "doAction for %s and action is %s", packageName,
+                                    action.toString());
+                            action.doAction();
+                            break;  //跳出循环
+                        } else {
+                            PluginDebugLog.installFormatLog(TAG,
+                                    "remove deprecate action of %s,and action:%s "
+                                    , packageName, action.toString());
+                            iterator.remove();
                         }
                     }
 
@@ -210,7 +211,6 @@ public class PluginPackageManagerNative {
         @Override
         public void doAction() {
             if (callbackHost != null) {
-                //callbackHost.installApkFileInternal(filePath, listener, info);
                 callbackHost.installInternal(info, listener);
             }
         }
@@ -282,6 +282,7 @@ public class PluginPackageManagerNative {
     private class PluginPackageManagerServiceConnection implements ServiceConnection {
 
         private Context mContext;
+        private ExecutorService mActionExecutor;
         private IBinder.DeathRecipient mDeathRecipient = new IBinder.DeathRecipient() {
             @Override
             public void binderDied() {
@@ -294,6 +295,7 @@ public class PluginPackageManagerNative {
 
         PluginPackageManagerServiceConnection(Context context) {
             mContext = context;
+            mActionExecutor = Executors.newFixedThreadPool(1);
         }
 
         @Override
@@ -316,8 +318,14 @@ public class PluginPackageManagerNative {
                     } catch (RemoteException e) {
                         // ignore
                     }
-                    executePackageAction(mContext);
-                    executePendingAction();
+                    // 异步执行在等待中的任务
+                    mActionExecutor.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            executePackageAction(mContext);
+                            executePendingAction();
+                        }
+                    });
                 } else {
                     PluginDebugLog.runtimeLog(TAG, "onServiceConnected, mService is null");
                 }
@@ -339,6 +347,7 @@ public class PluginPackageManagerNative {
     private PluginPackageManager mPackageManager;
     private IPluginPackageManager mService = null;
     private ServiceConnection mServiceConnection = null;
+
 
     /**
      * 安装包任务队列，目前仅处理插件依赖时使用
@@ -404,18 +413,19 @@ public class PluginPackageManagerNative {
             if (entry != null) {
                 CopyOnWriteArrayList<Action> actions = entry.getValue();
                 PluginDebugLog.installFormatLog(TAG, "execute %d pending actions!", actions.size());
-                int index = 0;
-                while (index < actions.size()) {
-                    Action action = actions.get(index);
-                    if (action != null) {
-                        if (action.meetCondition()) {
-                            PluginDebugLog.installFormatLog(TAG, "start doAction for pending action %s", action.toString());
-                            action.doAction();
-                            break;
-                        } else {
-                            PluginDebugLog.installFormatLog(TAG, "remove deprecate pending action from action list for %s", action.toString());
-                            actions.remove(index);
-                        }
+                Iterator<Action> iterator = actions.iterator();
+                while (iterator.hasNext()) {
+                    Action action = iterator.next();
+                    if (action == null) {
+                        continue;
+                    }
+                    if (action.meetCondition()) {
+                        PluginDebugLog.installFormatLog(TAG, "start doAction for pending action %s", action.toString());
+                        action.doAction();
+                        break;
+                    } else {
+                        PluginDebugLog.installFormatLog(TAG, "remove deprecate pending action from action list for %s", action.toString());
+                        iterator.remove();
                     }
                 }
             }
@@ -423,7 +433,7 @@ public class PluginPackageManagerNative {
     }
 
     /**
-     * 执行之前未执行的PacakgeAction操作
+     * 执行之前未执行的PackageAction操作
      */
     private static void executePackageAction(Context context) {
         if (context != null) {
