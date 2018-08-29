@@ -1,9 +1,40 @@
 # Neptune
 
-Neptune是一个灵活，稳定，轻量级的插件化方案，有爱奇艺移动端基线Team研发。它可以在数以百万级的Android设备上动态加载和运行插件apk。框架支持了爱奇艺20个多独立业务的发展，比如爱奇艺文学，电影票，爱奇艺直播等。
+![license](http://img.shields.io/badge/license-Apache2.0-brightgreen.svg?style=flat)
+![Release Version](https://img.shields.io/badge/release-2.5.0-red.svg)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
-随着Android P即将发布，我们的框架遇到了非限制性SDK接口访问的挑战。短时间内，我们及时进行了跟进和适配，现在Neptune可以无缝运行在Android P设备上，目前只有一个Hook点（ActivityThread中的Instrumentation）。
+**Neptune是一套灵活，稳定，轻量级的插件化方案。**
 
+它现在每天在数亿的设备上动态加载和运行插件，支撑着爱奇艺许多独立业务模块的需求和发展，如爱奇艺文学，电影票等。
+
+Neptune现在完全兼容Android P系统，可以在Android P设备上稳定且无缝地运行。框架只使用了少数几个浅灰名单中的API。
+
+# Android P兼容性
+
+在Neptune项目中，只有少量浅灰名单中的私有API会被访问，没有使用到深灰和黑名单中的API。
+
+| API List | API Used count |
+| :----    | :----: |
+| Black list | 0 |
+| Dark grey list | 0 |
+| light grey list | 9 |
+
+### 细节
+
+```
+Accessing hidden field Landroid/app/ActivityThread;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
+Accessing hidden method Ldalvik/system/VMRuntime;->getCurrentInstructionSet()Ljava/lang/String; (light greylist, reflection)
+Accessing hidden method Landroid/content/res/AssetManager;->addAssetPath(Ljava/lang/String;)I (light greylist, reflection)
+Accessing hidden method Landroid/app/Instrumentation;->execStartActivity(Landroid/content/Context;Landroid/os/IBinder;Landroid/os/IBinder;Landroid/app/Activity;Landroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/Instrumentation$ActivityResult; (light greylist, reflection)
+Accessing hidden field Landroid/view/ContextThemeWrapper;->mResources:Landroid/content/res/Resources; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mApplication:Landroid/app/Application; (light greylist, reflection)
+Accessing hidden field Landroid/content/ContextWrapper;->mBase:Landroid/content/Context; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
+Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm/ActivityInfo; (light greylist, reflection)
+```
+
+在使用到的浅灰名单API中，`ActivityThread#mInstrumentation`和`AssetManager#addAssetPath()`是Neptune项目必须使用的。对于其他的浅灰名单API，我们通过提供基类PluginActivity给插件继承、重写相关方法的方式来规避私有API调用的风险。
 
 # 支持的特性
 
@@ -33,12 +64,13 @@ Neptune是一个灵活，稳定，轻量级的插件化方案，有爱奇艺移�
 在App模块的`build.gradle`中compile移入Neptune库
 
 ```Gradle
-    compile 'com.iqiyi.video:neptune:1.0.3'
+    compile 'org.qiyi.video:neptune:2.5.0'
 ```
 
-在`Application#onCreate()`阶段初始化NoahDocker
+在`Application#onCreate()`阶段初始化Neptune
 
 ```Java
+<<<<<<< HEAD
 @Override
 public void onCreate() {
     NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
@@ -47,6 +79,18 @@ public void onCreate() {
     Neptune.init(this, config);
 
     PluginDebugLog.setIsDebug(BuildConfig.DEBUG);
+=======
+public class XXXApplication extends Application {
+    
+    @Override
+    public void onCreate() {
+        NeptuneConfig config = new NeptuneConfig.NeptuneConfigBuilder()
+                    .configSdkMode(NeptuneConfig.INSTRUMENTATION_MODE)
+                    .enableDebug(BuildConfig.DEBUG)
+                    .build();
+        Neptune.init(this, config);
+    }
+>>>>>>> sdk_open
 }
 
 ```
@@ -59,16 +103,16 @@ public void onCreate() {
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:plugin-gradle:1.0.6'
+    classpath  'com.iqiyi.tools.build:plugin-gradle:1.1.0'
 }
 ```
 
 在App模块的`build.gradle`中应用gradle插件并添加相应配置
 
 ```Gradle
-apply plugin: 'com.qiyi.plugin'
+apply plugin: 'com.qiyi.neptune.plugin'
 
-qyplugin {
+neptune {
     pluginMode = true      // In plugin apk build mode
     packageId = 0x30       // The packge id of Resources
     hostDependencies = "{group1}:{artifact1};{group2}:{artifact2}" // host app resources dependencies
@@ -77,14 +121,14 @@ qyplugin {
 
 # Developer Guide
 
-* API文档见wiki
-* 宿主APP的示例工程
-* 插件APP的示例工程
-* 阅读SDKLibray的源码
+* [API文档见wiki](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/wikis/home)
+* [宿主APP的示例工程](samples/HostApp)
+* [插件APP的示例工程](samples/PluginApp)
+* [阅读SDKLibrary的源码](SdkLibrary)
 
 # Contribution
 
-我们真诚的欢迎任何有价值的PR提交，包括代码，建议和文档。
+我们真诚地欢迎任何有价值的PR提交，包括代码，建议和文档。
 
 # License
 

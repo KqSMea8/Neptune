@@ -1,10 +1,26 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.utils;
 
 import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +41,7 @@ import dalvik.system.PathClassLoader;
  * 但是 插件中通过Intent .put serialize extra 无法找到对应的类。只能通过此方法。
  */
 public class ClassLoaderInjectHelper {
-    private static final String TAG = "ClassLoaderInjectHelper";
+
     /**
      * 注入jar
      *
@@ -38,7 +54,7 @@ public class ClassLoaderInjectHelper {
             Class.forName("dalvik.system.LexClassLoader");
             return injectInAliyunOs(context, dexPath, soPath);
         } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
+            // ignore
         }
         boolean hasBaseDexClassLoader = true;
         try {
@@ -54,13 +70,7 @@ public class ClassLoaderInjectHelper {
     }
 
     public static InjectResult inject(ClassLoader parentClassLoader, ClassLoader childClassLoader, String someClass) {
-        // ali云 暂不实现，后边再看。
-        // try {
-        // Class.forName("dalvik.system.LexClassLoader");
-        // return injectInAliyunOs(aApp, aLibPath);
-        // } catch (ClassNotFoundException e) {
-        // e.printStackTrace();
-        // }
+
         boolean hasBaseDexClassLoader = true;
         try {
             Class.forName("dalvik.system.BaseDexClassLoader");
@@ -89,7 +99,9 @@ public class ClassLoaderInjectHelper {
     private static InjectResult injectInAliyunOs(Context context, String dexPath, String soPath) {
         InjectResult result = null;
         PathClassLoader localClassLoader = (PathClassLoader) context.getClassLoader();
-        new DexClassLoader(dexPath, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(), soPath, localClassLoader);
+        File optDir = PluginInstaller.getPluginInjectRootPath(context);
+        FileUtils.checkOtaFileValid(optDir, new File(dexPath));
+        new DexClassLoader(dexPath, optDir.getAbsolutePath(), soPath, localClassLoader);
         String lexFileName = new File(dexPath).getName();
         lexFileName = lexFileName.replaceAll("\\.[a-zA-Z0-9]+", ".lex");
         try {
@@ -97,7 +109,7 @@ public class ClassLoaderInjectHelper {
             Constructor<?> constructorLexClassLoader = classLexClassLoader.getConstructor(String.class, String.class, String.class,
                     ClassLoader.class);
             Object localLexClassLoader = constructorLexClassLoader.newInstance(
-                    PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath() + File.separator + lexFileName, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(),
+                    optDir.getAbsolutePath() + File.separator + lexFileName, optDir.getAbsolutePath(),
                     soPath, localClassLoader);
             setField(localClassLoader, PathClassLoader.class, "mPaths",
                     appendArray(getField(localClassLoader, PathClassLoader.class, "mPaths"),
@@ -111,35 +123,13 @@ public class ClassLoaderInjectHelper {
             setField(localClassLoader, PathClassLoader.class, "mLexs",
                     combineArray(getField(localClassLoader, PathClassLoader.class, "mLexs"),
                             getField(localLexClassLoader, classLexClassLoader, "mDexs")));
-        } catch (NoSuchFieldException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
+
+            result = makeInjectResult(true, null);
         } catch (Exception e) {
             result = makeInjectResult(false, e);
             e.printStackTrace();
         }
 
-        if (result == null) {
-            result = makeInjectResult(true, null);
-        }
         return result;
     }
 
@@ -153,8 +143,10 @@ public class ClassLoaderInjectHelper {
     private static InjectResult injectBelowApiLevel14(Context context, String dexPath, String someClass, String soPath) {
         InjectResult result = null;
         PathClassLoader pathClassLoader = (PathClassLoader) context.getClassLoader();
-        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(), soPath,
-                context.getClassLoader());
+        File optDir = PluginInstaller.getPluginInjectRootPath(context);
+        FileUtils.checkOtaFileValid(optDir, new File(dexPath));
+        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, optDir.getAbsolutePath(),
+                soPath, pathClassLoader);
 
         result = injectBelowApiLevel14(pathClassLoader, dexClassLoader, someClass);
 
@@ -195,20 +187,13 @@ public class ClassLoaderInjectHelper {
                         combineArray(getField(pathClassLoader, PathClassLoader.class, "mLibPaths"),
                                 getField(dexClassLoader, DexClassLoader.class, "mLibPaths")));
             }
-        } catch (NoSuchFieldException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
+
+            result = makeInjectResult(true, null);
         } catch (Exception e) {
             result = makeInjectResult(false, e);
             e.printStackTrace();
         }
 
-        if (result == null) {
-            result = makeInjectResult(true, null);
-        }
         return result;
     }
 
@@ -221,8 +206,10 @@ public class ClassLoaderInjectHelper {
      */
     private static InjectResult injectAboveEqualApiLevel14(Context context, String dexPath, String soPath) {
         PathClassLoader pathClassLoader = (PathClassLoader) context.getClassLoader();
-        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, PluginInstaller.getPluginInjectRootPath(context).getAbsolutePath(), soPath,
-                context.getClassLoader());
+        File optDir = PluginInstaller.getPluginInjectRootPath(context);
+        FileUtils.checkOtaFileValid(optDir, new File(dexPath));
+        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, optDir.getAbsolutePath(), soPath,
+                pathClassLoader);
         InjectResult result = null;
 
         // If version > 22 LOLLIPOP_MR1
@@ -279,25 +266,13 @@ public class ClassLoaderInjectHelper {
             if (childNativeLibraryDirectories != null) {
                 nativeLibraryDirectories.addAll(childNativeLibraryDirectories);
             }
-        } catch (IllegalArgumentException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
+
+            result = makeInjectResult(true, null);
         } catch (Exception e) {
             result = makeInjectResult(false, e);
             e.printStackTrace();
         }
-        if (result == null) {
-            result = makeInjectResult(true, null);
-        }
+
         return result;
     }
 
@@ -326,25 +301,13 @@ public class ClassLoaderInjectHelper {
                     getNativeLibraryDirectories(getPathList(dexClassLoader)));
 
             setField(pathList, pathList.getClass(), "nativeLibraryDirectories", dexNativeLibraryDirs);
-        } catch (IllegalArgumentException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
+
+            result = makeInjectResult(true, null);
         } catch (Exception e) {
             result = makeInjectResult(false, e);
             e.printStackTrace();
         }
-        if (result == null) {
-            result = makeInjectResult(true, null);
-        }
+
         return result;
     }
 
@@ -461,7 +424,7 @@ public class ClassLoaderInjectHelper {
      * @param targetArray array
      * @return array
      */
-    private static Object removeArrayElement(Object srcArray, Object element) {
+    private static Object removeArrayElement(Object srcArray, Object targetArray) {
         Class<?> localClass = srcArray.getClass().getComponentType();
         int srcLen = Array.getLength(srcArray);
 
@@ -470,8 +433,7 @@ public class ClassLoaderInjectHelper {
         for (int i = 0; i < srcLen; i++) {
             Object src = Array.get(srcArray, i);
             boolean finded = false;
-            Object target = element;
-            if (src.equals(target)) {
+            if (src.equals(targetArray)) {
                 finded = true;
             }
 
@@ -563,13 +525,7 @@ public class ClassLoaderInjectHelper {
     }
 
     public static InjectResult eject(ClassLoader parentClassLoader, ClassLoader childClassLoader) {
-        // ali云 暂不实现，后边再看。
-        // try {
-        // Class.forName("dalvik.system.LexClassLoader");
-        // return injectInAliyunOs(aApp, aLibPath);
-        // } catch (ClassNotFoundException e) {
-        // e.printStackTrace();
-        // }
+
         boolean hasBaseDexClassLoader = true;
         try {
             Class.forName("dalvik.system.BaseDexClassLoader");
@@ -610,20 +566,13 @@ public class ClassLoaderInjectHelper {
                         removeArrayElements(getField(pathClassLoader, PathClassLoader.class, "mLibPaths"),
                                 getField(dexClassLoader, DexClassLoader.class, "mLibPaths")));
             }
-        } catch (NoSuchFieldException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
+
+            result = makeInjectResult(true, null);
         } catch (Exception e) {
             result = makeInjectResult(false, e);
             e.printStackTrace();
         }
 
-        if (result == null) {
-            result = makeInjectResult(true, null);
-        }
         return result;
     }
 
@@ -646,22 +595,13 @@ public class ClassLoaderInjectHelper {
                     getNativeLibraryDirectories(getPathList(dexClassLoader)));
 
             setField(pathList, pathList.getClass(), "nativeLibraryDirectories", dexNativeLibraryDirs);
-        } catch (IllegalArgumentException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            result = makeInjectResult(false, e);
-            e.printStackTrace();
-        }
-        if (result == null) {
+
             result = makeInjectResult(true, null);
+        } catch (Exception e) {
+            result = makeInjectResult(false, e);
+            e.printStackTrace();
         }
+
         return result;
     }
 

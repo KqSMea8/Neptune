@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component.base;
 
 import android.app.Activity;
@@ -22,8 +39,6 @@ import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
  * 插件基线PluginActivity的代理实现
  * 每个PluginActivity持有一个PluginActivityDelegate对象，实现插件相关功能的注入
  *
- * author: liuchun
- * date: 2018/6/13
  */
 class PluginActivityDelegate implements InterfaceToGetHost {
     private static final String TAG = "PluginActivityDelegate";

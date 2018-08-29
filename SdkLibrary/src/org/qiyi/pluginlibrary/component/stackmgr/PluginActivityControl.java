@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component.stackmgr;
 
 import android.app.Activity;
@@ -34,11 +51,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * 插件的控制器<br> 派发插件事件和控制插件生命周期
+ * 插件的控制器，派发插件事件和控制插件生命周期
  */
 public class PluginActivityControl implements PluginActivityCallback {
     private static final String TAG = "PluginActivityControl";
-    public static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>();
+    public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(10);
     private Activity mProxy;// 代理Activity
     private Activity mPlugin;// 插件Activity
     private ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类

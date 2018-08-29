@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component.wraper;
 
 import android.app.Activity;
@@ -25,15 +42,17 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
 /**
+ *
+ * 自定义的全局的Instrumentation
  * 负责转移插件的跳转目标和创建插件的Activity实例
  * 用于Hook ActivityThread中的全局Instrumentation
  */
-public class PluginHookedInstrument extends PluginInstrument {
+public class NeptuneInstrument extends PluginInstrument {
 
-    private static final String TAG = "PluginHookedInstrument";
+    private static final String TAG = "NeptuneInstrument";
     private PluginActivityRecoveryHelper mRecoveryHelper = new PluginActivityRecoveryHelper();
 
-    public PluginHookedInstrument(Instrumentation hostInstr) {
+    public NeptuneInstrument(Instrumentation hostInstr) {
         super(hostInstr);
     }
 
@@ -107,7 +126,6 @@ public class PluginHookedInstrument extends PluginInstrument {
                             PluginActivityControl.changeActivityInfo(activity, targetClass, loadedApk);
                         } catch (Exception e) {
                             PluginDebugLog.runtimeLog(TAG, "callActivityOnCreate with exception: " + e.getMessage());
-                            e.printStackTrace();
                         }
 
                     }

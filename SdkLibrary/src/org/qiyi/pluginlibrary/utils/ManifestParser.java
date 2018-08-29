@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.utils;
 
 import android.content.Context;
@@ -23,9 +40,6 @@ import java.util.List;
  * 从AndroidManifest.xml中解析出Activity、Service、Receiver相关的组件信息及其Intent-Filter信息
  * 方便实现插件Intent的隐式查找，注册静态广播
  * 替换系统@hide 的PackageParser#parsePackage()方法
- *
- * author: liuchun
- * date: 2018/6/12
  */
 public class ManifestParser {
     private static final String TAG = "ManifestParser";
@@ -54,11 +68,9 @@ public class ManifestParser {
         pi.applicationInfo.sourceDir = apkPath;
         pi.applicationInfo.publicSourceDir = apkPath;
 
+        AssetManager am = null;
         try {
-//            Resources res = pm.getResourcesForApplication(pi.applicationInfo);
-//            AssetManager am = res.getAssets();
-            AssetManager am = AssetManager.class.newInstance();
-            // TODO FIXME here, not use reflect
+            am = AssetManager.class.newInstance();
             Method addAssetPath = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
             addAssetPath.setAccessible(true);
             int cookie = (int)addAssetPath.invoke(am, apkPath);
@@ -67,6 +79,10 @@ public class ManifestParser {
             parseManifest(parser);
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (am != null) {
+                am.close();
+            }
         }
     }
 

@@ -1,5 +1,23 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityThread;
 import android.app.Application;
 import android.app.Instrumentation;
@@ -7,24 +25,27 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 
-import org.qiyi.pluginlibrary.component.wraper.PluginHookedInstrument;
+import org.qiyi.pluginlibrary.component.wraper.NeptuneInstrument;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.pm.IPluginUninstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
-import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
+import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
 
 /**
  * Neptune对外暴露的统一调用类
+<<<<<<< HEAD:SdkLibrary/src/org/qiyi/pluginlibrary/Neptune.java
  *
  * author: liuchun
  * date: 2018/6/4
+=======
+>>>>>>> sdk_open:SdkLibrary/src/org/qiyi/pluginlibrary/Neptune.java
  */
 public class Neptune {
     private static final String TAG = "Neptune";
@@ -33,13 +54,17 @@ public class Neptune {
     public static final boolean NEW_RESOURCE_CREATOR = true;
     public static final boolean NEW_COMPONENT_PARSER = true;
 
+    @SuppressLint("StaticFieldLeak")
     private static Context sHostContext;
 
     private static NeptuneConfig sGlobalConfig;
 
     private static Instrumentation mHostInstr;
+
+    private Neptune() {}
+
     /**
-     * 初始化HybirdPlugin环境
+     * 初始化Neptune插件环境
      *
      * @param app
      * @param config
@@ -50,13 +75,15 @@ public class Neptune {
         sGlobalConfig = config != null ? config
                 : new NeptuneConfig.NeptuneConfigBuilder().build();
 
-        boolean hookInstr = ContextUtils.isAndroidP() || sGlobalConfig.getSdkMode() != NeptuneConfig.LEGACY_MODE;
+        PluginDebugLog.setIsDebug(sGlobalConfig.isDebug());
+
+        boolean hookInstr = VersionUtils.hasPie() || sGlobalConfig.getSdkMode() != NeptuneConfig.LEGACY_MODE;
         if (hookInstr) {
             hookInstrumentation();
         }
 
         // 调用getInstance()方法会初始化bindService
-        PluginPackageManagerNative.getInstance(app).setPackageInfoManager(sGlobalConfig.getVerifyPluginInfo());
+        PluginPackageManagerNative.getInstance(app).setPackageInfoManager(sGlobalConfig.getPluginInfoProvider());
         // 注册卸载监听广播
         PluginManager.registerUninstallReceiver(app);
     }
@@ -87,33 +114,17 @@ public class Neptune {
                || hostInstrName.startsWith("com.lody.virtual")) {
                 // warning: 特殊case，VirtualApp环境，暂不Hook
                 PluginDebugLog.runtimeLog(TAG, "reject hook instrument, run in VirtualApp Environment");
-            } else if (hostInstr instanceof PluginHookedInstrument) {
+            } else if (hostInstr instanceof NeptuneInstrument) {
                 // already hooked
                 PluginDebugLog.runtimeLog(TAG, "ActivityThread Instrumentation already hooked");
             } else {
-                PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
+                PluginInstrument pluginInstrument = new NeptuneInstrument(hostInstr);
                 ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
                 PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
             }
         } else {
             PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed, hostInstr==null");
         }
-
-//        Object activityThread = getActivityThread();
-//        Instrumentation hostInstr;
-//        try {
-//            hostInstr = ReflectionUtils.on(activityThread).call("getInstrumentation").get();
-//        } catch (ReflectException e) {
-//            hostInstr = ReflectionUtils.on(activityThread).get("mInstrumentation");
-//        }
-//
-//        if (hostInstr != null) {
-//            PluginInstrument pluginInstrument = new PluginHookedInstrument(hostInstr);
-//            ReflectionUtils.on(activityThread).set("mInstrumentation", pluginInstrument);
-//            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation success");
-//        } else {
-//            PluginDebugLog.runtimeLog(TAG, "init hook ActivityThread Instrumentation failed");
-//        }
     }
 
     /**
@@ -130,26 +141,6 @@ public class Neptune {
         }
 
         return mHostInstr;
-    }
-
-    /**
-     * 反射获取ActivityThread对象
-     */
-    private static Object getActivityThread() {
-        ReflectionUtils ref = ReflectionUtils.on("android.app.ActivityThread");
-        Object obj = null;
-        try {
-            obj = ref.call("currentActivityThread").get();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        if (obj == null) {
-            obj = ref.get("sCurrentActivityThread");
-        }
-        if (obj == null) {
-            obj = ((ThreadLocal<?>)ref.get("sThreadLocal")).get();
-        }
-        return obj;
     }
 
     /**

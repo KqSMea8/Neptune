@@ -22,7 +22,7 @@ class QYPlugin implements Plugin<Project> {
             throw new GradleException("com.android.application not found, QYPlugin can be only apply to android application module")
         }
 
-        pluginExt = project.extensions.create("qyplugin", QYPluginExtension)
+        pluginExt = project.extensions.create("neptune", QYPluginExtension)
         this.project = project
 
         def android = project.extensions.getByType(AppExtension)

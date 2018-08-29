@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component;
 
 import android.app.Service;
@@ -9,7 +26,7 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
@@ -42,17 +59,17 @@ public class ServiceProxy1 extends Service {
     public void onCreate() {
         PluginDebugLog.log(TAG, "ServiceProxy1>>>>>onCreate()");
         super.onCreate();
-        handleSlefLaunchPluginService();
+        handleSelfLaunchPluginService();
     }
 
     /**
      * Must invoke on the main thread
      */
-    private void handleSlefLaunchPluginService() {
+    private void handleSelfLaunchPluginService() {
         List<PluginServiceWrapper> selfLaunchServices = new ArrayList<PluginServiceWrapper>(1);
         for (PluginServiceWrapper plugin : PServiceSupervisor.getAliveServices().values()) {
-            PServiceSupervisor.removeServiceByIdentifer(PluginServiceWrapper.getIdentify(plugin.getPkgName(), plugin.getServiceClassName()));
-            if (plugin.mNeedSelfLaunch) {
+            PServiceSupervisor.removeServiceByIdentity(PluginServiceWrapper.getIdentify(plugin.getPkgName(), plugin.getServiceClassName()));
+            if (plugin.needSelfLaunch()) {
                 selfLaunchServices.add(plugin);
             }
         }
@@ -100,7 +117,7 @@ public class ServiceProxy1 extends Service {
                 targetService.onCreate();
                 currentPlugin.updateServiceState(PluginServiceWrapper.PLUGIN_SERVICE_CREATED);
 
-                PServiceSupervisor.addServiceByIdentifer(targetPackageName + "." + targetClassName, currentPlugin);
+                PServiceSupervisor.addServiceByIdentity(targetPackageName + "." + targetClassName, currentPlugin);
 
                 PluginDebugLog.log(TAG, "ServiceProxy1>>>start service, pkgName: " + targetPackageName + ", clsName: "
                         + targetClassName);
@@ -171,6 +188,7 @@ public class ServiceProxy1 extends Service {
         }
     }
 
+    @Override
     public void onLowMemory() {
         if (PServiceSupervisor.getAliveServices().size() > 0) {
             // Notify all alive plugin service to do destroy
@@ -193,17 +211,17 @@ public class ServiceProxy1 extends Service {
             return START_NOT_STICKY;
         }
         // 退出Service
-        if (TextUtils.equals(IIntentConstant.ACTION_QUIT_SERVICE, paramIntent.getAction())) {
+        if (TextUtils.equals(IntentConstant.ACTION_QUIT_SERVICE, paramIntent.getAction())) {
             PluginDebugLog.runtimeLog(TAG, "service " + getClass().getName() + " received quit intent action");
             mKillProcessOnDestroy = true;
             stopSelf();
             return START_NOT_STICKY;
         }
         // 启动插件
-        if (TextUtils.equals(IIntentConstant.ACTION_START_PLUGIN, paramIntent.getAction())) {
+        if (TextUtils.equals(IntentConstant.ACTION_START_PLUGIN, paramIntent.getAction())) {
             PluginDebugLog.runtimeLog(TAG, "service " + getClass().getName() + " received start plugin intent action");
-            String processName = paramIntent.getStringExtra(IIntentConstant.EXTRA_TARGET_PROCESS);
-            Intent launchIntent = paramIntent.getParcelableExtra(IIntentConstant.EXTRA_START_INTENT_KEY);
+            String processName = paramIntent.getStringExtra(IntentConstant.EXTRA_TARGET_PROCESS);
+            Intent launchIntent = paramIntent.getParcelableExtra(IntentConstant.EXTRA_START_INTENT_KEY);
             if (!TextUtils.isEmpty(processName) && launchIntent != null) {
                 launchIntent.setExtrasClassLoader(this.getClass().getClassLoader());
                 PluginManager.launchPlugin(this, launchIntent, processName);
@@ -222,7 +240,7 @@ public class ServiceProxy1 extends Service {
             int result = currentPlugin.getCurrentService().onStartCommand(paramIntent, paramInt1, paramInt2);
             PluginDebugLog.log(TAG, "ServiceProxy1>>>>>onStartCommand() result: " + result);
             if (result == START_REDELIVER_INTENT || result == START_STICKY) {
-                currentPlugin.mNeedSelfLaunch = true;
+                currentPlugin.setSelfLaunch(true);
             }
             mKillProcessOnDestroy = false;
             return START_NOT_STICKY;
@@ -253,7 +271,6 @@ public class ServiceProxy1 extends Service {
     }
 
     @Override
-    @Deprecated
     public void onStart(Intent intent, int startId) {
         PluginDebugLog.log(TAG, "ServiceProxy1>>>>>onStart():" + (intent == null ? "null" : intent));
         if (intent == null) {

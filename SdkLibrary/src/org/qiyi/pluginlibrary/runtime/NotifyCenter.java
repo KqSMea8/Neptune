@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.runtime;
 
 import android.app.Service;
@@ -5,14 +22,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 
 /**
  * 发送广播通知业务层做一些特殊处理
  * 比如插件加载成功
  *
- * author: liuchun
- * date: 2018/6/7
  */
 public class NotifyCenter {
 
@@ -24,7 +39,7 @@ public class NotifyCenter {
      */
     public static void notifyPluginActivityLoaded(Context context) {
         Intent intent = new Intent();
-        intent.setAction(IIntentConstant.ACTION_PLUGIN_LOADED);
+        intent.setAction(IntentConstant.ACTION_PLUGIN_LOADED);
         context.sendBroadcast(intent);
     }
 
@@ -36,8 +51,8 @@ public class NotifyCenter {
      */
     public static void notifyPluginStarted(Context context, Intent intent) {
         if (null != context && null != intent && !TextUtils.isEmpty(intent.getStringExtra(
-                IIntentConstant.EXTRA_SHOW_LOADING))) {
-            context.sendBroadcast(new Intent(IIntentConstant.EXTRA_SHOW_LOADING));
+                IntentConstant.EXTRA_SHOW_LOADING))) {
+            context.sendBroadcast(new Intent(IntentConstant.EXTRA_SHOW_LOADING));
         }
     }
 
@@ -48,7 +63,7 @@ public class NotifyCenter {
      */
     public static void notifyStartPluginError(Context context) {
         Intent intent = new Intent();
-        intent.setAction(IIntentConstant.ACTION_START_PLUGIN_ERROR);
+        intent.setAction(IntentConstant.ACTION_START_PLUGIN_ERROR);
         context.sendBroadcast(intent);
     }
 
@@ -58,8 +73,8 @@ public class NotifyCenter {
      * @param service service class
      */
     public static void notifyServiceConnected(Context context, Class<? extends Service> service) {
-        Intent intent = new Intent(IIntentConstant.ACTION_SERVICE_CONNECTED);
-        intent.putExtra(IIntentConstant.EXTRA_SERVICE_CLASS, service);
+        Intent intent = new Intent(IntentConstant.ACTION_SERVICE_CONNECTED);
+        intent.putExtra(IntentConstant.EXTRA_SERVICE_CLASS, service);
         // 在插件 activity 进程被回收以后恢复过程中，需要保证有序，具体参见恢复逻辑
         context.sendOrderedBroadcast(intent, null);
     }

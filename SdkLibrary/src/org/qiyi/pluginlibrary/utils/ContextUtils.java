@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.utils;
 
 import android.app.Activity;
@@ -16,6 +33,7 @@ import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -23,17 +41,9 @@ import java.util.Map.Entry;
 public class ContextUtils {
     private static final String TAG = ContextUtils.class.getSimpleName();
 
-    //定义Android系统
-    private static final String ANDROID_P = "P";
-    private static final String ANDROID_N = "N";
-    private static final String ANDROID_O = "O";
-
     /**
      * Try to get host context in the plugin environment or the param context
      * will be return
-     *
-     * @param context
-     * @return
      */
     public static Context getOriginalContext(Context context) {
 
@@ -110,7 +120,7 @@ public class ContextUtils {
             String packageName = (String) entry.getKey();
             PluginLoadedApk mLoadedApk = (PluginLoadedApk) entry.getValue();
             Activity topActivity = mLoadedApk.getActivityStackSupervisor().getTopActivity();
-            if (topActivity != null && Util.isResumed(topActivity)) {
+            if (topActivity != null && isResumed(topActivity)) {
                 topPackage = packageName;
                 break;
             }
@@ -134,9 +144,6 @@ public class ContextUtils {
     /**
      * Try to get host ResourcesToolForPlugin in the plugin environment or the
      * ResourcesToolForPlugin with param context will be return
-     *
-     * @param context
-     * @return
      */
     public static ResourcesToolForPlugin getHostResourceTool(Context context) {
         if (context instanceof InterfaceToGetHost) {
@@ -170,8 +177,6 @@ public class ContextUtils {
     /**
      * Get the real package name for this plugin in plugin environment otherwise
      * return context's package name
-     *
-     * @return
      */
     public static String getPluginPackageName(Context context) {
         if (null == context) {
@@ -216,15 +221,12 @@ public class ContextUtils {
                     return getPluginPackageName(base);
                 }
             }
-            //PluginDebugLog.log(TAG, getInvokeInfo() + "getPluginPackageName context dont't match!");
             return context.getPackageName();
         }
     }
 
     /**
      * Try to exit current app and exit process
-     *
-     * @param context
      */
     public static void exitApp(Context context) {
         if (null != context) {
@@ -281,35 +283,29 @@ public class ContextUtils {
     }
 
     /**
-     * 判断是否Android P系统
+     * 判断Activity是否已经销毁或正在销毁，这时候就不再调用Activity.finish方法
+     * 防止插件重写finish方法造成循环调用
      */
-    public static boolean isAndroidP() {
-        return isParticularAndroidVersion(ANDROID_P);
+    public static boolean isFinished(Activity activity) {
+        boolean isFinished = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            isFinished = activity.isDestroyed();
+        }
+        return isFinished || activity.isFinishing();
     }
 
     /**
-     * 判断当前系统是否是Android N或者Android O
-     *
-     * @param sdk Android SDK名（“N”或者“O”）
+     * 判断Activity是否Resumed
      */
-    private static boolean isParticularAndroidVersion(String sdk) {
-        int minSDKValue = 0;
-        int maxSDKValue = 100;
-        String compareSDKName = "";
-        if (TextUtils.equals(ANDROID_N, sdk)) {
-            minSDKValue = 24;
-            maxSDKValue = 25;
-            compareSDKName = "N";
-        } else if (TextUtils.equals(ANDROID_O, sdk)) {
-            minSDKValue = 26;
-            maxSDKValue = 27;
-            compareSDKName = "O";
-        } else if (TextUtils.equals(ANDROID_P, sdk)) {
-            minSDKValue = 27;
-            compareSDKName = "P";
+    public static boolean isResumed(Activity activity) {
+        boolean result = true;
+        try {
+            Class<?> clazz = Class.forName("android.app.Activity");
+            Method isResumed = clazz.getDeclaredMethod("isResumed");
+            result = (Boolean) isResumed.invoke(activity);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return (Build.VERSION.SDK_INT >= minSDKValue && Build.VERSION.SDK_INT <= maxSDKValue)
-                && TextUtils.equals(Build.VERSION.CODENAME, compareSDKName)
-                && TextUtils.equals(Build.VERSION.RELEASE, compareSDKName);
+        return result;
     }
 }

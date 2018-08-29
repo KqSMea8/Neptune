@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.component.wraper;
 
 import android.app.Activity;
@@ -70,7 +87,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class, Bundle.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -87,7 +104,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -105,7 +122,7 @@ public class PluginInstrument extends Instrumentation {
             return mInstrumentRef.call("execStartActivityAsCaller", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options, userId)
                     .get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -124,7 +141,7 @@ public class PluginInstrument extends Instrumentation {
             return mInstrumentRef.call("execStartActivityAsCaller", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options,
                     ignoreTargetSecurity, userId).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -143,7 +160,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent[].class, Bundle.class, int.class};
             mInstrumentRef.call("execStartActivitiesAsUser", sMethods, paramTypes, who, contextThread, token, target, intents, options, userId);
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
     }
 
@@ -159,7 +176,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class, Bundle.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }
@@ -176,7 +193,7 @@ public class PluginInstrument extends Instrumentation {
                     Intent.class, int.class, Bundle.class};
             return mInstrumentRef.call("execStartActivity", sMethods, paramTypes, who, contextThread, token, target, intent, requestCode, options).get();
         } catch (Exception e) {
-            e.printStackTrace();
+            // ignore
         }
         return null;
     }

@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.error;
 
 /**
@@ -51,6 +68,9 @@ public class ErrorType {
     public static final int INSTALL_ERROR_DEX_COPY_FAILED = 4201;
     /** 安装错误，远程Service超时 */
     public static final int INSTALL_ERROR_CLIENT_TIME_OUT = 4300;
+    /** 安装错误，启动PluginInstallerService异常 */
+    public static final int INSTALL_ERROR_BEFORE_START_SERVICE = 4301;
+
 
 
     /* 插件加载等错误, 区间字段5000~6000 */

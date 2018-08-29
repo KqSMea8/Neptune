@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.install;
 
 import android.content.BroadcastReceiver;
@@ -8,16 +25,17 @@ import android.net.Uri;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.Util;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -45,11 +63,11 @@ public class PluginInstaller {
     /**
      * 存放正在安装的插件列表
      */
-    private static LinkedList<String> sInstallingList = new LinkedList<String>();
+    private static List<String> sInstallingList = Collections.synchronizedList(new LinkedList<String>());
     /**
      * 内置插件列表
      */
-    private static ArrayList<String> sBuiltinAppList = new ArrayList<String>();
+    private static List<String> sBuiltinAppList = Collections.synchronizedList(new ArrayList<String>());
 
     /**
      * 获取插件安装的根目录
@@ -98,7 +116,11 @@ public class PluginInstaller {
         if (filePath.startsWith(SCHEME_FILE)) {
             Uri uri = Uri.parse(filePath);
             filePath = uri.getPath();
-            if (filePath != null && filePath.startsWith(ANDROID_ASSETS)) {
+            if (TextUtils.isEmpty(filePath)) {
+                throw new IllegalArgumentException("illegal install file path: " + info.mPath);
+            }
+
+            if (filePath.startsWith(ANDROID_ASSETS)) {
                 String buildInPath = SCHEME_ASSETS + filePath.substring(ANDROID_ASSETS.length());
                 PluginDebugLog.installFormatLog(TAG, "install buildIn apk: %s, info: %s", buildInPath, info);
                 startInstall(context, buildInPath, info);
@@ -183,19 +205,15 @@ public class PluginInstaller {
             }
         } else {
             PluginDebugLog.installLog(TAG, "startInstall PluginLiteInfo.packageName is null, just return!");
-            return;
+            throw new IllegalArgumentException("startInstall plugin lite info packageName is empty");
         }
 
-        try {
-            Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
-            intent.setClass(context, PluginInstallerService.class);
-            intent.putExtra(IIntentConstant.EXTRA_SRC_FILE, filePath);
-            intent.putExtra(IIntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);
+        Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
+        intent.setClass(context, PluginInstallerService.class);
+        intent.putExtra(IntentConstant.EXTRA_SRC_FILE, filePath);
+        intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);
 
-            context.startService(intent);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        context.startService(intent);
     }
 
 
@@ -206,14 +224,10 @@ public class PluginInstaller {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            try {
-                String pkgName = intent.getStringExtra(IIntentConstant.EXTRA_PKG_NAME);
-                if (!TextUtils.isEmpty(pkgName)) {
-                    PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
-                    sInstallingList.remove(pkgName);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
+            if (!TextUtils.isEmpty(pkgName)) {
+                PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
+                sInstallingList.remove(pkgName);
             }
         }
     };
@@ -228,14 +242,15 @@ public class PluginInstaller {
             // 已经注册过就不再注册
             return;
         }
-        sInstallerReceiverRegistered = true;
-        Context appContext = context.getApplicationContext();
 
+        Context appContext = context.getApplicationContext();
         IntentFilter filter = new IntentFilter();
         filter.addAction(PluginPackageManager.ACTION_PACKAGE_INSTALLED);
         filter.addAction(PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
         appContext.registerReceiver(sApkInstallerReceiver, filter);
+
+        sInstallerReceiverRegistered = true;
     }
 
     /**
@@ -316,7 +331,7 @@ public class PluginInstaller {
 
         File lib = new File(dataDir, "lib");
         // 删除lib目录下的so库
-        boolean deleted = Util.deleteDirectory(lib);
+        boolean deleted = FileUtils.deleteDirectory(lib);
         PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage lib %s success: %s", packageName, deleted);
 
         File apk = null;
@@ -348,10 +363,9 @@ public class PluginInstaller {
             //删除odex和vdex文件
             String currentInstructionSet = "";
             try {
-                currentInstructionSet = Util.getCurrentInstructionSet();
+                currentInstructionSet = FileUtils.getCurrentInstructionSet();
             } catch (Exception e) {
                 currentInstructionSet = "arm";
-                e.printStackTrace();
             }
 
             String pathPrefix = apk.getParent() + "/oat/"
@@ -391,16 +405,16 @@ public class PluginInstaller {
         File file = new File(dataDir, "files");
         File cache = new File(dataDir, "cache");
 
-        boolean deleted = Util.deleteDirectory(db);
+        boolean deleted = FileUtils.deleteDirectory(db);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData db %s success: %s", packageName, deleted);
 
-        deleted = Util.deleteDirectory(sharedPreference);
+        deleted = FileUtils.deleteDirectory(sharedPreference);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData sp %s success: %s", packageName, deleted);
 
-        deleted = Util.deleteDirectory(file);
+        deleted = FileUtils.deleteDirectory(file);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData file %s success: %s", packageName, deleted);
 
-        deleted = Util.deleteDirectory(cache);
+        deleted = FileUtils.deleteDirectory(cache);
         PluginDebugLog.installFormatLog(TAG, "deletePluginData cache %s success: %s", packageName, deleted);
     }
 
@@ -432,6 +446,7 @@ public class PluginInstaller {
             end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         }
         String mapPackagename = filePath.substring(start + 1, end);
+        PluginDebugLog.runtimeFormatLog(TAG, "filePath: %s, pkgName: ", filePath, mapPackagename);
         return mapPackagename;
     }
 }

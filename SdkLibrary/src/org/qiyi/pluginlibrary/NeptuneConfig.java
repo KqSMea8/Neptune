@@ -1,6 +1,23 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary;
 
-import org.qiyi.pluginlibrary.pm.IVerifyPluginInfo;
+import org.qiyi.pluginlibrary.pm.IPluginInfoProvider;
 import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
 
 /**
@@ -30,8 +47,11 @@ public final class NeptuneConfig {
     private boolean useNewCompParser;
     private boolean supportMultidex;
 
-    private IVerifyPluginInfo mVerifyPluginInfo;
+    private IPluginInfoProvider mPluginInfoProvider;
     private IRecoveryCallback mRecoveryCallback;
+
+    /** Debug调试日志是否打开 */
+    private boolean mIsDebug;
 
     NeptuneConfig(NeptuneConfigBuilder builder) {
         this.sdkMode = builder.sdkMode;
@@ -39,8 +59,9 @@ public final class NeptuneConfig {
         this.useNewResCreator = builder.useNewResCreator;
         this.useNewCompParser = builder.useNewCompParser;
         this.supportMultidex = builder.supportMultidex;
-        this.mVerifyPluginInfo = builder.verifyPluginInfo;
+        this.mPluginInfoProvider = builder.pluginInfoProvider;
         this.mRecoveryCallback = builder.recoveryCallback;
+        this.mIsDebug = builder.isDebug;
     }
 
 
@@ -65,12 +86,16 @@ public final class NeptuneConfig {
         return supportMultidex;
     }
 
-    public IVerifyPluginInfo getVerifyPluginInfo() {
-        return mVerifyPluginInfo;
+    public IPluginInfoProvider getPluginInfoProvider() {
+        return mPluginInfoProvider;
     }
 
     public IRecoveryCallback getRecoveryCallback() {
         return mRecoveryCallback;
+    }
+
+    public boolean isDebug() {
+        return mIsDebug;
     }
 
     public static class NeptuneConfigBuilder {
@@ -79,8 +104,9 @@ public final class NeptuneConfig {
         boolean useNewResCreator;
         boolean useNewCompParser;
         boolean supportMultidex;
-        IVerifyPluginInfo verifyPluginInfo;
+        IPluginInfoProvider pluginInfoProvider;
         IRecoveryCallback recoveryCallback;
+        boolean isDebug;
 
         public NeptuneConfigBuilder configSdkMode(int sdkMode) {
             this.sdkMode = sdkMode;
@@ -107,8 +133,8 @@ public final class NeptuneConfig {
             return this;
         }
 
-        public NeptuneConfigBuilder setVerifyPluginInfo(IVerifyPluginInfo verifyPluginInfo) {
-            this.verifyPluginInfo = verifyPluginInfo;
+        public NeptuneConfigBuilder pluginInfoProvider(IPluginInfoProvider pluginInfoProvider) {
+            this.pluginInfoProvider = pluginInfoProvider;
             return this;
         }
 
@@ -117,9 +143,13 @@ public final class NeptuneConfig {
             return this;
         }
 
+        public NeptuneConfigBuilder enableDebug(boolean isDebugable) {
+            this.isDebug = isDebugable;
+            return this;
+        }
+
         public NeptuneConfig build() {
             return new NeptuneConfig(this);
         }
     }
-
 }

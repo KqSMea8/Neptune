@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.utils;
 
 
@@ -16,8 +33,7 @@ import android.util.TypedValue;
 import org.qiyi.pluginlibrary.component.processmgr.ProcessManager;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
-import org.qiyi.pluginlibrary.debug.PluginCenterDebugHelper;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -27,12 +43,9 @@ import java.util.List;
 /**
  * 在{@link PluginLoadedApk}代表的插件中查找能够处理{@link Intent}的组件
  * 并设置组件代理,支持显式和隐式查找
- * Author:yuanzeyao
- * Date:2017/7/4 14:53
- * Email:yuanzeyao@qiyi.com
+ *
  */
-
-public class ComponentFinder implements IIntentConstant {
+public class ComponentFinder{
     private static final String TAG = "ComponentFinder";
 
     public static final String DEFAULT_ACTIVITY_PROXY_PREFIX =
@@ -92,21 +105,18 @@ public class ComponentFinder implements IIntentConstant {
             return;
         }
         mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
-        mIntent.addCategory(EXTRA_TARGET_CATEGORY + System.currentTimeMillis())
-                .putExtra(EXTRA_TARGET_IS_PLUGIN_KEY, true)
-                .putExtra(EXTRA_TARGET_CLASS_KEY, targetService)
-                .putExtra(EXTRA_TARGET_PACKAGE_KEY, mLoadedApk.getPluginPackageName());
+        mIntent.addCategory(IntentConstant.EXTRA_TARGET_CATEGORY + System.currentTimeMillis())
+                .putExtra(IntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, true)
+                .putExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY, targetService)
+                .putExtra(IntentConstant.EXTRA_TARGET_PACKAGE_KEY, mLoadedApk.getPluginPackageName());
         try {
             mIntent.setClass(mLoadedApk.getHostContext(),
                     Class.forName(matchServiceProxyByFeature(mLoadedApk.getProcessName())));
-            String intentInfo = "";
-            intentInfo = mIntent.toString();
+            String intentInfo = mIntent.toString();
             if (null != mIntent.getExtras()) {
                 intentInfo = intentInfo + mIntent.getExtras().toString();
             }
-            PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
-                    PluginCenterDebugHelper.getInstance().getCurrentSystemTime(),
-                    intentInfo);
+            PluginDebugLog.runtimeLog(TAG, "switchToServiceProxy intent info: " + intentInfo);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -220,8 +230,6 @@ public class ComponentFinder implements IIntentConstant {
         if (null != mIntent.getExtras()) {
             intentInfo = intentInfo + mIntent.getExtras().toString();
         }
-        PluginCenterDebugHelper.getInstance().savePluginActivityAndServiceJump(
-                PluginCenterDebugHelper.getInstance().getCurrentSystemTime(), intentInfo);
         return mIntent;
 
     }
@@ -264,9 +272,9 @@ public class ComponentFinder implements IIntentConstant {
         mIntent.setExtrasClassLoader(mLoadedApk.getPluginClassLoader());
         mIntent.setComponent(compName)
                 .addCategory(activityName)
-                .putExtra(EXTRA_TARGET_IS_PLUGIN_KEY, true)
-                .putExtra(EXTRA_TARGET_PACKAGE_KEY, mPackageName)
-                .putExtra(EXTRA_TARGET_CLASS_KEY, activityName);
+                .putExtra(IntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, true)
+                .putExtra(IntentConstant.EXTRA_TARGET_PACKAGE_KEY, mPackageName)
+                .putExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY, activityName);
         IntentUtils.setProxyInfo(mIntent, mPackageName);
     }
 
@@ -308,16 +316,16 @@ public class ComponentFinder implements IIntentConstant {
         }
         if (!isTranslucent) {
             //兼容遗留逻辑
-            if (actInfo != null && actInfo.metaData != null) {
-                String special_cfg = actInfo.metaData.getString(META_KEY_ACTIVITY_SPECIAL);
+            if (actInfo.metaData != null) {
+                String special_cfg = actInfo.metaData.getString(IntentConstant.META_KEY_ACTIVITY_SPECIAL);
                 if (!TextUtils.isEmpty(special_cfg)) {
-                    if (special_cfg.contains(PLUGIN_ACTIVITY_TRANSLUCENT)) {
+                    if (special_cfg.contains(IntentConstant.PLUGIN_ACTIVITY_TRANSLUCENT)) {
                         PluginDebugLog.runtimeLog(TAG,
                                 "findActivityProxy meta data contains translucent flag");
                         isTranslucent = true;
                     }
 
-                    if (special_cfg.contains(PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE)) {
+                    if (special_cfg.contains(IntentConstant.PLUGIN_ACTIVTIY_HANDLE_CONFIG_CHAGNE)) {
                         PluginDebugLog.runtimeLog(TAG,
                                 "findActivityProxy meta data contains handleConfigChange flag");
                         isHandleConfigChange = true;
@@ -326,25 +334,23 @@ public class ComponentFinder implements IIntentConstant {
             }
         }
 
-        if (actInfo != null) {
-            if (TextUtils.equals(actInfo.taskAffinity,
-                    mLoadedApk.getPluginPackageName() + TASK_AFFINITY_CONTAINER)
-                    && actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
-                        + actInfo.taskAffinity + " hasTaskAffinity = true");
-                hasTaskAffinity = true;
-            }
+        if (TextUtils.equals(actInfo.taskAffinity,
+                mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)
+                && actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                    + actInfo.taskAffinity + " hasTaskAffinity = true");
+            hasTaskAffinity = true;
+        }
 
-            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity screenOrientation: "
-                        + actInfo.screenOrientation + " isHandleConfigChange = false");
-                isHandleConfigChange = false;
-            }
+        if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity screenOrientation: "
+                    + actInfo.screenOrientation + " isHandleConfigChange = false");
+            isHandleConfigChange = false;
+        }
 
-            if (actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy isLandscape = true");
-                isLandscape = true;
-            }
+        if (actInfo.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy isLandscape = true");
+            isLandscape = true;
         }
 
         return matchActivityProxyByFeature(hasTaskAffinity, isTranslucent, isLandscape,
@@ -359,7 +365,7 @@ public class ComponentFinder implements IIntentConstant {
      * @param isLandscape     是否横屏
      * @param isHandleConfig  配置变化是否仅仅执行onConfiguration方法
      * @param mProcessName    当前插件运行的进程名称
-     * @return
+     * @return 代理Activity的名称
      */
     private static String matchActivityProxyByFeature(
             boolean hasTaskAffinity,
@@ -374,28 +380,22 @@ public class ComponentFinder implements IIntentConstant {
             index = 1;
         }
 
+        String proxyActivityName;
         if (hasTaskAffinity) {
-            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index);
-            return ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index;
+            proxyActivityName = ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index;
         } else if (isTranslucent) {
-            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponentFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index);
-            return ComponentFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
+            proxyActivityName = ComponentFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
         } else if (isLandscape) {
-            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponentFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index);
-            return ComponentFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index;
-        }
-        if (isHandleConfig) {
-            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponentFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index);
-            return ComponentFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index;
+            proxyActivityName = ComponentFinder.DEFAULT_LANDSCAPE_ACTIVITY_PROXY_PREFIX + index;
+        } else if (isHandleConfig) {
+            proxyActivityName = ComponentFinder.DEFAULT_CONFIGCHANGE_ACTIVITY_PROXY_PREFIX + index;
         } else {
-            PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                    ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index);
-            return ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
+            proxyActivityName = ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
         }
+
+        PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
+                ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index);
+        return proxyActivityName;
     }
 
     /**

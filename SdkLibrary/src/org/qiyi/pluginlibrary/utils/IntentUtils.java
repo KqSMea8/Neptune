@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 iQIYI.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.qiyi.pluginlibrary.utils;
 
 import android.app.Activity;
@@ -5,7 +22,7 @@ import android.content.Intent;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
-import org.qiyi.pluginlibrary.constant.IIntentConstant;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -16,11 +33,7 @@ import org.qiyi.pluginlibrary.runtime.PluginManager;
  * 如果插件在Intent中放入了自定义Bean,会出现ClassNotFoundException,
  * 除非插件的ClassLoader注入到基线的ClassLoader
  * <p>
- * Author:yuanzeyao
- * Date:2017/5/31 15:45
- * Email:yuanzeyao@qiyi.com
  */
-
 public class IntentUtils {
     private static final String TAG = "IntentUtils";
     private static final String TOKEN = "@#@#";
@@ -54,7 +67,7 @@ public class IntentUtils {
     public static String parsePkgNameFromActivity(Activity activity) {
         String pkgName = "";
         if (activity instanceof InstrActivityProxy1) {
-            pkgName = ((InstrActivityProxy1)activity).getPluginPackageName();
+            pkgName = ((InstrActivityProxy1) activity).getPluginPackageName();
         }
         if (TextUtils.isEmpty(pkgName) && activity.getIntent() != null) {
             String[] result = parsePkgAndClsFromIntent(activity.getIntent());
@@ -66,7 +79,7 @@ public class IntentUtils {
         if (TextUtils.isEmpty(pkgName)) {
             ClassLoader cl = activity.getClass().getClassLoader();
             if (cl instanceof PluginClassLoader) {
-                pkgName = ((PluginClassLoader)cl).getPackageName();
+                pkgName = ((PluginClassLoader) cl).getPackageName();
             }
         }
 
@@ -138,36 +151,21 @@ public class IntentUtils {
         if (intent == null) {
             return false;
         }
-//        try {
-            return intent.getBooleanExtra(IIntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
-//        } catch (Exception e) { // ClassNotFoundException
-//            e.printStackTrace();
-//        }
-//        return false;
+        return intent.getBooleanExtra(IntentConstant.EXTRA_TARGET_IS_PLUGIN_KEY, false);
     }
 
     public static String getTargetPackage(Intent intent) {
         if (intent == null) {
             return "";
         }
-//        try {
-            return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_PACKAGE_KEY);
-//        } catch (Exception e) {  // ClassNotFoundException
-//            e.printStackTrace();
-//        }
-//        return "";
+        return intent.getStringExtra(IntentConstant.EXTRA_TARGET_PACKAGE_KEY);
     }
 
     public static String getTargetClass(Intent intent) {
         if (intent == null) {
             return "";
         }
-//        try {
-            return intent.getStringExtra(IIntentConstant.EXTRA_TARGET_CLASS_KEY);
-//        } catch (Exception e) {
-//            e.printStackTrace();  // ClassNotFoundException
-//        }
-//        return "";
+        return intent.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY);
     }
 
     /**
@@ -195,13 +193,14 @@ public class IntentUtils {
 
     /**
      * 从Activity中dump优先的插件信息
+     *
      * @param activity
      * @return
      */
     public static String dump(Activity activity) {
         String info = "";
         if (activity instanceof InstrActivityProxy1) {
-            info = ((InstrActivityProxy1)activity).dump();
+            info = ((InstrActivityProxy1) activity).dump();
         } else {
             Intent intent = activity.getIntent();
             String[] pkgCls = parsePkgAndClsFromIntent(intent);

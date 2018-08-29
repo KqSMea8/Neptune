@@ -469,6 +469,6 @@ class TaskHookerManager {
 
 
     private QYPluginExtension getPluginExt() {
-        return project.qyplugin
+        return project.neptune
     }
 }
