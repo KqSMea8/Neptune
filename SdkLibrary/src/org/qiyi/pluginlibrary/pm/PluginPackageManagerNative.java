@@ -119,7 +119,7 @@ public class PluginPackageManagerNative {
         /**
          * 异步执行下一个Action
          */
-        private void executeNextAction(final List<Action> actions, final String packageName) {
+        private void executeNextAction(final CopyOnWriteArrayList<Action> actions, final String packageName) {
             mActionExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -142,7 +142,7 @@ public class PluginPackageManagerNative {
                             PluginDebugLog.installFormatLog(TAG,
                                     "remove deprecate action of %s,and action:%s "
                                     , packageName, action.toString());
-                            iterator.remove();
+                            actions.remove(action);
                         }
                     }
 
@@ -425,7 +425,7 @@ public class PluginPackageManagerNative {
                         break;
                     } else {
                         PluginDebugLog.installFormatLog(TAG, "remove deprecate pending action from action list for %s", action.toString());
-                        iterator.remove();
+                        actions.remove(action);  // CopyOnWriteArrayList在遍历过程中不能使用iterator删除元素
                     }
                 }
             }
@@ -517,7 +517,7 @@ public class PluginPackageManagerNative {
             }
         }
         onBindService(mContext);
-        return false;
+        return true;
     }
 
     /**
@@ -565,7 +565,8 @@ public class PluginPackageManagerNative {
                 // ignore
             }
         }
-        return false;
+        onBindService(mContext);
+        return true;
     }
 
     /**

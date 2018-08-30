@@ -37,7 +37,6 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
-import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
@@ -392,9 +391,14 @@ public class PluginLoadedApk {
      * 将插件中的类从主工程中删除
      */
     void ejectClassLoader() {
-        if (mPluginClassLoader != null && mPluginPackageInfo.isClassNeedInject()) {
-            PluginDebugLog.runtimeLog(TAG, "--- Class eject @ " + mPluginPackageInfo.getPackageName());
-            ClassLoaderInjectHelper.eject(mHostContext.getClassLoader(), mPluginClassLoader);
+        if (mPluginClassLoader != null) {
+            // 移除缓存中的ClassLoader
+            sAllPluginClassLoader.remove(mPluginPackageName);
+            // 从宿主中剔除ClassLoader
+            if (mPluginPackageInfo.isClassNeedInject()) {
+                PluginDebugLog.runtimeLog(TAG, "--- Class eject @ " + mPluginPackageInfo.getPackageName());
+                ClassLoaderInjectHelper.eject(mHostContext.getClassLoader(), mPluginClassLoader);
+            }
         }
     }
 
