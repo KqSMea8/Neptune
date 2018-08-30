@@ -37,7 +37,7 @@ import java.util.List;
 public class PluginPackageManagerService extends Service {
     private static final String TAG = "PluginPackageManagerService";
     // 插件信息管理
-    private PluginPackageManager mManager;
+    private static PluginPackageManager mManager;
 
     @Override
     public void onCreate() {
