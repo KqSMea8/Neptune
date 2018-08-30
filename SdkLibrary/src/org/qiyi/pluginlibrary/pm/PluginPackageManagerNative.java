@@ -517,7 +517,7 @@ public class PluginPackageManagerNative {
             }
         }
         onBindService(mContext);
-        return false;
+        return true;
     }
 
     /**
@@ -565,7 +565,8 @@ public class PluginPackageManagerNative {
                 // ignore
             }
         }
-        return false;
+        onBindService(mContext);
+        return true;
     }
 
     /**
