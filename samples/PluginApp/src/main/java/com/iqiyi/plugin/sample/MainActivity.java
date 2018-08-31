@@ -15,10 +15,6 @@ import com.facebook.drawee.backends.pipeline.Fresco;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * author: liuchun
- * date: 2018/1/26
- */
 public class MainActivity extends AppCompatActivity{
     private static final String TAG = "MainActivity";
 
@@ -29,25 +25,6 @@ public class MainActivity extends AppCompatActivity{
             "http://desk.fd.zol-img.com.cn/t_s1440x900c5/g5/M00/08/0A/ChMkJ1i9XIWIfPrHACa8wnLl-YYAAae8QDvfUkAJrza322.jpg",
             "http://desk.fd.zol-img.com.cn/t_s1440x900c5/g5/M00/08/0A/ChMkJli9XJuIGhrMADspbh_OzE4AAae8QHCouwAOymG127.jpg",
     };
-
-    private static final String[] ANIM_WEBP = {
-            "https://www.gstatic.com/webp/animated/1.webp",
-            "https://mathiasbynens.be/demo/animated-webp-supported.webp",
-            "https://isparta.github.io/compare-webp/image/gif_webp/webp/2.webp",
-            "http://m.qiyipic.com/common/lego/20171008/0b5d37c752f54f53b2a6c029ff29a68b.webp",
-            "http://m.qiyipic.com/common/lego/20171015/d53c119b81104bdcb3f1b12f9a97bab1.webp",
-            "http://m.qiyipic.com/common/lego/20171024/d0c539f81d724090bb8254703cf9d3c8.webp",
-            "http://m.qiyipic.com/common/lego/20171024/abeaeff54ae141708e1e99f68d0a2869.webp",
-            "http://m.qiyipic.com/common/lego/20171022/72c6badb2712454cadb8dd82df36aa02.webp",
-            "http://m.qiyipic.com/common/lego/20171024/30359441b7dd4924b8d698d692fa210d.webp",
-            "http://m.qiyipic.com/common/lego/20171024/98975d61e673411a96ffbdd37650c2d3.webp",
-            "http://m.qiyipic.com/common/lego/20171020/d28a1202fb924af0ae4bfb2d50b66538.webp",
-            "http://m.qiyipic.com/common/lego/20171024/fb48a596803f4f9f94d5511bdd009d67.webp",
-            "http://m.qiyipic.com/common/lego/20171024/00100b87668141bfa5cecd9f599f8bb0.webp",
-    };
-
-    private static final String WEBP_LOSSLESS = "https://www.gstatic.com/webp/gallery3/1_webp_ll.webp";
-    private static final String WEBP_LOSSLESS_WITH_ALPHA = "https://www.gstatic.com/webp/gallery3/1_webp_a.webp";
 
     private RecyclerView mRecyclerView;
     private ImageAdapter mAdapter;

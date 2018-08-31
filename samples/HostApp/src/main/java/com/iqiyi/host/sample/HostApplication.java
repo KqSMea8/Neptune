@@ -5,10 +5,7 @@ import android.app.Application;
 import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.NeptuneConfig;
 
-/**
- * author: liuchun
- * date: 2018/7/11
- */
+
 public class HostApplication extends Application {
 
     @Override
