@@ -30,10 +30,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-/**
- * author: liuchun
- * date: 2018/7/11
- */
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 

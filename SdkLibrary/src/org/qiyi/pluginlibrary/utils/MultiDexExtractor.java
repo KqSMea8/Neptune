@@ -31,10 +31,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-/**
- * author: liuchun
- * date: 2018/6/12
- */
+
 class MultiDexExtractor {
 
     /**

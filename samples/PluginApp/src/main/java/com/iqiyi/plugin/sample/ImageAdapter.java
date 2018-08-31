@@ -11,10 +11,6 @@ import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.List;
 
-/**
- * Created by liuchun on 2017/4/24.
- */
-
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHolder> {
 
     private final Context mContext;
