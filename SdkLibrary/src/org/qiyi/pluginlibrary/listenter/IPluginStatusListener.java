@@ -18,12 +18,19 @@
 package org.qiyi.pluginlibrary.listenter;
 
 
-public interface IPluginInitListener {
+public interface IPluginStatusListener {
 
     /**
-     * 加载成功的回调，主线程回调
+     * 初始化成功的回调，主线程
      *
      * @param packageName 加载成功的插件包名
      */
     void onInitFinished(String packageName);
+
+    /**
+     * PluginLoadedApk加载成功回调
+     *
+     * @param packageName 加载的插件包名
+     */
+    void onPluginReady(String packageName);
 }

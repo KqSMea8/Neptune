@@ -52,8 +52,8 @@ import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
 import org.qiyi.pluginlibrary.listenter.IPluginElementLoadListener;
-import org.qiyi.pluginlibrary.listenter.IPluginInitListener;
 import org.qiyi.pluginlibrary.listenter.IPluginLoadListener;
+import org.qiyi.pluginlibrary.listenter.IPluginStatusListener;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
@@ -557,7 +557,7 @@ public class PluginManager {
     public static void initPluginAsync(final Context mHostContext,
                                        final String packageName,
                                        final String processName,
-                                       final IPluginInitListener mListener) {
+                                       final org.qiyi.pluginlibrary.listenter.IPluginStatusListener mListener) {
         // 插件已经加载
         if (PluginManager.isPluginLoadedAndInit(packageName)) {
             if (mListener != null) {
@@ -682,6 +682,7 @@ public class PluginManager {
             }
         }
 
+        String pkgName = mLoadedApk.getPluginPackageName();
         Class<?> targetClass = null;
         if (!TextUtils.isEmpty(targetClassName)
                 && !TextUtils.equals(targetClassName, IntentConstant.EXTRA_VALUE_LOADTARGET_STUB)) {
@@ -689,7 +690,7 @@ public class PluginManager {
                 targetClass = mLoadedApk.getPluginClassLoader().loadClass(targetClassName);
             } catch (Exception e) {
                 deliver(mHostContext, false,
-                        mLoadedApk.getPluginPackageName(), ErrorType.ERROR_PLUGIN_LOAD_COMP_CLASS);
+                        pkgName, ErrorType.ERROR_PLUGIN_LOAD_COMP_CLASS);
                 PluginDebugLog.runtimeLog(TAG, "launchIntent loadClass failed for targetClassName: "
                         + targetClassName);
                 executeNext(mLoadedApk, mConnection, mHostContext);
@@ -698,6 +699,7 @@ public class PluginManager {
         }
 
         String action = mIntent.getAction();
+
         if (TextUtils.equals(action, IntentConstant.ACTION_PLUGIN_INIT)
                 || TextUtils.equals(targetClassName, IntentConstant.EXTRA_VALUE_LOADTARGET_STUB)) {
             PluginDebugLog.runtimeLog(TAG, "launchIntent load target stub!");
@@ -705,8 +707,7 @@ public class PluginManager {
             if (targetClass != null && BroadcastReceiver.class.isAssignableFrom(targetClass)) {
                 Intent newIntent = new Intent(mIntent);
                 newIntent.setComponent(null);
-                newIntent.putExtra(IntentConstant.EXTRA_TARGET_PACKAGE_KEY,
-                        mLoadedApk.getPluginPackageName());
+                newIntent.putExtra(IntentConstant.EXTRA_TARGET_PACKAGE_KEY, pkgName);
                 newIntent.setPackage(mHostContext.getPackageName());
                 mHostContext.sendBroadcast(newIntent);
             }
@@ -728,16 +729,13 @@ public class PluginManager {
             }
         } else {
             //处理的是Activity
-            ComponentFinder.switchToActivityProxy(mLoadedApk.getPluginPackageName(),
+            ComponentFinder.switchToActivityProxy(pkgName,
                     mIntent, -1, mHostContext);
-            PActivityStackSupervisor.addLoadingIntent(mLoadedApk.getPluginPackageName(), mIntent);
+            PActivityStackSupervisor.addLoadingIntent(pkgName, mIntent);
             Context lastActivity = null;
             PActivityStackSupervisor mActivityStackSupervisor =
                     mLoadedApk.getActivityStackSupervisor();
             lastActivity = mActivityStackSupervisor.getAvailableActivity();
-//            if (mActivityStackSupervisor != null && !mActivityStackSupervisor.getActivityStack().isEmpty()) {
-//                lastActivity = mActivityStackSupervisor.getActivityStack().getLast();
-//            }
             if (!(mHostContext instanceof Activity) && null != lastActivity) {
                 int flag = mIntent.getFlags();
                 flag = flag ^ Intent.FLAG_ACTIVITY_NEW_TASK;
@@ -747,6 +745,7 @@ public class PluginManager {
                 mHostContext.startActivity(mIntent);
             }
         }
+        // 执行下一个Intent
         executeNext(mLoadedApk, mConnection, mHostContext);
     }
 
@@ -1178,18 +1177,6 @@ public class PluginManager {
                     break;
             }
         }
-    }
-
-    /**
-     * 插件状态监听器
-     */
-    public interface IPluginStatusListener {
-        /**
-         * 插件初始化完毕
-         *
-         * @param packageName 初始化完毕的插件包名
-         */
-        void onPluginReady(String packageName);
     }
 
 
