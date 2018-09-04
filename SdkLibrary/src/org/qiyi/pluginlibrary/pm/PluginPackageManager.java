@@ -17,13 +17,13 @@
  */
 package org.qiyi.pluginlibrary.pm;
 
-import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Parcelable;
+import android.os.Process;
 import android.os.RemoteException;
 import android.text.TextUtils;
 
@@ -110,11 +110,29 @@ public class PluginPackageManager {
     public static final int INSTALL_FAILED = -2;
     public static final int UNINSTALL_SUCCESS = 3;
     public static final int UNINSTALL_FAILED = -3;
+    @SuppressWarnings("StaticFieldLeak")
+    private static volatile PluginPackageManager sInstance = null;
 
-    PluginPackageManager(Context context) {
+    /**
+     * 获取PluginPackageManager的单实例
+     */
+    static PluginPackageManager getInstance(Context context) {
+
+        if (sInstance == null) {
+            synchronized (PluginPackageManager.class) {
+                if (sInstance == null) {
+                    sInstance = new PluginPackageManager();
+                    sInstance.init(context);
+                }
+            }
+        }
+        return sInstance;
+    }
+
+    private void init(Context context) {
         mContext = context.getApplicationContext();
         registerInstallReceiver();
-        restoreInstallPluginInfos();
+        startRestoreData();
     }
 
     /**
@@ -190,6 +208,17 @@ public class PluginPackageManager {
         }
         editor.putString(PLUGIN_INSTALL_KEY, jArray.toString());
         editor.apply();
+    }
+
+
+    private void startRestoreData() {
+        new Thread("ppm-rd") {
+            @Override
+            public void run() {
+                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+                restoreInstallPluginInfos();
+            }
+        }.start();
     }
 
     /**

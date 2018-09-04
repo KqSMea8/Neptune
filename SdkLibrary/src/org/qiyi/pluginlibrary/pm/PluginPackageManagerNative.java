@@ -378,7 +378,7 @@ public class PluginPackageManagerNative {
         }
 
         mContext = context.getApplicationContext();
-        mPackageManager = new PluginPackageManager(mContext);
+        mPackageManager = PluginPackageManager.getInstance(mContext);
         mIsInitialized = true;
 
         onBindService(mContext);
