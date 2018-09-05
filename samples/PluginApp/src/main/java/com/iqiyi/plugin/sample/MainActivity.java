@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.facebook.common.logging.FLog;
 import com.facebook.drawee.backends.pipeline.Fresco;
@@ -38,6 +39,9 @@ public class MainActivity extends AppCompatActivity{
 
         setContentView(R.layout.activity_main);
         Log.i(TAG, "MainActivity onCreate() called");
+
+        TextView tv = findViewById(R.id.tint_text);
+        tv.setText(BuildConfig.TIME);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         List<String> mImageUrls = Arrays.asList(URL_LINKS);

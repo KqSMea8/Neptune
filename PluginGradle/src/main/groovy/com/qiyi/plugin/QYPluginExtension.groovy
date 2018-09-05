@@ -1,11 +1,13 @@
 package com.qiyi.plugin
 
+import org.gradle.util.VersionNumber
+
 
 class QYPluginExtension {
     /** Host or Plugin project compile */
     boolean pluginMode = true
-    /** Android Gradle Plugin version larger than 3.0.0 */
-    boolean isHigherAGP
+    /** Android Gradle Plugin version */
+    VersionNumber agpVersion
     /** strip resource */
     boolean stripResource = false
     /** Custom defined resource package Id */
@@ -14,8 +16,12 @@ class QYPluginExtension {
     String packageName
     /** Package path for java classes */
     String packagePath
+    /** Variant version name */
+    String versionName
     /** File of split R.java */
     File splitRJavaFile
+    /** Host App pacakge name */
+    String hostPackageName
     /** host Symbol file - R.txt */
     File hostSymbolFile
     /** host dependence - aar module*/

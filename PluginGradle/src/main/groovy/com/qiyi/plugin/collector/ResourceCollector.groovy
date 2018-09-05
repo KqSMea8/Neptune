@@ -16,6 +16,7 @@ import com.google.common.collect.ListMultimap
 import com.google.common.collect.Lists
 import com.qiyi.plugin.QYPluginExtension
 import org.gradle.api.Project
+import org.gradle.util.VersionNumber
 
 /**
  * Collect all(host+plugin) resources&styleables in the APK and reassign the resource ID
@@ -73,7 +74,8 @@ class ResourceCollector {
         this.apkVariant = variant
         processResTask = par
 
-        allRSymbolFile = pluginExt.isHigherAGP ? par.textSymbolOutputFile : new File(par.textSymbolOutputDir, 'R.txt')
+        boolean isAbove3 = pluginExt.agpVersion >= VersionNumber.parse("3.0")
+        allRSymbolFile = isAbove3 ? par.textSymbolOutputFile : new File(par.textSymbolOutputDir, 'R.txt')
         hostRSymbolFile = pluginExt.hostSymbolFile
     }
 
@@ -121,18 +123,15 @@ class ResourceCollector {
             }
         }
 
-        if (pluginExt.isHigherAGP) {
+        if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
             // 3.0.0+
             prepareAndroidLibrary()
-        } else {
+        } else if (pluginExt.agpVersion >= VersionNumber.parse("2.3")) {
             // 2.3.3
-            try {
-                prepareAndroidDependency()
-            } catch (Throwable tr) {
-                tr.printStackTrace()
-                // 2.2.0
-                prepareAndroidLibrary()
-            }
+            prepareAndroidDependency()
+        } else {
+            // 2.2.0
+            prepareAndroidLibrary()
         }
     }
 
@@ -144,7 +143,7 @@ class ResourceCollector {
         println "prepareAndroidLibrary() ..............."
 
         Set<AndroidLibrary> androidLibraries
-        if (pluginExt.isHigherAGP) {
+        if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
             // AGP 3.0.0, gather the dependencies with AndroidLibrary
             DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
             androidLibraries = dependencyCollector.androidLibraries
@@ -187,7 +186,7 @@ class ResourceCollector {
         println "prepareAndroidDependency() ..............."
 
         Set<AndroidDependency> androidDependencies
-        if (pluginExt.isHigherAGP) {
+        if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
             // AGP 3.0.0, manually gather the dependencies
             DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
             androidDependencies = dependencyCollector.androidDependencies
