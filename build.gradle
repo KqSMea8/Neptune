@@ -62,7 +62,7 @@ subprojects {
 
 
 ext {
-    COMPILE_SDK_VERSION = 26
+    COMPILE_SDK_VERSION = 27
     BUILD_TOOLS_VERSION = "26.0.2"
     TARGET_SDK_VERSION = 26
 }

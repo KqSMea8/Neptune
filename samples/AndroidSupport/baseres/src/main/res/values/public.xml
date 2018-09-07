@@ -1,6 +1,6 @@
 <resources>
 
-  <!--support-recyclerview 26.1.0 如果插件使用了recycler-view,则需要此部分-->
+  <!--support-recyclerview 27.1.1 如果插件使用了recycler-view,则需要此部分-->
   <public type="attr" name="layoutManager" id="0x7f010100" />
   <public type="attr" name="spanCount" id="0x7f010101" />
   <public type="attr" name="reverseLayout" id="0x7f010102" />
@@ -18,7 +18,7 @@
   <public type="dimen" name="item_touch_helper_swipe_escape_velocity" id="0x7f060075" />
   <public type="id" name="item_touch_helper_previous_elevation" id="0x7f0a0079" />
 
-  <!--support-appcompat-v7 26.1.0 如果插件使用了appcompat-v7,则需要此部分-->
+  <!--support-appcompat-v7 27.1.1 如果插件使用了appcompat-v7,则需要此部分-->
   <public type="attr" name="drawerArrowStyle" id="0x7f010000" />
   <public type="attr" name="height" id="0x7f010001" />
   <public type="attr" name="isLightTheme" id="0x7f010002" />
@@ -274,6 +274,19 @@
   <public type="attr" name="theme" id="0x7f0100fc" />
   <public type="attr" name="backgroundTint" id="0x7f0100fd" />
   <public type="attr" name="backgroundTintMode" id="0x7f0100fe" />
+  <!-- Added in support 27.1.1 -->
+  <public type="attr" name="coordinatorLayoutStyle" id="0x7f0100ff" />
+  <public type="attr" name="buttonIconDimen" id="0x7f010109" />
+  <public type="attr" name="viewInflaterClass" id="0x7f01010a" />
+  <public type="attr" name="keylines" id="0x7f01010b" />
+  <public type="attr" name="statusBarBackground" id="0x7f01010c" />
+  <public type="attr" name="layout_behavior" id="0x7f01010d" />
+  <public type="attr" name="layout_anchor" id="0x7f01010e" />
+  <public type="attr" name="layout_keyline" id="0x7f01010f" />
+  <public type="attr" name="layout_anchorGravity" id="0x7f010110" />
+  <public type="attr" name="layout_insetEdge" id="0x7f010111" />
+  <public type="attr" name="layout_dodgeInsetEdges" id="0x7f010112" />
+
   <public type="drawable" name="abc_ab_share_pack_mtrl_alpha" id="0x7f020000" />
   <public type="drawable" name="abc_action_bar_item_background_material" id="0x7f020001" />
   <public type="drawable" name="abc_btn_borderless_material" id="0x7f020002" />
@@ -373,7 +386,8 @@
   <public type="drawable" name="notification_template_icon_low_bg" id="0x7f020060" />
   <public type="layout" name="abc_action_bar_title_item" id="0x7f030000" />
   <public type="layout" name="abc_action_bar_up_container" id="0x7f030001" />
-  <public type="layout" name="abc_action_bar_view_list_nav_layout" id="0x7f030002" />
+  <!--<public type="layout" name="abc_action_bar_view_list_nav_layout" id="0x7f030002" />-->
+  <public type="layout" name="abc_tooltip" id="0x7f030002" />
   <public type="layout" name="abc_action_menu_item_layout" id="0x7f030003" />
   <public type="layout" name="abc_action_menu_layout" id="0x7f030004" />
   <public type="layout" name="abc_action_mode_bar" id="0x7f030005" />
@@ -417,7 +431,7 @@
   <public type="layout" name="select_dialog_multichoice_material" id="0x7f03002b" />
   <public type="layout" name="select_dialog_singlechoice_material" id="0x7f03002c" />
   <public type="layout" name="support_simple_spinner_dropdown_item" id="0x7f03002d" />
-  <public type="layout" name="tooltip" id="0x7f03002e" />
+  <!--<public type="layout" name="tooltip" id="0x7f03002e" />-->
   <public type="anim" name="abc_fade_in" id="0x7f040000" />
   <public type="anim" name="abc_fade_out" id="0x7f040001" />
   <public type="anim" name="abc_grow_fade_in_from_bottom" id="0x7f040002" />
@@ -428,11 +442,13 @@
   <public type="anim" name="abc_slide_in_top" id="0x7f040007" />
   <public type="anim" name="abc_slide_out_bottom" id="0x7f040008" />
   <public type="anim" name="abc_slide_out_top" id="0x7f040009" />
-  <public type="anim" name="tooltip_enter" id="0x7f04000a" />
-  <public type="anim" name="tooltip_exit" id="0x7f04000b" />
+  <!--<public type="anim" name="tooltip_enter" id="0x7f04000a" />-->
+  <!--<public type="anim" name="tooltip_exit" id="0x7f04000b" />-->
+  <public type="anim" name="abc_tooltip_enter" id="0x7f04000a" />
+  <public type="anim" name="abc_tooltip_exit" id="0x7f04000b" />
   <public type="string" name="abc_action_bar_home_description" id="0x7f050000" />
-  <public type="string" name="abc_action_bar_home_description_format" id="0x7f050001" />
-  <public type="string" name="abc_action_bar_home_subtitle_description_format" id="0x7f050002" />
+  <!--<public type="string" name="abc_action_bar_home_description_format" id="0x7f050001" />-->
+  <!--<public type="string" name="abc_action_bar_home_subtitle_description_format" id="0x7f050002" />-->
   <public type="string" name="abc_action_bar_up_description" id="0x7f050003" />
   <public type="string" name="abc_action_menu_overflow_description" id="0x7f050004" />
   <public type="string" name="abc_action_mode_done" id="0x7f050005" />
@@ -574,6 +590,7 @@
   <public type="dimen" name="tooltip_vertical_padding" id="0x7f06006c" />
   <public type="dimen" name="tooltip_y_offset_non_touch" id="0x7f06006d" />
   <public type="dimen" name="tooltip_y_offset_touch" id="0x7f06006e" />
+  <public type="dimen" name="abc_alert_dialog_button_dimen" id="0x7f06006f" />
   <public type="style" name="Base.Widget.AppCompat.DrawerArrowToggle" id="0x7f070000" />
   <public type="style" name="Base.Theme.AppCompat.DialogWhenLarge" id="0x7f070001" />
   <public type="style" name="Base.Theme.AppCompat.Light.DialogWhenLarge" id="0x7f070002" />
@@ -599,23 +616,24 @@
   <public type="style" name="Base.Theme.AppCompat.Light.Dialog.MinWidth" id="0x7f070016" />
   <public type="style" name="Base.ThemeOverlay.AppCompat.Dialog" id="0x7f070017" />
   <public type="style" name="Base.ThemeOverlay.AppCompat.Dialog.Alert" id="0x7f070018" />
-  <public type="style" name="Base.V11.Theme.AppCompat.Dialog" id="0x7f070019" />
-  <public type="style" name="Base.V11.Theme.AppCompat.Light.Dialog" id="0x7f07001a" />
-  <public type="style" name="Base.V11.ThemeOverlay.AppCompat.Dialog" id="0x7f07001b" />
+  <public type="style" name="Widget.Support.CoordinatorLayout" id="0x7f070019" />
+  <!--<public type="style" name="Base.V11.Theme.AppCompat.Dialog" id="0x7f070019" />-->
+  <!--<public type="style" name="Base.V11.Theme.AppCompat.Light.Dialog" id="0x7f07001a" />-->
+  <!--<public type="style" name="Base.V11.ThemeOverlay.AppCompat.Dialog" id="0x7f07001b" />-->
   <public type="style" name="Base.Widget.AppCompat.ProgressBar" id="0x7f07001c" />
   <public type="style" name="Base.Widget.AppCompat.ProgressBar.Horizontal" id="0x7f07001d" />
   <public type="style" name="Platform.AppCompat" id="0x7f07001e" />
   <public type="style" name="Platform.AppCompat.Light" id="0x7f07001f" />
-  <public type="style" name="Platform.V11.AppCompat" id="0x7f070020" />
-  <public type="style" name="Platform.V11.AppCompat.Light" id="0x7f070021" />
+  <!--<public type="style" name="Platform.V11.AppCompat" id="0x7f070020" />-->
+  <!--<public type="style" name="Platform.V11.AppCompat.Light" id="0x7f070021" />-->
   <public type="style" name="Platform.Widget.AppCompat.Spinner" id="0x7f070022" />
-  <public type="style" name="Base.V12.Widget.AppCompat.AutoCompleteTextView" id="0x7f070023" />
-  <public type="style" name="Base.V12.Widget.AppCompat.EditText" id="0x7f070024" />
+  <!--<public type="style" name="Base.V12.Widget.AppCompat.AutoCompleteTextView" id="0x7f070023" />-->
+  <!--<public type="style" name="Base.V12.Widget.AppCompat.EditText" id="0x7f070024" />-->
   <public type="style" name="Base.Widget.AppCompat.AutoCompleteTextView" id="0x7f070025" />
   <public type="style" name="Base.Widget.AppCompat.EditText" id="0x7f070026" />
   <public type="style" name="Base.TextAppearance.AppCompat.Button" id="0x7f070027" />
-  <public type="style" name="Platform.V14.AppCompat" id="0x7f070028" />
-  <public type="style" name="Platform.V14.AppCompat.Light" id="0x7f070029" />
+  <!--<public type="style" name="Platform.V14.AppCompat" id="0x7f070028" />-->
+  <!--<public type="style" name="Platform.V14.AppCompat.Light" id="0x7f070029" />-->
   <public type="style" name="TextAppearance.AppCompat.Tooltip" id="0x7f07002a" />
   <public type="style" name="RtlOverlay.DialogWindowTitle.AppCompat" id="0x7f07002b" />
   <public type="style" name="RtlOverlay.Widget.AppCompat.ActionBar.TitleItem" id="0x7f07002c" />
@@ -706,14 +724,14 @@
   <public type="style" name="Platform.ThemeOverlay.AppCompat.Light" id="0x7f070081" />
   <public type="style" name="Platform.V21.AppCompat" id="0x7f070082" />
   <public type="style" name="Platform.V21.AppCompat.Light" id="0x7f070083" />
-  <public type="style" name="TextAppearance.AppCompat.Notification" id="0x7f070084" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Info" id="0x7f070085" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Info.Media" id="0x7f070086" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Media" id="0x7f070087" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Time" id="0x7f070088" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Time.Media" id="0x7f070089" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Title" id="0x7f07008a" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Title.Media" id="0x7f07008b" />
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification" id="0x7f070084" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Info" id="0x7f070085" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Info.Media" id="0x7f070086" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Media" id="0x7f070087" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Time" id="0x7f070088" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Time.Media" id="0x7f070089" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Title" id="0x7f07008a" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Title.Media" id="0x7f07008b" />-->
   <public type="style" name="TextAppearance.Compat.Notification" id="0x7f07008c" />
   <public type="style" name="TextAppearance.Compat.Notification.Info" id="0x7f07008d" />
   <public type="style" name="TextAppearance.Compat.Notification.Info.Media" id="0x7f07008e" />
@@ -811,8 +829,8 @@
   <public type="style" name="TextAppearance.AppCompat.Medium" id="0x7f0700ea" />
   <public type="style" name="TextAppearance.AppCompat.Medium.Inverse" id="0x7f0700eb" />
   <public type="style" name="TextAppearance.AppCompat.Menu" id="0x7f0700ec" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Line2" id="0x7f0700ed" />
-  <public type="style" name="TextAppearance.AppCompat.Notification.Line2.Media" id="0x7f0700ee" />
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Line2" id="0x7f0700ed" />-->
+  <!--<public type="style" name="TextAppearance.AppCompat.Notification.Line2.Media" id="0x7f0700ee" />-->
   <public type="style" name="TextAppearance.AppCompat.SearchResult.Subtitle" id="0x7f0700ef" />
   <public type="style" name="TextAppearance.AppCompat.SearchResult.Title" id="0x7f0700f0" />
   <public type="style" name="TextAppearance.AppCompat.Small" id="0x7f0700f1" />
@@ -941,7 +959,7 @@
   <public type="bool" name="abc_action_bar_embed_tabs" id="0x7f080000" />
   <public type="bool" name="abc_allow_stacked_button_bar" id="0x7f080001" />
   <public type="bool" name="abc_config_actionMenuItemAllCaps" id="0x7f080002" />
-  <public type="bool" name="abc_config_closeDialogWhenTouchOutside" id="0x7f080003" />
+  <!--<public type="bool" name="abc_config_closeDialogWhenTouchOutside" id="0x7f080003" />-->
   <public type="bool" name="abc_config_showMenuShortcutsWhenKeyboardPresent" id="0x7f080004" />
   <public type="color" name="notification_action_color_filter" id="0x7f090000" />
   <public type="color" name="abc_input_method_navigation_guard" id="0x7f090001" />
@@ -1153,6 +1171,21 @@
   <public type="integer" name="cancel_button_image_alpha" id="0x7f0b0002" />
   <public type="integer" name="config_tooltipAnimTime" id="0x7f0b0003" />
   <public type="integer" name="status_bar_notification_info_maxnum" id="0x7f0b0004" />
+  <!-- Added in 27.1.1 -->
+  <public type="id" name="tag_transition_group" id="0x7f0a007a" />
+  <public type="id" name="center" id="0x7f0a007b" />
+  <public type="id" name="center_horizontal" id="0x7f0a007c" />
+  <public type="id" name="center_vertical" id="0x7f0a007d" />
+  <public type="id" name="clip_horizontal" id="0x7f0a007e" />
+  <public type="id" name="clip_vertical" id="0x7f0a007f" />
+  <public type="id" name="fill" id="0x7f0a0081" />
+  <public type="id" name="fill_horizontal" id="0x7f0a0082" />
+  <public type="id" name="fill_vertical" id="0x7f0a0083" />
+  <public type="id" name="left" id="0x7f0a0084" />
+  <public type="id" name="right" id="0x7f0a0085" />
+  <public type="id" name="start" id="0x7f0a0086" />
+  <public type="id" name="all" id="0x7f0a0087" />
+  
 
   <!--fresco 如果插件使用了fresco,则需要此部分 -->
   <public type="attr" name="fadeDuration" id="0x7f010120"/>
@@ -1183,6 +1216,18 @@
   <public type="attr" name="actualImageResource" id="0x7f010139"/>
   <public type="attr" name="actualImageUri" id="0x7f01013a"/>
   <public type="attr" name="actualPackageName" id="0x7f01013b"/>
+  <public type="attr" name="roundTopStart" id="0x7f01013c" />
+  <public type="attr" name="roundTopEnd" id="0x7f01013d" />
+  <public type="attr" name="roundBottomStart" id="0x7f01013e" />
+  <public type="attr" name="roundBottomEnd" id="0x7f01013f" />
+  <public type="id" name="centerCrop" id="0x7f0a0088" />
+  <public type="id" name="centerInside" id="0x7f0a0089" />
+  <public type="id" name="fitBottomStart" id="0x7f0a008a" />
+  <public type="id" name="fitCenter" id="0x7f0a008b" />
+  <public type="id" name="fitEnd" id="0x7f0a008c" />
+  <public type="id" name="fitStart" id="0x7f0a008d" />
+  <public type="id" name="fitXY" id="0x7f0a008e" />
+  <public type="id" name="focusCrop" id="0x7f0a008f" />
 
   <!--lottie 库资源部分-->
   <public type="attr" name="lottie_fileName" id="0x7f010140" />
@@ -1194,7 +1239,11 @@
   <public type="attr" name="lottie_cacheStrategy" id="0x7f010146" />
   <public type="attr" name="lottie_colorFilter" id="0x7f010147" />
   <public type="attr" name="lottie_scale" id="0x7f010148" />
+  <public type="attr" name="lottie_rawRes" id="0x7f010149" />
   <public type="id" name="lottie_layer_name" id="0x7f0a0080"/>
+  <public type="id" name="strong" id="0x7f0a0090" />
+  <public type="id" name="weak" id="0x7f0a0091" />
+
 
   <!--ToastUtil 资源-->
   <public type="layout" name="toast_tips_default" id="0x7f030050" />
