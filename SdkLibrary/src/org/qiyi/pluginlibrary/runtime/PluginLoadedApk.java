@@ -391,14 +391,9 @@ public class PluginLoadedApk {
      * 将插件中的类从主工程中删除
      */
     void ejectClassLoader() {
-        if (mPluginClassLoader != null) {
-            // 移除缓存中的ClassLoader
-            sAllPluginClassLoader.remove(mPluginPackageName);
-            // 从宿主中剔除ClassLoader
-            if (mPluginPackageInfo.isClassNeedInject()) {
-                PluginDebugLog.runtimeLog(TAG, "--- Class eject @ " + mPluginPackageInfo.getPackageName());
-                ClassLoaderInjectHelper.eject(mHostContext.getClassLoader(), mPluginClassLoader);
-            }
+        if (mPluginClassLoader != null && mPluginPackageInfo.isClassNeedInject()) {
+            PluginDebugLog.runtimeLog(TAG, "--- Class eject @ " + mPluginPackageInfo.getPackageName());
+            ClassLoaderInjectHelper.eject(mHostContext.getClassLoader(), mPluginClassLoader);
         }
     }
 
