@@ -356,7 +356,7 @@ public class PluginInstaller {
             File mProf = new File(apk.getAbsolutePath() + ".prof");
             PluginDebugLog.installFormatLog(TAG, "prof path:%s", mProf.getAbsolutePath());
             if (mProf.exists() && mProf.delete()) {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage prof  %s succcess!", packageName);
+                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage prof  %s success!", packageName);
             } else {
                 PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage prof  %s fail!", packageName);
             }
@@ -379,13 +379,13 @@ public class PluginInstaller {
             PluginDebugLog.installFormatLog(TAG, "odex path:%s", oPathFile.getAbsolutePath());
             PluginDebugLog.installFormatLog(TAG, "vdex path:%s", vPathFile.getAbsolutePath());
             if (oPathFile.exists() && oPathFile.delete()) {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex  %s succcess!", packageName);
+                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex  %s success!", packageName);
             } else {
                 PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex  %s fail!", packageName);
             }
 
             if (vPathFile.exists() && vPathFile.delete()) {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage vdex  %s succcess!", packageName);
+                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage vdex  %s success!", packageName);
             } else {
                 PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage vdex  %s fail!", packageName);
             }

@@ -18,6 +18,7 @@ import com.qiyi.plugin.collector.ResourceCollector
 import com.qiyi.plugin.collector.res.ResourceEntry
 import com.qiyi.plugin.collector.res.StyleableEntry
 import com.qiyi.plugin.dex.DexProcessor
+import com.qiyi.plugin.task.TaskUtil
 import com.qiyi.plugin.utils.ZipUtil
 import groovy.xml.Namespace
 import groovy.xml.XmlUtil
@@ -25,6 +26,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.util.VersionNumber
 
 
 class TaskHookerManager {
@@ -46,57 +48,13 @@ class TaskHookerManager {
         project.afterEvaluate {
             android.applicationVariants.all { ApplicationVariantImpl appVariant ->
 
-                def scope = appVariant.getVariantData().getScope()
-                MergeResources mergeResTask
-                if (pluginExt.isHigherAGP) {
-                    mergeResTask = appVariant.getVariantData().mergeResourcesTask
-                } else {
-                    String mergeTaskName = scope.getMergeResourcesTask().name
-                    mergeResTask = project.tasks.getByName(mergeTaskName) as MergeResources
-                }
+                MergeResources mergeResTask = TaskUtil.getMergeResourcesTask(project, appVariant)
 
-                String processResTaskName = pluginExt.isHigherAGP ?
-                        scope.getProcessResourcesTask().name : scope.getGenerateRClassTask().name
-                ProcessAndroidResources processResTask = project.tasks.getByName(processResTaskName) as ProcessAndroidResources
+                ProcessAndroidResources processResTask = TaskUtil.getProcessAndroidResourcesTask(project, appVariant)
 
-                ManifestProcessorTask manifestTask
-                if (pluginExt.isHigherAGP) {
-                    Object task = appVariant.getVariantData().getScope().manifestProcessorTask
-                    if (task instanceof ManifestProcessorTask) {
-                        manifestTask = (ManifestProcessorTask)task
-                    } else {
-                        // AGP 3.0.1 返回的是AndroidTask类型, AndroidTask类在3.1中被删除了，这里使用反射创建
-                        try {
-                            Class<?> clazz = Class.forName("com.android.build.gradle.internal.scope.AndroidTask")
-                            if (clazz.isInstance(task)) {
-                                String manifestTaskName = task.name
-                                manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
-                            } else  {
-                                throw new GradleException("ManifestProcessorTask unknown task type ${task.getClass().name}")
-                            }
-                        } catch (ClassNotFoundException e) {
-                            throw new GradleException("com.android.build.gradle.internal.scope.AndroidTask not found")
-                        }
-                    }
-                } else {
-                    def variantData = scope.getVariantData()
-                    def outputScope
-                    try {
-                        outputScope = variantData.getMainOutput().getScope()
-                    } catch (Throwable tr) {
-                        // 2.2.x
-                        outputScope = variantData.getOutputs().get(0).getScope()
-                    }
-                    String manifestTaskName = outputScope.getManifestProcessorTask().name
-                    manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
-                }
+                ManifestProcessorTask manifestTask = TaskUtil.getManifestProcessorTask(project, appVariant)
 
-                String varName = appVariant.name.capitalize()
-                Task dexTask = project.tasks.findByName("transformClassesWithDexFor${varName}")
-                if (dexTask == null) {
-                    // if still null, may lower gradle
-                    dexTask = project.tasks.findByName("dex${varName}")
-                }
+                Task dexTask = TaskUtil.getDexTask(project, appVariant)
 
                 hookMergeResourceTask(mergeResTask, processResTask)
 
@@ -118,7 +76,7 @@ class TaskHookerManager {
         mergeResTask.doLast {
             if (isAapt2Enable(processResTask)) {
                 println "${mergeResTask.name}.doLast aapt2 is enabled, compile public.xml to .flat file"
-                handleAapt2(mergeResTask, processResTask)
+                handleAapt2(mergeResTask)
             } else {
                 println "${mergeResTask.name}.doLast aapt2 is disabled, use legacy aapt1"
                 handleAapt(mergeResTask)
@@ -225,8 +183,9 @@ class TaskHookerManager {
      */
     private void reWriteArscFile(ProcessAndroidResources par, ApkVariant variant) {
 
+        boolean isAbove3 = pluginExt.agpVersion >= VersionNumber.parse("3.0")
         File apFile
-        if (pluginExt.isHigherAGP) {
+        if (isAbove3) {
             apFile = new File(par.resPackageOutputFolder, "resources-${variant.name}.ap_")
         } else {
             apFile = par.packageOutputFile
@@ -262,8 +221,8 @@ class TaskHookerManager {
         def retainedStyleables = convertStyleablesForAapt(resourceCollector.pluginStyleables)
         def resIdMap = resourceCollector.resIdMap
 
-        def rSymbolFile = pluginExt.isHigherAGP ? par.textSymbolOutputFile : new File(par.textSymbolOutputDir, 'R.txt')
-        def libRefTable = ["${pluginExt.packageId}": (pluginExt.isHigherAGP ? par.originalApplicationId : par.packageForR)]
+        def rSymbolFile = isAbove3 ? par.textSymbolOutputFile : new File(par.textSymbolOutputDir, 'R.txt')
+        def libRefTable = ["${pluginExt.packageId}": (isAbove3 ? par.originalApplicationId : par.packageForR)]
 
         def filteredResources = [] as HashSet<String>
         def updatedResources = [] as HashSet<String>
@@ -393,8 +352,8 @@ class TaskHookerManager {
     }
 
 
-    private void handleAapt2(MergeResources mergeResTask, ProcessAndroidResources processResTask) {
-        File aapt2File = getAapt2File(processResTask)
+    private void handleAapt2(MergeResources mergeResTask) {
+        File aapt2File = getAapt2File(mergeResTask)
         int i = 0
         android.sourceSets.main.res.srcDirs.each { File resDir ->
             File srcFile = new File(resDir, 'values/public.xml')
@@ -441,7 +400,7 @@ class TaskHookerManager {
         return false
     }
 
-    private File getAapt2File(ProcessAndroidResources task) {
+    private File getAapt2File(MergeResources task) {
         String path = null
         try {
             def buildToolInfo = task.getBuilder().getBuildToolInfo()

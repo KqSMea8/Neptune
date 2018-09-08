@@ -1,6 +1,8 @@
 import com.android.builder.model.Version
 import com.qiyi.plugin.utils.Utils
 
+import java.text.SimpleDateFormat
+
 apply plugin: 'com.android.application'
 
 def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
@@ -10,8 +12,14 @@ apply plugin: 'com.qiyi.neptune.plugin'
 neptune {
     pluginMode = isPluginBuild
     packageId = 0x30
+    hostPackageName = "com.qiyi.video"
     hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
     dexModify = false
+}
+
+def getDate() {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd-HH:mm:ss")
+    return sdf.format(new Date())
 }
 
 android {
@@ -21,8 +29,8 @@ android {
         applicationId "com.iqiyi.plugin.sample"
         minSdkVersion 14
         targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.2"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     dexOptions {
@@ -30,6 +38,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "TIME", "\"${getDate()}\""
+        }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

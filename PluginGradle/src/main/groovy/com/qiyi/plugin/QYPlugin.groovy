@@ -1,14 +1,17 @@
 package com.qiyi.plugin
 
 import com.android.build.gradle.AppExtension
-import com.android.build.gradle.api.ApkVariant
+import com.android.build.gradle.internal.api.ApplicationVariantImpl
+import com.android.build.gradle.internal.scope.VariantScope
 import com.android.builder.model.Version
 import com.qiyi.plugin.dex.RClassTransform
 import com.qiyi.plugin.hooker.TaskHookerManager
-import com.qiyi.plugin.utils.Utils
+import com.qiyi.plugin.task.InstallPlugin
+import com.qiyi.plugin.task.TaskFactory
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.util.VersionNumber
 
 class QYPlugin implements Plugin<Project> {
     Project project
@@ -26,24 +29,27 @@ class QYPlugin implements Plugin<Project> {
         this.project = project
 
         def android = project.extensions.getByType(AppExtension)
-        boolean highAGP = Utils.compareVersion(Version.ANDROID_GRADLE_PLUGIN_VERSION, "3.0.0") >= 0
-        println "current AGP version ${Version.ANDROID_GRADLE_PLUGIN_VERSION}, isHigherAGP=${highAGP}"
+        def version = Version.ANDROID_GRADLE_PLUGIN_VERSION
+        println "current AGP version ${version}"
 
         project.afterEvaluate {
             // init plugin extension
-            android.applicationVariants.each { ApkVariant variant ->
+            android.applicationVariants.each { ApplicationVariantImpl variant ->
 
                 pluginExt.with {
-                    isHigherAGP = highAGP
+                    agpVersion = VersionNumber.parse(version)
                     packageName = variant.applicationId
+                    versionName = variant.versionName
                     packagePath = packageName.replace('.'.charAt(0), File.separatorChar)
                 }
+
+                createInstallPluginTask(variant)
             }
 
             checkConfig()
         }
 
-        if (highAGP) {
+        if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
             // 注册修改Class的Transform
             android.registerTransform(new RClassTransform(project))
         }
@@ -53,6 +59,19 @@ class QYPlugin implements Plugin<Project> {
         taskHooker.registerTaskHooker()
     }
 
+    /**
+     * 创建安装插件apk到宿主特定目录的任务
+     */
+    private void createInstallPluginTask(ApplicationVariantImpl variant) {
+        if (pluginExt.pluginMode && pluginExt.hostPackageName != null && pluginExt.hostPackageName.length() > 0) {
+            TaskFactory taskFactory = new TaskFactory(project.getTasks())
+            VariantScope scope = variant.getVariantData().getScope()
+            InstallPlugin installTask = taskFactory.create(new InstallPlugin.ConfigAction(variant))
+            // it might be AndroidTask, this class removed in AGP 3.1
+            String assembleTaskName = scope.getAssembleTask().getName()
+            installTask.dependsOn(assembleTaskName)
+        }
+    }
 
     private void checkConfig() {
         if (!pluginExt.pluginMode) {
