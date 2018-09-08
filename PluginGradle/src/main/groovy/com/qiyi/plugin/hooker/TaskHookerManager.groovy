@@ -76,7 +76,7 @@ class TaskHookerManager {
         mergeResTask.doLast {
             if (isAapt2Enable(processResTask)) {
                 println "${mergeResTask.name}.doLast aapt2 is enabled, compile public.xml to .flat file"
-                handleAapt2(mergeResTask, processResTask)
+                handleAapt2(mergeResTask)
             } else {
                 println "${mergeResTask.name}.doLast aapt2 is disabled, use legacy aapt1"
                 handleAapt(mergeResTask)
@@ -352,8 +352,8 @@ class TaskHookerManager {
     }
 
 
-    private void handleAapt2(MergeResources mergeResTask, ProcessAndroidResources processResTask) {
-        File aapt2File = getAapt2File(processResTask)
+    private void handleAapt2(MergeResources mergeResTask) {
+        File aapt2File = getAapt2File(mergeResTask)
         int i = 0
         android.sourceSets.main.res.srcDirs.each { File resDir ->
             File srcFile = new File(resDir, 'values/public.xml')
@@ -400,7 +400,7 @@ class TaskHookerManager {
         return false
     }
 
-    private File getAapt2File(ProcessAndroidResources task) {
+    private File getAapt2File(MergeResources task) {
         String path = null
         try {
             def buildToolInfo = task.getBuilder().getBuildToolInfo()
