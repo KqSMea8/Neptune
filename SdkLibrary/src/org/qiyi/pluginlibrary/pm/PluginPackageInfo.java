@@ -155,7 +155,7 @@ public class PluginPackageInfo implements Parcelable {
                 }
             }
 
-            if (Neptune.getConfig().withNewCompParser()) {
+            if (Neptune.NEW_COMPONENT_PARSER) {
                 PluginDebugLog.runtimeLog(TAG, "resolve component info with our ManifestParser");
                 ResolveInfoUtil.parseNewResolveInfo(context, apkPath, this);
             } else {

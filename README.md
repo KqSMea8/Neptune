@@ -94,7 +94,7 @@ If plugin app wants to share resources with host app, you need add dependency in
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.0'
+    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.2'
 }
 ```
 

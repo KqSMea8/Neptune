@@ -42,9 +42,7 @@ public class PluginClassLoader extends DexClassLoader{
         this.pkgName = packageInfo.getPackageName();
         this.dependencies = new ArrayList<>();
 
-        if (Neptune.getConfig().supportMultidex()) {
-            MultiDex.install(packageInfo, dexPath, this);
-        }
+        MultiDex.install(packageInfo, dexPath, this);
     }
 
     @Override

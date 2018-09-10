@@ -81,7 +81,6 @@ public class XXXApplication extends Application {
         Neptune.init(this, config);
     }
 }
-
 ```
 
 更多细节和开发指南请参考wiki。
@@ -92,7 +91,7 @@ public class XXXApplication extends Application {
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:plugin-gradle:1.1.0'
+    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.2'
 }
 ```
 

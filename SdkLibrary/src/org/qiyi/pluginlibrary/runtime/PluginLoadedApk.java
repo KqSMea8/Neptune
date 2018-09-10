@@ -166,7 +166,7 @@ public class PluginLoadedApk {
         // 提取插件Apk的信息
         extraPluginPackageInfo(this.mPluginPackageName);
         // 创建插件ClassLoader
-        if (Neptune.getConfig().withSeparteeClassLoader()) {
+        if (Neptune.SEPARATED_CLASSLOADER) {
             if (!createNewClassLoader()) {
                 PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_CREATE_CLASSLOADER);
                 throw new RuntimeException("ProxyEnvironmentNew init failed for createNewClassLoader failed:" + " apkFile: " + mPluginPath + " pluginPakName: " + mPluginPackageName);
@@ -179,7 +179,7 @@ public class PluginLoadedApk {
         }
         PluginDebugLog.runtimeFormatLog(TAG, "plugin %s, class loader: %s", mPluginPackageName, mPluginClassLoader.toString());
         // 创建插件资源
-        if (Neptune.getConfig().withNewResCreator()) {
+        if (Neptune.NEW_RESOURCE_CREATOR) {
             createNewPluginResource();
         } else {
             createPluginResource();
