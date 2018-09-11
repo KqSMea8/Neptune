@@ -371,22 +371,29 @@ public final class FileUtils {
 
         int pid = android.os.Process.myPid();
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
-            if (process.pid == pid) {
-                return process.processName;
+        try {
+            for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
+                if (process.pid == pid) {
+                    return process.processName;
+                }
             }
+        } catch (Exception e) {
+            // ActivityManager.getRunningAppProcesses() may throw NPE in some custom-made devices (oem BIRD)
         }
 
         // try to read process name in /proc/pid/cmdline if no result from activity manager
         String cmdline = null;
         BufferedReader processFileReader = null;
+        FileReader fileReader = null;
         try {
-            processFileReader = new BufferedReader(new FileReader(String.format(Locale.getDefault(), "/proc/%d/cmdline", Process.myPid())));
+            fileReader = new FileReader(String.format(Locale.getDefault(), "/proc/%d/cmdline", Process.myPid()));
+            processFileReader = new BufferedReader(fileReader);
             cmdline = processFileReader.readLine().trim();
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
             closeQuietly(processFileReader);
+            closeQuietly(fileReader);
         }
 
         return cmdline;
