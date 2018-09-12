@@ -36,9 +36,9 @@ import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
-import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -61,32 +61,51 @@ public class PluginInstallerService extends Service {
     private static int MSG_ACTION_INSTALL = 0;
     private static int MSG_ACTION_QUIT = 1;
     private static int DELAY_QUIT_TIME = 1000 * 10;  // 10s
-
-    private final class ServiceHandler extends Handler {
-        public ServiceHandler(Looper looper) {
-            super(looper);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            PluginDebugLog.installLog(TAG, "handleMessage: what " + msg.what);
-            if (msg.what == MSG_ACTION_INSTALL) {
-                if (msg.obj instanceof Intent) {
-                    onHandleIntent((Intent) msg.obj);
-                }
-                if (!mServiceHandler.hasMessages(MSG_ACTION_INSTALL) && !mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
-                    PluginDebugLog.installLog(TAG, "sendMessage MSG_ACTION_QUIT");
-                    Message quit = mServiceHandler.obtainMessage(MSG_ACTION_QUIT);
-                    mServiceHandler.sendMessageDelayed(quit, DELAY_QUIT_TIME);
-                }
-            } else if (msg.what == MSG_ACTION_QUIT) {
-                stopSelf();
-            }
-        }
-    }
-
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
+
+    /**
+     * 初始化 dex，因为第一次loaddex，如果放hostapp 进程，
+     * 有可能会导致hang住(参考类的说明)。
+     * 所以在安装阶段独立进程中执行。
+     *
+     * @param apkFile  插件apk文件
+     * @param packageName 插件包名
+     */
+    private static void installDex(final File apkFile,
+                                   String packageName,
+                                   String pkgDirPath) {
+
+        final File pkgDir = new File(pkgDirPath, packageName);
+        DexOptimizer.optimize(apkFile, pkgDir, VersionUtils.hasNougat(), new DexOptimizer.ResultCallback() {
+            @Override
+            public void onStart(File dexFile, File optimizedDir) {
+                if (dexFile != null) {
+                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onStart: dexFile:%s", dexFile.getAbsolutePath());
+                }
+
+            }
+
+            @Override
+            public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                if (dexFile != null) {
+                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onSuccess: dexFile:%s", dexFile.getAbsolutePath());
+                }
+
+            }
+
+            @Override
+            public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                try {
+                    new DexClassLoader(apkFile.getAbsolutePath(), pkgDir.getAbsolutePath(), null, getClass().getClassLoader());
+                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onFail:%s", thr.getMessage());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -128,8 +147,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 处理插件安装任务
-     *
-     * @param intent
      */
     private void onHandleIntent(Intent intent) {
 
@@ -145,7 +162,7 @@ public class PluginInstallerService extends Service {
      * 安装插件
      *
      * @param srcFile 插件路径
-     * @param info
+     * @param info  插件info信息
      */
     private void handleInstall(String srcFile, PluginLiteInfo info) {
         if (null == info) {
@@ -160,7 +177,7 @@ public class PluginInstallerService extends Service {
             installSoPlugin(srcFile, info);
         } else if (srcFile.startsWith(PluginInstaller.SCHEME_DEX)) {
             installDexPlugin(srcFile, info);
-        } else if (srcFile.startsWith(PluginInstaller.SCHEME_FILE)){
+        } else if (srcFile.startsWith(PluginInstaller.SCHEME_FILE)) {
             installAPKFile(srcFile, info);
         } else {
             srcFile = PluginInstaller.SCHEME_FILE + srcFile;
@@ -170,9 +187,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装so插件，只做拷贝
-     *
-     * @param srcFile
-     * @param info
      */
     private void installSoPlugin(String srcFile, PluginLiteInfo info) {
         String soFilePath = srcFile.substring(PluginInstaller.SCHEME_SO.length());
@@ -208,9 +222,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装Dex插件，只做拷贝
-     *
-     * @param srcFile
-     * @param info
      */
     private void installDexPlugin(String srcFile, PluginLiteInfo info) {
         String dexFilePath = srcFile.substring(PluginInstaller.SCHEME_DEX.length());
@@ -237,9 +248,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装asset/pluginapp内置插件
-     *
-     * @param assetsPathWithScheme
-     * @param info
      */
     private void installBuiltinApk(String assetsPathWithScheme, PluginLiteInfo info) {
         String assetsPath = assetsPathWithScheme.substring(PluginInstaller.SCHEME_ASSETS.length());
@@ -263,9 +271,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装sd卡上的插件
-     *
-     * @param apkFilePathWithScheme
-     * @param info
      */
     private void installAPKFile(String apkFilePathWithScheme, PluginLiteInfo info) {
         String apkFilePath = apkFilePathWithScheme.substring(PluginInstaller.SCHEME_FILE.length());
@@ -294,10 +299,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装某个插件
-     *
-     * @param is
-     * @param srcPathWithScheme
-     * @param info
      */
     private void doInstall(InputStream is, String srcPathWithScheme, PluginLiteInfo info) {
 
@@ -477,11 +478,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 发送安装成功的广播
-     *
-     * @param pkgName
-     * @param srcPathWithScheme
-     * @param destPath
-     * @param info
      */
     private void setInstallSuccess(String pkgName, String srcPathWithScheme, String destPath, PluginLiteInfo info) {
         if (info != null) {
@@ -501,53 +497,8 @@ public class PluginInstallerService extends Service {
     }
 
     /**
-     * 初始化 dex，因为第一次loaddex，如果放hostapp 进程，有可能会导致hang住(参考类的说明)。所以在安装阶段独立进程中执行。
-     *
-     * @param apkFile
-     * @param packageName
-     */
-    private static void installDex(final File apkFile,
-                                   String packageName,
-                                   String pkgDirPath) {
-
-        final File pkgDir = new File(pkgDirPath, packageName);
-        DexOptimizer.optimize(apkFile, pkgDir, VersionUtils.hasNougat(), new DexOptimizer.ResultCallback() {
-            @Override
-            public void onStart(File dexFile, File optimizedDir) {
-                if (dexFile != null) {
-                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onStart: dexFile:%s", dexFile.getAbsolutePath());
-                }
-
-            }
-
-            @Override
-            public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
-                if (dexFile != null) {
-                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onSuccess: dexFile:%s", dexFile.getAbsolutePath());
-                }
-
-            }
-
-            @Override
-            public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
-                try {
-                    new DexClassLoader(apkFile.getAbsolutePath(), pkgDir.getAbsolutePath(), null, getClass().getClassLoader());
-                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onFail:%s", thr.getMessage());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-            }
-        });
-    }
-
-    /**
      * 获取插件安装目录，内置目录或者SD卡目录
      * 目前VR插件是安装在SD的/Android/data目录的
-     *
-     * @param pkgInfo
-     * @param apkName
-     * @return
      */
     private File getPreferredInstallLocation(PackageInfo pkgInfo, String apkName) {
 
@@ -588,5 +539,28 @@ public class PluginInstallerService extends Service {
             PluginDebugLog.installFormatLog(TAG, "install to Location %s", destFile.getPath());
         }
         return destFile;
+    }
+
+    private final class ServiceHandler extends Handler {
+        public ServiceHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            PluginDebugLog.installLog(TAG, "handleMessage: what " + msg.what);
+            if (msg.what == MSG_ACTION_INSTALL) {
+                if (msg.obj instanceof Intent) {
+                    onHandleIntent((Intent) msg.obj);
+                }
+                if (!mServiceHandler.hasMessages(MSG_ACTION_INSTALL) && !mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
+                    PluginDebugLog.installLog(TAG, "sendMessage MSG_ACTION_QUIT");
+                    Message quit = mServiceHandler.obtainMessage(MSG_ACTION_QUIT);
+                    mServiceHandler.sendMessageDelayed(quit, DELAY_QUIT_TIME);
+                }
+            } else if (msg.what == MSG_ACTION_QUIT) {
+                stopSelf();
+            }
+        }
     }
 }

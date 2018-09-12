@@ -30,7 +30,7 @@ import dalvik.system.DexClassLoader;
  * 插件的DexClassLoader，用来做一些"更高级"的特性，
  * 比如添加插件依赖，支持multidex
  */
-public class PluginClassLoader extends DexClassLoader{
+public class PluginClassLoader extends DexClassLoader {
     // 插件的包名
     private String pkgName;
     // 依赖的插件的ClassLoader
@@ -88,7 +88,7 @@ public class PluginClassLoader extends DexClassLoader{
         String parent = getParent().toString();
         return "self: " + self
                 + "; deps: size=" + dependencies.size()
-                +", content=" + deps
+                + ", content=" + deps
                 + "; parent: " + parent;
     }
 }

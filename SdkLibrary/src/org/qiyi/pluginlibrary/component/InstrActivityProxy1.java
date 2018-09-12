@@ -67,12 +67,12 @@ import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -121,6 +121,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             NotifyCenter.notifyServiceConnected(InstrActivityProxy1.this, null);
         }
     };
+    private boolean mNeedUpdateConfiguration = true;
 
     private void initRecoveryCallback() {
         mRecoveryCallback = Neptune.getConfig().getRecoveryCallback();
@@ -203,8 +204,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     /**
      * 调用被代理的Activity的onCreate方法
-     *
-     * @param savedInstanceState
      */
     private void callProxyOnCreate(Bundle savedInstanceState) {
         boolean mockRestoreInstanceState = false;
@@ -229,7 +228,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         mPluginControl.getPluginRef().set("mDecor", this.getWindow().getDecorView());
         NotifyCenter.notifyPluginActivityLoaded(this.getBaseContext());
     }
-
 
     /**
      * 装载被代理的Activity
@@ -294,12 +292,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         return null;
     }
 
-
     /**
      * 尝试初始化PluginLoadedApk
-     *
-     * @param mPluginPackage
-     * @return
      */
     private boolean tryToInitPluginLoadApk(String mPluginPackage) {
         if (!TextUtils.isEmpty(mPluginPackage) && null == mLoadedApk) {
@@ -312,9 +306,9 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     /**
      * 尝试恢复插件Activity
      *
-     * @param pkgName
-     * @param activityName
-     * @param savedInstanceState
+     * @param pkgName  插件包名
+     * @param activityName  插件Activity类名
+     * @param savedInstanceState 状态数据
      */
     private void tryRecoverPluginActivity(final String pkgName, final String activityName,
                                           Bundle savedInstanceState) {
@@ -366,9 +360,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         }
     }
 
-    private boolean mNeedUpdateConfiguration = true;
-
-
     public PluginActivityControl getController() {
         return mPluginControl;
     }
@@ -383,8 +374,30 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                 : mPluginResource;
     }
 
+    /**
+     * Override Oppo method in Context Resolve cann't start plugin on oppo
+     * devices, true or false both OK, false as the temporary result
+     * [warning] 不要删除该方法，在oppo机型的Context类中存在
+     *
+     * @Override
+     */
+    public boolean isOppoStyle() {
+        return false;
+    }
+
     @Override
-    public void setTheme(int resid) {
+    public Resources.Theme getTheme() {
+        if (mLoadedApk == null) {
+            String[] temp = parsePkgAndClsFromIntent();
+            if (null != temp && temp.length == 2) {
+                tryToInitPluginLoadApk(temp[0]);
+            }
+        }
+        return super.getTheme();
+    }
+
+    @Override
+    public void setTheme(int resId) {
         if (VersionUtils.hasNougat()) {
             String[] temp = parsePkgAndClsFromIntent();
             if (mNeedUpdateConfiguration && (temp != null || mLoadedApk != null)) {
@@ -404,36 +417,11 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
                     }
                 }
             }
-            super.setTheme(resid);
+            super.setTheme(resId);
         } else {
-            getTheme().applyStyle(resid, true);
+            getTheme().applyStyle(resId, true);
         }
     }
-
-    /**
-     * Override Oppo method in Context Resolve cann't start plugin on oppo
-     * devices, true or false both OK, false as the temporary result
-     * [warning] 不要删除该方法，在oppo机型的Context类中存在
-     *
-     * @return
-     */
-    /** @Override */
-    public boolean isOppoStyle() {
-        return false;
-    }
-
-
-    @Override
-    public Resources.Theme getTheme() {
-        if (mLoadedApk == null) {
-            String[] temp = parsePkgAndClsFromIntent();
-            if (null != temp && temp.length == 2) {
-                tryToInitPluginLoadApk(temp[0]);
-            }
-        }
-        return super.getTheme();
-    }
-
 
     @Override
     public AssetManager getAssets() {
@@ -683,7 +671,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     }
 
 
-    @Override @SuppressLint("NewApi")
+    @Override
+    @SuppressLint("NewApi")
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy startActivityForResult two....");
         if (mLoadedApk != null) {
@@ -997,7 +986,9 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     }
 
     /**
-     * Get host resource
+     * 返回宿主的ResourceTools
+     * @deprecated 使用资源分区
+     *
      * @return host resource tool
      */
     @Override
@@ -1051,9 +1042,10 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     /**
      * 修改ActivityInfo信息
-     * @param activity
-     * @param pkgName
-     * @param mActivityInfo
+     *
+     * @param activity  代理Activity
+     * @param pkgName   插件包名
+     * @param mActivityInfo  插件ActivityInfo的信息
      */
     private void changeActivityInfo(Activity activity, String pkgName, ActivityInfo mActivityInfo) {
 

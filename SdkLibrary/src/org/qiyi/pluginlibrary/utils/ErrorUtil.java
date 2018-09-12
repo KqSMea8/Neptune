@@ -24,15 +24,11 @@ import java.io.StringWriter;
 
 /**
  * 处理异常的工具类
- *
  */
 public class ErrorUtil {
 
     /**
      * Debug环境下直接抛出异常
-     *
-     * @param tr
-     * @throws Throwable
      */
     public static void throwErrorIfNeed(Throwable tr) {
 
@@ -48,9 +44,9 @@ public class ErrorUtil {
             Log.e("plugin_error", sb.toString());
 
             if (tr instanceof Error) {
-                throw (Error)tr;
+                throw (Error) tr;
             } else if (tr instanceof RuntimeException) {
-                throw (RuntimeException)tr;
+                throw (RuntimeException) tr;
             } else if (tr instanceof Exception) {
                 // normal exception, wrap it with RuntimeExcepiton
                 throw new RuntimeException(tr);

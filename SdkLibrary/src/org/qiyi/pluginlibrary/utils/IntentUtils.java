@@ -45,8 +45,8 @@ public class IntentUtils {
     /**
      * 将插件的包名信息放入Intent#action字段
      *
-     * @param mIntent
-     * @param pkgName
+     * @param mIntent  原始跳转的Intent
+     * @param pkgName  插件包名
      */
     public static void setProxyInfo(Intent mIntent, String pkgName) {
         String mPkgName = TextUtils.isEmpty(pkgName) ? "" : pkgName;
@@ -88,9 +88,6 @@ public class IntentUtils {
 
     /**
      * 从intent中解析出插件包名和跳转组件的名
-     *
-     * @param intent
-     * @return
      */
     public static String[] parsePkgAndClsFromIntent(Intent intent) {
         String[] result = new String[2];
@@ -125,9 +122,6 @@ public class IntentUtils {
 
     /**
      * 从Action里获取插件包名
-     *
-     * @param intent
-     * @return
      */
     public static String getPluginPackage(Intent intent) {
         if (intent == null) {
@@ -193,9 +187,6 @@ public class IntentUtils {
 
     /**
      * 从Activity中dump优先的插件信息
-     *
-     * @param activity
-     * @return
      */
     public static String dump(Activity activity) {
         String info = "";

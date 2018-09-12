@@ -255,11 +255,6 @@ public class ContextUtils {
     }
 
 
-    /**
-     * @param context
-     * @param pkg
-     * @return /data/data/com.qiyi.video/app_pluginapp/pkg/databases
-     */
     public static String getPluginappDBPath(Context context, String pkg) {
         if (context == null || TextUtils.isEmpty(pkg)) {
             return null;

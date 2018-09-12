@@ -95,18 +95,18 @@ public abstract class AbstractFragmentProxy extends Fragment {
     }
 
     @Override
-    public void setUserVisibleHint(boolean isVisibleToUser) {
-        super.setUserVisibleHint(isVisibleToUser);
-        if (mPluginFragment != null) {
-            mPluginFragment.setUserVisibleHint(isVisibleToUser);
-        }
-    }
-
-    @Override
     public boolean getUserVisibleHint() {
         if (mPluginFragment != null) {
             return mPluginFragment.getUserVisibleHint();
         }
         return super.getUserVisibleHint();
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (mPluginFragment != null) {
+            mPluginFragment.setUserVisibleHint(isVisibleToUser);
+        }
     }
 }

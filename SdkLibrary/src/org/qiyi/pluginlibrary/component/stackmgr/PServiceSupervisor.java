@@ -17,12 +17,12 @@
  */
 package org.qiyi.pluginlibrary.component.stackmgr;
 
+import android.content.ServiceConnection;
+import android.text.TextUtils;
+
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import android.content.ServiceConnection;
-import android.text.TextUtils;
 
 /**
  * 保存所有正在运行的Service

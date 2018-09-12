@@ -16,6 +16,7 @@
  *
  */
 package org.qiyi.pluginlibrary.component;
+
 /**
  * :plugin2 Activity　代理
  */

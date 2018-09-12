@@ -74,64 +74,65 @@ import dalvik.system.DexClassLoader;
  * 每一个{@link PluginLoadedApk}代表了一个插件实例，
  * 保存当前插件的{@link android.content.res.Resources}<br/>
  * {@link ClassLoader}, {@link PackageInfo}等信息
- *
  */
 public class PluginLoadedApk {
-    private static final String TAG = "PluginLoadedApk";
-
     public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(1);
-    /**
-     * 保存注入到宿主ClassLoader的插件
-     */
+    private static final String TAG = "PluginLoadedApk";
+    /* 保存注入到宿主ClassLoader的插件 */
     private static Set<String> sInjectedPlugins = Collections.synchronizedSet(new HashSet<String>());
-    /**
-     * 保存所有的插件ClassLoader
-     */
+    /* 保存所有的插件ClassLoader */
     private static Map<String, DexClassLoader> sAllPluginClassLoader = new ConcurrentHashMap<>();
 
-    /** 宿主的Context */
+    /* 宿主的Context */
     private final Context mHostContext;
-    /** 宿主的ClassLoader */
+    /* 宿主的ClassLoader */
     private final ClassLoader mHostClassLoader;
-    /** 宿主的Resource对象 */
+    /* 宿主的Resource对象 */
     private final Resources mHostResource;
-    /** 宿主的包名 */
+    /* 宿主的包名 */
     private final String mHostPackageName;
-
-    /** 插件ClassLoader的parent */
-    private ClassLoader mParent;
-    /** 插件的路径 */
+    /* 插件的路径 */
     private final String mPluginPath;
-    /** 插件运行的进程名 */
+    /* 插件运行的进程名 */
     private final String mProcessName;
-    /** 插件的类加载器 */
+    /* 插件ClassLoader的parent */
+    private ClassLoader mParent;
+    /* 插件的类加载器 */
     private DexClassLoader mPluginClassLoader;
-    /** 插件的Resource对象 */
+    /* 插件的Resource对象 */
     private Resources mPluginResource;
-    /** 插件的AssetManager对象 */
+    /* 插件的AssetManager对象 */
     private AssetManager mPluginAssetManager;
-    /** 插件的全局默认主题 */
+    /* 插件的全局默认主题 */
     private Resources.Theme mPluginTheme;
-    /** 插件的详细信息，主要通过解析AndroidManifest.xml获得 */
+    /* 插件的详细信息，主要通过解析AndroidManifest.xml获得 */
     private PluginPackageInfo mPluginPackageInfo;
-    /** 插件工程的包名 */
+    /* 插件工程的包名 */
     private String mPluginPackageName;
-    /** 插件的Application */
+    /* 插件的Application */
     private Application mPluginApplication;
-    /** 自定义插件Context,主要用来改写其中的一些方法从而改变插件行为*/
+    /* 自定义插件Context,主要用来改写其中的一些方法从而改变插件行为 */
     private PluginContextWrapper mPluginAppContext;
-    /** 自定义Instrumentation，对Activity跳转进行拦截 */
+    /* 自定义Instrumentation，对Activity跳转进行拦截 */
     private PluginInstrument mPluginInstrument;
 
-    /** 动态通过资源名称获取资源id的工具类 */
+    /**
+     * 动态通过资源名称获取资源id的工具类
+     */
     @Deprecated
     private ResourcesToolForPlugin mResourceTool;
 
-    /** 当前插件的Activity栈 */
+    /**
+     * 当前插件的Activity栈
+     */
     private PActivityStackSupervisor mActivityStackSupervisor;
-    /** 插件Application是否已经初始化 */
+    /**
+     * 插件Application是否已经初始化
+     */
     private volatile boolean isPluginInit = false;
-    /** 当前是否有正在启动的Intent */
+    /**
+     * 当前是否有正在启动的Intent
+     */
     private volatile boolean isLaunchingIntent = false;
 
     /**
@@ -347,7 +348,7 @@ public class PluginLoadedApk {
                         "%s cannot inject to host classloader, inject meta: %s", String.valueOf(mPluginPackageInfo.isClassNeedInject()));
             }
             return true;
-        } else if (optDir != null){
+        } else if (optDir != null) {
             PluginDebugLog.runtimeLog(TAG,
                     "createClassLoader failed as " + optDir.getAbsolutePath() + " exist: "
                             + optDir.exists() + " can read: " + optDir.canRead()
@@ -378,7 +379,7 @@ public class PluginLoadedApk {
             }
 
             return handleNewDependencies();
-        } else if (optDir != null){
+        } else if (optDir != null) {
             PluginDebugLog.runtimeLog(TAG,
                     "createNewClassLoader failed as " + optDir.getAbsolutePath() + " exist: "
                             + optDir.exists() + " can read: " + optDir.canRead()
@@ -653,7 +654,7 @@ public class PluginLoadedApk {
                     }
                     // 把依赖插件的ClassLoader添加到当前的ClassLoader
                     if (mPluginClassLoader instanceof PluginClassLoader) {
-                        ((PluginClassLoader)mPluginClassLoader).addDependency(dependency);
+                        ((PluginClassLoader) mPluginClassLoader).addDependency(dependency);
                         PluginDebugLog.runtimeFormatLog(TAG, "handleNewDependencies addDependency %s into plugin %s success ",
                                 libraryInfo.packageName, mPluginPackageName);
                     } else {
@@ -677,10 +678,6 @@ public class PluginLoadedApk {
 
     /**
      * 获取插件的数据目录
-     *
-     * @param context
-     * @param packageName
-     * @return
      */
     private File getDataDir(Context context, String packageName) {
         PluginDebugLog.runtimeLog(TAG, "packageName:" + packageName + " context:" + context);
@@ -708,7 +705,7 @@ public class PluginLoadedApk {
      * 通过类名获取ActivityInfo
      *
      * @param activityClsName 需要获取ActivityInfo的Activity的类名
-     * @return
+     * @return 返回对应的ActivityInfo，如果没找到返回null
      */
     public ActivityInfo getActivityInfoByClassName(String activityClsName) {
         if (mPluginPackageInfo != null) {
@@ -773,8 +770,6 @@ public class PluginLoadedApk {
 
     /**
      * 是否有正在启动的Intent
-     *
-     * @return
      */
     public boolean hasLaunchIngIntent() {
         return isLaunchingIntent;
@@ -838,7 +833,7 @@ public class PluginLoadedApk {
     }
 
     /**
-     * 返回基线资源工具
+     * 返回宿主的资源工具
      */
     @Deprecated
     public ResourcesToolForPlugin getHostResourceTool() {

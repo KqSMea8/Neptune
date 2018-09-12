@@ -34,63 +34,46 @@ import org.json.JSONObject;
  * apk包AndroidManifest配置的版本号
  */
 public class PluginLiteInfo implements Parcelable {
-    private static final String TAG = "PluginLiteInfo";
-
-    /**
-     * 插件安装状态
-     **/
     public static final String PLUGIN_INSTALLED = "installed";
     public static final String PLUGIN_UNINSTALLED = "uninstall";
     public static final String PLUGIN_UPGRADING = "upgrading";
-    /**
-     * 插件apk路径（安装前)
-     */
+
+    /* 插件apk路径（安装前) */
     public String mPath;
-    /**
-     * 插件包名(后端吐的)
-     */
+    /* 插件包名(后端吐的) */
     public String packageName;
-    /**
-     * 插件的安装后路径
-     */
+    /* 插件的安装后路径 */
     public String srcApkPath;
-    /**
-     * 插件的安装状态
-     */
+    /* 插件的安装状态 */
     public String installStatus;
-    /**
-     * 插件的正式版本
-     */
+    /* 插件的正式版本 */
     public String pluginVersion = "";
-    /**
-     * 插件的灰度版本
-     */
+    /* 插件的灰度版本 */
     public String pluginGrayVersion = "";
-    /**
-     * 插件唯一标识符
-     */
+    /* 插件唯一标识符 */
     public String id = "";
-    /**
-     * 控制插件启动是否投递
-     */
+    /* 控制插件启动是否投递 */
     public int mDeliverStartUp;
-    /**
-     * 插件安装apk里的包名
-     */
+    /* 插件安装apk里的包名 */
     public String srcApkPkgName;
-    /**
-     * 插件安装apk里的版本号
-     */
+    /* 插件安装apk里的版本号 */
     public String srcApkVersion = "";
-    /**
-     * 是否启动插件的进程恢复功能，(由于插件可能未适配，需要这个开关)
-     */
+    /* 是否启动插件的进程恢复功能，(由于插件可能未适配，需要这个开关) */
     public boolean enableRecovery;
-    /**
-     * 该插件的依赖插件包名列表
-     * 用逗号分隔
-     */
+    /* 该插件的依赖插件包名列表, 用逗号分隔*/
     public String plugin_refs;
+
+    public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
+        @Override
+        public PluginLiteInfo createFromParcel(Parcel in) {
+            return new PluginLiteInfo(in);
+        }
+
+        @Override
+        public PluginLiteInfo[] newArray(int size) {
+            return new PluginLiteInfo[size];
+        }
+    };
 
     public PluginLiteInfo() {
 
@@ -130,18 +113,6 @@ public class PluginLiteInfo implements Parcelable {
         enableRecovery = in.readInt() == 1;
         plugin_refs = in.readString();
     }
-
-    public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
-        @Override
-        public PluginLiteInfo createFromParcel(Parcel in) {
-            return new PluginLiteInfo(in);
-        }
-
-        @Override
-        public PluginLiteInfo[] newArray(int size) {
-            return new PluginLiteInfo[size];
-        }
-    };
 
     @Override
     public int describeContents() {

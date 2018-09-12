@@ -24,33 +24,24 @@ import android.content.Context;
  * 管理插件运行在哪个进程, 可以由外部配置
  */
 public class ProcessManager {
-    private static final String PROXY_PROCESS0 = "";  //主进程
+
     private static final String PROXY_PROCESS1 = ":plugin1";
     private static final String PROXY_PROCESS2 = ":plugin2";
-
-    public interface IProcessSelector {
-
-        public int getProcessIndex(String processName);
-    }
-
-    private static IProcessSelector sOutterSelector;
+    private static IProcessSelector sOuterSelector;
 
     /**
-     * 外面设置的进程选择器
-     *
-     * @param mSelecter
+     * 设置进程选择器
      */
-    public static void setOutterSelecter(IProcessSelector mSelecter) {
-        sOutterSelector = mSelecter;
+    public static void setOuterSelector(IProcessSelector selector) {
+        sOuterSelector = selector;
     }
-
 
     /**
      * 为插件pkg选择进程名
      *
-     * @param hostContext
-     * @param pkgName
-     * @return
+     * @param hostContext  宿主的Context
+     * @param pkgName  插件的包名
+     * @return 返回插件运行的进程名
      */
     public static String chooseDefaultProcess(Context hostContext, String pkgName) {
         // 默认放到插件进程1
@@ -65,8 +56,8 @@ public class ProcessManager {
      */
     public static int getProcessIndex(String processName) {
 
-        if (sOutterSelector != null) {
-            return sOutterSelector.getProcessIndex(processName);
+        if (sOuterSelector != null) {
+            return sOuterSelector.getProcessIndex(processName);
         }
         // 默认选择策略
         if (processName.endsWith(PROXY_PROCESS1)) {
@@ -76,5 +67,10 @@ public class ProcessManager {
         }
         // 运行在主进程
         return 0;
+    }
+
+    public interface IProcessSelector {
+
+        int getProcessIndex(String processName);
     }
 }

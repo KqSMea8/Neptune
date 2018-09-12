@@ -17,8 +17,6 @@
  */
 package org.qiyi.pluginlibrary.component.wraper;
 
-import java.io.InputStream;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.res.AssetFileDescriptor;
@@ -36,27 +34,23 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 
+import java.io.InputStream;
+
 /**
  * 插件资源管理
  */
 public class ResourcesProxy extends Resources {
 
-    /**
-     * 父Resources
-     */
+    /* 宿主的Resources */
     private Resources mHostResources = null;
-    /**
-     * 插件包名
-     */
+    /* 插件包名 */
     private String mPluginPackageName = null;
 
     /**
-     * 构造方法
-     *
-     * @param assets assetmanager
+     * @param assets  插件的AssetManager
      * @param metrics 资源Metrics
-     * @param config 资源配置
-     * @param hostRes 宿主资源
+     * @param config  资源配置
+     * @param hostRes 宿主的资源
      */
     public ResourcesProxy(AssetManager assets, DisplayMetrics metrics, Configuration config, Resources hostRes, String pluginPackageName) {
         super(assets, metrics, config);
@@ -216,8 +210,8 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id            资源ID
-     * @param theme         Theme
+     * @param id    资源ID
+     * @param theme Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -242,9 +236,9 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id            资源ID
-     * @param density       分辨率
-     * @param theme         Theme
+     * @param id      资源ID
+     * @param density 分辨率
+     * @param theme   Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -276,8 +270,8 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id                资源ID
-     * @param theme             Theme
+     * @param id    资源ID
+     * @param theme Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.M)
@@ -300,8 +294,8 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id                资源ID
-     * @param theme             Theme
+     * @param id    资源ID
+     * @param theme Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.M)

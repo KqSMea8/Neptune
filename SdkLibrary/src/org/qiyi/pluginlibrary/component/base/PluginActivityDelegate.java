@@ -38,18 +38,18 @@ import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 /**
  * 插件基线PluginActivity的代理实现
  * 每个PluginActivity持有一个PluginActivityDelegate对象，实现插件相关功能的注入
- *
  */
 class PluginActivityDelegate implements InterfaceToGetHost {
     private static final String TAG = "PluginActivityDelegate";
 
     private PluginLoadedApk mPlugin;
+
     /**
      * 为插件Activity构造一个插件对应的Base Context
      *
-     * @param activity  插件真实的Activity
+     * @param activity 插件真实的Activity
      * @param newBase  Activity原有的Base Context，一般为ContextImpl，是宿主的
-     * @return
+     * @return 新的插件Context
      */
     Context createActivityContext(Activity activity, Context newBase) {
         // 通过插件Activity的ClassLoader查找插件实例，这个需要配合新的ClassLoader方案
@@ -68,9 +68,6 @@ class PluginActivityDelegate implements InterfaceToGetHost {
 
     /**
      * 在插件Activity的onCreate调用前调用该方法
-     *
-     * @param activity
-     * @param savedInstanceState
      */
     void handleActivityOnCreateBefore(Activity activity, Bundle savedInstanceState) {
 
@@ -110,7 +107,7 @@ class PluginActivityDelegate implements InterfaceToGetHost {
         Context mBase = activity.getBaseContext();
         if (mBase instanceof PluginContextWrapper) {
             PluginDebugLog.runtimeLog(TAG, "activity " + activity.getClass().getName() + " base context already be replaced");
-        } else if (mPlugin != null){
+        } else if (mPlugin != null) {
             mBase = new PluginContextWrapper(mBase, mPlugin.getPluginPackageName());
             // 反射替换mBase成员变量
             ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", mBase);
@@ -123,8 +120,6 @@ class PluginActivityDelegate implements InterfaceToGetHost {
 
     /**
      * 在插件Activity#onCreate调用之后执行
-     * @param activity
-     * @param savedInstanceState
      */
     void handleActivityOnCreateAfter(Activity activity, Bundle savedInstanceState) {
 
@@ -135,7 +130,6 @@ class PluginActivityDelegate implements InterfaceToGetHost {
 
     /**
      * 在插件Activity#onDetorty调用之后执行
-     * @param activity
      */
     void handleActivityOnDestroy(Activity activity) {
 

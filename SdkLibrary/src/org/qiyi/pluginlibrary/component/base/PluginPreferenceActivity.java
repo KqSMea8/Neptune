@@ -29,7 +29,7 @@ import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 
 
-public class PluginPreferenceActivity extends PreferenceActivity implements IPluginBase{
+public class PluginPreferenceActivity extends PreferenceActivity implements IPluginBase {
 
     private PluginActivityDelegate mDelegate;
 
@@ -78,7 +78,8 @@ public class PluginPreferenceActivity extends PreferenceActivity implements IPlu
     }
 
     // Api 16新增
-    @Override @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
+    @Override
+    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         // 替换成坑位Activity
         String pkgName = getPluginPackageName();
