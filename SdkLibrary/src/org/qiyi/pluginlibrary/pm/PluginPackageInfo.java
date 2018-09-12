@@ -51,18 +51,33 @@ import java.util.Map;
  * 存放插件apk的{@link PackageInfo}里面的信息
  */
 public class PluginPackageInfo implements Parcelable {
-    private static final String TAG = "PluginPackageInfo";
-    /** 配置是否注入到宿主的ClassLoader, 已废弃 */
-    private static final String META_KEY_CLASS_INJECT = "pluginapp_class_inject";
-    /** 配置资源id分段之后，是否合并宿主的资源到插件的AssetManager */
-    private static final String META_KEY_MERGE_RES = "pluginapp_res_merge";
-    /** 配置插件是否运行在独立空间，完全不依赖宿主的类和资源 */
-    private static final String META_KEY_INDIVIDUAL = "pluginapp_individual";
+    public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
+        @Override
+        public PluginPackageInfo createFromParcel(Parcel in) {
+            return new PluginPackageInfo(in);
+        }
 
+        @Override
+        public PluginPackageInfo[] newArray(int size) {
+            return new PluginPackageInfo[size];
+        }
+    };
     static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
     static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
     static final String PLUGIN_APPLICATION_CODE_PATH = "Hanlde_plugin_code_path";
-
+    private static final String TAG = "PluginPackageInfo";
+    /**
+     * 配置是否注入到宿主的ClassLoader, 已废弃
+     */
+    private static final String META_KEY_CLASS_INJECT = "pluginapp_class_inject";
+    /**
+     * 配置资源id分段之后，是否合并宿主的资源到插件的AssetManager
+     */
+    private static final String META_KEY_MERGE_RES = "pluginapp_res_merge";
+    /**
+     * 配置插件是否运行在独立空间，完全不依赖宿主的类和资源
+     */
+    private static final String META_KEY_INDIVIDUAL = "pluginapp_individual";
     private String packageName;
     private String applicationClassName;
     private String defaultActivityName;
@@ -70,32 +85,32 @@ public class PluginPackageInfo implements Parcelable {
     private PackageInfo packageInfo;
     private ApplicationInfo applicationInfo;
     private Bundle metaData;
-
     private String dataDir;
     private String nativeLibraryDir;
     private String processName;
-
     // 是否需要把插件class注入进入父classloader，已废弃
     private boolean mIsClassInject = false;
     // 是否需要把宿主的Resource合并进插件的Resource
     private boolean mIsMergeResource = false;
     // 是否运行在独立空间，插件完全不依赖基线的类和资源
     private boolean mIsIndividualMode = false;
-
     private boolean mUsePluginAppInfo = false;
-
     private boolean mUsePluginCodePath = false;
-
-    /** Save all activity's resolve info */
+    /**
+     * Save all activity's resolve info
+     */
     private Map<String, ActivityIntentInfo> mActivityIntentInfos = new HashMap<String, ActivityIntentInfo>(0);
-
-    /** Save all service's resolve info */
+    /**
+     * Save all service's resolve info
+     */
     private Map<String, ServiceIntentInfo> mServiceIntentInfos = new HashMap<String, ServiceIntentInfo>(0);
-
-    /** Save all receiver's resolve info */
+    /**
+     * Save all receiver's resolve info
+     */
     private Map<String, ReceiverIntentInfo> mReceiverIntentInfos = new HashMap<String, ReceiverIntentInfo>(0);
-
-    /** Save all provider's resolve info */
+    /**
+     * Save all provider's resolve info
+     */
     private Map<String, ProviderIntentInfo> mProviderIntentInfos = new HashMap<String, ProviderIntentInfo>(0);
 
     public PluginPackageInfo(Context context, File apkFile) {
@@ -110,7 +125,7 @@ public class PluginPackageInfo implements Parcelable {
                             | PackageManager.GET_CONFIGURATIONS
                             | PackageManager.GET_RECEIVERS
                             | PackageManager.GET_PROVIDERS);
-            if (packageInfo == null ||  packageInfo.applicationInfo == null) {
+            if (packageInfo == null || packageInfo.applicationInfo == null) {
                 PluginDebugLog.runtimeLog(TAG, "getPackageArchiveInfo is null for plugin apk: " + apkPath);
                 throw new RuntimeException("getPackageArchiveInfo is null for file: " + apkPath);
             }
@@ -247,18 +262,6 @@ public class PluginPackageInfo implements Parcelable {
         }
         return null;
     }
-
-    public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
-        @Override
-        public PluginPackageInfo createFromParcel(Parcel in) {
-            return new PluginPackageInfo(in);
-        }
-
-        @Override
-        public PluginPackageInfo[] newArray(int size) {
-            return new PluginPackageInfo[size];
-        }
-    };
 
     public String getProcessName() {
         return processName;
@@ -602,17 +605,6 @@ public class PluginPackageInfo implements Parcelable {
     }
 
     public final static class ActivityIntentInfo extends IntentInfo implements Parcelable {
-        public final ActivityInfo mInfo;
-
-        public ActivityIntentInfo(final ActivityInfo info) {
-            mInfo = info;
-        }
-
-        protected ActivityIntentInfo(Parcel in) {
-            super(in);
-            mInfo = ActivityInfo.CREATOR.createFromParcel(in);
-        }
-
         public static final Creator<ActivityIntentInfo> CREATOR = new Creator<ActivityIntentInfo>() {
             @Override
             public ActivityIntentInfo createFromParcel(Parcel in) {
@@ -624,6 +616,16 @@ public class PluginPackageInfo implements Parcelable {
                 return new ActivityIntentInfo[size];
             }
         };
+        public final ActivityInfo mInfo;
+
+        public ActivityIntentInfo(final ActivityInfo info) {
+            mInfo = info;
+        }
+
+        protected ActivityIntentInfo(Parcel in) {
+            super(in);
+            mInfo = ActivityInfo.CREATOR.createFromParcel(in);
+        }
 
         @Override
         public int describeContents() {
@@ -640,18 +642,6 @@ public class PluginPackageInfo implements Parcelable {
     }
 
     public final static class ServiceIntentInfo extends IntentInfo implements Parcelable {
-        public final ServiceInfo mInfo;
-
-        public ServiceIntentInfo(final ServiceInfo info) {
-            mInfo = info;
-        }
-
-        protected ServiceIntentInfo(Parcel in) {
-            super(in);
-            mInfo = ServiceInfo.CREATOR.createFromParcel(in);
-
-        }
-
         public static final Creator<ServiceIntentInfo> CREATOR = new Creator<ServiceIntentInfo>() {
             @Override
             public ServiceIntentInfo createFromParcel(Parcel in) {
@@ -663,6 +653,17 @@ public class PluginPackageInfo implements Parcelable {
                 return new ServiceIntentInfo[size];
             }
         };
+        public final ServiceInfo mInfo;
+
+        public ServiceIntentInfo(final ServiceInfo info) {
+            mInfo = info;
+        }
+
+        protected ServiceIntentInfo(Parcel in) {
+            super(in);
+            mInfo = ServiceInfo.CREATOR.createFromParcel(in);
+
+        }
 
         @Override
         public int describeContents() {
@@ -679,17 +680,6 @@ public class PluginPackageInfo implements Parcelable {
     }
 
     public final static class ReceiverIntentInfo extends IntentInfo implements Parcelable {
-        public final ActivityInfo mInfo;
-
-        public ReceiverIntentInfo(final ActivityInfo info) {
-            mInfo = info;
-        }
-
-        protected ReceiverIntentInfo(Parcel in) {
-            super(in);
-            mInfo = ActivityInfo.CREATOR.createFromParcel(in);
-        }
-
         public static final Creator<ReceiverIntentInfo> CREATOR = new Creator<ReceiverIntentInfo>() {
             @Override
             public ReceiverIntentInfo createFromParcel(Parcel in) {
@@ -701,6 +691,16 @@ public class PluginPackageInfo implements Parcelable {
                 return new ReceiverIntentInfo[size];
             }
         };
+        public final ActivityInfo mInfo;
+
+        public ReceiverIntentInfo(final ActivityInfo info) {
+            mInfo = info;
+        }
+
+        protected ReceiverIntentInfo(Parcel in) {
+            super(in);
+            mInfo = ActivityInfo.CREATOR.createFromParcel(in);
+        }
 
         @Override
         public int describeContents() {
@@ -717,17 +717,6 @@ public class PluginPackageInfo implements Parcelable {
     }
 
     public final static class ProviderIntentInfo extends IntentInfo implements Parcelable {
-        public final ProviderInfo mInfo;
-
-        public ProviderIntentInfo(final ProviderInfo info) {
-            mInfo = info;
-        }
-
-        protected ProviderIntentInfo(Parcel in) {
-            super(in);
-            mInfo = ProviderInfo.CREATOR.createFromParcel(in);
-        }
-
         public static final Creator<ProviderIntentInfo> CREATOR = new Creator<ProviderIntentInfo>() {
             @Override
             public ProviderIntentInfo createFromParcel(Parcel in) {
@@ -739,6 +728,16 @@ public class PluginPackageInfo implements Parcelable {
                 return new ProviderIntentInfo[size];
             }
         };
+        public final ProviderInfo mInfo;
+
+        public ProviderIntentInfo(final ProviderInfo info) {
+            mInfo = info;
+        }
+
+        protected ProviderIntentInfo(Parcel in) {
+            super(in);
+            mInfo = ProviderInfo.CREATOR.createFromParcel(in);
+        }
 
         @Override
         public int describeContents() {
@@ -755,15 +754,6 @@ public class PluginPackageInfo implements Parcelable {
     }
 
     public static class IntentInfo implements Parcelable {
-        public List<IntentFilter> mFilter;
-
-        protected IntentInfo() {
-        }
-
-        protected IntentInfo(Parcel in) {
-            mFilter = in.createTypedArrayList(IntentFilter.CREATOR);
-        }
-
         public static final Creator<IntentInfo> CREATOR = new Creator<IntentInfo>() {
             @Override
             public IntentInfo createFromParcel(Parcel in) {
@@ -775,6 +765,14 @@ public class PluginPackageInfo implements Parcelable {
                 return new IntentInfo[size];
             }
         };
+        public List<IntentFilter> mFilter;
+
+        protected IntentInfo() {
+        }
+
+        protected IntentInfo(Parcel in) {
+            mFilter = in.createTypedArrayList(IntentFilter.CREATOR);
+        }
 
         public void setFilter(List<IntentFilter> filters) {
             mFilter = filters;

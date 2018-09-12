@@ -43,6 +43,17 @@ public class FragmentPluginHelper {
     }
 
     /**
+     * 取消 View 以及其 children View 的 onSaveInstanceState 调用
+     * <p>
+     * 耗时大约 1ms
+     *
+     * @param view 顶层 view
+     */
+    public static void disableViewSaveInstanceRecursively(View view) {
+        ViewPluginHelper.disableViewSaveInstanceRecursively(view);
+    }
+
+    /**
      * 过滤掉插件 Fragment，插件 Fragment 不会被保存到 savedInstanceState 中.
      */
     public void beforeOnSaveInstanceState() {
@@ -103,16 +114,5 @@ public class FragmentPluginHelper {
                 ReflectionUtils.on(mFragmentManager).set("mBackStack", mBackStack);
             }
         });
-    }
-
-    /**
-     * 取消 View 以及其 children View 的 onSaveInstanceState 调用
-     * <p>
-     * 耗时大约 1ms
-     *
-     * @param view 顶层 view
-     */
-    public static void disableViewSaveInstanceRecursively(View view) {
-        ViewPluginHelper.disableViewSaveInstanceRecursively(view);
     }
 }

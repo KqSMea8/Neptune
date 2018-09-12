@@ -24,28 +24,22 @@ import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
  * 插件框架运行配置信息
  */
 public final class NeptuneConfig {
-    /**
-     * 传统的插件框架模式，使用InstrActivityProxy进行代理转发
-     */
+    /* 传统的插件框架模式，使用InstrActivityProxy进行代理转发 */
     public static final int LEGACY_MODE = 0;
-    /**
-     * Hook Instrumentation方案
-     */
+    /* Hook Instrumentation方案 */
     public static final int INSTRUMENTATION_MODE = 1;
-    /**
-     * Hook Instrumentation方案 + Base PluginActivity方案
-     */
+    /* Hook Instrumentation方案 + Base PluginActivity方案 */
     public static final int INSTRUMENTATION_BASEACT_MODE = 2;
-    /** 插件框架运行模式，已经全面切换到Hook Instrumentation方案，适配Android P */
-    private int sdkMode;
+    /* 插件框架运行模式，已经全面切换到Hook Instrumentation方案，适配Android P */
+    private int mSdkMode;
 
     private IPluginInfoProvider mPluginInfoProvider;
     private IRecoveryCallback mRecoveryCallback;
-    /** Debug调试日志是否打开 */
+    /* Debug调试日志是否打开 */
     private boolean mIsDebug;
 
     NeptuneConfig(NeptuneConfigBuilder builder) {
-        this.sdkMode = builder.sdkMode;
+        this.mSdkMode = builder.sdkMode;
         this.mPluginInfoProvider = builder.pluginInfoProvider;
         this.mRecoveryCallback = builder.recoveryCallback;
         this.mIsDebug = builder.isDebug;
@@ -53,7 +47,7 @@ public final class NeptuneConfig {
 
 
     public int getSdkMode() {
-        return sdkMode;
+        return mSdkMode;
     }
 
     public IPluginInfoProvider getPluginInfoProvider() {
@@ -98,5 +92,4 @@ public final class NeptuneConfig {
             return new NeptuneConfig(this);
         }
     }
-
 }

@@ -27,7 +27,6 @@ import android.os.PatternMatcher;
 import android.text.TextUtils;
 import android.util.Log;
 
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -46,14 +45,12 @@ public class ManifestParser {
 
     private static final String ANDROID_RESOURCES = "http://schemas.android.com/apk/res/android";
     private static final String ANDROID_MANIFEST_FILENAME = "AndroidManifest.xml";
-
-    private String pkg;
-    private String applicationClass;
-
     public List<ComponentBean> activities = new ArrayList<>();
     public List<ComponentBean> services = new ArrayList<>();
     public List<ComponentBean> receivers = new ArrayList<>();
     public List<ComponentBean> providers = new ArrayList<>();
+    private String pkg;
+    private String applicationClass;
 
     /**
      * 通过AssetManager创建XmlResourceParser，解析AndroidManifest
@@ -72,12 +69,23 @@ public class ManifestParser {
             AssetManager am = AssetManager.class.newInstance();
             Method addAssetPath = AssetManager.class.getDeclaredMethod("addAssetPath", String.class);
             addAssetPath.setAccessible(true);
-            int cookie = (int)addAssetPath.invoke(am, apkPath);
+            int cookie = (int) addAssetPath.invoke(am, apkPath);
 
             XmlResourceParser parser = am.openXmlResourceParser(cookie, ANDROID_MANIFEST_FILENAME);
             parseManifest(parser);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void skipCurrentTag(XmlPullParser parser)
+            throws XmlPullParserException, IOException {
+        int outerDepth = parser.getDepth();
+        int type;
+        while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
+                && (type != XmlPullParser.END_TAG
+                || parser.getDepth() > outerDepth)) {
+            // go on
         }
     }
 
@@ -127,7 +135,7 @@ public class ManifestParser {
      * @throws IOException
      * @throws XmlPullParserException
      */
-    private void parseApplication(XmlResourceParser parser) throws IOException, XmlPullParserException{
+    private void parseApplication(XmlResourceParser parser) throws IOException, XmlPullParserException {
 
         String name = parser.getAttributeValue(ANDROID_RESOURCES, "name");
         applicationClass = buildClassName(pkg, name);
@@ -175,9 +183,9 @@ public class ManifestParser {
         String name = parser.getAttributeValue(ANDROID_RESOURCES, "name");
         bean.className = buildClassName(pkg, name);
 
-        int outerDepth=  parser.getDepth();
+        int outerDepth = parser.getDepth();
         int type;
-        while ((type=parser.next()) != XmlPullParser.END_DOCUMENT
+        while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
                 && (type != XmlPullParser.END_TAG
                 || parser.getDepth() > outerDepth)) {
             if (type == XmlPullParser.END_TAG || type == XmlPullParser.TEXT) {
@@ -195,7 +203,6 @@ public class ManifestParser {
 
         return bean;
     }
-
 
     /**
      * 解析IntentFilter节点
@@ -273,7 +280,6 @@ public class ManifestParser {
         return intentFilter;
     }
 
-
     private String buildClassName(String pkg, CharSequence clsSeq) {
         if (clsSeq == null || clsSeq.length() <= 0) {
             return "";
@@ -291,19 +297,6 @@ public class ManifestParser {
         }
         return cls;
     }
-
-
-    private static void skipCurrentTag(XmlPullParser parser)
-            throws XmlPullParserException, IOException {
-        int outerDepth = parser.getDepth();
-        int type;
-        while ((type=parser.next()) != XmlPullParser.END_DOCUMENT
-                && (type != XmlPullParser.END_TAG
-                || parser.getDepth() > outerDepth)) {
-            // go on
-        }
-    }
-
 
     public static class ComponentBean {
         public String className;

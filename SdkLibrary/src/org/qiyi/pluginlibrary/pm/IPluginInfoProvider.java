@@ -32,55 +32,55 @@ public interface IPluginInfoProvider {
     /**
      * 获取已安装的插件
      *
-     * @return          已安装插件信息列表
+     * @return 已安装插件信息列表
      */
     List<PluginLiteInfo> getInstalledPackages();
 
     /**
      * 通过包名获得特定的插件报信息
      *
-     * @param packageName           插件包名
-     * @return                      {@link PluginLiteInfo}插件包信息
+     * @param packageName 插件包名
+     * @return {@link PluginLiteInfo}插件包信息
      */
     PluginLiteInfo getPackageInfo(String packageName);
 
     /**
      * 判断插件是否安装
      *
-     * @param packageName           插件包名
-     * @return                      true：安装  false：未安装
+     * @param packageName 插件包名
+     * @return true：安装  false：未安装
      */
     boolean isPackageInstalled(String packageName);
 
     /**
      * 判断插件包是否可以安装
      *
-     * @param info                  {@link PluginLiteInfo}插件包信息
-     * @return                      true：可以安装  false：不可以安装
+     * @param info {@link PluginLiteInfo}插件包信息
+     * @return true：可以安装  false：不可以安装
      */
     boolean canInstallPackage(PluginLiteInfo info);
 
     /**
      * 判断插件是否可以卸载
      *
-     * @param info                  {@link PluginLiteInfo}插件包信息
-     * @return                      true：可以卸载  false：不可以卸载
+     * @param info {@link PluginLiteInfo}插件包信息
+     * @return true：可以卸载  false：不可以卸载
      */
     boolean canUninstallPackage(PluginLiteInfo info);
 
     /**
      * 处理插件异常信息
      *
-     * @param pkgName               插件包名
-     * @param exceptionStr          异常信息
+     * @param pkgName      插件包名
+     * @param exceptionStr 异常信息
      */
     void handlePluginException(String pkgName, String exceptionStr);
 
     /**
      * 获取当前插件依赖的插件列表
      *
-     * @param packageName           插件包名
-     * @return                      依赖的插件列表，null表示没有依赖
+     * @param packageName 插件包名
+     * @return 依赖的插件列表，null表示没有依赖
      */
     List<String> getPluginRefs(String packageName);
 
@@ -99,31 +99,31 @@ public interface IPluginInfoProvider {
     /**
      * 获取已安装的插件（不通过IPC）
      *
-     * @return          已安装插件信息列表
+     * @return 已安装插件信息列表
      */
     List<PluginLiteInfo> getInstalledPackagesDirectly();
 
     /**
      * 判断插件是否安装（不通过IPC）
      *
-     * @param packageName           插件包名
-     * @return                      true：安装  false：未安装
+     * @param packageName 插件包名
+     * @return true：安装  false：未安装
      */
     boolean isPackageInstalledDirectly(String packageName);
 
     /**
      * 获取当前插件依赖的插件列表（不通过IPC）
      *
-     * @param packageName           插件包名
-     * @return                      依赖的插件列表，null表示没有依赖
+     * @param packageName 插件包名
+     * @return 依赖的插件列表，null表示没有依赖
      */
     List<String> getPluginRefsDirectly(String packageName);
 
     /**
      * 通过包名获得特定的插件报信息（不通过IPC）
      *
-     * @param packageName           插件包名
-     * @return                      {@link PluginLiteInfo}插件包信息
+     * @param packageName 插件包名
+     * @return {@link PluginLiteInfo}插件包信息
      */
     PluginLiteInfo getPackageInfoDirectly(String packageName);
 

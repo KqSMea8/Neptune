@@ -237,6 +237,12 @@ public class ActivityWrapper extends FragmentActivity {
         return mOriginActivity.getActionBar();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @Override
+    public void setActionBar(android.widget.Toolbar toolbar0) {
+        mOriginActivity.setActionBar(toolbar0);
+    }
+
     @Override
     public android.app.FragmentManager getFragmentManager() {
         return mOriginActivity.getFragmentManager();
@@ -276,6 +282,11 @@ public class ActivityWrapper extends FragmentActivity {
     @Override
     public android.content.Intent getIntent() {
         return mOriginActivity.getIntent();
+    }
+
+    @Override
+    public void setIntent(android.content.Intent intent0) {
+        mOriginActivity.setIntent(intent0);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
@@ -321,6 +332,12 @@ public class ActivityWrapper extends FragmentActivity {
     @Override
     public android.transition.TransitionManager getContentTransitionManager() {
         return mOriginActivity.getContentTransitionManager();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @Override
+    public void setContentTransitionManager(android.transition.TransitionManager transitionmanager0) {
+        mOriginActivity.setContentTransitionManager(transitionmanager0);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -436,6 +453,12 @@ public class ActivityWrapper extends FragmentActivity {
     @Override
     public boolean isImmersive() {
         return mOriginActivity.isImmersive();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
+    @Override
+    public void setImmersive(boolean boolean0) {
+        mOriginActivity.setImmersive(boolean0);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -664,6 +687,11 @@ public class ActivityWrapper extends FragmentActivity {
     @Override
     public int getRequestedOrientation() {
         return mOriginActivity.getRequestedOrientation();
+    }
+
+    @Override
+    public void setRequestedOrientation(int int0) {
+        mOriginActivity.setRequestedOrientation(int0);
     }
 
     @Override
@@ -1009,18 +1037,6 @@ public class ActivityWrapper extends FragmentActivity {
         mOriginActivity.reportFullyDrawn();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public void setActionBar(android.widget.Toolbar toolbar0) {
-        mOriginActivity.setActionBar(toolbar0);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public void setContentTransitionManager(android.transition.TransitionManager transitionmanager0) {
-        mOriginActivity.setContentTransitionManager(transitionmanager0);
-    }
-
     @Override
     public void setContentView(android.view.View view0) {
         mOriginActivity.setContentView(view0);
@@ -1058,26 +1074,10 @@ public class ActivityWrapper extends FragmentActivity {
         mOriginActivity.setFinishOnTouchOutside(boolean0);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
-    @Override
-    public void setImmersive(boolean boolean0) {
-        mOriginActivity.setImmersive(boolean0);
-    }
-
-    @Override
-    public void setIntent(android.content.Intent intent0) {
-        mOriginActivity.setIntent(intent0);
-    }
-
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void setPictureInPictureParams(android.app.PictureInPictureParams pictureinpictureparams0) {
         mOriginActivity.setPictureInPictureParams(pictureinpictureparams0);
-    }
-
-    @Override
-    public void setRequestedOrientation(int int0) {
-        mOriginActivity.setRequestedOrientation(int0);
     }
 
     @Override

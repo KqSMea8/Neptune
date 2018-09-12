@@ -43,9 +43,8 @@ public class PluginInstrument extends Instrumentation {
     private static final String TAG = "PluginInstrument";
 
     private static ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(5);
-
-    private String mPkgName;
     Instrumentation mHostInstr;
+    private String mPkgName;
     private ReflectionUtils mInstrumentRef;
 
     /**
@@ -69,7 +68,7 @@ public class PluginInstrument extends Instrumentation {
      */
     public static Instrumentation unwrap(Instrumentation instrumentation) {
         if (instrumentation instanceof PluginInstrument) {
-            return ((PluginInstrument)instrumentation).mHostInstr;
+            return ((PluginInstrument) instrumentation).mHostInstr;
         }
         return instrumentation;
     }

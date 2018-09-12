@@ -35,6 +35,37 @@ import java.util.Map;
 import java.util.Vector;
 
 public class ReflectionUtils {
+    /**
+     * 被包装的对象，访问一个实例的方法和字段
+     */
+    private final Object object;
+    /**
+     * 被访问的实例的方法或者字段所在的类
+     */
+    private final Class<?> clazz;
+    /**
+     * 反射的是一个Class还是一个Object实例?
+     */
+    private final boolean isClass;
+
+    private ReflectionUtils(Class<?> type) {
+        this.object = type;
+        this.clazz = type;
+        this.isClass = true;
+    }
+
+    private ReflectionUtils(Object object) {
+        this.object = object;
+        this.clazz = object != null ? object.getClass() : null;
+        this.isClass = false;
+    }
+
+    private ReflectionUtils(Object object, Class<?> type) {
+        this.object = object;
+        this.clazz = type;
+        this.isClass = false;
+    }
+
     public static <T> T getFieldValue(Object obj, String fieldName)
             throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
         return getFieldValue(obj, fieldName, true);
@@ -102,6 +133,10 @@ public class ReflectionUtils {
         return rs;
     }
 
+    // ---------------------------------------------------------------------
+    // 成员
+    // ---------------------------------------------------------------------
+
     public static Field getField_(Class<?> targetClass, String fieldName, boolean resolveParent)
             throws IllegalAccessException, IllegalArgumentException, NoSuchFieldException {
         NoSuchFieldException noSuchFieldExceptionOccor = null;
@@ -164,6 +199,10 @@ public class ReflectionUtils {
         return new ReflectionUtils(clazz);
     }
 
+    // ---------------------------------------------------------------------
+    // 构造器
+    // ---------------------------------------------------------------------
+
     /**
      * 包装起一个对象 <p/> 当你需要访问实例的字段和方法时可以使用此方法 {@link Object}
      *
@@ -177,8 +216,8 @@ public class ReflectionUtils {
     /**
      * 包装起一个对象 <p/> 当你需要访问实例或其父类的字段和方法时可以使用此方法 {@link Object}
      *
-     * @param object  需要被包装的对象
-     * @param clazz   被包装类自身或其父类
+     * @param object 需要被包装的对象
+     * @param clazz  被包装类自身或其父类
      * @return
      */
     public static ReflectionUtils on(Object object, Class<?> clazz) {
@@ -212,42 +251,113 @@ public class ReflectionUtils {
         return accessible;
     }
 
-    // ---------------------------------------------------------------------
-    // 成员
-    // ---------------------------------------------------------------------
-    /**
-     * 被包装的对象，访问一个实例的方法和字段
-     */
-    private final Object object;
-    /**
-     * 被访问的实例的方法或者字段所在的类
-     */
-    private final Class<?> clazz;
-    /**
-     * 反射的是一个Class还是一个Object实例?
-     */
-    private final boolean isClass;
+    private static String property(String string) {
+        int length = string.length();
 
-    // ---------------------------------------------------------------------
-    // 构造器
-    // ---------------------------------------------------------------------
-
-    private ReflectionUtils(Class<?> type) {
-        this.object = type;
-        this.clazz = type;
-        this.isClass = true;
+        if (length == 0) {
+            return "";
+        } else if (length == 1) {
+            return string.toLowerCase();
+        } else {
+            return string.substring(0, 1).toLowerCase() + string.substring(1);
+        }
     }
 
-    private ReflectionUtils(Object object) {
-        this.object = object;
-        this.clazz = object != null ? object.getClass() : null;
-        this.isClass = false;
+    private static ReflectionUtils on(Constructor<?> constructor, Object... args) throws ReflectException {
+        try {
+            return on(accessible(constructor).newInstance(args));
+        } catch (Exception e) {
+            throw new ReflectException(e);
+        }
     }
 
-    private ReflectionUtils(Object object, Class<?> type) {
-        this.object = object;
-        this.clazz = type;
-        this.isClass = false;
+    private static ReflectionUtils on(Method method, Object object, Object... args) throws ReflectException {
+        try {
+            accessible(method);
+
+            if (method.getReturnType() == void.class) {
+                method.invoke(object, args);
+                return on(object);
+            } else {
+                return on(method.invoke(object, args));
+            }
+        } catch (Exception e) {
+            throw new ReflectException(e);
+        }
+    }
+
+    /**
+     * 内部类，使一个对象脱离包装
+     */
+    private static Object unwrap(Object object) {
+        if (object instanceof ReflectionUtils) {
+            return ((ReflectionUtils) object).get();
+        }
+
+        return object;
+    }
+
+    /**
+     * 内部类， 给定一系列参数，返回它们的类型
+     *
+     * @see Object#getClass()
+     */
+    private static Class<?>[] types(Object... values) {
+        if (values == null) {
+            // 空
+            return new Class[0];
+        }
+
+        Class<?>[] result = new Class[values.length];
+
+        for (int i = 0; i < values.length; i++) {
+            Object value = values[i];
+            result[i] = value == null ? NULL.class : value.getClass();
+        }
+
+        return result;
+    }
+
+    /**
+     * 加载一个类
+     *
+     * @see Class#forName(String)
+     */
+    private static Class<?> forName(String name) throws ReflectException {
+        try {
+            return Class.forName(name);
+        } catch (Exception e) {
+            throw new ReflectException(e);
+        }
+    }
+
+    /**
+     * 得到包装的对象的类型， 如果是基本类型,像int,float,boolean这种, 那么将被转换成相应的对象类型。
+     */
+    private static Class<?> wrapper(Class<?> type) {
+        if (type.isPrimitive()) {
+            if (boolean.class == type) {
+                return Boolean.class;
+            } else if (int.class == type) {
+                return Integer.class;
+            } else if (long.class == type) {
+                return Long.class;
+            } else if (short.class == type) {
+                return Short.class;
+            } else if (byte.class == type) {
+                return Byte.class;
+            } else if (double.class == type) {
+                return Double.class;
+            } else if (float.class == type) {
+                return Float.class;
+            } else if (char.class == type) {
+                return Character.class;
+            } else if (void.class == type) {
+                return Void.class;
+            }
+        }
+
+        return type;
     }
 
     /**
@@ -261,7 +371,7 @@ public class ReflectionUtils {
      * 修改一个字段的值 <p/> 等价于
      * 如果包装的对象是一个{@link Class}, 那么修改的将是一个静态字段， 如果包装的对象是一个{@link Object}, 那么修改的就是一个实例字段。
      *
-     * @param name 字段名
+     * @param name  字段名
      * @param value 字段的值
      * @return 完事后的工具类
      * @throws ReflectException
@@ -303,9 +413,8 @@ public class ReflectionUtils {
      * @see #field(String)
      */
     public <T> T get(String name) throws ReflectException {
-        return field(name).<T> get();
+        return field(name).<T>get();
     }
-
 
     /**
      * 反射获取字段的值，不抛出异常
@@ -320,9 +429,8 @@ public class ReflectionUtils {
         } catch (ReflectException re) {
             re.printStackTrace();
         }
-        return (T)null;
+        return (T) null;
     }
-
 
     /**
      * 取得字段
@@ -342,7 +450,8 @@ public class ReflectionUtils {
 
     /**
      * 反射得到Field
-     * @param name  字段名
+     *
+     * @param name 字段名
      * @return
      * @throws ReflectException
      */
@@ -417,7 +526,6 @@ public class ReflectionUtils {
         return call(name, null, null, args);
     }
 
-
     /**
      * 给定方法名参数，MethodCache及可选的参数类型列表，调用一个方法
      *
@@ -483,7 +591,7 @@ public class ReflectionUtils {
 
     // 提高反射复用率
     private ReflectionUtils callInner(String name, Map<String, Vector<Method>> methodCache, Class<?>[] types,
-            Object... args) throws ReflectException {
+                                      Object... args) throws ReflectException {
         Vector<Method> temp = methodCache.get(name);
         if (null != temp) {
             for (Method method : temp) {
@@ -496,6 +604,10 @@ public class ReflectionUtils {
 
         return null;
     }
+
+    // ---------------------------------------------------------------------
+    // 对象API
+    // ---------------------------------------------------------------------
 
     /**
      * 根据方法名和方法参数得到该方法。
@@ -611,6 +723,10 @@ public class ReflectionUtils {
         }
     }
 
+    // ---------------------------------------------------------------------
+    // 内部工具方法
+    // ---------------------------------------------------------------------
+
     /**
      * 为包装的对象创建一个代理。
      *
@@ -648,24 +764,8 @@ public class ReflectionUtils {
             }
         };
 
-        return (P) Proxy.newProxyInstance(proxyType.getClassLoader(), new Class[] { proxyType }, handler);
+        return (P) Proxy.newProxyInstance(proxyType.getClassLoader(), new Class[]{proxyType}, handler);
     }
-
-    private static String property(String string) {
-        int length = string.length();
-
-        if (length == 0) {
-            return "";
-        } else if (length == 1) {
-            return string.toLowerCase();
-        } else {
-            return string.substring(0, 1).toLowerCase() + string.substring(1);
-        }
-    }
-
-    // ---------------------------------------------------------------------
-    // 对象API
-    // ---------------------------------------------------------------------
 
     private boolean match(Class<?>[] declaredTypes, Class<?>[] actualTypes) {
         if (declaredTypes.length == actualTypes.length) {
@@ -724,78 +824,6 @@ public class ReflectionUtils {
         return object.toString();
     }
 
-    // ---------------------------------------------------------------------
-    // 内部工具方法
-    // ---------------------------------------------------------------------
-
-    private static ReflectionUtils on(Constructor<?> constructor, Object... args) throws ReflectException {
-        try {
-            return on(accessible(constructor).newInstance(args));
-        } catch (Exception e) {
-            throw new ReflectException(e);
-        }
-    }
-
-    private static ReflectionUtils on(Method method, Object object, Object... args) throws ReflectException {
-        try {
-            accessible(method);
-
-            if (method.getReturnType() == void.class) {
-                method.invoke(object, args);
-                return on(object);
-            } else {
-                return on(method.invoke(object, args));
-            }
-        } catch (Exception e) {
-            throw new ReflectException(e);
-        }
-    }
-
-    /**
-     * 内部类，使一个对象脱离包装
-     */
-    private static Object unwrap(Object object) {
-        if (object instanceof ReflectionUtils) {
-            return ((ReflectionUtils) object).get();
-        }
-
-        return object;
-    }
-
-    /**
-     * 内部类， 给定一系列参数，返回它们的类型
-     *
-     * @see Object#getClass()
-     */
-    private static Class<?>[] types(Object... values) {
-        if (values == null) {
-            // 空
-            return new Class[0];
-        }
-
-        Class<?>[] result = new Class[values.length];
-
-        for (int i = 0; i < values.length; i++) {
-            Object value = values[i];
-            result[i] = value == null ? NULL.class : value.getClass();
-        }
-
-        return result;
-    }
-
-    /**
-     * 加载一个类
-     *
-     * @see Class#forName(String)
-     */
-    private static Class<?> forName(String name) throws ReflectException {
-        try {
-            return Class.forName(name);
-        } catch (Exception e) {
-            throw new ReflectException(e);
-        }
-    }
-
     /**
      * 获取包装的对象的类型
      *
@@ -811,35 +839,6 @@ public class ReflectionUtils {
         } else {
             return object.getClass();
         }
-    }
-
-    /**
-     * 得到包装的对象的类型， 如果是基本类型,像int,float,boolean这种, 那么将被转换成相应的对象类型。
-     */
-    private static Class<?> wrapper(Class<?> type) {
-        if (type.isPrimitive()) {
-            if (boolean.class == type) {
-                return Boolean.class;
-            } else if (int.class == type) {
-                return Integer.class;
-            } else if (long.class == type) {
-                return Long.class;
-            } else if (short.class == type) {
-                return Short.class;
-            } else if (byte.class == type) {
-                return Byte.class;
-            } else if (double.class == type) {
-                return Double.class;
-            } else if (float.class == type) {
-                return Float.class;
-            } else if (char.class == type) {
-                return Character.class;
-            } else if (void.class == type) {
-                return Void.class;
-            }
-        }
-
-        return type;
     }
 
     /**

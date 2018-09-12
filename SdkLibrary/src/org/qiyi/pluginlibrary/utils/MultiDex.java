@@ -59,8 +59,8 @@ public class MultiDex {
     /**
      * 插件apk安装Multidex
      *
-     * @param packageInfo  插件信息
-     * @param apkPath  插件apk路径
+     * @param packageInfo 插件信息
+     * @param apkPath     插件apk路径
      * @param classLoader 插件ClassLoader
      */
     public static void install(PluginPackageInfo packageInfo, String apkPath, ClassLoader classLoader) {
@@ -104,8 +104,8 @@ public class MultiDex {
      * 安装后续的Dex文件
      */
     private static void installSecondaryDexes(ClassLoader loader, File dexDir, List<? extends File> dexFiles)
-                        throws IllegalAccessException, NoSuchMethodException, NoSuchFieldException,
-                        InvocationTargetException, IOException, ClassNotFoundException, InstantiationException{
+            throws IllegalAccessException, NoSuchMethodException, NoSuchFieldException,
+            InvocationTargetException, IOException, ClassNotFoundException, InstantiationException {
         if (dexFiles != null && !dexFiles.isEmpty()) {
             if (Build.VERSION.SDK_INT >= 19) {
                 V19.install(loader, dexFiles, dexDir);
@@ -153,7 +153,7 @@ public class MultiDex {
      * Locates a given field anywhere in the class inheritance hierarchy.
      *
      * @param instance an object to search the field into.
-     * @param name field name
+     * @param name     field name
      * @return a field object
      * @throws NoSuchFieldException if the field cannot be located
      */
@@ -179,8 +179,8 @@ public class MultiDex {
     /**
      * Locates a given method anywhere in the class inheritance hierarchy.
      *
-     * @param instance an object to search the method into.
-     * @param name method name
+     * @param instance       an object to search the method into.
+     * @param name           method name
      * @param parameterTypes method parameter types
      * @return a method object
      * @throws NoSuchMethodException if the method cannot be located
@@ -209,8 +209,9 @@ public class MultiDex {
     /**
      * Replace the value of a field containing a non null array, by a new array containing the
      * elements of the original array plus the elements of extraElements.
-     * @param instance the instance whose field is to be modified.
-     * @param fieldName the field to modify.
+     *
+     * @param instance      the instance whose field is to be modified.
+     * @param fieldName     the field to modify.
      * @param extraElements elements to append at the end of the array.
      */
     private static void expandFieldArray(Object instance, String fieldName,
@@ -302,6 +303,85 @@ public class MultiDex {
      */
     private static final class V14 {
 
+        static final String DEX_SUFFIX = ".dex";
+        static final String EXTRACTED_SUFFIX = ".zip";
+        private static final int EXTRACTED_SUFFIX_LENGTH = EXTRACTED_SUFFIX.length();
+        private final ElementConstructor elementConstructor;
+
+        private V14() throws ClassNotFoundException, SecurityException, NoSuchMethodException {
+            ElementConstructor constructor;
+            Class<?> elementClass = Class.forName("dalvik.system.DexPathList$Element");
+            try {
+                constructor = new ICSElementConstructor(elementClass);
+            } catch (NoSuchMethodException e1) {
+                try {
+                    constructor = new JBMR11ElementConstructor(elementClass);
+                } catch (NoSuchMethodException e2) {
+                    constructor = new JBMR2ElementConstructor(elementClass);
+                }
+            }
+            this.elementConstructor = constructor;
+        }
+
+        static void install(ClassLoader loader,
+                            List<? extends File> additionalClassPathEntries)
+                throws IOException, SecurityException, IllegalArgumentException,
+                ClassNotFoundException, NoSuchMethodException, InstantiationException,
+                IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+            /* The patched class loader is expected to be a descendant of
+             * dalvik.system.BaseDexClassLoader. We modify its
+             * dalvik.system.DexPathList pathList field to append additional DEX
+             * file entries.
+             */
+            Field pathListField = findField(loader, "pathList");
+            Object dexPathList = pathListField.get(loader);
+            Object[] elements = new V14().makeDexElements(additionalClassPathEntries);
+            try {
+                expandFieldArray(dexPathList, "dexElements", elements);
+            } catch (NoSuchFieldException e) {
+                // dexElements was renamed pathElements for a short period during JB development,
+                // eventually it was renamed back shortly after.
+                Log.w(TAG, "Failed find field 'dexElements' attempting 'pathElements'", e);
+                expandFieldArray(dexPathList, "pathElements", elements);
+            }
+        }
+
+        /**
+         * Converts a zip file path of an extracted secondary dex to an output file path for an
+         * associated optimized dex file.
+         */
+        private static String optimizedPathFor(File path) {
+            // Any reproducible name ending with ".dex" should do but lets keep the same name
+            // as DexPathList.optimizedPathFor
+
+            File optimizedDirectory = path.getParentFile();
+            String fileName = path.getName();
+            String optimizedFileName =
+                    fileName.substring(0, fileName.length() - EXTRACTED_SUFFIX_LENGTH)
+                            + DEX_SUFFIX;
+            File result = new File(optimizedDirectory, optimizedFileName);
+            return result.getPath();
+        }
+
+        /**
+         * An emulation of {@code private static final dalvik.system.DexPathList#makeDexElements}
+         * accepting only extracted secondary dex files.
+         * OS version is catching IOException and just logging some of them, this version is letting
+         * them through.
+         */
+        private Object[] makeDexElements(List<? extends File> files)
+                throws IOException, SecurityException, IllegalArgumentException,
+                InstantiationException, IllegalAccessException, InvocationTargetException {
+            Object[] elements = new Object[files.size()];
+            for (int i = 0; i < elements.length; i++) {
+                File file = files.get(i);
+                elements[i] = elementConstructor.newInstance(
+                        file,
+                        DexFile.loadDex(file.getPath(), optimizedPathFor(file), 0));
+            }
+            return elements;
+        }
+
         private interface ElementConstructor {
             Object newInstance(File file, DexFile dex)
                     throws IllegalArgumentException, InstantiationException,
@@ -331,7 +411,7 @@ public class MultiDex {
 
         /**
          * Applies for some intermediate JB (MR1.1).
-         *
+         * <p>
          * See Change-Id: I1a5b5d03572601707e1fb1fd4424c1ae2fd2217d
          */
         private static class JBMR11ElementConstructor implements ElementConstructor {
@@ -354,7 +434,7 @@ public class MultiDex {
 
         /**
          * Applies for latest JB (MR2).
-         *
+         * <p>
          * See Change-Id: Iec4dca2244db9c9c793ac157e258fd61557a7a5d
          */
         private static class JBMR2ElementConstructor implements ElementConstructor {
@@ -373,87 +453,6 @@ public class MultiDex {
                     IllegalAccessException, InvocationTargetException {
                 return elementConstructor.newInstance(file, Boolean.FALSE, file, dex);
             }
-        }
-
-        static final String DEX_SUFFIX = ".dex";
-        static final String EXTRACTED_SUFFIX = ".zip";
-
-        private static final int EXTRACTED_SUFFIX_LENGTH = EXTRACTED_SUFFIX.length();
-
-        private final ElementConstructor elementConstructor;
-
-        static void install(ClassLoader loader,
-                            List<? extends File> additionalClassPathEntries)
-                throws  IOException, SecurityException, IllegalArgumentException,
-                ClassNotFoundException, NoSuchMethodException, InstantiationException,
-                IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-            /* The patched class loader is expected to be a descendant of
-             * dalvik.system.BaseDexClassLoader. We modify its
-             * dalvik.system.DexPathList pathList field to append additional DEX
-             * file entries.
-             */
-            Field pathListField = findField(loader, "pathList");
-            Object dexPathList = pathListField.get(loader);
-            Object[] elements = new V14().makeDexElements(additionalClassPathEntries);
-            try {
-                expandFieldArray(dexPathList, "dexElements", elements);
-            } catch (NoSuchFieldException e) {
-                // dexElements was renamed pathElements for a short period during JB development,
-                // eventually it was renamed back shortly after.
-                Log.w(TAG, "Failed find field 'dexElements' attempting 'pathElements'", e);
-                expandFieldArray(dexPathList, "pathElements", elements);
-            }
-        }
-
-        private  V14() throws ClassNotFoundException, SecurityException, NoSuchMethodException {
-            ElementConstructor constructor;
-            Class<?> elementClass = Class.forName("dalvik.system.DexPathList$Element");
-            try {
-                constructor = new ICSElementConstructor(elementClass);
-            } catch (NoSuchMethodException e1) {
-                try {
-                    constructor = new JBMR11ElementConstructor(elementClass);
-                } catch (NoSuchMethodException e2) {
-                    constructor = new JBMR2ElementConstructor(elementClass);
-                }
-            }
-            this.elementConstructor = constructor;
-        }
-
-        /**
-         * An emulation of {@code private static final dalvik.system.DexPathList#makeDexElements}
-         * accepting only extracted secondary dex files.
-         * OS version is catching IOException and just logging some of them, this version is letting
-         * them through.
-         */
-        private Object[] makeDexElements(List<? extends File> files)
-                throws IOException, SecurityException, IllegalArgumentException,
-                InstantiationException, IllegalAccessException, InvocationTargetException {
-            Object[] elements = new Object[files.size()];
-            for (int i = 0; i < elements.length; i++) {
-                File file = files.get(i);
-                elements[i] = elementConstructor.newInstance(
-                        file,
-                        DexFile.loadDex(file.getPath(), optimizedPathFor(file), 0));
-            }
-            return elements;
-        }
-
-        /**
-         * Converts a zip file path of an extracted secondary dex to an output file path for an
-         * associated optimized dex file.
-         */
-        private static String optimizedPathFor(File path) {
-            // Any reproducible name ending with ".dex" should do but lets keep the same name
-            // as DexPathList.optimizedPathFor
-
-            File optimizedDirectory = path.getParentFile();
-            String fileName = path.getName();
-            String optimizedFileName =
-                    fileName.substring(0, fileName.length() - EXTRACTED_SUFFIX_LENGTH)
-                            + DEX_SUFFIX;
-            File result = new File(optimizedDirectory, optimizedFileName);
-            return result.getPath();
         }
     }
 
@@ -480,7 +479,7 @@ public class MultiDex {
             ZipFile[] extraZips = new ZipFile[extraSize];
             DexFile[] extraDexs = new DexFile[extraSize];
             for (ListIterator<? extends File> iterator = additionalClassPathEntries.listIterator();
-                 iterator.hasNext();) {
+                 iterator.hasNext(); ) {
                 File additionalEntry = iterator.next();
                 String entryPath = additionalEntry.getAbsolutePath();
                 path.append(':').append(entryPath);

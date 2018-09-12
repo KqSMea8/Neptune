@@ -42,7 +42,6 @@ import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 
 /**
- *
  * 自定义的全局的Instrumentation
  * 负责转移插件的跳转目标和创建插件的Activity实例
  * 用于Hook ActivityThread中的全局Instrumentation

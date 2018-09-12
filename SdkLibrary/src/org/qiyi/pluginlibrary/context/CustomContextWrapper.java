@@ -45,11 +45,11 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManager;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -81,6 +81,15 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     public CustomContextWrapper(Context base) {
         super(base);
+    }
+
+    private static void setFilePermissionsForDb(String dbPath, int perms) {
+        //int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
+        android.os.FileUtils.setPermissions(dbPath, perms, -1, -1);
+    }
+
+    private static File makeBackupFile(File prefsFile) {
+        return new File(prefsFile.getPath() + ".bak");
     }
 
     @Override
@@ -302,11 +311,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     }
 
-    private static void setFilePermissionsForDb(String dbPath, int perms) {
-        //int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
-        android.os.FileUtils.setPermissions(dbPath, perms, -1, -1);
-    }
-
     @Override
     public File getDatabasePath(String name) {
         PluginLoadedApk mLoadedApk = getPluginLoadedApk();
@@ -477,10 +481,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
         return new File(base, name + ".xml");
     }
 
-    private static File makeBackupFile(File prefsFile) {
-        return new File(prefsFile.getPath() + ".bak");
-    }
-
     /**
      * Override Oppo method in Context Resolve cann't start plugin on oppo
      * devices, true or false both OK, false as the temporary result
@@ -488,7 +488,10 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      *
      * @return
      */
-    /** @Override */
+
+    /**
+     * @Override
+     */
     public boolean isOppoStyle() {
         return false;
     }

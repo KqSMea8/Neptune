@@ -55,17 +55,18 @@ public class Neptune {
 
     private static Instrumentation mHostInstr;
 
-    private Neptune() {}
+    private Neptune() {
+    }
 
     /**
      * 初始化Neptune插件环境
      *
-     * @param app
-     * @param config
+     * @param application  宿主的Appliction
+     * @param config  配置信息
      */
-    public static void init(Application app, NeptuneConfig config) {
+    public static void init(Application application, NeptuneConfig config) {
 
-        sHostContext = app;
+        sHostContext = application;
         sGlobalConfig = config != null ? config
                 : new NeptuneConfig.NeptuneConfigBuilder().build();
 
@@ -77,9 +78,9 @@ public class Neptune {
         }
 
         // 调用getInstance()方法会初始化bindService
-        PluginPackageManagerNative.getInstance(app).setPackageInfoManager(sGlobalConfig.getPluginInfoProvider());
+        PluginPackageManagerNative.getInstance(sHostContext).setPackageInfoManager(sGlobalConfig.getPluginInfoProvider());
         // 注册卸载监听广播
-        PluginManager.registerUninstallReceiver(app);
+        PluginManager.registerUninstallReceiver(sHostContext);
     }
 
     public static Context getHostContext() {
@@ -105,7 +106,7 @@ public class Neptune {
             PluginDebugLog.runtimeLog(TAG, "host Instrument name: " + hostInstrName);
 
             if (hostInstrName.startsWith("com.chaozhuo.superme")
-               || hostInstrName.startsWith("com.lody.virtual")) {
+                    || hostInstrName.startsWith("com.lody.virtual")) {
                 // warning: 特殊case，VirtualApp环境，暂不Hook
                 PluginDebugLog.runtimeLog(TAG, "reject hook instrument, run in VirtualApp Environment");
             } else if (hostInstr instanceof NeptuneInstrument) {
@@ -123,8 +124,6 @@ public class Neptune {
 
     /**
      * 获取ActivityThread的Instrumentation对象
-     *
-     * @return
      */
     public static Instrumentation getHostInstrumentation() {
 
@@ -140,8 +139,8 @@ public class Neptune {
     /**
      * 安装sd卡上的插件
      *
-     * @param context
-     * @param apkPath
+     * @param context 宿主的Context
+     * @param apkPath 插件apk路径
      */
     public static void install(Context context, String apkPath) {
         install(context, apkPath, null);
@@ -150,9 +149,9 @@ public class Neptune {
     /**
      * 安装sd上的插件
      *
-     * @param context
-     * @param apkPath
-     * @param callBack
+     * @param context  宿主的Context
+     * @param apkPath  插件apk路径
+     * @param callBack 安装回调
      */
     public static void install(Context context, String apkPath, IInstallCallBack callBack) {
 
@@ -175,9 +174,10 @@ public class Neptune {
 
     /**
      * 安装一个插件
-     * @param context
-     * @param info
-     * @param callBack
+     *
+     * @param context  宿主的Context
+     * @param info     插件的信息，包括包名，路径等
+     * @param callBack 安装回调
      */
     public static void install(Context context, PluginLiteInfo info, IInstallCallBack callBack) {
         // install
@@ -188,8 +188,9 @@ public class Neptune {
 
     /**
      * 根据包名卸载一个插件
-     * @param context
-     * @param pkgName
+     *
+     * @param context  宿主的Context
+     * @param pkgName  待卸载插件的包名
      */
     public static void uninstall(Context context, String pkgName) {
         uninstall(context, pkgName, null);
@@ -198,9 +199,10 @@ public class Neptune {
 
     /**
      * 根据包名卸载一个插件
-     * @param context
-     * @param pkgName
-     * @param callBack
+     *
+     * @param context  宿主的Context
+     * @param pkgName  待卸载插件的包名
+     * @param callBack  卸载回调
      */
     public static void uninstall(Context context, String pkgName, IPluginUninstallCallBack callBack) {
         Context mContext = ensureContext(context);
@@ -212,9 +214,10 @@ public class Neptune {
 
     /**
      * 卸载一个插件
-     * @param context
-     * @param info
-     * @param callBack
+     *
+     * @param context 宿主的Context
+     * @param info    待卸载插件的信息，包括包名，路径等
+     * @param callBack 卸载回调
      */
     public static void uninstall(Context context, PluginLiteInfo info, IPluginUninstallCallBack callBack) {
         // uninstall
@@ -225,8 +228,8 @@ public class Neptune {
     /**
      * 启动一个插件的入口类
      *
-     * @param mHostContext
-     * @param pkgName
+     * @param mHostContext  宿主的Context
+     * @param pkgName  待启动插件的包名
      */
     public static void launchPlugin(Context mHostContext, String pkgName) {
         // start plugin
@@ -236,8 +239,8 @@ public class Neptune {
     /**
      * 根据Intent启动一个插件
      *
-     * @param mHostContext
-     * @param intent
+     * @param mHostContext  宿主的Context
+     * @param intent  需要启动插件的Intent
      */
     public static void launchPlugin(Context mHostContext, Intent intent) {
         // start plugin, 默认选择进程
@@ -247,9 +250,9 @@ public class Neptune {
     /**
      * 根据Intent启动一个插件，指定运行进程的名称
      *
-     * @param mHostContext
-     * @param intent
-     * @param processName
+     * @param mHostContext  宿主的Context
+     * @param intent  需要启动插件的Intent
+     * @param processName  指定启动插件运行的进程
      */
     public static void launchPlugin(Context mHostContext, Intent intent, String processName) {
         // start plugin, 指定进程
@@ -259,9 +262,9 @@ public class Neptune {
     /**
      * 判断插件是否安装
      *
-     * @param context
-     * @param pkgName
-     * @return
+     * @param context  宿主的Context
+     * @param pkgName  插件的包名
+     * @return  插件已安装， 返回true; 插件未安装，返回false
      */
     public static boolean isPackageInstalled(Context context, String pkgName) {
 
@@ -271,9 +274,10 @@ public class Neptune {
 
     /**
      * 判断插件是否可用
-     * @param context
-     * @param pkgName
-     * @return
+     *
+     * @param context  宿主的Context
+     * @param pkgName  插件的包名
+     * @return  插件是可用的，返回true; 插件不可用，返回false
      */
     public static boolean isPackageAvailable(Context context, String pkgName) {
 
@@ -284,17 +288,15 @@ public class Neptune {
     /**
      * 获取插件PluginLiteInfo
      *
-     * @param context
-     * @param pkgName
-     * @return
+     * @param context  宿主的Context
+     * @param pkgName  插件的包名
+     * @return  插件的信息
      */
     public static PluginLiteInfo getPluginInfo(Context context, String pkgName) {
 
         Context mContext = ensureContext(context);
         return PluginPackageManagerNative.getInstance(mContext).getPackageInfo(pkgName);
     }
-
-
 
     private static Context ensureContext(Context originContext) {
         if (originContext != null) {

@@ -17,17 +17,6 @@
  */
 package org.qiyi.pluginlibrary.utils;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-
-import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ActivityIntentInfo;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ReceiverIntentInfo;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ServiceIntentInfo;
-import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ProviderIntentInfo;
-
 import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
@@ -35,6 +24,17 @@ import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.util.DisplayMetrics;
+
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ActivityIntentInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ProviderIntentInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ReceiverIntentInfo;
+import org.qiyi.pluginlibrary.pm.PluginPackageInfo.ServiceIntentInfo;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 /**
  * Utility class to get activity/receiver/service's resolve info
@@ -96,7 +96,7 @@ public class ResolveInfoUtil {
                         // 反射info字段
                         Field actInfoField = activity.getClass().getField("info");
                         actInfoField.setAccessible(true);
-                        info = (ActivityInfo)actInfoField.get(activity);
+                        info = (ActivityInfo) actInfoField.get(activity);
                     }
                     if (null != info) {
                         ActivityIntentInfo actInfo = new ActivityIntentInfo(info);
@@ -124,7 +124,7 @@ public class ResolveInfoUtil {
                         // 反射info字段
                         Field actInfoField = receiver.getClass().getField("info");
                         actInfoField.setAccessible(true);
-                        info = (ActivityInfo)actInfoField.get(receiver);
+                        info = (ActivityInfo) actInfoField.get(receiver);
                     }
 
                     if (null != info) {
@@ -153,7 +153,7 @@ public class ResolveInfoUtil {
                         // 反射info字段
                         Field serInfoField = service.getClass().getField("info");
                         serInfoField.setAccessible(true);
-                        info = (ServiceInfo)serInfoField.get(service);
+                        info = (ServiceInfo) serInfoField.get(service);
                     }
 
                     if (null != info) {

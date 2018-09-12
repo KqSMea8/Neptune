@@ -17,8 +17,6 @@
  */
 package org.qiyi.pluginlibrary.component.wraper;
 
-import java.io.InputStream;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.res.AssetFileDescriptor;
@@ -35,6 +33,8 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+
+import java.io.InputStream;
 
 /**
  * 插件资源管理
@@ -53,9 +53,9 @@ public class ResourcesProxy extends Resources {
     /**
      * 构造方法
      *
-     * @param assets assetmanager
+     * @param assets  assetmanager
      * @param metrics 资源Metrics
-     * @param config 资源配置
+     * @param config  资源配置
      * @param hostRes 宿主资源
      */
     public ResourcesProxy(AssetManager assets, DisplayMetrics metrics, Configuration config, Resources hostRes, String pluginPackageName) {
@@ -216,8 +216,8 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id            资源ID
-     * @param theme         Theme
+     * @param id    资源ID
+     * @param theme Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -242,9 +242,9 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id            资源ID
-     * @param density       分辨率
-     * @param theme         Theme
+     * @param id      资源ID
+     * @param density 分辨率
+     * @param theme   Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -276,8 +276,8 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id                资源ID
-     * @param theme             Theme
+     * @param id    资源ID
+     * @param theme Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.M)
@@ -300,8 +300,8 @@ public class ResourcesProxy extends Resources {
     }
 
     /**
-     * @param id                资源ID
-     * @param theme             Theme
+     * @param id    资源ID
+     * @param theme Theme
      * @throws NotFoundException
      */
     @TargetApi(Build.VERSION_CODES.M)

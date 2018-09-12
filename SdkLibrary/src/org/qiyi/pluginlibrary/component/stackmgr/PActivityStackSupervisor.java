@@ -27,9 +27,9 @@ import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.FileUtils;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -73,6 +73,116 @@ public class PActivityStackSupervisor {
         mActivityStacks.put(pkgName, mFocusedStack);
     }
 
+    public static void addCachedIntent(String pkgName, LinkedBlockingQueue<Intent> cachedIntents) {
+        if (TextUtils.isEmpty(pkgName) || null == cachedIntents) {
+            return;
+        }
+        sIntentCacheMap.put(pkgName, cachedIntents);
+    }
+
+    /**
+     * 获取对应插件缓存还未执行加载的Intent
+     *
+     * @param pkgName
+     * @return
+     */
+    public static LinkedBlockingQueue<Intent> getCachedIntent(String pkgName) {
+        if (TextUtils.isEmpty(pkgName)) {
+            return null;
+        }
+        return sIntentCacheMap.get(pkgName);
+    }
+
+    /**
+     * 清除等待队列，防止异常情况，导致所有Intent都阻塞在等待队列，导致插件无法启动
+     *
+     * @param packageName 包名
+     */
+    public static void clearLoadingIntent(String packageName) {
+        if (TextUtils.isEmpty(packageName)) {
+            return;
+        }
+        sIntentCacheMap.remove(packageName);
+    }
+
+    /**
+     * 插件是否正在loading中
+     *
+     * @param packageName 插件包名
+     * @return true or false
+     */
+    public static boolean isLoading(String packageName) {
+        if (TextUtils.isEmpty(packageName)) {
+            return false;
+        }
+
+        return sIntentCacheMap.containsKey(packageName);
+    }
+
+    public static void addLoadingIntent(String pkgName, Intent intent) {
+        if (null == intent || TextUtils.isEmpty(pkgName)) {
+            return;
+        }
+        List<Intent> intents = sIntentLoadingMap.get(pkgName);
+        if (null == intents) {
+            intents = Collections.synchronizedList(new ArrayList<Intent>());
+            sIntentLoadingMap.put(pkgName, intents);
+        }
+        PluginDebugLog.runtimeLog(TAG, "addLoadingIntent pkgName: " + pkgName + " intent: " + intent);
+        intents.add(intent);
+    }
+
+    public static void removeLoadingIntent(String pkgName) {
+        if (TextUtils.isEmpty(pkgName)) {
+            return;
+        }
+        sIntentLoadingMap.remove(pkgName);
+    }
+
+    public static void removeLoadingIntent(String pkgName, Intent intent) {
+        if (null == intent || TextUtils.isEmpty(pkgName)) {
+            return;
+        }
+        List<Intent> intents = sIntentLoadingMap.get(pkgName);
+        Intent toBeRemoved = null;
+        if (null != intents) {
+            for (Intent temp : intents) {
+                if (TextUtils.equals(temp.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY),
+                        intent.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY))) {
+                    toBeRemoved = temp;
+                    break;
+                }
+            }
+        }
+        boolean result = false;
+        if (null != toBeRemoved) {
+            result = intents.remove(toBeRemoved);
+        }
+        PluginDebugLog.runtimeLog(TAG, "removeLoadingIntent pkgName: " + pkgName + " toBeRemoved: "
+                + toBeRemoved + " result: " + result);
+    }
+
+    /**
+     * 获取当前Activity对应的插件Activity的名称
+     * 如果是代理Activity，则搜索对应的插件Activity实例
+     * 如果本身就是插件Activity，直接返回即可
+     *
+     * @param activity
+     * @return
+     */
+    private static String getActivityStackKey(Activity activity) {
+        String key = "";
+        if (activity instanceof InstrActivityProxy1) {
+            InstrActivityProxy1 proxy = (InstrActivityProxy1) activity;
+            PluginActivityControl ctl = proxy.getController();
+            if (ctl != null && ctl.getPlugin() != null) {
+                key = ctl.getPlugin().getClass().getName();
+            }
+        } else {
+            key = activity.getClass().getName();
+        }
+        return key;
+    }
 
     /**
      * 把插件Activity压入堆栈
@@ -124,7 +234,6 @@ public class PActivityStackSupervisor {
         return result;
     }
 
-
     /**
      * 清空任务栈，销毁Activity
      */
@@ -151,6 +260,7 @@ public class PActivityStackSupervisor {
 
     /**
      * 获取对应插件可用的Activity，用于启动其他插件的Context
+     *
      * @return
      */
     public Activity getAvailableActivity() {
@@ -187,6 +297,7 @@ public class PActivityStackSupervisor {
 
     /**
      * dump当前插件堆栈的信息
+     *
      * @param pw
      */
     public void dump(PrintWriter pw) {
@@ -232,7 +343,6 @@ public class PActivityStackSupervisor {
         }
         return sysStack;
     }
-
 
     /**
      * 处理Activity的launchMode，给Intent添加相关的Flags
@@ -511,96 +621,6 @@ public class PActivityStackSupervisor {
         mFocusedStack = nextStack;
     }
 
-
-    public static void addCachedIntent(String pkgName, LinkedBlockingQueue<Intent> cachedIntents) {
-        if (TextUtils.isEmpty(pkgName) || null == cachedIntents) {
-            return;
-        }
-        sIntentCacheMap.put(pkgName, cachedIntents);
-    }
-
-    /**
-     * 获取对应插件缓存还未执行加载的Intent
-     *
-     * @param pkgName
-     * @return
-     */
-    public static LinkedBlockingQueue<Intent> getCachedIntent(String pkgName) {
-        if (TextUtils.isEmpty(pkgName)) {
-            return null;
-        }
-        return sIntentCacheMap.get(pkgName);
-    }
-
-    /**
-     * 清除等待队列，防止异常情况，导致所有Intent都阻塞在等待队列，导致插件无法启动
-     *
-     * @param packageName 包名
-     */
-    public static void clearLoadingIntent(String packageName) {
-        if (TextUtils.isEmpty(packageName)) {
-            return;
-        }
-        sIntentCacheMap.remove(packageName);
-    }
-
-    /**
-     * 插件是否正在loading中
-     *
-     * @param packageName 插件包名
-     * @return true or false
-     */
-    public static boolean isLoading(String packageName) {
-        if (TextUtils.isEmpty(packageName)) {
-            return false;
-        }
-
-        return sIntentCacheMap.containsKey(packageName);
-    }
-
-    public static void addLoadingIntent(String pkgName, Intent intent) {
-        if (null == intent || TextUtils.isEmpty(pkgName)) {
-            return;
-        }
-        List<Intent> intents = sIntentLoadingMap.get(pkgName);
-        if (null == intents) {
-            intents = Collections.synchronizedList(new ArrayList<Intent>());
-            sIntentLoadingMap.put(pkgName, intents);
-        }
-        PluginDebugLog.runtimeLog(TAG, "addLoadingIntent pkgName: " + pkgName + " intent: " + intent);
-        intents.add(intent);
-    }
-
-    public static void removeLoadingIntent(String pkgName) {
-        if (TextUtils.isEmpty(pkgName)) {
-            return;
-        }
-        sIntentLoadingMap.remove(pkgName);
-    }
-
-    public static void removeLoadingIntent(String pkgName, Intent intent) {
-        if (null == intent || TextUtils.isEmpty(pkgName)) {
-            return;
-        }
-        List<Intent> intents = sIntentLoadingMap.get(pkgName);
-        Intent toBeRemoved = null;
-        if (null != intents) {
-            for (Intent temp : intents) {
-                if (TextUtils.equals(temp.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY),
-                        intent.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY))) {
-                    toBeRemoved = temp;
-                    break;
-                }
-            }
-        }
-        boolean result = false;
-        if (null != toBeRemoved) {
-            result = intents.remove(toBeRemoved);
-        }
-        PluginDebugLog.runtimeLog(TAG, "removeLoadingIntent pkgName: " + pkgName + " toBeRemoved: "
-                + toBeRemoved + " result: " + result);
-    }
-
     /**
      * 映射插件ActivityInfo的affinity到限定的任务栈上
      *
@@ -614,26 +634,5 @@ public class PActivityStackSupervisor {
         } else {
             return mLoadedApk.getPluginPackageName();
         }
-    }
-
-    /**
-     * 获取当前Activity对应的插件Activity的名称
-     * 如果是代理Activity，则搜索对应的插件Activity实例
-     * 如果本身就是插件Activity，直接返回即可
-     * @param activity
-     * @return
-     */
-    private static String getActivityStackKey(Activity activity) {
-        String key = "";
-        if (activity instanceof InstrActivityProxy1) {
-            InstrActivityProxy1 proxy = (InstrActivityProxy1) activity;
-            PluginActivityControl ctl = proxy.getController();
-            if (ctl != null && ctl.getPlugin() != null) {
-                key = ctl.getPlugin().getClass().getName();
-            }
-        } else {
-            key = activity.getClass().getName();
-        }
-        return key;
     }
 }

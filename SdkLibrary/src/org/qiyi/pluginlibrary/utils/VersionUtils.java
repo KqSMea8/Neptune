@@ -25,38 +25,43 @@ import android.os.Build;
 public class VersionUtils {
     /**
      * 判断是否是6.0+
+     *
      * @return
      */
-    public static boolean hasMarshmallow(){
+    public static boolean hasMarshmallow() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
     }
 
     /**
      * 判断是否是7.0+
+     *
      * @return
      */
-    public static boolean hasNougat(){
+    public static boolean hasNougat() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N;
     }
 
     /**
      * 判断是否是8.0+
+     *
      * @return
      */
-    public static boolean hasOreo(){
+    public static boolean hasOreo() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
     }
 
     /**
      * 判断是否是8.1+
+     *
      * @return
      */
-    public static boolean hasOreo_MR1(){
+    public static boolean hasOreo_MR1() {
         return Build.VERSION.SDK_INT >= 27;
     }
 
     /**
      * 判断是否是Android P
+     *
      * @return
      */
     public static boolean hasPie() {

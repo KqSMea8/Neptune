@@ -61,16 +61,14 @@ import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.ErrorUtil;
+import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
-import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.ViewPluginHelper;
 
 import java.io.File;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,10 +80,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 管理所有插件的运行状态
- *
  */
 public class PluginManager {
     public static final String TAG = "PluginManager";
+    /**
+     * 宿主注册到插件里的ActivityLifeCycle监听器
+     * 插件重写了Application，需要注册到插件的Application类里去
+     */
+    final static ArrayList<Application.ActivityLifecycleCallbacks> sActivityLifecycleCallbacks =
+            new ArrayList<Application.ActivityLifecycleCallbacks>();
     /**
      * 已经加载到内存了的插件集合
      */
@@ -150,7 +153,6 @@ public class PluginManager {
     public static boolean isPluginLoaded(String mPluginPackage) {
         return getPluginLoadedApkByPkgName(mPluginPackage) != null;
     }
-
 
     /**
      * 保存已经加载成功的{@link PluginLoadedApk}
@@ -545,7 +547,6 @@ public class PluginManager {
         }
     }
 
-
     /**
      * @param mHostContext
      * @param packageName
@@ -588,7 +589,6 @@ public class PluginManager {
         intent.setComponent(new ComponentName(packageName, recv.getClass().getName()));
         launchPlugin(mHostContext, intent, processName);
     }
-
 
     /**
      * 准备启动指定插件组件
@@ -861,7 +861,6 @@ public class PluginManager {
                 });
     }
 
-
     /**
      * 异步加载插件
      *
@@ -983,6 +982,207 @@ public class PluginManager {
     }
 
     /**
+     * 退出插件,将插件中的类从PathClassLoader中剔除
+     *
+     * @param mPackageName 需要退出的插件的包名
+     */
+    public static void exitPlugin(String mPackageName) {
+        if (!TextUtils.isEmpty(mPackageName)) {
+            PluginLoadedApk mLoadedApk = removePluginLoadedApk(mPackageName);
+            if (mLoadedApk == null || mLoadedApk.getPluginApplication() == null) {
+                return;
+            }
+            if (mLoadedApk.hasPluginInit()) {
+                mLoadedApk.getPluginApplication().onTerminate();
+            }
+            mLoadedApk.ejectClassLoader();
+        }
+    }
+
+    /**
+     * 注册卸载广播，清理PluginLoadedApk内存引用
+     *
+     * @param context
+     */
+    public static void registerUninstallReceiver(Context context) {
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(PluginPackageManager.ACTION_PACKAGE_UNINSTALL);
+        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                if (PluginPackageManager.ACTION_PACKAGE_UNINSTALL.equals(intent.getAction())) {
+                    // 卸载广播
+                    String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
+                    exitPlugin(pkgName);
+                }
+            }
+        };
+        context.registerReceiver(receiver, filter);
+    }
+
+    /**
+     * 插件进程的Activity栈是否空
+     *
+     * @return true: Activity栈是空，false：Activity栈不是空
+     */
+    public static boolean isActivityStackEmpty() {
+        for (Map.Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
+            PluginLoadedApk mLoadedApk = entry.getValue();
+            if (mLoadedApk != null && !mLoadedApk.getActivityStackSupervisor().isStackEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 处理插件退出时的善后操作
+     *
+     * @param mPackageName 退出插件的包名
+     * @param force
+     */
+    public static void doExitStuff(String mPackageName, boolean force) {
+        if (TextUtils.isEmpty(mPackageName)) {
+            return;
+        }
+
+        if (force || (isActivityStackEmpty() && PServiceSupervisor.getAliveServices().isEmpty())) {
+            if (null != sExitStuff) {
+                PluginDebugLog.runtimeLog(TAG, "do release stuff with " + mPackageName);
+                sExitStuff.doExitStuff(mPackageName);
+            }
+        }
+    }
+
+    /**
+     * 设置投递逻辑的实现(宿主工程调用)
+     *
+     * @param mDeliverImpl
+     */
+    public static void setDeliverImpl(IDeliverInterface mDeliverImpl) {
+        mDeliver = mDeliverImpl;
+    }
+
+    /**
+     * 设置插件状态监听器(宿主工程调用)
+     *
+     * @param mListener
+     */
+    public static void setPluginStatusListener(IPluginStatusListener mListener) {
+        sPluginStatusListener = mListener;
+    }
+
+    /**
+     * 设置插件退出监听回调(宿主工程调用)
+     *
+     * @param mExitStuff
+     */
+    public static void setExitStuff(IAppExitStuff mExitStuff) {
+        sExitStuff = mExitStuff;
+    }
+
+    /**
+     * 停止指定的Service
+     *
+     * @param intent
+     */
+    public static void stopService(Intent intent) {
+        if (intent == null || intent.getComponent() == null
+                || TextUtils.isEmpty(intent.getComponent().getPackageName())) {
+            return;
+        }
+        final String packageName = intent.getComponent().getPackageName();
+        PluginLoadedApk mLoadedApk = sPluginsMap.get(packageName);
+        if (mLoadedApk == null) {
+            return;
+        }
+        PluginContextWrapper appWrapper = mLoadedApk.getAppWrapper();
+        if (appWrapper != null) {
+            appWrapper.stopService(intent);
+        }
+    }
+
+    /**
+     * 退出插件进程
+     *
+     * @param mContext     主进程Context
+     * @param mProcessName 要退出进程
+     */
+    public static void quit(Context mContext, String mProcessName) {
+
+        PluginPackageManagerNative.getInstance(mContext).release();
+
+        for (Map.Entry<String, PluginLoadedApk> entry : getAllPluginLoadedApk().entrySet()) {
+            PluginLoadedApk plugin = entry.getValue();
+            if (plugin != null) {
+                plugin.quitApp(true, false);
+            }
+        }
+        PServiceSupervisor.clearConnections();
+        // sAliveServices will be cleared, when on ServiceProxy1 destroy.
+        Intent intent = new Intent();
+        String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(mProcessName);
+        try {
+            PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
+            intent.setClass(mContext, Class.forName(proxyServiceName));
+            intent.setAction(IntentConstant.ACTION_QUIT_SERVICE);
+            mContext.startService(intent);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 注册ActivityLifeCycle到插件的Application
+     */
+    public static void registerActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
+        synchronized (sActivityLifecycleCallbacks) {
+            sActivityLifecycleCallbacks.add(callback);
+        }
+        // 对于已经运行的插件，需要注册到其Application类中
+        for (Map.Entry<String, PluginLoadedApk> entry : sPluginsMap.entrySet()) {
+            PluginLoadedApk loadedApk = entry.getValue();
+            if (loadedApk != null && loadedApk.getPluginApplication() != null) {
+                Application application = loadedApk.getPluginApplication();
+                application.registerActivityLifecycleCallbacks(callback);
+            }
+        }
+    }
+
+    /**
+     * 取消插件Application里的ActivityLifeCycle监听
+     */
+    public static void unregisterActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
+        synchronized (sActivityLifecycleCallbacks) {
+            sActivityLifecycleCallbacks.remove(callback);
+        }
+        // 对于已经运行的插件，需要从其Application类中反注册
+        for (Map.Entry<String, PluginLoadedApk> entry : sPluginsMap.entrySet()) {
+            PluginLoadedApk loadedApk = entry.getValue();
+            if (loadedApk != null && loadedApk.getPluginApplication() != null) {
+                Application application = loadedApk.getPluginApplication();
+                application.unregisterActivityLifecycleCallbacks(callback);
+            }
+        }
+    }
+
+
+    /**
+     * 插件状态投递逻辑接口，由外部实现并设置进来
+     */
+    public interface IDeliverInterface {
+        void deliver(boolean success, PluginLiteInfo pkgInfo, int errorCode);
+    }
+
+    public interface IAppExitStuff {
+        void doExitStuff(String pkgName);
+    }
+
+    /**
      * 加载插件的异步任务
      */
     private static class LoadPluginTask implements Runnable {
@@ -1068,83 +1268,6 @@ public class PluginManager {
     }
 
     /**
-     * 退出插件,将插件中的类从PathClassLoader中剔除
-     *
-     * @param mPackageName 需要退出的插件的包名
-     */
-    public static void exitPlugin(String mPackageName) {
-        if (!TextUtils.isEmpty(mPackageName)) {
-            PluginLoadedApk mLoadedApk = removePluginLoadedApk(mPackageName);
-            if (mLoadedApk == null || mLoadedApk.getPluginApplication() == null) {
-                return;
-            }
-            if (mLoadedApk.hasPluginInit()) {
-                mLoadedApk.getPluginApplication().onTerminate();
-            }
-            mLoadedApk.ejectClassLoader();
-        }
-    }
-
-    /**
-     * 注册卸载广播，清理PluginLoadedApk内存引用
-     *
-     * @param context
-     */
-    public static void registerUninstallReceiver(Context context) {
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(PluginPackageManager.ACTION_PACKAGE_UNINSTALL);
-        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-
-        BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-
-                if (PluginPackageManager.ACTION_PACKAGE_UNINSTALL.equals(intent.getAction())) {
-                    // 卸载广播
-                    String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
-                    exitPlugin(pkgName);
-                }
-            }
-        };
-        context.registerReceiver(receiver, filter);
-    }
-
-    /**
-     * 插件进程的Activity栈是否空
-     *
-     * @return true: Activity栈是空，false：Activity栈不是空
-     */
-    public static boolean isActivityStackEmpty() {
-        for (Map.Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
-            PluginLoadedApk mLoadedApk = entry.getValue();
-            if (mLoadedApk != null && !mLoadedApk.getActivityStackSupervisor().isStackEmpty()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * 处理插件退出时的善后操作
-     *
-     * @param mPackageName 退出插件的包名
-     * @param force
-     */
-    public static void doExitStuff(String mPackageName, boolean force) {
-        if (TextUtils.isEmpty(mPackageName)) {
-            return;
-        }
-
-        if (force || (isActivityStackEmpty() && PServiceSupervisor.getAliveServices().isEmpty())) {
-            if (null != sExitStuff) {
-                PluginDebugLog.runtimeLog(TAG, "do release stuff with " + mPackageName);
-                sExitStuff.doExitStuff(mPackageName);
-            }
-        }
-    }
-
-    /**
      * 加载插件线程和主线程通信Handler
      */
     static class PluginLoadedApkHandler extends Handler {
@@ -1175,138 +1298,6 @@ public class PluginManager {
                     break;
                 default:
                     break;
-            }
-        }
-    }
-
-
-    /**
-     * 设置投递逻辑的实现(宿主工程调用)
-     *
-     * @param mDeliverImpl
-     */
-    public static void setDeliverImpl(IDeliverInterface mDeliverImpl) {
-        mDeliver = mDeliverImpl;
-    }
-
-    /**
-     * 设置插件状态监听器(宿主工程调用)
-     *
-     * @param mListener
-     */
-    public static void setPluginStatusListener(IPluginStatusListener mListener) {
-        sPluginStatusListener = mListener;
-    }
-
-    /**
-     * 设置插件退出监听回调(宿主工程调用)
-     *
-     * @param mExitStuff
-     */
-    public static void setExitStuff(IAppExitStuff mExitStuff) {
-        sExitStuff = mExitStuff;
-    }
-
-    /**
-     * 插件状态投递逻辑接口，由外部实现并设置进来
-     */
-    public interface IDeliverInterface {
-        void deliver(boolean success, PluginLiteInfo pkgInfo, int errorCode);
-    }
-
-    public interface IAppExitStuff {
-        void doExitStuff(String pkgName);
-    }
-
-    /**
-     * 停止指定的Service
-     *
-     * @param intent
-     */
-    public static void stopService(Intent intent) {
-        if (intent == null || intent.getComponent() == null
-                || TextUtils.isEmpty(intent.getComponent().getPackageName())) {
-            return;
-        }
-        final String packageName = intent.getComponent().getPackageName();
-        PluginLoadedApk mLoadedApk = sPluginsMap.get(packageName);
-        if (mLoadedApk == null) {
-            return;
-        }
-        PluginContextWrapper appWrapper = mLoadedApk.getAppWrapper();
-        if (appWrapper != null) {
-            appWrapper.stopService(intent);
-        }
-    }
-
-
-    /**
-     * 退出插件进程
-     *
-     * @param mContext     主进程Context
-     * @param mProcessName 要退出进程
-     */
-    public static void quit(Context mContext, String mProcessName) {
-
-        PluginPackageManagerNative.getInstance(mContext).release();
-
-        for (Map.Entry<String, PluginLoadedApk> entry : getAllPluginLoadedApk().entrySet()) {
-            PluginLoadedApk plugin = entry.getValue();
-            if (plugin != null) {
-                plugin.quitApp(true, false);
-            }
-        }
-        PServiceSupervisor.clearConnections();
-        // sAliveServices will be cleared, when on ServiceProxy1 destroy.
-        Intent intent = new Intent();
-        String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(mProcessName);
-        try {
-            PluginDebugLog.runtimeLog(TAG, "try to stop service " + proxyServiceName);
-            intent.setClass(mContext, Class.forName(proxyServiceName));
-            intent.setAction(IntentConstant.ACTION_QUIT_SERVICE);
-            mContext.startService(intent);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 宿主注册到插件里的ActivityLifeCycle监听器
-     * 插件重写了Application，需要注册到插件的Application类里去
-     */
-    final static ArrayList<Application.ActivityLifecycleCallbacks> sActivityLifecycleCallbacks =
-            new ArrayList<Application.ActivityLifecycleCallbacks>();
-
-    /**
-     * 注册ActivityLifeCycle到插件的Application
-     */
-    public static void registerActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
-        synchronized (sActivityLifecycleCallbacks) {
-            sActivityLifecycleCallbacks.add(callback);
-        }
-        // 对于已经运行的插件，需要注册到其Application类中
-        for (Map.Entry<String, PluginLoadedApk> entry : sPluginsMap.entrySet()) {
-            PluginLoadedApk loadedApk = entry.getValue();
-            if (loadedApk != null && loadedApk.getPluginApplication() != null) {
-                Application application = loadedApk.getPluginApplication();
-                application.registerActivityLifecycleCallbacks(callback);
-            }
-        }
-    }
-
-    /**
-     * 取消插件Application里的ActivityLifeCycle监听
-     */
-    public static void unregisterActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
-        synchronized (sActivityLifecycleCallbacks) {
-            sActivityLifecycleCallbacks.remove(callback);
-        }
-        // 对于已经运行的插件，需要从其Application类中反注册
-        for (Map.Entry<String, PluginLoadedApk> entry : sPluginsMap.entrySet()) {
-            PluginLoadedApk loadedApk = entry.getValue();
-            if (loadedApk != null && loadedApk.getPluginApplication() != null) {
-                Application application = loadedApk.getPluginApplication();
-                application.unregisterActivityLifecycleCallbacks(callback);
             }
         }
     }

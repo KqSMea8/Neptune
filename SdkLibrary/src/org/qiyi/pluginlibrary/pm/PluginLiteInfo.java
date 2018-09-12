@@ -34,14 +34,24 @@ import org.json.JSONObject;
  * apk包AndroidManifest配置的版本号
  */
 public class PluginLiteInfo implements Parcelable {
-    private static final String TAG = "PluginLiteInfo";
-
     /**
      * 插件安装状态
      **/
     public static final String PLUGIN_INSTALLED = "installed";
     public static final String PLUGIN_UNINSTALLED = "uninstall";
     public static final String PLUGIN_UPGRADING = "upgrading";
+    public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
+        @Override
+        public PluginLiteInfo createFromParcel(Parcel in) {
+            return new PluginLiteInfo(in);
+        }
+
+        @Override
+        public PluginLiteInfo[] newArray(int size) {
+            return new PluginLiteInfo[size];
+        }
+    };
+    private static final String TAG = "PluginLiteInfo";
     /**
      * 插件apk路径（安装前)
      */
@@ -130,18 +140,6 @@ public class PluginLiteInfo implements Parcelable {
         enableRecovery = in.readInt() == 1;
         plugin_refs = in.readString();
     }
-
-    public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
-        @Override
-        public PluginLiteInfo createFromParcel(Parcel in) {
-            return new PluginLiteInfo(in);
-        }
-
-        @Override
-        public PluginLiteInfo[] newArray(int size) {
-            return new PluginLiteInfo[size];
-        }
-    };
 
     @Override
     public int describeContents() {

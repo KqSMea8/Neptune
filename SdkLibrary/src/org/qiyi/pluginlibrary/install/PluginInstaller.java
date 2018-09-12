@@ -28,8 +28,8 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManager;
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.FileUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -68,6 +68,20 @@ public class PluginInstaller {
      * 内置插件列表
      */
     private static List<String> sBuiltinAppList = Collections.synchronizedList(new ArrayList<String>());
+    /**
+     * 插件安装监听广播
+     */
+    private static BroadcastReceiver sApkInstallerReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
+            if (!TextUtils.isEmpty(pkgName)) {
+                PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
+                sInstallingList.remove(pkgName);
+            }
+        }
+    };
 
     /**
      * 获取插件安装的根目录
@@ -101,7 +115,7 @@ public class PluginInstaller {
      * 如果info.mPath不为空，则安装mPath路径下的apk，可能是asset目录，也可能是文件绝对路径
      *
      * @param context
-     * @param info  插件info信息
+     * @param info    插件info信息
      */
     public static void install(Context context, PluginLiteInfo info) {
 
@@ -172,7 +186,6 @@ public class PluginInstaller {
         }
     }
 
-
     /**
      * 调用 {@link PluginInstallerService} 进行实际的安装过程。采用独立进程异步操作。
      *
@@ -215,22 +228,6 @@ public class PluginInstaller {
 
         context.startService(intent);
     }
-
-
-    /**
-     * 插件安装监听广播
-     */
-    private static BroadcastReceiver sApkInstallerReceiver = new BroadcastReceiver() {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
-            if (!TextUtils.isEmpty(pkgName)) {
-                PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
-                sInstallingList.remove(pkgName);
-            }
-        }
-    };
 
     /**
      * 注册插件安装的监听广播

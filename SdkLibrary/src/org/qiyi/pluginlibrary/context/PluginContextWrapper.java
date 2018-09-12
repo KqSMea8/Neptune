@@ -17,22 +17,22 @@
  */
 package org.qiyi.pluginlibrary.context;
 
-import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
-import org.qiyi.pluginlibrary.runtime.PluginManager;
-
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 import android.view.LayoutInflater;
 
+import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
+import org.qiyi.pluginlibrary.runtime.PluginManager;
+
 /**
  * 自定义ContextWrapper的实现类
  */
 public class PluginContextWrapper extends CustomContextWrapper {
-    /** 插件包名 */
-    private String mPackageName = "";
-    /** 是否是Application, Service的Base Context*/
-    private boolean forApp = false;
+    /* 插件包名 */
+    private String mPackageName;
+    /* 是否是Application, Service的Base Context */
+    private boolean forApp;
     // 插件自己保存一个theme，不用父类创建的，为了兼容OPPO手机上的bug
     private Resources.Theme mTargetTheme;
     // 插件Application的Context保存一个LayoutInflater

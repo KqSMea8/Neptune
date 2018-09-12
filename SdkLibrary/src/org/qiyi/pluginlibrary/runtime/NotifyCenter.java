@@ -27,7 +27,6 @@ import org.qiyi.pluginlibrary.constant.IntentConstant;
 /**
  * 发送广播通知业务层做一些特殊处理
  * 比如插件加载成功
- *
  */
 public class NotifyCenter {
 
@@ -46,8 +45,9 @@ public class NotifyCenter {
 
     /**
      * 通知调用方可以取消Loading对话框
+     *
      * @param context
-     * @param  intent
+     * @param intent
      */
     public static void notifyPluginStarted(Context context, Intent intent) {
         if (null != context && null != intent && !TextUtils.isEmpty(intent.getStringExtra(
@@ -69,6 +69,7 @@ public class NotifyCenter {
 
     /**
      * 通知 Service 绑定成功
+     *
      * @param context context
      * @param service service class
      */

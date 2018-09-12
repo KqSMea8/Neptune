@@ -28,8 +28,6 @@ import java.lang.reflect.Field;
  */
 public class ResourcesToolForPlugin {
 
-    private static final String TAG = "ResourcesToolForPlugin";
-
     static final String ANIM = "anim";
     static final String ANIMATOR = "animator";
     static final String ARRAY = "array";
@@ -49,7 +47,7 @@ public class ResourcesToolForPlugin {
     static final String STYLEABLE = "styleable";
     static final String TRANSITION = "transition";
     static final String XML = "xml";
-
+    private static final String TAG = "ResourcesToolForPlugin";
     String mPackageName;
     Resources mResources;
     ClassLoader mClassLoader;

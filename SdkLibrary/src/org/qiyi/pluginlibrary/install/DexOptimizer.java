@@ -20,8 +20,8 @@ package org.qiyi.pluginlibrary.install;
 import android.text.TextUtils;
 import android.util.Log;
 
-import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.FileUtils;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 import org.qiyi.pluginlibrary.utils.VersionUtils;
 
 import java.io.File;
@@ -36,19 +36,17 @@ import dalvik.system.DexClassLoader;
 
 
 public class DexOptimizer {
-    private static final String TAG = "DexOptimizer";
-
     public static final String ODEX_SUFFIX = ".odex";
     public static final String DEX_SUFFIX = ".dex";
+    private static final String TAG = "DexOptimizer";
 
-
-    public static boolean optimize(File  dexFile, File optimizedDir,
-                  boolean useInterpretMode, ResultCallback cb) {
+    public static boolean optimize(File dexFile, File optimizedDir,
+                                   boolean useInterpretMode, ResultCallback cb) {
         String isa = null;
         try {
             isa = FileUtils.getCurrentInstructionSet();
         } catch (Exception e) {
-            isa= null;
+            isa = null;
         }
         OptimizeWorker worker = new OptimizeWorker(dexFile, optimizedDir, useInterpretMode, isa, cb);
         if (!worker.run()) {
@@ -68,9 +66,9 @@ public class DexOptimizer {
     }
 
     private static class OptimizeWorker {
-        private final File           dexFile;
-        private final File           optimizedDir;
-        private final boolean        useInterpretMode;
+        private final File dexFile;
+        private final File optimizedDir;
+        private final boolean useInterpretMode;
         private final ResultCallback callback;
         private final String targetISA;
 
@@ -82,13 +80,9 @@ public class DexOptimizer {
             this.targetISA = targetISA;
         }
 
-        private boolean isLegalFile(File file) {
-            return file.exists() && file.canRead() && file.isFile() && file.length() > 0;
-        }
-
-        public static String optimizedPathFor(File path, File optimizedDirectory,String isa) {
+        public static String optimizedPathFor(File path, File optimizedDirectory, String isa) {
             if (VersionUtils.hasOreo()) {
-                if(TextUtils.isEmpty(isa)){
+                if (TextUtils.isEmpty(isa)) {
                     throw new RuntimeException("target isa is empty!,dex2oat fail!");
                 }
 
@@ -122,6 +116,10 @@ public class DexOptimizer {
             return result.getPath();
         }
 
+        private boolean isLegalFile(File file) {
+            return file.exists() && file.canRead() && file.isFile() && file.length() > 0;
+        }
+
         public boolean run() {
             try {
                 if (!isLegalFile(dexFile)) {
@@ -134,11 +132,11 @@ public class DexOptimizer {
                 if (callback != null) {
                     callback.onStart(dexFile, optimizedDir);
                 }
-                String optimizedPath = optimizedPathFor(this.dexFile, this.optimizedDir,targetISA);
+                String optimizedPath = optimizedPathFor(this.dexFile, this.optimizedDir, targetISA);
                 if (useInterpretMode) {
                     interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
                 } else {
-                    new DexClassLoader(dexFile.getAbsolutePath(),this.optimizedDir.getAbsolutePath(),null,this.getClass().getClassLoader());
+                    new DexClassLoader(dexFile.getAbsolutePath(), this.optimizedDir.getAbsolutePath(), null, this.getClass().getClassLoader());
                 }
                 if (callback != null) {
                     callback.onSuccess(dexFile, optimizedDir, new File(optimizedPath));
@@ -176,7 +174,7 @@ public class DexOptimizer {
             } else {
                 commandAndParams.add("--compiler-filter=interpret-only");
             }
-            PluginDebugLog.installFormatLog(TAG,"DexOptimizer params:%s",commandAndParams.toString());
+            PluginDebugLog.installFormatLog(TAG, "DexOptimizer params:%s", commandAndParams.toString());
             final ProcessBuilder pb = new ProcessBuilder(commandAndParams);
             pb.redirectErrorStream(true);
             final Process dex2oatProcess = pb.start();

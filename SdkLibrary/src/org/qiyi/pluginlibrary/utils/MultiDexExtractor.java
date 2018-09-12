@@ -34,44 +34,81 @@ import java.util.zip.ZipOutputStream;
 
 class MultiDexExtractor {
 
-    /**
-     * Zip file containing one secondary dex file.
-     */
-    private static class ExtractedDex extends File {
-        public long crc = NO_VALUE;
-
-        public ExtractedDex(File dexDir, String fileName) {
-            super(dexDir, fileName);
-        }
-    }
-
-
+    static final String EXTRACTED_SUFFIX = ".zip";
     private static final String TAG = "MultiDexExtractor";
     /* Keep value away from 0 because it is a too probable time stamp value */
     private static final long NO_VALUE = -1L;
 
     private static final String EXTRACTED_NAME_EXT = ".classes";
-    static final String EXTRACTED_SUFFIX = ".zip";
     private static final int MAX_EXTRACT_ATTEMPTS = 3;
-
     private static final String PREFS_FILE = "plugin.multidex.version";
     private static final String KEY_TIME_STAMP = "timestamp";
     private static final String KEY_CRC = "crc";
     private static final String KEY_DEX_NUMBER = "dex.number";
     private static final String KEY_DEX_CRC = "dex.crc.";
     private static final String KEY_DEX_TIME = "dex.time.";
-
-
     private final String pkgName;
     private final File sourceApk;
     private final long sourceCrc;
     private final File dexDir;
-
     MultiDexExtractor(String pkgName, File sourceApk, File dexDir) {
         this.pkgName = pkgName;
         this.sourceApk = sourceApk;
         this.dexDir = dexDir;
         sourceCrc = getZipCrc(sourceApk);
+    }
+
+    /**
+     * 校验Zip包是否被修改
+     */
+    private static boolean isModified(File archive, long currentCrc,
+                                      String prefsKeyPrefix) {
+        SharedPreferences prefs = getMultiDexPreferences();
+        return (prefs.getLong(prefsKeyPrefix + KEY_TIME_STAMP, NO_VALUE) != getTimeStamp(archive))
+                || (prefs.getLong(prefsKeyPrefix + KEY_CRC, NO_VALUE) != currentCrc);
+    }
+
+    private static SharedPreferences getMultiDexPreferences() {
+        return Neptune.getHostContext().getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE);
+    }
+
+    private static long getTimeStamp(File archive) {
+        long timeStamp = archive.lastModified();
+        if (timeStamp == NO_VALUE) {
+            // never return NO_VALUE
+            timeStamp--;
+        }
+        return timeStamp;
+    }
+
+    private static long getZipCrc(File archive) {
+        long crc = 0;
+        try {
+            crc = FileUtils.getZipCrc(archive);
+        } catch (IOException e) {
+            crc = NO_VALUE;
+        }
+        if (crc == NO_VALUE) {
+            crc--;
+        }
+        return crc;
+    }
+
+    private static void clearDexDir(File dexDir) {
+        if (dexDir.isDirectory()) {
+            File[] files = dexDir.listFiles();
+            if (files == null) {
+                return;
+            }
+            for (File oldFile : files) {
+                if (!oldFile.delete()) {
+                    PluginDebugLog.warningLog(TAG, "Failed to delete old dex file " + oldFile.getPath());
+                }
+            }
+            if (!dexDir.delete()) {
+                PluginDebugLog.warningLog(TAG, "Failed to delete secondary dex dir " + dexDir.getPath());
+            }
+        }
     }
 
     /**
@@ -140,6 +177,7 @@ class MultiDexExtractor {
 
     /**
      * 解压apk中的dex文件到指定目录下
+     *
      * @return
      * @throws IOException
      */
@@ -200,6 +238,7 @@ class MultiDexExtractor {
 
     /**
      * 从Apk中解压出一个Dex文件，重新生成一个Zip，输入到DexClassLoader
+     *
      * @param apk
      * @param dexFile
      * @param outDex
@@ -261,57 +300,14 @@ class MultiDexExtractor {
         editor.commit();
     }
 
-
     /**
-     * 校验Zip包是否被修改
+     * Zip file containing one secondary dex file.
      */
-    private static boolean isModified(File archive, long currentCrc,
-                                      String prefsKeyPrefix) {
-        SharedPreferences prefs = getMultiDexPreferences();
-        return (prefs.getLong(prefsKeyPrefix + KEY_TIME_STAMP, NO_VALUE) != getTimeStamp(archive))
-                || (prefs.getLong(prefsKeyPrefix + KEY_CRC, NO_VALUE) != currentCrc);
-    }
+    private static class ExtractedDex extends File {
+        public long crc = NO_VALUE;
 
-    private static SharedPreferences getMultiDexPreferences() {
-        return Neptune.getHostContext().getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE);
-    }
-
-    private static long getTimeStamp(File archive) {
-        long timeStamp = archive.lastModified();
-        if (timeStamp == NO_VALUE) {
-            // never return NO_VALUE
-            timeStamp--;
-        }
-        return timeStamp;
-    }
-
-    private static long getZipCrc(File archive) {
-        long crc = 0;
-        try {
-            crc = FileUtils.getZipCrc(archive);
-        } catch (IOException e) {
-            crc = NO_VALUE;
-        }
-        if (crc == NO_VALUE) {
-            crc--;
-        }
-        return crc;
-    }
-
-    private static void clearDexDir(File dexDir) {
-        if (dexDir.isDirectory()) {
-            File[] files = dexDir.listFiles();
-            if (files == null) {
-                return;
-            }
-            for (File oldFile : files) {
-                if (!oldFile.delete()) {
-                    PluginDebugLog.warningLog(TAG, "Failed to delete old dex file " + oldFile.getPath());
-                }
-            }
-            if (!dexDir.delete()) {
-                PluginDebugLog.warningLog(TAG, "Failed to delete secondary dex dir " + dexDir.getPath());
-            }
+        public ExtractedDex(File dexDir, String fileName) {
+            super(dexDir, fileName);
         }
     }
 }
