@@ -136,6 +136,7 @@ class AarDependenceInfo extends DependenceInfo {
     }
 
     /**
+     * 修复AGP 3.0.0, R.txt文件指向路径不对的问题
      * 修复AGP 3.1.0+, bundle目录不存在R.txt文件找不到的问题
      */
     public AarDependenceInfo fixRSymbol(Project project, ApkVariant apkVariant) {
@@ -148,8 +149,15 @@ class AarDependenceInfo extends DependenceInfo {
                 dependency.project : artifact
         Project subProject = project.rootProject.findProject(projectName)
         if (subProject != null) {
+            File bundlesDir = new File(subProject.buildDir, "intermediates/bundles")
+            File targetSymbol = FileUtils.join(bundlesDir, apkVariant.buildType.name, "R.txt")
+            if (targetSymbol.exists()) {
+                aarRSymbolFile = targetSymbol
+                return this
+            }
+
             File symbolDir = new File(subProject.buildDir, "intermediates/symbols")
-            File targetSymbol = FileUtils.join(symbolDir, apkVariant.buildType.name)
+            targetSymbol = FileUtils.join(symbolDir, apkVariant.buildType.name)
             if (apkVariant.flavorName != null && apkVariant.flavorName != "") {
                 targetSymbol = FileUtils.join(targetSymbol, apkVariant.flavorName)
             }
