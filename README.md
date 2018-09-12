@@ -94,7 +94,7 @@ If plugin app wants to share resources with host app, you need add dependency in
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.2'
+    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.4'
 }
 ```
 
@@ -105,7 +105,7 @@ apply plugin: 'com.qiyi.neptune.plugin'
 
 neptune {
     pluginMode = true      // In plugin apk build mode
-    packageId = 0x30       // The packge id of Resources
+    packageId = 0x30       // The package id of Resources
     hostDependencies = "{group1}:{artifact1};{group2}:{artifact2}" // host app resources dependencies
 }
 ```
