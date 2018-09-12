@@ -33,8 +33,6 @@ public class NotifyCenter {
 
     /**
      * 通知插件加载完毕（解决快捷方式添加闪屏时，插件还没启动，闪屏就关闭了）
-     *
-     * @param context
      */
     public static void notifyPluginActivityLoaded(Context context) {
         Intent intent = new Intent();
@@ -45,9 +43,6 @@ public class NotifyCenter {
 
     /**
      * 通知调用方可以取消Loading对话框
-     *
-     * @param context
-     * @param intent
      */
     public static void notifyPluginStarted(Context context, Intent intent) {
         if (null != context && null != intent && !TextUtils.isEmpty(intent.getStringExtra(
@@ -58,8 +53,6 @@ public class NotifyCenter {
 
     /**
      * 通知插件启动错误
-     *
-     * @param context Context
      */
     public static void notifyStartPluginError(Context context) {
         Intent intent = new Intent();
@@ -69,9 +62,6 @@ public class NotifyCenter {
 
     /**
      * 通知 Service 绑定成功
-     *
-     * @param context context
-     * @param service service class
      */
     public static void notifyServiceConnected(Context context, Class<? extends Service> service) {
         Intent intent = new Intent(IntentConstant.ACTION_SERVICE_CONNECTED);

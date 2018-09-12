@@ -56,21 +56,13 @@ public class PluginInstaller {
     public static final String SCHEME_FILE = "file://";
     public static final String SCHEME_SO = "so://";
     public static final String SCHEME_DEX = "dex://";
-    /**
-     * 标识插件安装广播是否注册，只注册一次
-     */
+    /* 标识插件安装广播是否注册，只注册一次 */
     private static boolean sInstallerReceiverRegistered = false;
-    /**
-     * 存放正在安装的插件列表
-     */
+    /* 存放正在安装的插件列表 */
     private static List<String> sInstallingList = Collections.synchronizedList(new LinkedList<String>());
-    /**
-     * 内置插件列表
-     */
+    /* 内置插件列表 */
     private static List<String> sBuiltinAppList = Collections.synchronizedList(new ArrayList<String>());
-    /**
-     * 插件安装监听广播
-     */
+    /* 插件安装监听广播 */
     private static BroadcastReceiver sApkInstallerReceiver = new BroadcastReceiver() {
 
         @Override
@@ -114,7 +106,7 @@ public class PluginInstaller {
      * 如果info.mPath为空，则安装内置在assets/pluginapp目录下的apk
      * 如果info.mPath不为空，则安装mPath路径下的apk，可能是asset目录，也可能是文件绝对路径
      *
-     * @param context
+     * @param context 宿主的Context
      * @param info    插件info信息
      */
     public static void install(Context context, PluginLiteInfo info) {
@@ -155,8 +147,8 @@ public class PluginInstaller {
     /**
      * 安装内置在 assets/pluginapp 目录下的 apk
      *
-     * @param context
-     * @param info    插件方案版本号
+     * @param context  宿主的Context
+     * @param info    插件Info信息
      */
     @Deprecated
     public static void installBuiltinApps(final Context context,
@@ -170,7 +162,7 @@ public class PluginInstaller {
      * 安装一个 apk file 文件. 用于安装比如下载后的文件，或者从sdcard安装。安装过程采用独立进程异步安装。 安装完会有
      * {@link PluginPackageManager ＃ACTION_PACKAGE_INSTALLED} 广播。
      *
-     * @param context
+     * @param context 宿主的Context
      * @param pluginInfo 插件信息
      */
     @Deprecated
@@ -231,8 +223,6 @@ public class PluginInstaller {
 
     /**
      * 注册插件安装的监听广播
-     *
-     * @param context
      */
     private static void registerInstallderReceiver(Context context) {
         if (sInstallerReceiverRegistered) {
@@ -252,8 +242,6 @@ public class PluginInstaller {
 
     /**
      * 添加到安装中列表
-     *
-     * @param packageName
      */
     private synchronized static void add2InstallList(String packageName) {
         PluginDebugLog.installFormatLog(TAG, "add2InstallList with %s", packageName);
@@ -266,10 +254,6 @@ public class PluginInstaller {
 
     /**
      * 获取安装的插件的dex目录
-     *
-     * @param context
-     * @param packageName
-     * @return
      */
     private static List<File> getInstalledDexFile(Context context, final String packageName) {
 
@@ -303,9 +287,6 @@ public class PluginInstaller {
 
     /**
      * 删除已经安装插件的apk,dex,so库等文件
-     *
-     * @param context
-     * @param packageName
      */
     public static void deleteInstallerPackage(
             Context context, PluginLiteInfo info, String packageName) {
@@ -391,9 +372,6 @@ public class PluginInstaller {
 
     /**
      * 删除已经安装插件的数据目录(包括db,sp,cache和files目录)
-     *
-     * @param context
-     * @param packageName
      */
     public static void deletePluginData(Context context, String packageName) {
         File dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
@@ -417,8 +395,6 @@ public class PluginInstaller {
 
     /**
      * 查看某个app是否正在安装
-     *
-     * @param packageName
      */
     public static synchronized boolean isInstalling(String packageName) {
         return sInstallingList.contains(packageName);
@@ -427,9 +403,6 @@ public class PluginInstaller {
     /**
      * 从插件文件名中提取插件的包名，在没有正确获取包名的情况下使用
      * 插件命名规范： {pkgName}.apk
-     *
-     * @param filePath 插件路径
-     * @return
      */
     public static String extractPkgNameFromPath(String filePath) {
 

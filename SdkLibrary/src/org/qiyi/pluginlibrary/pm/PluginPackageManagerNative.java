@@ -199,9 +199,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 提交一个PluginInstallAction安装插件任务
-     *
-     * @param info
-     * @param listener
      */
     public void install(PluginLiteInfo info, IInstallCallBack listener) {
         PluginInstallAction action = new PluginInstallAction();
@@ -230,9 +227,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 通过aidl调用{@link PluginPackageManagerService}进行安装
-     *
-     * @param info
-     * @param listener
      */
     private void installInternal(PluginLiteInfo info, IInstallCallBack listener) {
         if (isConnected()) {
@@ -248,9 +242,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 提交一个PluginUninstallAction卸载插件的Action
-     *
-     * @param info
-     * @param observer
      */
     public void uninstall(PluginLiteInfo info, IPluginUninstallCallBack observer) {
         PluginUninstallAction action = new PluginUninstallAction();
@@ -279,9 +270,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 通过aidl调用{@link PluginPackageManagerService}进行卸载
-     *
-     * @param info PluginLiteInfo
-     * @return
      */
     private void uninstallInternal(PluginLiteInfo info) {
         if (isConnected()) {
@@ -298,9 +286,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 执行action操作，异步执行，如果service不存在，待连接之后执行。
-     *
-     * @param packageInfo
-     * @param callBack
      */
     public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callBack) {
         if (isConnected()) {
@@ -392,9 +377,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 获取插件依赖关系
-     *
-     * @param pkgName
-     * @return
      */
     public List<String> getPluginRefs(String pkgName) {
         if (isConnected()) {
@@ -431,9 +413,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 判断某个插件是否可用，如果插件正在执行安装/卸载操作，则认为不可用
-     *
-     * @param pkgName
-     * @return
      */
     public boolean isPackageAvailable(String pkgName) {
 
@@ -484,9 +463,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 获取插件的{@link android.content.pm.PackageInfo}
-     *
-     * @param packageName
-     * @return
      */
     public PluginPackageInfo getPluginPackageInfo(String packageName) {
         PluginLiteInfo pluginLiteInfo = getPackageInfo(packageName);
@@ -500,10 +476,6 @@ public class PluginPackageManagerNative {
 
     /**
      * 获取插件的{@link android.content.pm.PackageInfo}
-     *
-     * @param context
-     * @param mPackageInfo
-     * @return
      */
     public PluginPackageInfo getPluginPackageInfo(Context context, PluginLiteInfo mPackageInfo) {
         PluginPackageInfo target = null;

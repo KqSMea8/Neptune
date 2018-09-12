@@ -64,17 +64,15 @@ public class PluginServiceWrapper {
     /**
      * 获取当前Service保存的key值
      *
-     * @param pkg
-     * @param serviceClsName
+     * @param pkgName 插件包名
+     * @param serviceClsName 插件Service的类名
      */
-    public static String getIdentify(String pkg, String serviceClsName) {
-        return pkg + "." + serviceClsName;
+    public static String getIdentify(String pkgName, String serviceClsName) {
+        return pkgName + "." + serviceClsName;
     }
 
     /**
      * 更新当前Service的状态
-     *
-     * @param state
      */
     public void updateServiceState(int state) {
         mState = state;

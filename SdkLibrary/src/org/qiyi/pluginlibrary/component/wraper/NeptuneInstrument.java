@@ -195,9 +195,6 @@ public class NeptuneInstrument extends PluginInstrument {
 
     /**
      * 将Activity反射相关操作分发给插件Activity的基类
-     *
-     * @param activity
-     * @return
      */
     private boolean dispatchToBaseActivity(Activity activity) {
 

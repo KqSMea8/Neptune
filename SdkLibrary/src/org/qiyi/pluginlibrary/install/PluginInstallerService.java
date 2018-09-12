@@ -65,10 +65,12 @@ public class PluginInstallerService extends Service {
     private volatile ServiceHandler mServiceHandler;
 
     /**
-     * 初始化 dex，因为第一次loaddex，如果放hostapp 进程，有可能会导致hang住(参考类的说明)。所以在安装阶段独立进程中执行。
+     * 初始化 dex，因为第一次loaddex，如果放hostapp 进程，
+     * 有可能会导致hang住(参考类的说明)。
+     * 所以在安装阶段独立进程中执行。
      *
-     * @param apkFile
-     * @param packageName
+     * @param apkFile  插件apk文件
+     * @param packageName 插件包名
      */
     private static void installDex(final File apkFile,
                                    String packageName,
@@ -145,8 +147,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 处理插件安装任务
-     *
-     * @param intent
      */
     private void onHandleIntent(Intent intent) {
 
@@ -162,7 +162,7 @@ public class PluginInstallerService extends Service {
      * 安装插件
      *
      * @param srcFile 插件路径
-     * @param info
+     * @param info  插件info信息
      */
     private void handleInstall(String srcFile, PluginLiteInfo info) {
         if (null == info) {
@@ -187,9 +187,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装so插件，只做拷贝
-     *
-     * @param srcFile
-     * @param info
      */
     private void installSoPlugin(String srcFile, PluginLiteInfo info) {
         String soFilePath = srcFile.substring(PluginInstaller.SCHEME_SO.length());
@@ -225,9 +222,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装Dex插件，只做拷贝
-     *
-     * @param srcFile
-     * @param info
      */
     private void installDexPlugin(String srcFile, PluginLiteInfo info) {
         String dexFilePath = srcFile.substring(PluginInstaller.SCHEME_DEX.length());
@@ -254,9 +248,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装asset/pluginapp内置插件
-     *
-     * @param assetsPathWithScheme
-     * @param info
      */
     private void installBuiltinApk(String assetsPathWithScheme, PluginLiteInfo info) {
         String assetsPath = assetsPathWithScheme.substring(PluginInstaller.SCHEME_ASSETS.length());
@@ -280,9 +271,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装sd卡上的插件
-     *
-     * @param apkFilePathWithScheme
-     * @param info
      */
     private void installAPKFile(String apkFilePathWithScheme, PluginLiteInfo info) {
         String apkFilePath = apkFilePathWithScheme.substring(PluginInstaller.SCHEME_FILE.length());
@@ -311,10 +299,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 安装某个插件
-     *
-     * @param is
-     * @param srcPathWithScheme
-     * @param info
      */
     private void doInstall(InputStream is, String srcPathWithScheme, PluginLiteInfo info) {
 
@@ -494,11 +478,6 @@ public class PluginInstallerService extends Service {
 
     /**
      * 发送安装成功的广播
-     *
-     * @param pkgName
-     * @param srcPathWithScheme
-     * @param destPath
-     * @param info
      */
     private void setInstallSuccess(String pkgName, String srcPathWithScheme, String destPath, PluginLiteInfo info) {
         if (info != null) {
@@ -520,10 +499,6 @@ public class PluginInstallerService extends Service {
     /**
      * 获取插件安装目录，内置目录或者SD卡目录
      * 目前VR插件是安装在SD的/Android/data目录的
-     *
-     * @param pkgInfo
-     * @param apkName
-     * @return
      */
     private File getPreferredInstallLocation(PackageInfo pkgInfo, String apkName) {
 

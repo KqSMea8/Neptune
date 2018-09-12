@@ -83,8 +83,8 @@ public final class NeptuneConfig {
             return this;
         }
 
-        public NeptuneConfigBuilder enableDebug(boolean isDebugable) {
-            this.isDebug = isDebugable;
+        public NeptuneConfigBuilder enableDebug(boolean isDebuggable) {
+            this.isDebug = isDebuggable;
             return this;
         }
 

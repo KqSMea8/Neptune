@@ -123,11 +123,11 @@ public class ComponentFinder {
     /**
      * 在插件中查找可以处理mIntent的Activity组件,找到之后为其分配合适的Proxy
      *
-     * @param mPluginPackageName
-     * @param mIntent
-     * @param requestCode
-     * @param context
-     * @return
+     * @param mPluginPackageName  插件包名
+     * @param mIntent  跳转Activity的Intent
+     * @param requestCode 请求码
+     * @param context 宿主的Context
+     * @return 处理后的Intent
      */
     public static Intent switchToActivityProxy(String mPluginPackageName,
                                                Intent mIntent,
@@ -280,7 +280,7 @@ public class ComponentFinder {
      *
      * @param mLoadedApk 插件的实例
      * @param actInfo    插件Activity对应的ActivityInfo
-     * @return
+     * @return  返回代理Activity的类名
      */
     public static String findActivityProxy(PluginLoadedApk mLoadedApk, ActivityInfo actInfo) {
         boolean isTranslucent = false;

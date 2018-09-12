@@ -36,17 +36,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-/**
- * Utility class to get activity/receiver/service's resolve info
- * in apk
- */
 public class ResolveInfoUtil {
     /**
-     * Get activity/receiver/service's resolve info
+     * 解析插件Apk里的四大组件信息
      *
-     * @param context
-     * @param dexPath apk path
-     * @param target
+     * @param context 宿主的Context
+     * @param dexPath 插件apk路径
+     * @param target  插件PackageInfo
+     * @deprecated
      */
     @Deprecated
     public static void parseResolveInfo(Context context, String dexPath, PluginPackageInfo target) {
@@ -205,9 +202,9 @@ public class ResolveInfoUtil {
     /**
      * 使用自定义的ManifestParser解析组件信息
      *
-     * @param context
-     * @param dexPath
-     * @param target
+     * @param context 宿主的Context
+     * @param dexPath 插件apk路径
+     * @param target  插件PackageInfo
      */
     public static void parseNewResolveInfo(Context context, String dexPath, PluginPackageInfo target) {
 

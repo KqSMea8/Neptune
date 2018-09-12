@@ -41,22 +41,16 @@ import java.io.InputStream;
  */
 public class ResourcesProxy extends Resources {
 
-    /**
-     * 父Resources
-     */
+    /* 宿主的Resources */
     private Resources mHostResources = null;
-    /**
-     * 插件包名
-     */
+    /* 插件包名 */
     private String mPluginPackageName = null;
 
     /**
-     * 构造方法
-     *
-     * @param assets  assetmanager
+     * @param assets  插件的AssetManager
      * @param metrics 资源Metrics
      * @param config  资源配置
-     * @param hostRes 宿主资源
+     * @param hostRes 宿主的资源
      */
     public ResourcesProxy(AssetManager assets, DisplayMetrics metrics, Configuration config, Resources hostRes, String pluginPackageName) {
         super(assets, metrics, config);

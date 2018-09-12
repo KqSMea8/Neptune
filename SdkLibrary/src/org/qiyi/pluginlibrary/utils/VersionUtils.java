@@ -25,8 +25,6 @@ import android.os.Build;
 public class VersionUtils {
     /**
      * 判断是否是6.0+
-     *
-     * @return
      */
     public static boolean hasMarshmallow() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
@@ -34,8 +32,6 @@ public class VersionUtils {
 
     /**
      * 判断是否是7.0+
-     *
-     * @return
      */
     public static boolean hasNougat() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N;
@@ -43,8 +39,6 @@ public class VersionUtils {
 
     /**
      * 判断是否是8.0+
-     *
-     * @return
      */
     public static boolean hasOreo() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
@@ -52,8 +46,6 @@ public class VersionUtils {
 
     /**
      * 判断是否是8.1+
-     *
-     * @return
      */
     public static boolean hasOreo_MR1() {
         return Build.VERSION.SDK_INT >= 27;
@@ -61,8 +53,6 @@ public class VersionUtils {
 
     /**
      * 判断是否是Android P
-     *
-     * @return
      */
     public static boolean hasPie() {
         return Build.VERSION.SDK_INT >= 28 ||

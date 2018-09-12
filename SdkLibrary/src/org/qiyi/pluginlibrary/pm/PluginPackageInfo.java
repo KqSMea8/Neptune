@@ -51,21 +51,13 @@ import java.util.Map;
  * 存放插件apk的{@link PackageInfo}里面的信息
  */
 public class PluginPackageInfo implements Parcelable {
-    public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
-        @Override
-        public PluginPackageInfo createFromParcel(Parcel in) {
-            return new PluginPackageInfo(in);
-        }
 
-        @Override
-        public PluginPackageInfo[] newArray(int size) {
-            return new PluginPackageInfo[size];
-        }
-    };
-    static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
-    static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
-    static final String PLUGIN_APPLICATION_CODE_PATH = "Hanlde_plugin_code_path";
     private static final String TAG = "PluginPackageInfo";
+
+    private static final String META_KEY_PLUGIN_APPLICATION_SPECIAL = "pluginapp_application_special";
+    private static final String PLUGIN_APPLICATION_INFO = "Handle_plugin_appinfo";
+    private static final String PLUGIN_APPLICATION_CODE_PATH = "Hanlde_plugin_code_path";
+
     /**
      * 配置是否注入到宿主的ClassLoader, 已废弃
      */
@@ -112,6 +104,19 @@ public class PluginPackageInfo implements Parcelable {
      * Save all provider's resolve info
      */
     private Map<String, ProviderIntentInfo> mProviderIntentInfos = new HashMap<String, ProviderIntentInfo>(0);
+
+
+    public static final Creator<PluginPackageInfo> CREATOR = new Creator<PluginPackageInfo>() {
+        @Override
+        public PluginPackageInfo createFromParcel(Parcel in) {
+            return new PluginPackageInfo(in);
+        }
+
+        @Override
+        public PluginPackageInfo[] newArray(int size) {
+            return new PluginPackageInfo[size];
+        }
+    };
 
     public PluginPackageInfo(Context context, File apkFile) {
         try {

@@ -39,8 +39,6 @@ public class PActivityStack {
 
     /**
      * 获取当前任务栈的名称
-     *
-     * @return
      */
     public String getTaskName() {
         return taskName;

@@ -49,7 +49,7 @@ class PluginActivityDelegate implements InterfaceToGetHost {
      *
      * @param activity 插件真实的Activity
      * @param newBase  Activity原有的Base Context，一般为ContextImpl，是宿主的
-     * @return
+     * @return 新的插件Context
      */
     Context createActivityContext(Activity activity, Context newBase) {
         // 通过插件Activity的ClassLoader查找插件实例，这个需要配合新的ClassLoader方案
@@ -68,9 +68,6 @@ class PluginActivityDelegate implements InterfaceToGetHost {
 
     /**
      * 在插件Activity的onCreate调用前调用该方法
-     *
-     * @param activity
-     * @param savedInstanceState
      */
     void handleActivityOnCreateBefore(Activity activity, Bundle savedInstanceState) {
 
@@ -123,9 +120,6 @@ class PluginActivityDelegate implements InterfaceToGetHost {
 
     /**
      * 在插件Activity#onCreate调用之后执行
-     *
-     * @param activity
-     * @param savedInstanceState
      */
     void handleActivityOnCreateAfter(Activity activity, Bundle savedInstanceState) {
 
@@ -136,8 +130,6 @@ class PluginActivityDelegate implements InterfaceToGetHost {
 
     /**
      * 在插件Activity#onDetorty调用之后执行
-     *
-     * @param activity
      */
     void handleActivityOnDestroy(Activity activity) {
 

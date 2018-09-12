@@ -26,26 +26,21 @@ import java.util.Locale;
 
 /**
  * Debug configuration for plugin model you can enable debug by following
- * method<br> 1. Change code sIsDebug = false to true<br> 2. Invoke
- * setIsDebug(boolean enableDebug)<br> 3. Change TAG's properties during the
- * runtime by "adb shell setprop log.tag.plugin VERBOSE" on the terminal
+ * method<br>
+ * 1. Change code sIsDebug = false to true<br>
+ * 2. Invoke setIsDebug(boolean enableDebug)<br>
+ * 3. Change TAG's properties during the runtime by "adb shell setprop log.tag.plugin VERBOSE" on the terminal
  */
 public class PluginDebugLog {
 
     // 插件统一调试TAG
     public static final String TAG = "plugin";
 
-    /**
-     * 插件中心下载Log TAG
-     */
+    /* 插件SDK下载Log TAG */
     private static final String DOWNLOAD_TAG = "download_plugin";
-    /**
-     * 插件中心安装Log TAG
-     */
+    /* 插件SDK安装Log TAG */
     private static final String INSTALL_TAG = "install_plugin";
-    /**
-     * 插件中心运行时Log TAG
-     */
+    /* 插件SDK运行时Log TAG */
     private static final String RUNTIME_TAG = "runtime_plugin";
 
     private static final String GENERAL_TAG = "general_plugin";
@@ -60,8 +55,6 @@ public class PluginDebugLog {
     /**
      * Check the debug configuration and check TAG with
      * android.util.Log.isLoggable
-     *
-     * @return
      */
     public static boolean isDebug() {
         return sIsDebug || android.util.Log.isLoggable(TAG, android.util.Log.VERBOSE);
@@ -105,10 +98,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心下载过程log
-     *
-     * @param tag subtag
-     * @param msg log信息
+     * 插件SDK下载过程log
      */
     public static void downloadLog(String tag, Object msg) {
         if (isDebug()) {
@@ -117,11 +107,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心下载过程log,格式化输出log，主要避免大量使用+连接String的情况
-     *
-     * @param tag
-     * @param format
-     * @param args
+     * 插件SDK下载过程log,格式化输出log，主要避免大量使用+连接String的情况
      */
     public static void downloadFormatLog(String tag, String format, Object... args) {
         if (isDebug()) {
@@ -135,12 +121,8 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心插件安装log
-     *
-     * @param tag subtag
-     * @param msg log信息
+     * 插件SDK插件安装log
      */
-
     public static void installLog(String tag, Object msg) {
         if (isDebug()) {
             logInternal(INSTALL_TAG, "[ " + tag + " ] : " + msg);
@@ -148,11 +130,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心插件安装log,格式化输出log，主要避免大量使用+连接String的情况
-     *
-     * @param tag
-     * @param format
-     * @param args
+     * 插件SDK安装log,格式化输出log，主要避免大量使用+连接String的情况
      */
     public static void installFormatLog(String tag, String format, Object... args) {
         if (isDebug()) {
@@ -167,10 +145,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心运行时Log
-     *
-     * @param tag subtag
-     * @param msg log信息
+     * 插件SDK运行时Log
      */
     public static void runtimeLog(String tag, Object msg) {
         if (isDebug()) {
@@ -179,11 +154,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心运行时Log,格式化输出log，主要避免大量使用+连接String的情况
-     *
-     * @param tag
-     * @param format
-     * @param args
+     * 插件SDK运行时Log,格式化输出log，主要避免大量使用+连接String的情况
      */
     public static void runtimeFormatLog(String tag, String format, Object... args) {
         if (isDebug()) {
@@ -197,10 +168,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心warning级别log
-     *
-     * @param tag
-     * @param msg
+     * 插件SDKwarning级别log
      */
     public static void warningLog(String tag, Object msg) {
         if (isDebug()) {
@@ -209,11 +177,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心warning级别日志
-     *
-     * @param tag
-     * @param format
-     * @param args
+     * 插件SDKwarning级别日志
      */
     public static void warningFormatLog(String tag, String format, Object... args) {
         if (isDebug()) {
@@ -227,10 +191,7 @@ public class PluginDebugLog {
     }
 
     /**
-     * 插件中心Log
-     *
-     * @param tag subtag
-     * @param msg log信息
+     * 插件SDKLog
      */
     public static void log(String tag, Object msg) {
         if (isDebug()) {
@@ -240,10 +201,6 @@ public class PluginDebugLog {
 
     /**
      * 格式化输出log，主要避免大量使用+连接String的情况
-     *
-     * @param tag
-     * @param format
-     * @param args
      */
     public static void formatLog(String tag, String format, Object... args) {
         if (isDebug()) {

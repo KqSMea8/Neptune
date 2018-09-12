@@ -28,9 +28,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by tangyinsheng on 2017/3/13.
- */
 
 public class ShareElfFile implements Closeable {
     public static final int FILE_TYPE_OTHERS = -1;

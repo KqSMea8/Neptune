@@ -51,6 +51,18 @@ class MultiDexExtractor {
     private final File sourceApk;
     private final long sourceCrc;
     private final File dexDir;
+
+    /**
+     * Zip file containing one secondary dex file.
+     */
+    private static class ExtractedDex extends File {
+        public long crc = NO_VALUE;
+
+        public ExtractedDex(File dexDir, String fileName) {
+            super(dexDir, fileName);
+        }
+    }
+
     MultiDexExtractor(String pkgName, File sourceApk, File dexDir) {
         this.pkgName = pkgName;
         this.sourceApk = sourceApk;
@@ -177,9 +189,6 @@ class MultiDexExtractor {
 
     /**
      * 解压apk中的dex文件到指定目录下
-     *
-     * @return
-     * @throws IOException
      */
     private List<ExtractedDex> performExtractions() throws IOException {
         final String extractedDexPrefix = sourceApk.getName() + EXTRACTED_NAME_EXT;
@@ -238,11 +247,6 @@ class MultiDexExtractor {
 
     /**
      * 从Apk中解压出一个Dex文件，重新生成一个Zip，输入到DexClassLoader
-     *
-     * @param apk
-     * @param dexFile
-     * @param outDex
-     * @throws IOException
      */
     private void extractDex2Zip(ZipFile apk, ZipEntry dexFile, File outDex) throws IOException {
 
@@ -298,16 +302,5 @@ class MultiDexExtractor {
             dexNumber++;
         }
         editor.commit();
-    }
-
-    /**
-     * Zip file containing one secondary dex file.
-     */
-    private static class ExtractedDex extends File {
-        public long crc = NO_VALUE;
-
-        public ExtractedDex(File dexDir, String fileName) {
-            super(dexDir, fileName);
-        }
     }
 }

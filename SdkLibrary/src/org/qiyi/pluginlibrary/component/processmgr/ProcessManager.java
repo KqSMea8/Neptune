@@ -41,7 +41,7 @@ public class ProcessManager {
      *
      * @param hostContext  宿主的Context
      * @param pkgName  插件的包名
-     * @return
+     * @return 返回插件运行的进程名
      */
     public static String chooseDefaultProcess(Context hostContext, String pkgName) {
         // 默认放到插件进程1

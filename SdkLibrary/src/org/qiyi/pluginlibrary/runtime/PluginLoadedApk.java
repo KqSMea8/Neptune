@@ -78,78 +78,42 @@ import dalvik.system.DexClassLoader;
 public class PluginLoadedApk {
     public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(1);
     private static final String TAG = "PluginLoadedApk";
-    /**
-     * 保存注入到宿主ClassLoader的插件
-     */
+    /* 保存注入到宿主ClassLoader的插件 */
     private static Set<String> sInjectedPlugins = Collections.synchronizedSet(new HashSet<String>());
-    /**
-     * 保存所有的插件ClassLoader
-     */
+    /* 保存所有的插件ClassLoader */
     private static Map<String, DexClassLoader> sAllPluginClassLoader = new ConcurrentHashMap<>();
 
-    /**
-     * 宿主的Context
-     */
+    /* 宿主的Context */
     private final Context mHostContext;
-    /**
-     * 宿主的ClassLoader
-     */
+    /* 宿主的ClassLoader */
     private final ClassLoader mHostClassLoader;
-    /**
-     * 宿主的Resource对象
-     */
+    /* 宿主的Resource对象 */
     private final Resources mHostResource;
-    /**
-     * 宿主的包名
-     */
+    /* 宿主的包名 */
     private final String mHostPackageName;
-    /**
-     * 插件的路径
-     */
+    /* 插件的路径 */
     private final String mPluginPath;
-    /**
-     * 插件运行的进程名
-     */
+    /* 插件运行的进程名 */
     private final String mProcessName;
-    /**
-     * 插件ClassLoader的parent
-     */
+    /* 插件ClassLoader的parent */
     private ClassLoader mParent;
-    /**
-     * 插件的类加载器
-     */
+    /* 插件的类加载器 */
     private DexClassLoader mPluginClassLoader;
-    /**
-     * 插件的Resource对象
-     */
+    /* 插件的Resource对象 */
     private Resources mPluginResource;
-    /**
-     * 插件的AssetManager对象
-     */
+    /* 插件的AssetManager对象 */
     private AssetManager mPluginAssetManager;
-    /**
-     * 插件的全局默认主题
-     */
+    /* 插件的全局默认主题 */
     private Resources.Theme mPluginTheme;
-    /**
-     * 插件的详细信息，主要通过解析AndroidManifest.xml获得
-     */
+    /* 插件的详细信息，主要通过解析AndroidManifest.xml获得 */
     private PluginPackageInfo mPluginPackageInfo;
-    /**
-     * 插件工程的包名
-     */
+    /* 插件工程的包名 */
     private String mPluginPackageName;
-    /**
-     * 插件的Application
-     */
+    /* 插件的Application */
     private Application mPluginApplication;
-    /**
-     * 自定义插件Context,主要用来改写其中的一些方法从而改变插件行为
-     */
+    /* 自定义插件Context,主要用来改写其中的一些方法从而改变插件行为 */
     private PluginContextWrapper mPluginAppContext;
-    /**
-     * 自定义Instrumentation，对Activity跳转进行拦截
-     */
+    /* 自定义Instrumentation，对Activity跳转进行拦截 */
     private PluginInstrument mPluginInstrument;
 
     /**
@@ -714,10 +678,6 @@ public class PluginLoadedApk {
 
     /**
      * 获取插件的数据目录
-     *
-     * @param context
-     * @param packageName
-     * @return
      */
     private File getDataDir(Context context, String packageName) {
         PluginDebugLog.runtimeLog(TAG, "packageName:" + packageName + " context:" + context);
@@ -745,7 +705,7 @@ public class PluginLoadedApk {
      * 通过类名获取ActivityInfo
      *
      * @param activityClsName 需要获取ActivityInfo的Activity的类名
-     * @return
+     * @return 返回对应的ActivityInfo，如果没找到返回null
      */
     public ActivityInfo getActivityInfoByClassName(String activityClsName) {
         if (mPluginPackageInfo != null) {
@@ -810,8 +770,6 @@ public class PluginLoadedApk {
 
     /**
      * 是否有正在启动的Intent
-     *
-     * @return
      */
     public boolean hasLaunchIngIntent() {
         return isLaunchingIntent;
@@ -875,7 +833,7 @@ public class PluginLoadedApk {
     }
 
     /**
-     * 返回基线资源工具
+     * 返回宿主的资源工具
      */
     @Deprecated
     public ResourcesToolForPlugin getHostResourceTool() {

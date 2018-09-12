@@ -91,10 +91,6 @@ public class ManifestParser {
 
     /**
      * 解析Manifest节点
-     *
-     * @param parser
-     * @throws IOException
-     * @throws XmlPullParserException
      */
     private void parseManifest(XmlResourceParser parser) throws IOException, XmlPullParserException {
         int type;
@@ -130,10 +126,6 @@ public class ManifestParser {
 
     /**
      * 解析Application节点
-     *
-     * @param parser
-     * @throws IOException
-     * @throws XmlPullParserException
      */
     private void parseApplication(XmlResourceParser parser) throws IOException, XmlPullParserException {
 
@@ -171,11 +163,6 @@ public class ManifestParser {
 
     /**
      * 解析Activity、Service、Recevier等组件节点
-     *
-     * @param parser
-     * @return
-     * @throws IOException
-     * @throws XmlPullParserException
      */
     private ComponentBean parseComponent(XmlResourceParser parser) throws IOException, XmlPullParserException {
         ComponentBean bean = new ComponentBean();
@@ -206,11 +193,6 @@ public class ManifestParser {
 
     /**
      * 解析IntentFilter节点
-     *
-     * @param parser
-     * @return
-     * @throws IOException
-     * @throws XmlPullParserException
      */
     private IntentFilter parseIntent(XmlResourceParser parser) throws IOException, XmlPullParserException {
         IntentFilter intentFilter = new IntentFilter();

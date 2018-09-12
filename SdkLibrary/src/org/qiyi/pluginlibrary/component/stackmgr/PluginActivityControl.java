@@ -54,8 +54,9 @@ import java.util.concurrent.ConcurrentMap;
  * 插件的控制器，派发插件事件和控制插件生命周期
  */
 public class PluginActivityControl implements PluginActivityCallback {
-    public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(10);
     private static final String TAG = "PluginActivityControl";
+    public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(10);
+
     private Activity mProxy;// 代理Activity
     private Activity mPlugin;// 插件Activity
     private ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类
@@ -67,7 +68,6 @@ public class PluginActivityControl implements PluginActivityCallback {
      * @param proxy  代理Activity
      * @param plugin 插件Activity
      * @param app    分派给插件的Application
-     * @throws Exception
      */
     public PluginActivityControl(Activity proxy, Activity plugin,
                                  Application app, Instrumentation pluginInstr) {
@@ -86,9 +86,9 @@ public class PluginActivityControl implements PluginActivityCallback {
      * 修改插件Activity的ActivityInfo
      * 执行Activity#attach()和ActivityThread启动Activity过程中的逻辑
      *
-     * @param activity
-     * @param className
-     * @param loadedApk
+     * @param activity  插件Activity
+     * @param className 插件Activity类名
+     * @param loadedApk 插件内存实例
      */
     public static void changeActivityInfo(Activity activity, String className,
                                           PluginLoadedApk loadedApk) {
@@ -179,8 +179,8 @@ public class PluginActivityControl implements PluginActivityCallback {
      *
      * @param pluginInstr    插件Instrumentation
      * @param contextWrapper 插件的BaseContext
-     * @param packageName
-     * @return
+     * @param packageName    插件的包名
+     * @return 注入成功返回true; 失败返回false
      */
     public boolean dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper, String packageName) {
         if (mPlugin == null || mPlugin.getBaseContext() != null || pluginInstr == null) {
@@ -532,8 +532,6 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     /**
      * 设置插件的Activity
-     *
-     * @param plugin
      */
     public void setPlugin(Activity plugin) {
         mPlugin = plugin;
@@ -542,8 +540,6 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     /**
      * 得到代理的Activity
-     *
-     * @return
      */
     public Activity getProxy() {
         return mProxy;
@@ -551,8 +547,6 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     /**
      * 设置代理的Activity
-     *
-     * @param proxy
      */
     public void setProxy(Activity proxy) {
         mProxy = proxy;
@@ -576,7 +570,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onCreate方法
      *
-     * @param saveInstance
      * @see android.app.Activity#onCreate(android.os.Bundle)
      */
     @Override
@@ -661,7 +654,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onSaveInstanceState方法
      *
-     * @param outState
      * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
      */
     @Override
@@ -674,7 +666,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onRestoreInstanceState方法
      *
-     * @param savedInstanceState
      * @see android.app.Activity#onRestoreInstanceState(android.os.Bundle)
      */
     @Override
@@ -713,9 +704,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onKeyDown方法
      *
-     * @param keyCode
-     * @param event
-     * @return
      * @see android.app.Activity#onKeyDown(int, android.view.KeyEvent)
      */
     @Override

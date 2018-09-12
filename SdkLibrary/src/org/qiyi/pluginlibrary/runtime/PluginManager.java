@@ -89,30 +89,18 @@ public class PluginManager {
      */
     final static ArrayList<Application.ActivityLifecycleCallbacks> sActivityLifecycleCallbacks =
             new ArrayList<Application.ActivityLifecycleCallbacks>();
-    /**
-     * 已经加载到内存了的插件集合
-     */
+    /* 已经加载到内存了的插件集合 */
     private static ConcurrentHashMap<String, PluginLoadedApk> sPluginsMap =
             new ConcurrentHashMap<>();
-    /**
-     * 异步加载插件线程池
-     */
+    /* 异步加载插件线程池 */
     private static Executor mExecutor = Executors.newCachedThreadPool();
-    /**
-     * 插件加载线程和主线程通信
-     */
+    /* 插件加载线程和主线程通信 */
     private static Handler mHandler = new Handler(Looper.getMainLooper());
-    /**
-     * 插件状态投递
-     */
+    /* 插件状态投递 */
     private static IDeliverInterface mDeliver;
-    /**
-     * 插件状态监听器
-     */
+    /* 插件状态监听器 */
     private static IPluginStatusListener sPluginStatusListener;
-    /**
-     * 处理插件退出时的善后逻辑
-     */
+    /* 处理插件退出时的善后逻辑 */
     private static IAppExitStuff sExitStuff;
 
     /**
@@ -133,7 +121,7 @@ public class PluginManager {
      * 通过ClassLoader查找{@link PluginLoadedApk}对象
      *
      * @param classLoader 插件的ClassLoader
-     * @return
+     * @return 插件LoadedApk内存实例
      */
     public static PluginLoadedApk findPluginLoadedApkByClassLoader(ClassLoader classLoader) {
         for (PluginLoadedApk loadedApk : sPluginsMap.values()) {
@@ -405,7 +393,7 @@ public class PluginManager {
     /**
      * 启动插件的默认入口Activity
      *
-     * @param mHostContext
+     * @param mHostContext 宿主的Context
      * @param packageName  插件包名
      */
     public static void launchPlugin(Context mHostContext, String packageName) {
@@ -548,11 +536,9 @@ public class PluginManager {
     }
 
     /**
-     * @param mHostContext
-     * @param packageName
-     * @param processName
-     * @param mListener
-     * @deprecated 异步初始化插件（宿主静默加载插件,遗留逻辑，不建议使用）
+     * 异步初始化插件，宿主静默加载插件
+     *
+     * @deprecated 不建议使用
      */
     @Deprecated
     public static void initPluginAsync(final Context mHostContext,
@@ -647,8 +633,6 @@ public class PluginManager {
     /**
      * 更新所有插件的资源配置
      * 使用Application的callback实现
-     *
-     * @param config
      */
     @Deprecated
     public static void updateConfiguration(Configuration config) {
@@ -966,10 +950,10 @@ public class PluginManager {
     /**
      * 插件状态投递
      *
-     * @param mContext
-     * @param success
-     * @param pakName
-     * @param errorCode
+     * @param mContext  插件进程Context
+     * @param success   结果是否成功
+     * @param pakName   插件包名
+     * @param errorCode 错误码
      */
     private static void deliverPlugInner(Context mContext, boolean success, String pakName, int errorCode) {
         if (null != mContext && mDeliver != null && !TextUtils.isEmpty(pakName)) {
@@ -1001,8 +985,6 @@ public class PluginManager {
 
     /**
      * 注册卸载广播，清理PluginLoadedApk内存引用
-     *
-     * @param context
      */
     public static void registerUninstallReceiver(Context context) {
 
@@ -1043,7 +1025,7 @@ public class PluginManager {
      * 处理插件退出时的善后操作
      *
      * @param mPackageName 退出插件的包名
-     * @param force
+     * @param force 是否强制退出
      */
     public static void doExitStuff(String mPackageName, boolean force) {
         if (TextUtils.isEmpty(mPackageName)) {
@@ -1060,8 +1042,6 @@ public class PluginManager {
 
     /**
      * 设置投递逻辑的实现(宿主工程调用)
-     *
-     * @param mDeliverImpl
      */
     public static void setDeliverImpl(IDeliverInterface mDeliverImpl) {
         mDeliver = mDeliverImpl;
@@ -1069,8 +1049,6 @@ public class PluginManager {
 
     /**
      * 设置插件状态监听器(宿主工程调用)
-     *
-     * @param mListener
      */
     public static void setPluginStatusListener(IPluginStatusListener mListener) {
         sPluginStatusListener = mListener;
@@ -1078,8 +1056,6 @@ public class PluginManager {
 
     /**
      * 设置插件退出监听回调(宿主工程调用)
-     *
-     * @param mExitStuff
      */
     public static void setExitStuff(IAppExitStuff mExitStuff) {
         sExitStuff = mExitStuff;
@@ -1087,8 +1063,6 @@ public class PluginManager {
 
     /**
      * 停止指定的Service
-     *
-     * @param intent
      */
     public static void stopService(Intent intent) {
         if (intent == null || intent.getComponent() == null
@@ -1229,9 +1203,6 @@ public class PluginManager {
 
         /**
          * 创建{@link PluginLoadedApk}
-         *
-         * @param context
-         * @param packageInfo
          */
         private boolean createPluginLoadedApkInstance(Context context,
                                                       PluginLiteInfo packageInfo,

@@ -29,9 +29,6 @@ public class ErrorUtil {
 
     /**
      * Debug环境下直接抛出异常
-     *
-     * @param tr
-     * @throws Throwable
      */
     public static void throwErrorIfNeed(Throwable tr) {
 

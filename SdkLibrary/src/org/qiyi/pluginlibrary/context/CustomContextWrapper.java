@@ -84,7 +84,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     }
 
     private static void setFilePermissionsForDb(String dbPath, int perms) {
-        //int perms = FileUtils.S_IRUSR | FileUtils.S_IWUSR | FileUtils.S_IRGRP | FileUtils.S_IWGRP;
         android.os.FileUtils.setPermissions(dbPath, perms, -1, -1);
     }
 
@@ -415,8 +414,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      * this is move DB from /data/data/packageName/database to
      * /data/data/package/app_pluginapp/pluginpackage/databases if the app is
      * upgrade,we need backup and recover the db for user,
-     *
-     * @param name db name
      */
     private void checkBackupDB(String name) {
 
@@ -486,10 +483,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      * devices, true or false both OK, false as the temporary result
      * [warning] 不要删除该方法，在oppo机型的Context类中存在
      *
-     * @return
-     */
-
-    /**
      * @Override
      */
     public boolean isOppoStyle() {
@@ -548,10 +541,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     /**
      * 获取插件的SharedPreference对象
-     *
-     * @param name
-     * @param mode
-     * @return
      */
     private SharedPreferences getSharedPreferencesForPlugin(String name, int mode) {
         try {
@@ -575,30 +564,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     }
 
     /**
-     * Android P，增加了非SDK接口限制，SharedPreferenceImpl进入了dark名单
-     * 因此无法反射SharedPreferenceImpl修改插件的sp目录了，统一把插件的sp目录放到宿主的sp目录下
-     * 通过修改插件sp的name追加上插件的包名进行隔离
-     *
-     * @param name
-     * @param mode
-     * @return
-     */
-    private SharedPreferences getSharedPreferencesV28(String name, int mode) {
-        final String packageName = getPluginPackageName();
-        final String fileName = packageName + "_" + name;  //追加上插件的包名，进行隔离
-        return super.getSharedPreferences(fileName, mode);
-    }
-
-    /**
      * Android 7.0+系统，
      * <href>http://androidxref.com/7.0.0_r1/xref/frameworks/base/core/java/android/app/ContextImpl.java#141</href>
      * ContextImpl.java
      * private static ArrayMap<String, ArrayMap<File, SharedPreferencesImpl>> sSharedPrefsCache;
      * private ArrayMap<String, File> mSharedPrefsPaths;
-     *
-     * @param name
-     * @param mode
-     * @return
      */
     @TargetApi(Build.VERSION_CODES.N)
     private SharedPreferences getSharedPreferencesV24(String name, int mode) throws Exception {
@@ -653,10 +623,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      * <href>http://androidxref.com/6.0.0_r1/xref/frameworks/base/core/java/android/app/ContextImpl.java#132</href>
      * ContextImpl.java
      * private static ArrayMap<String, ArrayMap<String, SharedPreferencesImpl>> sSharedPrefs;
-     *
-     * @param name
-     * @param mode
-     * @return
      */
     @TargetApi(Build.VERSION_CODES.KITKAT)
     private SharedPreferences getSharedPreferencesV19(String name, int mode)
@@ -701,10 +667,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
      * <href>http://androidxref.com/4.3_r2.1/xref/frameworks/base/core/java/android/app/ContextImpl.java#172</href>
      * ContextImpl.java
      * private static final HashMap<String, SharedPreferencesImpl> sSharedPrefs
-     *
-     * @param name
-     * @param mode
-     * @return
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     private SharedPreferences getSharedPreferencesV14(String name, int mode)
@@ -736,10 +698,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     /**
      * Android 4.0以下系统
-     *
-     * @param name
-     * @param mode
-     * @return
      */
     private SharedPreferences getSharedPreferencesV4(String name, int mode) throws Exception {
         // now the plugin don't support 2.3,but if it will support in
@@ -807,8 +765,6 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     /**
      * Get the context which start this plugin
-     *
-     * @return
      */
     @Override
     public Context getOriginalContext() {

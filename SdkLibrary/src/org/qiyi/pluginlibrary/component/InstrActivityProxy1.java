@@ -204,8 +204,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     /**
      * 调用被代理的Activity的onCreate方法
-     *
-     * @param savedInstanceState
      */
     private void callProxyOnCreate(Bundle savedInstanceState) {
         boolean mockRestoreInstanceState = false;
@@ -296,9 +294,6 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     /**
      * 尝试初始化PluginLoadedApk
-     *
-     * @param mPluginPackage
-     * @return
      */
     private boolean tryToInitPluginLoadApk(String mPluginPackage) {
         if (!TextUtils.isEmpty(mPluginPackage) && null == mLoadedApk) {
@@ -311,9 +306,9 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     /**
      * 尝试恢复插件Activity
      *
-     * @param pkgName
-     * @param activityName
-     * @param savedInstanceState
+     * @param pkgName  插件包名
+     * @param activityName  插件Activity类名
+     * @param savedInstanceState 状态数据
      */
     private void tryRecoverPluginActivity(final String pkgName, final String activityName,
                                           Bundle savedInstanceState) {
@@ -991,7 +986,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     }
 
     /**
-     * Get host resource
+     * 返回宿主的ResourceTools
+     * @deprecated 使用资源分区
      *
      * @return host resource tool
      */
@@ -1047,9 +1043,9 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
     /**
      * 修改ActivityInfo信息
      *
-     * @param activity
-     * @param pkgName
-     * @param mActivityInfo
+     * @param activity  代理Activity
+     * @param pkgName   插件包名
+     * @param mActivityInfo  插件ActivityInfo的信息
      */
     private void changeActivityInfo(Activity activity, String pkgName, ActivityInfo mActivityInfo) {
 

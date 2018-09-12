@@ -35,17 +35,11 @@ import java.util.Map;
 import java.util.Vector;
 
 public class ReflectionUtils {
-    /**
-     * 被包装的对象，访问一个实例的方法和字段
-     */
+    /* 被包装的对象，访问一个实例的方法和字段 */
     private final Object object;
-    /**
-     * 被访问的实例的方法或者字段所在的类
-     */
+    /* 被访问的实例的方法或者字段所在的类 */
     private final Class<?> clazz;
-    /**
-     * 反射的是一个Class还是一个Object实例?
-     */
+    /* 反射的是一个Class还是一个Object实例? */
     private final boolean isClass;
 
     private ReflectionUtils(Class<?> type) {
@@ -218,7 +212,6 @@ public class ReflectionUtils {
      *
      * @param object 需要被包装的对象
      * @param clazz  被包装类自身或其父类
-     * @return
      */
     public static ReflectionUtils on(Object object, Class<?> clazz) {
         return new ReflectionUtils(object, clazz);

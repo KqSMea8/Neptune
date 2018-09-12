@@ -68,8 +68,8 @@ public class ResourcesToolForPlugin {
     /**
      * Create resource tool
      *
-     * @param resource
-     * @param packageName
+     * @param resource    resources对象
+     * @param packageName 资源对应的包名
      * @param clsLoader   corresponding classloader for resource/view.java, can be
      *                    null, if null will use Class.forName(xx)
      */
@@ -113,9 +113,9 @@ public class ResourcesToolForPlugin {
     /**
      * 获取主包资源id
      *
-     * @param sourceName
-     * @param sourceType
-     * @return
+     * @param sourceName 资源名称
+     * @param sourceType 资源类型
+     * @return 返回资源id
      */
     private int getResourceId(String sourceName, String sourceType) {
         if (mResources == null || TextUtils.isEmpty(sourceName)) {
@@ -284,7 +284,7 @@ public class ResourcesToolForPlugin {
      *
      * @param resourceName resource name
      * @param resourceType resource type
-     * @return
+     * @return resource id
      */
     private int optValue(String resourceName, String resourceType) {
         int result = 0;
@@ -316,7 +316,7 @@ public class ResourcesToolForPlugin {
      *
      * @param resourceName resource name
      * @param resourceType resource type
-     * @return
+     * @return resource array
      */
     private int[] optValueArray(String resourceName, String resourceType) {
         int[] result = null;

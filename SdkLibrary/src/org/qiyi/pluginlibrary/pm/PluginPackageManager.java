@@ -56,7 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @hide
  */
 public class PluginPackageManager {
-
+    private static final String TAG = "PluginPackageManager";
     /**
      * 安装成功，发送广播
      */
@@ -73,12 +73,13 @@ public class PluginPackageManager {
      * 如果发现某个插件异常，通知上层检查
      */
     public static final String ACTION_HANDLE_PLUGIN_EXCEPTION = "handle_plugin_exception";
+
     public static final int DELETE_SUCCEEDED = 1;
     public static final int INSTALL_SUCCESS = 2;
     public static final int INSTALL_FAILED = -2;
     public static final int UNINSTALL_SUCCESS = 3;
     public static final int UNINSTALL_FAILED = -3;
-    private static final String TAG = "PluginPackageManager";
+
     private static final String PLUGIN_INSTALL_SP_NAME = "plugin_install";
     private static final String PLUGIN_INSTALL_KEY = "install_status";
     /**
@@ -190,8 +191,6 @@ public class PluginPackageManager {
 
     /**
      * 设置 IPluginInfoProvider 接口，由应用层实现更高级的控制
-     *
-     * @param packageInfoManager
      */
     static void setPluginInfoProvider(IPluginInfoProvider packageInfoManager) {
         sPluginInfoProvider = packageInfoManager;
@@ -199,9 +198,6 @@ public class PluginPackageManager {
 
     /**
      * 保护性的更新srcApkPath
-     *
-     * @param context
-     * @param cmPkgInfo
      */
     public static void updateSrcApkPath(Context context, PluginLiteInfo cmPkgInfo) {
         if (null != context && null != cmPkgInfo && TextUtils.isEmpty(cmPkgInfo.srcApkPath)) {
@@ -372,9 +368,6 @@ public class PluginPackageManager {
     /**
      * 执行依赖于安装包的 runnable，如果该package已经安装，则立即执行。如果pluginapp正在初始化，或者该包正在安装，
      * 则放到任务队列中等待安装完毕执行。
-     *
-     * @param packageInfo 插件信息
-     * @param callBack
      */
     public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callBack) {
         boolean packageInstalled = isPackageInstalled(packageInfo.packageName);
@@ -410,10 +403,6 @@ public class PluginPackageManager {
 
     /**
      * 执行队列中等待的Action，回调给上层
-     *
-     * @param packageInfo
-     * @param isSuccess
-     * @param failReason
      */
     private void executePackageAction(
             PluginLiteInfo packageInfo, boolean isSuccess, int failReason) {
@@ -485,8 +474,6 @@ public class PluginPackageManager {
 
     /**
      * 设置Action执行完成的Callback回调
-     *
-     * @param callback
      */
     public void setActionFinishCallback(IActionFinishCallback callback) {
         if (callback != null) {
@@ -504,8 +491,6 @@ public class PluginPackageManager {
 
     /**
      * 插件安装成功，回调给应用层
-     *
-     * @param pkgInfo
      */
     private void onPackageInstalled(PluginLiteInfo pkgInfo) {
         PluginDebugLog.installFormatLog(TAG, "plugin install success: %s", pkgInfo.packageName);
@@ -530,9 +515,6 @@ public class PluginPackageManager {
 
     /**
      * 插件安装失败，回调给应用层
-     *
-     * @param pkgInfo
-     * @param failReason
      */
     private void onPackageInstallFailed(PluginLiteInfo pkgInfo, int failReason) {
         PluginDebugLog.installFormatLog(TAG,
@@ -554,9 +536,6 @@ public class PluginPackageManager {
 
     /**
      * Action执行完成，回调给Client端
-     *
-     * @param packageName
-     * @param errorCode
      */
     private void onActionFinish(String packageName, int errorCode) {
         for (Map.Entry<String, IActionFinishCallback> entry : mActionFinishCallbacks.entrySet()) {
@@ -595,9 +574,6 @@ public class PluginPackageManager {
 
     /**
      * 获取安装apk的信息
-     *
-     * @param packageName
-     * @return 没有安装反馈null
      */
     public PluginLiteInfo getPackageInfo(String packageName) {
         if (TextUtils.isEmpty(packageName)) {
@@ -714,9 +690,6 @@ public class PluginPackageManager {
 
     /**
      * 卸载插件，删除文件
-     *
-     * @param packageInfo PluginLiteInfo
-     * @return
      */
     public boolean uninstall(final PluginLiteInfo packageInfo) {
 
@@ -766,9 +739,6 @@ public class PluginPackageManager {
 
     /**
      * 判断能否安装该插件
-     *
-     * @param info
-     * @return
      */
     public boolean canInstallPackage(PluginLiteInfo info) {
         if (sPluginInfoProvider != null) {
@@ -779,9 +749,6 @@ public class PluginPackageManager {
 
     /**
      * 判断能否卸载插件
-     *
-     * @param info
-     * @return
      */
     public boolean canUninstallPackage(PluginLiteInfo info) {
         if (sPluginInfoProvider != null) {
@@ -792,9 +759,6 @@ public class PluginPackageManager {
 
     /**
      * 获取插件的PluginPackageInfo信息
-     *
-     * @param pkgName
-     * @return
      */
     public PluginPackageInfo getPluginPackageInfo(String pkgName) {
         PluginPackageInfo result = null;
@@ -824,9 +788,6 @@ public class PluginPackageManager {
 
     /**
      * 获取插件的依赖列表
-     *
-     * @param pkgName
-     * @return
      */
     List<String> getPluginRefs(String pkgName) {
         List<String> mRefs = Collections.emptyList();
@@ -853,8 +814,6 @@ public class PluginPackageManager {
 
     /**
      * 直接获取已经安装的插件列表(不经过ipc，直接读取sp)
-     *
-     * @return
      */
     List<PluginLiteInfo> getInstalledPackagesDirectly() {
         List<PluginLiteInfo> installPlugins = Collections.emptyList();
@@ -869,9 +828,6 @@ public class PluginPackageManager {
 
     /**
      * 直接判断指定插件是否安装
-     *
-     * @param packageName
-     * @return
      */
     boolean isPackageInstalledDirectly(String packageName) {
         if (TextUtils.isEmpty(packageName)) {
@@ -887,9 +843,6 @@ public class PluginPackageManager {
 
     /**
      * 直接获取插件依赖
-     *
-     * @param packageName
-     * @return
      */
     List<String> getPluginRefsDirectly(String packageName) {
         List<String> mRefPlugins = Collections.emptyList();
@@ -912,9 +865,6 @@ public class PluginPackageManager {
 
     /**
      * 直接获取插件的信息
-     *
-     * @param packageName
-     * @return
      */
     PluginLiteInfo getPackageInfoDirectly(String packageName) {
         PluginLiteInfo liteInfo = null;
