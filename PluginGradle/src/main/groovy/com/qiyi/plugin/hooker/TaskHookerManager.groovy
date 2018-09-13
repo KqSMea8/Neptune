@@ -203,7 +203,6 @@ class TaskHookerManager {
             rename { backupFile.name }
         }
 
-
         /** Unzip resourece-${variant.name}.ap_ to resourceDir */
         project.copy {
             from project.zipTree(apFile)
@@ -240,12 +239,44 @@ class TaskHookerManager {
          * we also delete first and run 'aapt add' later
          */
         ZipUtil.with(apFile).deleteAll(filteredResources + updatedResources)
-        /**
-         * Re-add updated entries
-         * $ aapt add resources.ap_ file1 file2
-         */
+        /** Dump filtered and updated Resources to file */
+        dump(filteredResources, updatedResources)
+
+        // Windows cmd有最大长度限制，如果updatedResources文件特别多，会出现执行aapt.exe异常
+        // Windows cmd最大限制8191个字符，Linux shell最大长度通过getconf ARG_MAX获取，一般有几十万，暂不处理
+        String aaptPath = par.buildTools.getPath(BuildToolInfo.PathId.AAPT)
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            List<String> resSet = new ArrayList<>()
+            int len = 0
+            for (String resName : updatedResources) {
+                len += resName.length()
+                resSet.add(resName)
+                if (len >= 6000) {
+                    println "too much updatedResources, handle part first"
+                    addUpdatedResources(aaptPath, resourcesDir, apFile, resSet)
+                    // clear to zero
+                    len = 0
+                    resSet.clear()
+                }
+            }
+
+            if (resSet.size() > 0) {
+                addUpdatedResources(aaptPath, resourcesDir, apFile, resSet)
+            }
+        } else {
+            addUpdatedResources(aaptPath, resourcesDir, apFile, updatedResources)
+        }
+
+        updateRJava(aapt, par.sourceOutputDir, variant, resourceCollector)
+    }
+
+    /**
+     * Re-add updated entries
+     * $ aapt add resources.ap_ file1 file2
+     */
+    def addUpdatedResources(String aaptPath, File resourcesDir, File apFile, Collection<String> updatedResources) {
         project.exec {
-            executable par.buildTools.getPath(BuildToolInfo.PathId.AAPT)
+            executable aaptPath
             workingDir resourcesDir
             args 'add', apFile.path
             args updatedResources
@@ -253,8 +284,38 @@ class TaskHookerManager {
             standardOutput = System.out
             errorOutput = System.err
         }
+    }
 
-        updateRJava(aapt, par.sourceOutputDir, variant, resourceCollector)
+    def dump(Set<String> filteredResources, Set<String> updatedResources) {
+        final def resSplitDir = new File(project.buildDir, 'generated')
+
+        println "dump ********* filteredResources *********"
+        final def filterResFile = new File(resSplitDir, 'filterRes.txt')
+        if (!filterResFile.exists()) {
+            filterResFile.createNewFile()
+        }
+        filterResFile.withPrintWriter { pw ->
+            pw.println "************ Filtered Resources Name ***********"
+            filteredResources.each {
+                pw.println it
+            }
+        }
+
+        println "dump ********* updatedResources *********"
+        final def updatedResFile = new File(resSplitDir, 'updatedRes.txt')
+        if (!updatedResFile.exists()) {
+            updatedResFile.createNewFile()
+        }
+        updatedResFile.withPrintWriter { pw ->
+            pw.println "************ Updated Resources Name ***********"
+            updatedResources.each {
+                pw.println it
+            }
+        }
+        // dump os info
+        println "Os name: ${System.getProperty("os.name")}"
+        println "Os version: ${System.getProperty("os.version")}"
+        println "Os arch: ${System.getProperty("os.arch")}"
     }
 
     /**
@@ -342,7 +403,7 @@ class TaskHookerManager {
         pluginExt.splitRJavaFile = splitRSourceFile
 
         // update aar library module R.java file
-       resourceCollector.retainedAarLibs.each {
+        resourceCollector.retainedAarLibs.each {
             def aarPackage = it.package
             def rJavaFile = new File(sourceOutputDir, "${aarPackage.replace('.'.charAt(0), File.separatorChar)}${File.separator}R.java")
             aapt.generateRJava(rJavaFile, aarPackage, it.aarResources, it.aarStyleables)
