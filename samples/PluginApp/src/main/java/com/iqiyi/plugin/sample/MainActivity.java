@@ -40,9 +40,6 @@ public class MainActivity extends AppCompatActivity{
         setContentView(R.layout.activity_main);
         Log.i(TAG, "MainActivity onCreate() called");
 
-        TextView tv = findViewById(R.id.tint_text);
-        tv.setText(BuildConfig.TIME);
-
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         List<String> mImageUrls = Arrays.asList(URL_LINKS);
         mAdapter = new ImageAdapter(this, mImageUrls);

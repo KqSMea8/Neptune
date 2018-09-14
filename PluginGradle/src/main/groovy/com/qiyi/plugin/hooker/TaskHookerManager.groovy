@@ -134,7 +134,9 @@ class TaskHookerManager {
             meta.attributes().put(android.name, "pluginapp_res_merge")
             meta.attributes().put(android.value, "true")
             // rewrite the manifest file
-            XmlUtil.serialize(root, new FileOutputStream(manifest))
+            manifest.withOutputStream { os ->
+                XmlUtil.serialize(root, os)
+            }
         }
     }
 

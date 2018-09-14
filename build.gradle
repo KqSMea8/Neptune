@@ -9,6 +9,9 @@ buildscript {
         maven {
             url = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
         }
+        maven {
+            url = "E://repo"
+        }
     }
     dependencies {
         classpath "com.android.tools.build:gradle:${ANDROID_GRADLE_VERSION}"
