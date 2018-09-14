@@ -8,6 +8,7 @@ import com.google.common.collect.ListMultimap
 import com.google.common.collect.Lists
 import com.qiyi.plugin.collector.res.ResourceEntry
 import com.qiyi.plugin.collector.res.StyleableEntry
+import com.qiyi.plugin.utils.Utils
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 
@@ -107,28 +108,28 @@ class AarDependenceInfo extends DependenceInfo {
         Project subProject = project.rootProject.findProject(projectName)
         if (subProject != null) {
             File manifestsDir = new File(subProject.buildDir, "intermediates/manifests")
-            File targetManifest = FileUtils.join(manifestsDir, "full", apkVariant.buildType.name)
-            if (apkVariant.flavorName != null && apkVariant.flavorName != "") {
-                targetManifest = FileUtils.join(targetManifest, apkVariant.flavorName)
+            String[] middleName = ["full", "aapt"]
+            for (String name : middleName) {
+                File middleDir = FileUtils.join(manifestsDir, name)
+                List<String> buildTypes = new ArrayList<>()
+                buildTypes.add(apkVariant.buildType.name)
+                if (Utils.isAgpAbove3()) {
+                    buildTypes.addAll(apkVariant.buildType.matchingFallbacks)
+                }
+
+                for (String buildType : buildTypes) {
+                    File buildTypeDir = FileUtils.join(middleDir, buildType)
+
+                    File targetManifest = FileUtils.join(buildTypeDir, "AndroidManifest.xml")
+                    if (targetManifest.exists()) {
+                        aarManifestFile = targetManifest
+                        return this
+                    }
+                }
             }
-            targetManifest = FileUtils.join(targetManifest, "AndroidManifest.xml")
-            if (targetManifest.exists()) {
-                aarManifestFile = targetManifest
-                return this
-            }
-            targetManifest = FileUtils.join(manifestsDir, "aapt", apkVariant.buildType.name)
-            if (apkVariant.flavorName != null && apkVariant.flavorName != "") {
-                targetManifest = FileUtils.join(targetManifest, apkVariant.flavorName)
-            }
-            targetManifest = FileUtils.join(targetManifest, "AndroidManifest.xml")
-            if (targetManifest.exists()) {
-                aarManifestFile = targetManifest
-                return this
-            }
-            aarManifestFile = subProject.android.sourceSets.main.manifest.srcFile
 
             if (!aarManifestFile.exists()) {
-                throw new GradleException("Android Library Project ${projectName} R.txt not found")
+                throw new GradleException("Android Library Project ${projectName} AndroidManifest.xml not found")
             }
         }
 
@@ -149,22 +150,26 @@ class AarDependenceInfo extends DependenceInfo {
                 dependency.project : artifact
         Project subProject = project.rootProject.findProject(projectName)
         if (subProject != null) {
-            File bundlesDir = new File(subProject.buildDir, "intermediates/bundles")
-            File targetSymbol = FileUtils.join(bundlesDir, apkVariant.buildType.name, "R.txt")
-            if (targetSymbol.exists()) {
-                aarRSymbolFile = targetSymbol
-                return this
-            }
+            File interDir = FileUtils.join(subProject.buildDir, "intermediates")
+            String[] baseDirs = ["bundles", "symbols"]  // 3.0.0在bundles目录，3.0.1+在symbols目录
+            for (String name : baseDirs) {
+                File middleDir = FileUtils.join(interDir, name)
+                List<String> buildTypes = new ArrayList<>()
+                buildTypes.add(apkVariant.buildType.name)
+                if (Utils.isAgpAbove3()) {
+                    buildTypes.addAll(apkVariant.buildType.matchingFallbacks)
+                }
+                buildTypes.add("default")
 
-            File symbolDir = new File(subProject.buildDir, "intermediates/symbols")
-            targetSymbol = FileUtils.join(symbolDir, apkVariant.buildType.name)
-            if (apkVariant.flavorName != null && apkVariant.flavorName != "") {
-                targetSymbol = FileUtils.join(targetSymbol, apkVariant.flavorName)
-            }
-            targetSymbol = FileUtils.join(targetSymbol, "R.txt")
-            if (targetSymbol.exists()) {
-                aarRSymbolFile = targetSymbol
-                return this
+                for (String buildType : buildTypes) {
+                    File buildTypeDir = FileUtils.join(middleDir, buildType)
+
+                    File targetSymbol = FileUtils.join(buildTypeDir, "R.txt")
+                    if (targetSymbol.exists()) {
+                        aarRSymbolFile = targetSymbol
+                        return this
+                    }
+                }
             }
 
             if (!aarRSymbolFile.exists()) {
@@ -174,7 +179,6 @@ class AarDependenceInfo extends DependenceInfo {
 
         return this
     }
-
 
     /**
      * Return the package name of this library, parse from manifest file

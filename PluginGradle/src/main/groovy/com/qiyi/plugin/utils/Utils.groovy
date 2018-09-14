@@ -1,10 +1,18 @@
 package com.qiyi.plugin.utils
 
+import com.android.builder.model.Version
 import com.google.common.io.Files
+import org.gradle.util.VersionNumber
 
 import java.security.MessageDigest
 
 class Utils {
+
+    public static boolean isAgpAbove3() {
+        String version = Version.ANDROID_GRADLE_PLUGIN_VERSION
+        VersionNumber agpVersion = VersionNumber.parse(version)
+        return agpVersion >= VersionNumber.parse("3.0")
+    }
 
     public static int compareVersion(String v1, String v2) {
         String[] va1 = v1.split("\\.")
