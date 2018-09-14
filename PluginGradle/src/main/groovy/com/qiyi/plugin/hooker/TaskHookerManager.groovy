@@ -327,7 +327,6 @@ class TaskHookerManager {
      */
     def static convertResourcesForAapt(ListMultimap<String, ResourceEntry> pluginResources) {
         def retainedTypes = []
-        retainedTypes.add(0, [name: 'placeholder', id: Aapt.ID_NO_ATTR, entries: []])//attr 占位
 
         pluginResources.keySet().each { resType ->
             def firstEntry = pluginResources.get(resType).get(0)
@@ -345,11 +344,11 @@ class TaskHookerManager {
                         vs  : resEntry.hexResourceId, _vs: resEntry.hexNewResourceId])
             }
 
-            if (resType == 'attr') {
-                retainedTypes.set(0, typeEntry)
-            } else {
-                retainedTypes.add(typeEntry)
-            }
+            retainedTypes.add(typeEntry)
+        }
+
+        retainedTypes.sort { t1, t2 ->
+            t1._id - t2._id
         }
 
         return retainedTypes
