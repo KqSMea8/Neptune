@@ -10,32 +10,6 @@
 
 Neptune现在完全兼容Android P系统，可以在Android P设备上稳定且无缝地运行。框架只使用了少数几个浅灰名单中的API。
 
-# Android P兼容性
-
-在Neptune项目中，只有少量浅灰名单中的私有API会被访问，没有使用到深灰和黑名单中的API。
-
-| API List | API Used count |
-| :----    | :----: |
-| Black list | 0 |
-| Dark grey list | 0 |
-| light grey list | 9 |
-
-### 细节
-
-```
-Accessing hidden field Landroid/app/ActivityThread;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
-Accessing hidden method Ldalvik/system/VMRuntime;->getCurrentInstructionSet()Ljava/lang/String; (light greylist, reflection)
-Accessing hidden method Landroid/content/res/AssetManager;->addAssetPath(Ljava/lang/String;)I (light greylist, reflection)
-Accessing hidden method Landroid/app/Instrumentation;->execStartActivity(Landroid/content/Context;Landroid/os/IBinder;Landroid/os/IBinder;Landroid/app/Activity;Landroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/Instrumentation$ActivityResult; (light greylist, reflection)
-Accessing hidden field Landroid/view/ContextThemeWrapper;->mResources:Landroid/content/res/Resources; (light greylist, reflection)
-Accessing hidden field Landroid/app/Activity;->mApplication:Landroid/app/Application; (light greylist, reflection)
-Accessing hidden field Landroid/content/ContextWrapper;->mBase:Landroid/content/Context; (light greylist, reflection)
-Accessing hidden field Landroid/app/Activity;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
-Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm/ActivityInfo; (light greylist, reflection)
-```
-
-在使用到的浅灰名单API中，`ActivityThread#mInstrumentation`和`AssetManager#addAssetPath()`是Neptune项目必须使用的。对于其他的浅灰名单API，我们通过提供基类PluginActivity给插件继承、重写相关方法的方式来规避私有API调用的风险。
-
 # 支持的特性
 
 | 特性 | 描述  |
