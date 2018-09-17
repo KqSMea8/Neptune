@@ -55,7 +55,9 @@ afterEvaluate { project ->
 
 
 task sourcesJar(type: Jar) {
-    from sourceSets.main.allJava
+    from sourceSets.main.allSource
+    include '**/*.java'
+    include '**/*.groovy'
     classifier = 'sources'
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
