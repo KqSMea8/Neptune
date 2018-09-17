@@ -93,18 +93,18 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     if (isPluginBuild) {
-        provided files("hostlibs/android_support_26.1.0.jar")
-        provided files("hostlibs/fresco_1.9.0.jar")
-        compile "com.qiyi.video.allclasses:commonres_lib:9.5.0"    // commonres_lib
+        compileOnly files("hostlibs/android_support_27.1.1.jar")
+        compileOnly files("hostlibs/fresco_1.9.0.jar")
+        implementation "com.qiyi.video.allclasses:commonres_lib:9.9.5"    // commonres_lib
     } else {
-        compile "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
-        compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
-        compile "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
-        compile "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
-        compile "com.facebook.fresco:fresco:${FRESCO_VERSION}"
-        compile "com.airbnb.android:lottie:${LOTTIE_VERSION}"
+        implementation "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.facebook.fresco:fresco:${FRESCO_VERSION}"
+        implementation "com.airbnb.android:lottie:${LOTTIE_VERSION}"
     }
 }
 

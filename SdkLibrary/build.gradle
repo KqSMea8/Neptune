@@ -10,8 +10,8 @@ buildscript {
 }
 
 dependencies {
-    provided files('libs/android-26.jar')
-    provided files('libs/android-support-26.1.0.jar')
+    compileOnly files('libs/android-26.jar')
+    compileOnly files('libs/android-support-26.1.0.jar')
 }
 
 

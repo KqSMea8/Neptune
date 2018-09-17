@@ -12,12 +12,12 @@ neptune {
 
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion "26.0.2"
+    compileSdkVersion COMPILE_SDK_VERSION
+    buildToolsVersion BUILD_TOOLS_VERSION
     defaultConfig {
         applicationId "com.iqiyi.host.sample"
         minSdkVersion 14
-        targetSdkVersion 26
+        targetSdkVersion TARGET_SDK_VERSION
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -59,15 +59,15 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
-    compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
-    compile "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
-    compile "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
-    compile "com.facebook.fresco:fresco:${FRESCO_VERSION}"
-    compile "com.airbnb.android:lottie:${LOTTIE_VERSION}"
-    compile "com.jakewharton:butterknife:${BUTTER_KNIFE_VERSION}"
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
+    implementation "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
+    implementation "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
+    implementation "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
+    implementation "com.facebook.fresco:fresco:${FRESCO_VERSION}"
+    implementation "com.airbnb.android:lottie:${LOTTIE_VERSION}"
+    implementation "com.jakewharton:butterknife:${BUTTER_KNIFE_VERSION}"
     annotationProcessor "com.jakewharton:butterknife-compiler:${BUTTER_KNIFE_VERSION}"
 
-    compile project(":SdkLibrary")
+    implementation project(":SdkLibrary")
 }
