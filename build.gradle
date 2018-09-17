@@ -15,7 +15,7 @@ buildscript {
         classpath "com.iqiyi.tools.build:neptune-gradle:${NEPTUNE_GRADLE_VERSION}"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
-        classpath 'com.iqiyi.gradle:base:0.5.4'  // TODO 开源化之后删除
+        classpath 'com.iqiyi.gradle:base:0.5.5'  // TODO 开源化之后删除
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -62,7 +62,7 @@ subprojects {
 
 
 ext {
-    COMPILE_SDK_VERSION = 27
-    BUILD_TOOLS_VERSION = "26.0.2"
-    TARGET_SDK_VERSION = 26
+    COMPILE_SDK_VERSION = 28
+    BUILD_TOOLS_VERSION = "28.0.2"
+    TARGET_SDK_VERSION = 28
 }
