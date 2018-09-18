@@ -45,7 +45,6 @@ public class Neptune {
     private static final String TAG = "Neptune";
 
     public static final boolean SEPARATED_CLASSLOADER = true;
-    public static final boolean NEW_RESOURCE_CREATOR = true;
     public static final boolean NEW_COMPONENT_PARSER = true;
 
     @SuppressLint("StaticFieldLeak")

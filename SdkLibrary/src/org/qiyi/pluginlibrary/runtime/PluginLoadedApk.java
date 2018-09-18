@@ -32,6 +32,7 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.os.Build;
 import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.Neptune;
@@ -180,11 +181,7 @@ public class PluginLoadedApk {
         }
         PluginDebugLog.runtimeFormatLog(TAG, "plugin %s, class loader: %s", mPluginPackageName, mPluginClassLoader.toString());
         // 创建插件资源
-        if (Neptune.NEW_RESOURCE_CREATOR) {
-            createNewPluginResource();
-        } else {
-            createPluginResource();
-        }
+        createPluginResource();
         // 插件Application的Base Context
         this.mPluginAppContext = new PluginContextWrapper(((Application) mHostContext)
                 .getBaseContext(), mPluginPackageName, true);
@@ -233,12 +230,19 @@ public class PluginLoadedApk {
     private void createPluginResource() {
 
         PluginDebugLog.runtimeLog(TAG, "createPluginResource for " + mPluginPackageName);
+        PackageManager pm = mHostContext.getPackageManager();
+        AssetManager am = null;
         try {
-            // Android 5.0以下AssetManager不支持扩展资源表，始终新建一个，避免污染宿主的AssetManager
-            AssetManager am = AssetManager.class.newInstance();
-            // 添加插件的资源
             Class<?>[] paramTypes = new Class[]{String.class};
-            ReflectionUtils.on(am).call("addAssetPath", sMethods, paramTypes, mPluginPath);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                // Android 5.0以下系统方法创建的AssetManager不支持扩展资源表，始终new出来
+                am = AssetManager.class.newInstance();
+                ReflectionUtils.on(am).call("addAssetPath", sMethods, paramTypes, mPluginPath);
+            } else {
+                // Android 5.0以上使用PackageManager的公开方法创建, 避免反射
+                Resources resources = pm.getResourcesForApplication(mPluginPackageInfo.getApplicationInfo());
+                am = resources.getAssets();
+            }
             boolean shouldAddHostRes = !mPluginPackageInfo.isIndividualMode() && mPluginPackageInfo.isResourceNeedMerge();
             if (shouldAddHostRes) {
                 // 添加宿主的资源到插件的AssetManager
@@ -267,46 +271,6 @@ public class PluginLoadedApk {
         mPluginTheme.setTo(mHostContext.getTheme());
         mResourceTool = new ResourcesToolForPlugin(mHostContext);
     }
-
-    /**
-     * 通过PackageManager的公开API创建插件的Resource对象
-     */
-    private void createNewPluginResource() {
-
-        PluginDebugLog.runtimeLog(TAG, "createNewPluginResource for " + mPluginPackageName);
-        PackageManager pm = mHostContext.getPackageManager();
-        try {
-            Resources resources = pm.getResourcesForApplication(mPluginPackageInfo.getApplicationInfo());
-            if (mPluginPackageInfo.isIndividualMode()) {
-                mPluginResource = resources;
-                mPluginAssetManager = resources.getAssets();
-            } else {
-                // 对基线资源存在依赖
-                mPluginAssetManager = resources.getAssets();
-                if (mPluginPackageInfo.isResourceNeedMerge()) {
-                    Class<?>[] paramTypes = new Class[]{String.class};
-                    ReflectionUtils.on(mPluginAssetManager).call("addAssetPath", sMethods,
-                            paramTypes, mHostContext.getApplicationInfo().sourceDir);
-                    PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
-                }
-
-                Configuration config = new Configuration();
-                config.setTo(mHostResource.getConfiguration());
-                // 重新New一个Resource
-                mPluginResource = new ResourcesProxy(mPluginAssetManager, mHostResource.getDisplayMetrics(),
-                        config, mHostResource, mPluginPackageName);
-            }
-
-            mPluginTheme = mPluginResource.newTheme();
-            mPluginTheme.setTo(mHostContext.getTheme());
-            mResourceTool = new ResourcesToolForPlugin(mHostContext);
-        } catch (Exception e) {
-            //使用旧的反射的方案创建Resource
-            PluginManager.deliver(mHostContext, false, mPluginPackageName, ErrorType.ERROR_PLUGIN_INIT_RESOURCES);
-            createPluginResource();
-        }
-    }
-
 
     /**
      * 创建插件的ClassLoader

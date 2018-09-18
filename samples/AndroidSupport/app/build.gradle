@@ -181,7 +181,9 @@ task JarSupport(type: Jar, dependsOn: ['compileReleaseJavaWithJavac']) {
             }
 
             def aarPath = it.getPath()
-            def jarName = it.getName().replace('.aar', '.jar')
+            def hash = Math.abs(aarPath.hashCode())
+            def jarName = it.getName().replace('.aar', '') + '-' + hash + '.jar'
+
             copy {
                 from zipTree(aarPath)
                 into aarDir
@@ -206,14 +208,16 @@ task JarFresco(type: Jar, dependsOn: ['compileReleaseJavaWithJavac']) {
         if (it.getName().endsWith('.jar')) {
             project.zipTree(it)
         } else if (it.getName().endsWith('.aar')) {
-
+            int hashCode = Math.abs(aarPath.hashCode())
             def aarDir = project.file("${project.buildDir}/aar")
             if (!aarDir.exists()) {
                 aarDir.mkdirs()
             }
 
             def aarPath = it.getPath()
-            def jarName = it.getName().replace('.aar', '.jar')
+            def hash = Math.abs(aarPath.hashCode())
+            def jarName = it.getName().replace('.aar', '') + '-' + hash + '.jar'
+
             copy {
                 from zipTree(aarPath)
                 into aarDir
