@@ -293,7 +293,7 @@ class MultiDexExtractor {
         SharedPreferences.Editor editor = prefs.edit();
         editor.putLong(keyPrefix + KEY_TIME_STAMP, timeStamp);
         editor.putLong(keyPrefix + KEY_CRC, crc);
-        editor.putLong(keyPrefix + KEY_DEX_NUMBER, dexFiles.size() + 1L);
+        editor.putInt(keyPrefix + KEY_DEX_NUMBER, dexFiles.size() + 1);
 
         int dexNumber = 2;
         for (ExtractedDex dex : dexFiles) {
