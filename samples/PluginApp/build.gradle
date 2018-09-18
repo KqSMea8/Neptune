@@ -1,6 +1,8 @@
 import com.android.builder.model.Version
 import com.qiyi.plugin.utils.Utils
 
+import java.text.SimpleDateFormat
+
 apply plugin: 'com.android.application'
 
 def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
@@ -8,21 +10,27 @@ def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 apply plugin: 'com.qiyi.neptune.plugin'
 
 neptune {
-    pluginMode = isPluginBuild
+    pluginMode = true
     packageId = 0x30
+    hostPackageName = "com.qiyi.video"
     hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
     dexModify = false
 }
 
+def getDate() {
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd-HH:mm:ss")
+    return sdf.format(new Date())
+}
+
 android {
-    compileSdkVersion 26
-    buildToolsVersion "26.0.2"
+    compileSdkVersion COMPILE_SDK_VERSION
+    buildToolsVersion BUILD_TOOLS_VERSION
     defaultConfig {
         applicationId "com.iqiyi.plugin.sample"
         minSdkVersion 14
-        targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        targetSdkVersion TARGET_SDK_VERSION
+        versionCode 2
+        versionName "1.2"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     dexOptions {
@@ -30,6 +38,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "TIME", "\"${getDate()}\""
+        }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -82,18 +93,18 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     if (isPluginBuild) {
-        provided files("hostlibs/android_support_26.1.0.jar")
-        provided files("hostlibs/fresco_1.9.0.jar")
-        compile "com.qiyi.video.allclasses:commonres_lib:9.5.0"    // commonres_lib
+        compileOnly files("hostlibs/android_support_27.1.1.jar")
+        compileOnly files("hostlibs/fresco_1.9.0.jar")
+        implementation "com.qiyi.video.allclasses:commonres_lib:9.9.5"    // commonres_lib
     } else {
-        compile "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
-        compile "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
-        compile "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
-        compile "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
-        compile "com.facebook.fresco:fresco:${FRESCO_VERSION}"
-        compile 'com.airbnb.android:lottie:2.3.1'
+        implementation "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.android.support:support-annotations:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.android.support:support-v4:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
+        implementation "com.facebook.fresco:fresco:${FRESCO_VERSION}"
+        implementation "com.airbnb.android:lottie:${LOTTIE_VERSION}"
     }
 }
 

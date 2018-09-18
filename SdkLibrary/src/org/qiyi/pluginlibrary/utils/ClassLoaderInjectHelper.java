@@ -17,6 +17,12 @@
  */
 package org.qiyi.pluginlibrary.utils;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.os.Build;
+
+import org.qiyi.pluginlibrary.install.PluginInstaller;
+
 import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -24,20 +30,14 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.os.Build;
-
-import org.qiyi.pluginlibrary.install.PluginInstaller;
-
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 
 /**
  * 把插件classloader注入到parent classloader中，这样可以使parent classloader能够找到插件中的类。
- * 
+ * <p>
  * 这种方案也有不好的地方，安全性等。
- * 
+ * <p>
  * 但是 插件中通过Intent .put serialize extra 无法找到对应的类。只能通过此方法。
  */
 public class ClassLoaderInjectHelper {
@@ -314,13 +314,13 @@ public class ClassLoaderInjectHelper {
     /**
      * set field
      *
-     * @param oObj object
-     * @param aCl class
+     * @param oObj   object
+     * @param aCl    class
      * @param aField field
-     * @param value value
-     * @throws NoSuchFieldException NoSuchFieldException
+     * @param value  value
+     * @throws NoSuchFieldException     NoSuchFieldException
      * @throws IllegalArgumentException IllegalArgumentException
-     * @throws IllegalAccessException IllegalAccessException
+     * @throws IllegalAccessException   IllegalAccessException
      */
     private static void setField(Object oObj, Class<?> aCl, String aField, Object value)
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
@@ -330,13 +330,13 @@ public class ClassLoaderInjectHelper {
     }
 
     /**
-     * @param oObj object
-     * @param aCl class
+     * @param oObj   object
+     * @param aCl    class
      * @param aField field
      * @return field
-     * @throws NoSuchFieldException NoSuchFieldException
+     * @throws NoSuchFieldException     NoSuchFieldException
      * @throws IllegalArgumentException IllegalArgumentException
-     * @throws IllegalAccessException IllegalAccessException
+     * @throws IllegalAccessException   IllegalAccessException
      */
     private static Object getField(Object oObj, Class<?> aCl, String aField)
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
@@ -371,7 +371,7 @@ public class ClassLoaderInjectHelper {
      * delete elements from specific array object. 只删除一次，因为 add的时候会添加重复的，比如
      * /system/lib 这个删除的时候不能全部删除
      *
-     * @param srcArray src array
+     * @param srcArray    src array
      * @param targetArray array
      * @return array
      */
@@ -420,7 +420,7 @@ public class ClassLoaderInjectHelper {
     /**
      * delete elements from specific array object.
      *
-     * @param srcArray src array
+     * @param srcArray    src array
      * @param targetArray array
      * @return array
      */
@@ -479,7 +479,7 @@ public class ClassLoaderInjectHelper {
      * make a inject result
      *
      * @param aResult result
-     * @param aT throwable
+     * @param aT      throwable
      * @return inject result
      */
     public static InjectResult makeInjectResult(boolean aResult, Throwable aT) {
@@ -493,9 +493,9 @@ public class ClassLoaderInjectHelper {
      * @param aBaseDexClassLoader BaseDexClassLoader
      * @return path list
      * @throws IllegalArgumentException IllegalArgumentException
-     * @throws NoSuchFieldException NoSuchFieldException
-     * @throws IllegalAccessException IllegalAccessException
-     * @throws ClassNotFoundException ClassNotFoundException
+     * @throws NoSuchFieldException     NoSuchFieldException
+     * @throws IllegalAccessException   IllegalAccessException
+     * @throws ClassNotFoundException   ClassNotFoundException
      */
     private static Object getPathList(Object aBaseDexClassLoader)
             throws IllegalArgumentException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
@@ -506,8 +506,8 @@ public class ClassLoaderInjectHelper {
      * @param aParamObject param
      * @return dexElements
      * @throws IllegalArgumentException IllegalArgumentException
-     * @throws NoSuchFieldException NoSuchFieldException
-     * @throws IllegalAccessException IllegalAccessException
+     * @throws NoSuchFieldException     NoSuchFieldException
+     * @throws IllegalAccessException   IllegalAccessException
      */
     private static Object getDexElements(Object aParamObject)
             throws IllegalArgumentException, NoSuchFieldException, IllegalAccessException {
@@ -609,9 +609,13 @@ public class ClassLoaderInjectHelper {
      * inject result
      */
     public static class InjectResult {
-        /** is successful */
+        /**
+         * is successful
+         */
         public boolean mIsSuccessful;
-        /** error msg */
+        /**
+         * error msg
+         */
         public String mErrMsg;
     }
 }

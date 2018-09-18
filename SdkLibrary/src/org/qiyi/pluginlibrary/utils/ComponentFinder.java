@@ -29,11 +29,10 @@ import android.graphics.Color;
 import android.text.TextUtils;
 import android.util.TypedValue;
 
-
 import org.qiyi.pluginlibrary.component.processmgr.ProcessManager;
+import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
-import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -43,11 +42,8 @@ import java.util.List;
 /**
  * 在{@link PluginLoadedApk}代表的插件中查找能够处理{@link Intent}的组件
  * 并设置组件代理,支持显式和隐式查找
- *
  */
-public class ComponentFinder{
-    private static final String TAG = "ComponentFinder";
-
+public class ComponentFinder {
     public static final String DEFAULT_ACTIVITY_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.InstrActivityProxy";
     public static final String DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX =
@@ -61,6 +57,7 @@ public class ComponentFinder{
     public static final String DEFAULT_SERVICE_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.ServiceProxy";
     public static final int TRANSLUCENTCOLOR = Color.parseColor("#00000000");
+    private static final String TAG = "ComponentFinder";
 
     /**
      * 在插件中查找可以处理mIntent的Service组件,找到之后为其分配合适的Proxy
@@ -126,11 +123,11 @@ public class ComponentFinder{
     /**
      * 在插件中查找可以处理mIntent的Activity组件,找到之后为其分配合适的Proxy
      *
-     * @param mPluginPackageName
-     * @param mIntent
-     * @param requestCode
-     * @param context
-     * @return
+     * @param mPluginPackageName  插件包名
+     * @param mIntent  跳转Activity的Intent
+     * @param requestCode 请求码
+     * @param context 宿主的Context
+     * @return 处理后的Intent
      */
     public static Intent switchToActivityProxy(String mPluginPackageName,
                                                Intent mIntent,
@@ -283,7 +280,7 @@ public class ComponentFinder{
      *
      * @param mLoadedApk 插件的实例
      * @param actInfo    插件Activity对应的ActivityInfo
-     * @return
+     * @return  返回代理Activity的类名
      */
     public static String findActivityProxy(PluginLoadedApk mLoadedApk, ActivityInfo actInfo) {
         boolean isTranslucent = false;

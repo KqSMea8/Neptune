@@ -1,0 +1,92 @@
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+
+def siteUrl = 'https://github.com/iqiyi/Neptune' // 项目的主页
+def gitUrl = 'https://github.com/iqiyi/Neptune' // Git仓库的url
+
+group = GROUP_ID
+archivesBaseName = ARCHIVE_NAME
+version = VERSION
+
+install {
+    repositories.mavenInstaller {
+        // This generates POM.xml with proper parameters
+        pom {
+            artifactId = ARTIFACT_ID
+
+            project {
+                packaging 'aar'
+                // Add your description here
+                name 'A powerful but lightweight plugin framework for Android' //项目描述
+                url siteUrl
+                // Set your license
+                licenses {
+                    license {
+                        name 'Apache License 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'zjupure'    //填写的一些基本信息
+                        name 'IQIYI'
+                        email 'zjupure@gmail.com'
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+                }
+            }
+        }
+    }
+}
+
+
+def getBintrayUsername() {
+    return hasProperty('bintray.user') ? property('bintray.user') : System.getenv('BINTRAY_USERNAME')
+}
+
+def getBintrayApiKey() {
+    return hasProperty('bintray.apikey') ? property('bintray.apikey') : System.getenv('BINTRAY_API_KEY')
+}
+
+bintray {
+    user = getBintrayUsername()
+    key = getBintrayApiKey()
+    configurations = ['archives']
+    pkg {
+        repo = "maven"
+        name = ARCHIVE_NAME    //发布到JCenter上的项目名字
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        licenses = ["Apache-2.0"]
+        publish = true
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    include '**/*.java'
+    include '**/*.groovy'
+    classifier = 'sources'
+}
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from groovydoc.destinationDir
+}
+artifacts {
+    //archives javadocJar
+    archives sourcesJar
+}
+
+afterEvaluate {
+    Task upload = project.tasks.getByName("bintrayUpload")
+    Task build = project.tasks.getByName("build")
+    Task install = project.tasks.getByName("install")
+
+    upload.dependsOn(install)
+    upload.dependsOn(build)
+}

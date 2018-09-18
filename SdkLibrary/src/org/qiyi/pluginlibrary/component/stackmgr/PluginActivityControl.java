@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentMap;
 public class PluginActivityControl implements PluginActivityCallback {
     private static final String TAG = "PluginActivityControl";
     public static final ConcurrentMap<String, Vector<Method>> sMethods = new ConcurrentHashMap<String, Vector<Method>>(10);
+
     private Activity mProxy;// 代理Activity
     private Activity mPlugin;// 插件Activity
     private ReflectionUtils mProxyRef;// 指向代理Activity的反射工具类
@@ -67,7 +68,6 @@ public class PluginActivityControl implements PluginActivityCallback {
      * @param proxy  代理Activity
      * @param plugin 插件Activity
      * @param app    分派给插件的Application
-     * @throws Exception
      */
     public PluginActivityControl(Activity proxy, Activity plugin,
                                  Application app, Instrumentation pluginInstr) {
@@ -83,12 +83,104 @@ public class PluginActivityControl implements PluginActivityCallback {
     }
 
     /**
+     * 修改插件Activity的ActivityInfo
+     * 执行Activity#attach()和ActivityThread启动Activity过程中的逻辑
+     *
+     * @param activity  插件Activity
+     * @param className 插件Activity类名
+     * @param loadedApk 插件内存实例
+     */
+    public static void changeActivityInfo(Activity activity, String className,
+                                          PluginLoadedApk loadedApk) {
+        if (loadedApk == null || TextUtils.isEmpty(className)) {
+            return;
+        }
+
+        PluginDebugLog.runtimeFormatLog(TAG, "changeActivityInfo activity name:%s, pkgName:%s", className, loadedApk.getPluginPackageName());
+        ActivityInfo origActInfo = ReflectionUtils.on(activity).get("mActivityInfo");
+        ActivityInfo actInfo = loadedApk.getActivityInfoByClassName(className);
+        if (actInfo != null) {
+            if (loadedApk.getPackageInfo() != null) {
+                actInfo.applicationInfo = loadedApk.getPackageInfo().applicationInfo;
+            }
+            if (origActInfo != null) {
+                origActInfo.applicationInfo = actInfo.applicationInfo;
+                origActInfo.configChanges = actInfo.configChanges;
+                origActInfo.descriptionRes = actInfo.descriptionRes;
+                origActInfo.enabled = actInfo.enabled;
+                origActInfo.exported = actInfo.exported;
+                origActInfo.flags = actInfo.flags;
+                origActInfo.icon = actInfo.icon;
+                origActInfo.labelRes = actInfo.labelRes;
+                origActInfo.logo = actInfo.logo;
+                origActInfo.metaData = actInfo.metaData;
+                origActInfo.name = actInfo.name;
+                origActInfo.nonLocalizedLabel = actInfo.nonLocalizedLabel;
+                origActInfo.packageName = actInfo.packageName;
+                origActInfo.permission = actInfo.permission;
+                origActInfo.screenOrientation = actInfo.screenOrientation;
+                origActInfo.softInputMode = actInfo.softInputMode;
+                origActInfo.targetActivity = actInfo.targetActivity;
+                origActInfo.taskAffinity = actInfo.taskAffinity;
+                origActInfo.theme = actInfo.theme;
+            }
+
+            // 修改Window的属性
+            Window window = activity.getWindow();
+            if (actInfo.softInputMode != WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED) {
+                window.setSoftInputMode(actInfo.softInputMode);
+            }
+            if (actInfo.uiOptions != 0) {
+                window.setUiOptions(actInfo.uiOptions);
+            }
+            if (Build.VERSION.SDK_INT >= 26) {
+                window.setColorMode(actInfo.colorMode);
+            }
+        }
+
+        // onCreate()中调用时需要修改插件Activity的主题
+        int resTheme = loadedApk.getActivityThemeResourceByClassName(className);
+        if (resTheme != 0) {
+            activity.setTheme(resTheme);
+        }
+
+        if (origActInfo != null) {
+            // handle ActionBar title
+            if (origActInfo.nonLocalizedLabel != null) {
+                activity.setTitle(origActInfo.nonLocalizedLabel);
+            } else if (origActInfo.labelRes != 0) {
+                activity.setTitle(origActInfo.labelRes);
+            } else if (origActInfo.applicationInfo != null) {
+                if (origActInfo.applicationInfo.nonLocalizedLabel != null) {
+                    activity.setTitle(origActInfo.applicationInfo.nonLocalizedLabel);
+                } else if (origActInfo.applicationInfo.labelRes != 0) {
+                    activity.setTitle(origActInfo.applicationInfo.labelRes);
+                } else {
+                    activity.setTitle(origActInfo.applicationInfo.name);
+                }
+            } else {
+                activity.setTitle(origActInfo.name);
+            }
+        }
+
+        if (actInfo != null) {
+            // copy from VirtualApk, is it really need?
+            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+                activity.setRequestedOrientation(actInfo.screenOrientation);
+            }
+            PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +
+                    actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
+                    + ", logo = " + actInfo.logo + ", labelRes=" + actInfo.labelRes);
+        }
+    }
+
+    /**
      * 调用插件Activity的attach方法，注入基础信息
      *
-     * @param pluginInstr  插件Instrumentation
+     * @param pluginInstr    插件Instrumentation
      * @param contextWrapper 插件的BaseContext
-     * @param packageName
-     * @return
+     * @param packageName    插件的包名
+     * @return 注入成功返回true; 失败返回false
      */
     public boolean dispatchProxyToPlugin(Instrumentation pluginInstr, Context contextWrapper, String packageName) {
         if (mPlugin == null || mPlugin.getBaseContext() != null || pluginInstr == null) {
@@ -112,7 +204,7 @@ public class PluginActivityControl implements PluginActivityCallback {
                 // Android 5.0的attach方法在4.x基础上增加了一个IVoiceInteractor mVoiceInteractor参数
                 // 5.0, android.os.Build.VERSION_CODES.LOLLIPOP;
                 callAttachV21(pluginInstr);
-            } else if (android.os.Build.VERSION.SDK_INT >= 14){
+            } else if (android.os.Build.VERSION.SDK_INT >= 14) {
                 // 4.x, android.os.Build.VERSION_CODES.ICE_CREAM_SANDWICH~KITKAT
                 callAttachV14(pluginInstr);
             } else {
@@ -134,7 +226,6 @@ public class PluginActivityControl implements PluginActivityCallback {
         }
         return false;
     }
-
 
     /**
      * 反射调用Android O上的Activity#attach()方法
@@ -441,8 +532,6 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     /**
      * 设置插件的Activity
-     *
-     * @param plugin
      */
     public void setPlugin(Activity plugin) {
         mPlugin = plugin;
@@ -451,8 +540,6 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     /**
      * 得到代理的Activity
-     *
-     * @return
      */
     public Activity getProxy() {
         return mProxy;
@@ -460,8 +547,6 @@ public class PluginActivityControl implements PluginActivityCallback {
 
     /**
      * 设置代理的Activity
-     *
-     * @param proxy
      */
     public void setProxy(Activity proxy) {
         mProxy = proxy;
@@ -485,7 +570,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onCreate方法
      *
-     * @param saveInstance
      * @see android.app.Activity#onCreate(android.os.Bundle)
      */
     @Override
@@ -570,7 +654,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onSaveInstanceState方法
      *
-     * @param outState
      * @see android.app.Activity#onSaveInstanceState(android.os.Bundle)
      */
     @Override
@@ -583,7 +666,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onRestoreInstanceState方法
      *
-     * @param savedInstanceState
      * @see android.app.Activity#onRestoreInstanceState(android.os.Bundle)
      */
     @Override
@@ -622,9 +704,6 @@ public class PluginActivityControl implements PluginActivityCallback {
     /**
      * 执行插件的onKeyDown方法
      *
-     * @param keyCode
-     * @param event
-     * @return
      * @see android.app.Activity#onKeyDown(int, android.view.KeyEvent)
      */
     @Override
@@ -707,97 +786,5 @@ public class PluginActivityControl implements PluginActivityCallback {
     public void callOnActivityResult(int requestCode, int resultCode, Intent data) {
         Class<?>[] paramTypes = new Class[]{int.class, int.class, Intent.class};
         getPluginRef().call("onActivityResult", sMethods, paramTypes, requestCode, resultCode, data);
-    }
-
-    /**
-     * 修改插件Activity的ActivityInfo
-     * 执行Activity#attach()和ActivityThread启动Activity过程中的逻辑
-     *
-     * @param activity
-     * @param className
-     * @param loadedApk
-     */
-    public static void changeActivityInfo(Activity activity, String className,
-                                          PluginLoadedApk loadedApk) {
-        if (loadedApk == null || TextUtils.isEmpty(className)) {
-            return;
-        }
-
-        PluginDebugLog.runtimeFormatLog(TAG, "changeActivityInfo activity name:%s, pkgName:%s", className, loadedApk.getPluginPackageName());
-        ActivityInfo origActInfo = ReflectionUtils.on(activity).get("mActivityInfo");
-        ActivityInfo actInfo = loadedApk.getActivityInfoByClassName(className);
-        if (actInfo != null) {
-            if (loadedApk.getPackageInfo() != null) {
-                actInfo.applicationInfo = loadedApk.getPackageInfo().applicationInfo;
-            }
-            if (origActInfo != null) {
-                origActInfo.applicationInfo = actInfo.applicationInfo;
-                origActInfo.configChanges = actInfo.configChanges;
-                origActInfo.descriptionRes = actInfo.descriptionRes;
-                origActInfo.enabled = actInfo.enabled;
-                origActInfo.exported = actInfo.exported;
-                origActInfo.flags = actInfo.flags;
-                origActInfo.icon = actInfo.icon;
-                origActInfo.labelRes = actInfo.labelRes;
-                origActInfo.logo = actInfo.logo;
-                origActInfo.metaData = actInfo.metaData;
-                origActInfo.name = actInfo.name;
-                origActInfo.nonLocalizedLabel = actInfo.nonLocalizedLabel;
-                origActInfo.packageName = actInfo.packageName;
-                origActInfo.permission = actInfo.permission;
-                origActInfo.screenOrientation = actInfo.screenOrientation;
-                origActInfo.softInputMode = actInfo.softInputMode;
-                origActInfo.targetActivity = actInfo.targetActivity;
-                origActInfo.taskAffinity = actInfo.taskAffinity;
-                origActInfo.theme = actInfo.theme;
-            }
-
-            // 修改Window的属性
-            Window window = activity.getWindow();
-            if (actInfo.softInputMode != WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED) {
-                window.setSoftInputMode(actInfo.softInputMode);
-            }
-            if (actInfo.uiOptions != 0) {
-                window.setUiOptions(actInfo.uiOptions);
-            }
-            if (Build.VERSION.SDK_INT >= 26) {
-                window.setColorMode(actInfo.colorMode);
-            }
-        }
-
-        // onCreate()中调用时需要修改插件Activity的主题
-        int resTheme = loadedApk.getActivityThemeResourceByClassName(className);
-        if (resTheme != 0) {
-            activity.setTheme(resTheme);
-        }
-
-        if (origActInfo != null) {
-            // handle ActionBar title
-            if (origActInfo.nonLocalizedLabel != null) {
-                activity.setTitle(origActInfo.nonLocalizedLabel);
-            } else if (origActInfo.labelRes != 0) {
-                activity.setTitle(origActInfo.labelRes);
-            } else if (origActInfo.applicationInfo != null) {
-                if (origActInfo.applicationInfo.nonLocalizedLabel != null) {
-                    activity.setTitle(origActInfo.applicationInfo.nonLocalizedLabel);
-                } else if (origActInfo.applicationInfo.labelRes != 0) {
-                    activity.setTitle(origActInfo.applicationInfo.labelRes);
-                } else {
-                    activity.setTitle(origActInfo.applicationInfo.name);
-                }
-            } else {
-                activity.setTitle(origActInfo.name);
-            }
-        }
-
-        if (actInfo != null) {
-            // copy from VirtualApk, is it really need?
-            if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                activity.setRequestedOrientation(actInfo.screenOrientation);
-            }
-            PluginDebugLog.log(TAG, "changeActivityInfo->changeTheme: " + " theme = " +
-                    actInfo.getThemeResource() + ", icon = " + actInfo.getIconResource()
-                    + ", logo = " + actInfo.logo + ", labelRes=" + actInfo.labelRes);
-        }
     }
 }

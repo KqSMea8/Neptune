@@ -28,10 +28,9 @@ import java.util.LinkedList;
  * 插件的Activity栈抽象, 和系统的{@link com.android.server.am.ActivityStack}类似
  */
 public class PActivityStack {
+    private final LinkedList<Activity> mActivities;
     // taskAffinity
     private String taskName;
-
-    private final LinkedList<Activity> mActivities;
 
     PActivityStack(String taskName) {
         this.taskName = taskName;
@@ -40,7 +39,6 @@ public class PActivityStack {
 
     /**
      * 获取当前任务栈的名称
-     * @return
      */
     public String getTaskName() {
         return taskName;

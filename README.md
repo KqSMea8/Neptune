@@ -12,33 +12,6 @@ Especially, Neptune is greatly compatible with Android P . It can run on Android
 
 [中文文档](README_CN.md)
 
-# Android P Compatibility
-
-Only few android private APIs in light greylist are used in Neptune. No APIs in dark grey or black list.
-
-| API List | API Used count |
-| :----    | :----: |
-| Black list | 0 |
-| Dark grey list | 0 |
-| light grey list | 9 |
-
-### Details
-
-```
-Accessing hidden field Landroid/app/ActivityThread;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
-Accessing hidden method Ldalvik/system/VMRuntime;->getCurrentInstructionSet()Ljava/lang/String; (light greylist, reflection)
-Accessing hidden method Landroid/content/res/AssetManager;->addAssetPath(Ljava/lang/String;)I (light greylist, reflection)
-Accessing hidden method Landroid/app/Instrumentation;->execStartActivity(Landroid/content/Context;Landroid/os/IBinder;Landroid/os/IBinder;Landroid/app/Activity;Landroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/Instrumentation$ActivityResult; (light greylist, reflection)
-Accessing hidden field Landroid/view/ContextThemeWrapper;->mResources:Landroid/content/res/Resources; (light greylist, reflection)
-Accessing hidden field Landroid/app/Activity;->mApplication:Landroid/app/Application; (light greylist, reflection)
-Accessing hidden field Landroid/content/ContextWrapper;->mBase:Landroid/content/Context; (light greylist, reflection)
-Accessing hidden field Landroid/app/Activity;->mInstrumentation:Landroid/app/Instrumentation; (light greylist, reflection)
-Accessing hidden field Landroid/app/Activity;->mActivityInfo:Landroid/content/pm/ActivityInfo; (light greylist, reflection)
-```
-
-
-`ActivityThread#mInstrumentation` and `AssetManager#addAssetPath()` are required for the Neptune project in above light graylist APIs. For other light graylist APIs, we avoid the risk of private API calls by providing basic PluginActivity class to inherit and override related method for plugin development.
-
 # Supported Features
 
 | Feature | Detail  |
@@ -94,7 +67,7 @@ If plugin app wants to share resources with host app, you need add dependency in
 
 ```Gradle
 dependencies {
-    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.0'
+    classpath  'com.iqiyi.tools.build:neptune-gradle:1.1.6'
 }
 ```
 
@@ -105,7 +78,7 @@ apply plugin: 'com.qiyi.neptune.plugin'
 
 neptune {
     pluginMode = true      // In plugin apk build mode
-    packageId = 0x30       // The packge id of Resources
+    packageId = 0x30       // The package id of Resources
     hostDependencies = "{group1}:{artifact1};{group2}:{artifact2}" // host app resources dependencies
 }
 ```

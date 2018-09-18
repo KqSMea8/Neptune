@@ -17,9 +17,9 @@
  */
 package org.qiyi.pluginlibrary.plugin;
 
-import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
-
 import android.content.Context;
+
+import org.qiyi.pluginlibrary.utils.ResourcesToolForPlugin;
 
 public interface InterfaceToGetHost {
     /**

@@ -29,7 +29,7 @@ import org.qiyi.pluginlibrary.utils.ComponentFinder;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 
 @Deprecated
-public class PluginActivityGroup extends ActivityGroup implements IPluginBase{
+public class PluginActivityGroup extends ActivityGroup implements IPluginBase {
 
     private PluginActivityDelegate mDelegate;
 
@@ -86,7 +86,8 @@ public class PluginActivityGroup extends ActivityGroup implements IPluginBase{
     }
 
     // Api 16新增
-    @Override @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
+    @Override
+    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         // 替换成坑位Activity
         String pkgName = getPluginPackageName();

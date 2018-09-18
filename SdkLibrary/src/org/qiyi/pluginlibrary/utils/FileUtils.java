@@ -49,12 +49,34 @@ import java.util.zip.ZipFile;
 
 public final class FileUtils {
     private static final String TAG = PluginDebugLog.TAG;
-    /** apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so */
+    /**
+     * apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so
+     */
     private static final String APK_LIB_DIR_PREFIX = "lib/";
-    /** lib中so后缀 */
+    /**
+     * lib中so后缀
+     */
     private static final String APK_LIB_SUFFIX = ".so";
+    /* redefine those constant here because of bug 13721174 preventing to compile using the
+     * constants defined in ZipFile */
+    private static final int ENDHDR = 22;
+    private static final int ENDSIG = 0x6054b50;
+    /**
+     * Size of reading buffers.
+     */
+    private static final int BUFFER_SIZE = 0x4000;
+    /**
+     * 判断当前手机的指令集
+     */
+    private static String currentInstructionSet = null;
+    /**
+     * 获取当前进程名
+     */
+    private static String currentProcessName = null;
 
-    /** utility class private constructor */
+    /**
+     * utility class private constructor
+     */
     private FileUtils() {
     }
 
@@ -63,8 +85,7 @@ public final class FileUtils {
      * return false if failed.
      *
      * @param inputStream source file inputstream
-     * @param destFile destFile
-     *
+     * @param destFile    destFile
      * @return success return true
      */
     public static boolean copyToFile(InputStream inputStream, File destFile) {
@@ -103,9 +124,8 @@ public final class FileUtils {
      * Copy data from a source stream to destFile. Return true if succeed,
      * return false if failed.
      *
-     * @param srcFile source file
+     * @param srcFile  source file
      * @param destFile destFile
-     *
      * @return success return true
      */
     public static boolean copyToFile(File srcFile, File destFile) {
@@ -136,7 +156,7 @@ public final class FileUtils {
      * 安装 apk 中的 so 库。
      *
      * @param apkFilePath
-     * @param libDir lib目录。
+     * @param libDir      lib目录。
      */
     public static boolean installNativeLibrary(String apkFilePath, String libDir) {
         PluginDebugLog.installFormatLog("plugin", "apkFilePath: %s, libDir: %s", apkFilePath, libDir);
@@ -264,9 +284,9 @@ public final class FileUtils {
      * (java.io.File methods returns a boolean)</li> </ul>
      *
      * @param file file or directory to delete, must not be <code>null</code>
-     * @throws NullPointerException if the directory is <code>null</code>
+     * @throws NullPointerException  if the directory is <code>null</code>
      * @throws FileNotFoundException if the file was not found
-     * @throws IOException in case deletion is unsuccessful
+     * @throws IOException           in case deletion is unsuccessful
      */
     public static void forceDelete(File file) throws IOException {
         if (file.isDirectory()) {
@@ -285,8 +305,9 @@ public final class FileUtils {
 
     /**
      * 迁移文件
-     * @param sourceFile  源文件
-     * @param targetFile  目标文件
+     *
+     * @param sourceFile 源文件
+     * @param targetFile 目标文件
      */
     public static void moveFile(File sourceFile, File targetFile) {
         moveFile(sourceFile, targetFile, true);
@@ -294,9 +315,10 @@ public final class FileUtils {
 
     /**
      * 迁移文件
-     * @param sourceFile  源文件
-     * @param targetFile  目标文件
-     * @param needDeleteSource  是否删除源文件
+     *
+     * @param sourceFile       源文件
+     * @param targetFile       目标文件
+     * @param needDeleteSource 是否删除源文件
      */
     public static void moveFile(File sourceFile, File targetFile, boolean needDeleteSource) {
         copyToFile(sourceFile, targetFile);
@@ -307,6 +329,7 @@ public final class FileUtils {
 
     /**
      * 检测生成的oat文件是否损坏，如果已经损坏则删除
+     *
      * @param optDir
      * @param apkFile
      */
@@ -343,10 +366,6 @@ public final class FileUtils {
         }
     }
 
-    /**
-     * 判断当前手机的指令集
-     */
-    private static String currentInstructionSet = null;
     public static String getCurrentInstructionSet() throws Exception {
         if (currentInstructionSet != null) {
             return currentInstructionSet;
@@ -360,10 +379,6 @@ public final class FileUtils {
         return currentInstructionSet;
     }
 
-    /**
-     * 获取当前进程名
-     */
-    private static String currentProcessName = null;
     public static String getCurrentProcessName(Context context) {
         if (!TextUtils.isEmpty(currentProcessName)) {
             return currentProcessName;
@@ -371,27 +386,33 @@ public final class FileUtils {
 
         int pid = android.os.Process.myPid();
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
-            if (process.pid == pid) {
-                return process.processName;
+        try {
+            for (ActivityManager.RunningAppProcessInfo process : manager.getRunningAppProcesses()) {
+                if (process.pid == pid) {
+                    return process.processName;
+                }
             }
+        } catch (Exception e) {
+            // ActivityManager.getRunningAppProcesses() may throw NPE in some custom-made devices (oem BIRD)
         }
 
         // try to read process name in /proc/pid/cmdline if no result from activity manager
         String cmdline = null;
         BufferedReader processFileReader = null;
+        FileReader fileReader = null;
         try {
-            processFileReader = new BufferedReader(new FileReader(String.format(Locale.getDefault(), "/proc/%d/cmdline", Process.myPid())));
+            fileReader = new FileReader(String.format(Locale.getDefault(), "/proc/%d/cmdline", Process.myPid()));
+            processFileReader = new BufferedReader(fileReader);
             cmdline = processFileReader.readLine().trim();
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
             closeQuietly(processFileReader);
+            closeQuietly(fileReader);
         }
 
         return cmdline;
     }
-
 
     public static void closeQuietly(Closeable c) {
         if (c != null) {
@@ -412,23 +433,6 @@ public final class FileUtils {
             }
         }
     }
-
-
-
-    static class CentralDirectory {
-        long offset;
-        long size;
-    }
-
-    /* redefine those constant here because of bug 13721174 preventing to compile using the
-     * constants defined in ZipFile */
-    private static final int ENDHDR = 22;
-    private static final int ENDSIG = 0x6054b50;
-
-    /**
-     * Size of reading buffers.
-     */
-    private static final int BUFFER_SIZE = 0x4000;
 
     /**
      * Compute crc32 of the central directory of an apk. The central directory contains
@@ -506,5 +510,10 @@ public final class FileUtils {
             length = raf.read(buffer, 0, length);
         }
         return crc.getValue();
+    }
+
+    static class CentralDirectory {
+        long offset;
+        long size;
     }
 }

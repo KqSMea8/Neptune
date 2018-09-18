@@ -31,9 +31,8 @@ import org.qiyi.pluginlibrary.utils.ContextUtils;
 /**
  * 插件内的BaseActivity, 提供给插件方继承此类，
  * 通过override方式来完成插件框架的一些功能替换和生命周期注入
- *
  */
-public class PluginActivity extends Activity implements IPluginBase{
+public class PluginActivity extends Activity implements IPluginBase {
 
     private PluginActivityDelegate mDelegate;
 
@@ -82,7 +81,8 @@ public class PluginActivity extends Activity implements IPluginBase{
     }
 
     // Api 16新增
-    @Override @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
+    @Override
+    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
         // 替换成坑位Activity
         String pkgName = getPluginPackageName();

@@ -52,44 +52,51 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 负责安装卸载app，获取安装列表等工作.<br>
  * 提供安装插件的一些方法 功能类似系统中的PackageManager
+ *
  * @hide
  */
 public class PluginPackageManager {
-
     private static final String TAG = "PluginPackageManager";
-
     /**
      * 安装成功，发送广播
      */
     public static final String ACTION_PACKAGE_INSTALLED = "com.qiyi.neptune.action.installed";
-
     /**
      * 安装失败，发送广播
      */
     public static final String ACTION_PACKAGE_INSTALLFAIL = "com.qiyi.neptune.action.installfail";
-
     /**
      * 卸载插件完成，发送广播
      */
     public static final String ACTION_PACKAGE_UNINSTALL = "com.qiyi.neptune.action.uninstall";
-
     /**
      * 如果发现某个插件异常，通知上层检查
      */
     public static final String ACTION_HANDLE_PLUGIN_EXCEPTION = "handle_plugin_exception";
 
-    private Context mContext;
+    public static final int DELETE_SUCCEEDED = 1;
+    public static final int INSTALL_SUCCESS = 2;
+    public static final int INSTALL_FAILED = -2;
+    public static final int UNINSTALL_SUCCESS = 3;
+    public static final int UNINSTALL_FAILED = -3;
 
+    private static final String PLUGIN_INSTALL_SP_NAME = "plugin_install";
+    private static final String PLUGIN_INSTALL_KEY = "install_status";
+    /**
+     * 验证插件基本信息、获取插件状态等信息接口，该接口通常交由主工程实现，并设置
+     */
+    private static IPluginInfoProvider sPluginInfoProvider = null;
+    @SuppressWarnings("StaticFieldLeak")
+    private static volatile PluginPackageManager sInstance = null;
+    private Context mContext;
     private ConcurrentHashMap<String, IActionFinishCallback> mActionFinishCallbacks =
             new ConcurrentHashMap<String, IActionFinishCallback>();
     // 插件PackageInfo的缓存
     private ConcurrentHashMap<String, PluginPackageInfo> mPackageInfoCache =
             new ConcurrentHashMap<String, PluginPackageInfo>();
-
     // 已安装插件列表
     private ConcurrentHashMap<String, PluginLiteInfo> mInstalledPlugins =
             new ConcurrentHashMap<>();
-
     private boolean mInstallerReceiverRegistered = false;
     /**
      * 插件安装任务列表
@@ -99,165 +106,6 @@ public class PluginPackageManager {
      * 插件安装监听列表
      */
     private Map<String, IInstallCallBack> listenerMap = new HashMap<String, IInstallCallBack>();
-
-    /**
-     * 验证插件基本信息、获取插件状态等信息接口，该接口通常交由主工程实现，并设置
-     */
-    private static IPluginInfoProvider sPluginInfoProvider = null;
-
-    public static final int DELETE_SUCCEEDED = 1;
-    public static final int INSTALL_SUCCESS = 2;
-    public static final int INSTALL_FAILED = -2;
-    public static final int UNINSTALL_SUCCESS = 3;
-    public static final int UNINSTALL_FAILED = -3;
-    @SuppressWarnings("StaticFieldLeak")
-    private static volatile PluginPackageManager sInstance = null;
-
-    /**
-     * 获取PluginPackageManager的单实例
-     */
-    static PluginPackageManager getInstance(Context context) {
-
-        if (sInstance == null) {
-            synchronized (PluginPackageManager.class) {
-                if (sInstance == null) {
-                    sInstance = new PluginPackageManager();
-                    sInstance.init(context);
-                }
-            }
-        }
-        return sInstance;
-    }
-
-    private void init(Context context) {
-        mContext = context.getApplicationContext();
-        registerInstallReceiver();
-        startRestoreData();
-    }
-
-    /**
-     * 设置 IPluginInfoProvider 接口，由应用层实现更高级的控制
-     *
-     * @param packageInfoManager
-     */
-    static void setPluginInfoProvider(IPluginInfoProvider packageInfoManager) {
-        sPluginInfoProvider = packageInfoManager;
-    }
-
-
-    /**
-     * 保护性的更新srcApkPath
-     *
-     * @param context
-     * @param cmPkgInfo
-     */
-    public static void updateSrcApkPath(Context context, PluginLiteInfo cmPkgInfo) {
-        if (null != context && null != cmPkgInfo && TextUtils.isEmpty(cmPkgInfo.srcApkPath)) {
-            // srcApkPath is empty, set a default value
-            File rootDir = PluginInstaller.getPluginappRootPath(ContextUtils.getOriginalContext(context));
-            // <pkgName>.<pkgVer>.apk
-            File mApkFile = new File(rootDir, cmPkgInfo.packageName + "." + cmPkgInfo.pluginVersion + PluginInstaller.APK_SUFFIX);
-            if (!mApkFile.exists()) {
-                // 安装在sd卡上
-                mApkFile = new File(context.getExternalFilesDir(PluginInstaller.PLUGIN_ROOT_PATH),
-                        cmPkgInfo.packageName + "." + cmPkgInfo.pluginVersion + PluginInstaller.APK_SUFFIX);
-            }
-            // 不带版本号 <pkgName>.apk
-            if (!mApkFile.exists()) {
-                mApkFile = new File(rootDir, cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX);
-            }
-            if (!mApkFile.exists()) {
-                mApkFile = new File(context.getExternalFilesDir(PluginInstaller.PLUGIN_ROOT_PATH), cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX);
-            }
-
-            if (mApkFile.exists()) {
-                cmPkgInfo.srcApkPath = mApkFile.getAbsolutePath();
-                PluginDebugLog.runtimeFormatLog(TAG,
-                        "special case srcApkPath is null! Set default value for srcApkPath:%s  packageName:%s",
-                        mApkFile.getAbsolutePath(), cmPkgInfo.packageName);
-            } else {
-                PluginDebugLog.runtimeLog(TAG, "updateSrcApkPath fail!");
-            }
-        }
-    }
-
-    private static final String PLUGIN_INSTALL_SP_NAME = "plugin_install";
-    private static final String PLUGIN_INSTALL_KEY = "install_status";
-    /**
-     * 保存已安装插件信息到本地
-     */
-    private void saveInstallPluginInfos() {
-
-        SharedPreferences sp = mContext.getSharedPreferences(PLUGIN_INSTALL_SP_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-
-        JSONArray jArray = new JSONArray();
-        for (Map.Entry<String, PluginLiteInfo> entry : mInstalledPlugins.entrySet()) {
-            String pkgName = entry.getKey();
-            PluginLiteInfo liteInfo = entry.getValue();
-
-            JSONObject jObj = new JSONObject();
-            try {
-                jObj.put("pkgName", pkgName);
-                jObj.put("info", liteInfo.toJson());
-
-                jArray.put(jObj);
-            } catch (JSONException e) {
-                // ingore
-            }
-        }
-        editor.putString(PLUGIN_INSTALL_KEY, jArray.toString());
-        editor.apply();
-    }
-
-
-    private void startRestoreData() {
-        new Thread("ppm-rd") {
-            @Override
-            public void run() {
-                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-                restoreInstallPluginInfos();
-            }
-        }.start();
-    }
-
-    /**
-     * 从本地恢复已安装插件信息
-     */
-    private void restoreInstallPluginInfos() {
-
-        SharedPreferences sp = mContext.getSharedPreferences(PLUGIN_INSTALL_SP_NAME, Context.MODE_PRIVATE);
-        String content = sp.getString(PLUGIN_INSTALL_KEY, "");
-        if (TextUtils.isEmpty(content)) {
-            return;
-        }
-
-        // restore data
-        try {
-            JSONArray jArray = new JSONArray(content);
-            for (int i = 0; i < jArray.length(); i++) {
-                JSONObject jObj = jArray.optJSONObject(i);
-                if (jObj != null) {
-                    String pkgName = jObj.optString("pkgName");
-                    String info = jObj.optString("info");
-                    if (TextUtils.isEmpty(pkgName) || TextUtils.isEmpty(info)) {
-                        continue;
-                    }
-
-                    PluginLiteInfo liteInfo = new PluginLiteInfo(info);
-                    if (TextUtils.isEmpty(liteInfo.packageName) || !TextUtils.equals(liteInfo.packageName, pkgName)) {
-                        continue;
-                    }
-                    // restore success
-                    mInstalledPlugins.put(pkgName, liteInfo);
-                }
-            }
-        } catch (JSONException e) {
-            // ignore
-        }
-    }
-
-
     /**
      * 安装广播，用于监听安装过程中是否成功。
      */
@@ -326,6 +174,173 @@ public class PluginPackageManager {
     };
 
     /**
+     * 获取PluginPackageManager的单实例
+     */
+    static PluginPackageManager getInstance(Context context) {
+
+        if (sInstance == null) {
+            synchronized (PluginPackageManager.class) {
+                if (sInstance == null) {
+                    sInstance = new PluginPackageManager();
+                    sInstance.init(context);
+                }
+            }
+        }
+        return sInstance;
+    }
+
+    /**
+     * 设置 IPluginInfoProvider 接口，由应用层实现更高级的控制
+     */
+    static void setPluginInfoProvider(IPluginInfoProvider packageInfoManager) {
+        sPluginInfoProvider = packageInfoManager;
+    }
+
+    /**
+     * 保护性的更新srcApkPath
+     */
+    public static void updateSrcApkPath(Context context, PluginLiteInfo cmPkgInfo) {
+        if (null != context && null != cmPkgInfo && TextUtils.isEmpty(cmPkgInfo.srcApkPath)) {
+            // srcApkPath is empty, set a default value
+            File rootDir = PluginInstaller.getPluginappRootPath(ContextUtils.getOriginalContext(context));
+            // <pkgName>.<pkgVer>.apk
+            File mApkFile = new File(rootDir, cmPkgInfo.packageName + "." + cmPkgInfo.pluginVersion + PluginInstaller.APK_SUFFIX);
+            if (!mApkFile.exists()) {
+                // 安装在sd卡上
+                mApkFile = new File(context.getExternalFilesDir(PluginInstaller.PLUGIN_ROOT_PATH),
+                        cmPkgInfo.packageName + "." + cmPkgInfo.pluginVersion + PluginInstaller.APK_SUFFIX);
+            }
+            // 不带版本号 <pkgName>.apk
+            if (!mApkFile.exists()) {
+                mApkFile = new File(rootDir, cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX);
+            }
+            if (!mApkFile.exists()) {
+                mApkFile = new File(context.getExternalFilesDir(PluginInstaller.PLUGIN_ROOT_PATH), cmPkgInfo.packageName + PluginInstaller.APK_SUFFIX);
+            }
+
+            if (mApkFile.exists()) {
+                cmPkgInfo.srcApkPath = mApkFile.getAbsolutePath();
+                PluginDebugLog.runtimeFormatLog(TAG,
+                        "special case srcApkPath is null! Set default value for srcApkPath:%s  packageName:%s",
+                        mApkFile.getAbsolutePath(), cmPkgInfo.packageName);
+            } else {
+                PluginDebugLog.runtimeLog(TAG, "updateSrcApkPath fail!");
+            }
+        }
+    }
+
+    /**
+     * 获取内置存储的files根目录
+     */
+    public static File getExternalFilesRootDir() {
+        if (null != sPluginInfoProvider) {
+            return sPluginInfoProvider.getExternalFilesRootDirDirectly();
+        }
+        return null;
+    }
+
+    /**
+     * 获取内置存储的cache根目录
+     */
+    public static File getExternalCacheRootDir() {
+        if (null != sPluginInfoProvider) {
+            return sPluginInfoProvider.getExternalCacheRootDirDirectly();
+        }
+        return null;
+    }
+
+    public static void notifyClientPluginException(Context context, String pkgName, String exceptionMsg) {
+        try {
+            Intent intent = new Intent(ACTION_HANDLE_PLUGIN_EXCEPTION);
+            intent.setPackage(context.getPackageName());
+            intent.putExtra(IntentConstant.EXTRA_PKG_NAME, pkgName);
+            intent.putExtra(ErrorType.ERROR_REASON, exceptionMsg);
+            context.sendBroadcast(intent);
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    private void init(Context context) {
+        mContext = context.getApplicationContext();
+        registerInstallReceiver();
+        startRestoreData();
+    }
+
+    /**
+     * 保存已安装插件信息到本地
+     */
+    private void saveInstallPluginInfos() {
+
+        SharedPreferences sp = mContext.getSharedPreferences(PLUGIN_INSTALL_SP_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+
+        JSONArray jArray = new JSONArray();
+        for (Map.Entry<String, PluginLiteInfo> entry : mInstalledPlugins.entrySet()) {
+            String pkgName = entry.getKey();
+            PluginLiteInfo liteInfo = entry.getValue();
+
+            JSONObject jObj = new JSONObject();
+            try {
+                jObj.put("pkgName", pkgName);
+                jObj.put("info", liteInfo.toJson());
+
+                jArray.put(jObj);
+            } catch (JSONException e) {
+                // ingore
+            }
+        }
+        editor.putString(PLUGIN_INSTALL_KEY, jArray.toString());
+        editor.apply();
+    }
+
+    private void startRestoreData() {
+        new Thread("ppm-rd") {
+            @Override
+            public void run() {
+                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+                restoreInstallPluginInfos();
+            }
+        }.start();
+    }
+
+    /**
+     * 从本地恢复已安装插件信息
+     */
+    private void restoreInstallPluginInfos() {
+
+        SharedPreferences sp = mContext.getSharedPreferences(PLUGIN_INSTALL_SP_NAME, Context.MODE_PRIVATE);
+        String content = sp.getString(PLUGIN_INSTALL_KEY, "");
+        if (TextUtils.isEmpty(content)) {
+            return;
+        }
+
+        // restore data
+        try {
+            JSONArray jArray = new JSONArray(content);
+            for (int i = 0; i < jArray.length(); i++) {
+                JSONObject jObj = jArray.optJSONObject(i);
+                if (jObj != null) {
+                    String pkgName = jObj.optString("pkgName");
+                    String info = jObj.optString("info");
+                    if (TextUtils.isEmpty(pkgName) || TextUtils.isEmpty(info)) {
+                        continue;
+                    }
+
+                    PluginLiteInfo liteInfo = new PluginLiteInfo(info);
+                    if (TextUtils.isEmpty(liteInfo.packageName) || !TextUtils.equals(liteInfo.packageName, pkgName)) {
+                        continue;
+                    }
+                    // restore success
+                    mInstalledPlugins.put(pkgName, liteInfo);
+                }
+            }
+        } catch (JSONException e) {
+            // ignore
+        }
+    }
+
+    /**
      * 注册插件安装成功/失败广播
      */
     private void registerInstallReceiver() {
@@ -351,21 +366,8 @@ public class PluginPackageManager {
     }
 
     /**
-     * 包依赖任务队列对象。
-     */
-    private class PackageAction {
-        long timestamp;// 时间
-        IInstallCallBack callBack;// 安装回调
-        PluginLiteInfo pkgInfo;   // 插件基础信息
-        String packageName;// 包名
-    }
-
-    /**
      * 执行依赖于安装包的 runnable，如果该package已经安装，则立即执行。如果pluginapp正在初始化，或者该包正在安装，
      * 则放到任务队列中等待安装完毕执行。
-     *
-     * @param packageInfo 插件信息
-     * @param callBack
      */
     public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callBack) {
         boolean packageInstalled = isPackageInstalled(packageInfo.packageName);
@@ -401,10 +403,6 @@ public class PluginPackageManager {
 
     /**
      * 执行队列中等待的Action，回调给上层
-     *
-     * @param packageInfo
-     * @param isSuccess
-     * @param failReason
      */
     private void executePackageAction(
             PluginLiteInfo packageInfo, boolean isSuccess, int failReason) {
@@ -476,8 +474,6 @@ public class PluginPackageManager {
 
     /**
      * 设置Action执行完成的Callback回调
-     *
-     * @param callback
      */
     public void setActionFinishCallback(IActionFinishCallback callback) {
         if (callback != null) {
@@ -495,7 +491,6 @@ public class PluginPackageManager {
 
     /**
      * 插件安装成功，回调给应用层
-     * @param pkgInfo
      */
     private void onPackageInstalled(PluginLiteInfo pkgInfo) {
         PluginDebugLog.installFormatLog(TAG, "plugin install success: %s", pkgInfo.packageName);
@@ -520,8 +515,6 @@ public class PluginPackageManager {
 
     /**
      * 插件安装失败，回调给应用层
-     * @param pkgInfo
-     * @param failReason
      */
     private void onPackageInstallFailed(PluginLiteInfo pkgInfo, int failReason) {
         PluginDebugLog.installFormatLog(TAG,
@@ -543,9 +536,6 @@ public class PluginPackageManager {
 
     /**
      * Action执行完成，回调给Client端
-     *
-     * @param packageName
-     * @param errorCode
      */
     private void onActionFinish(String packageName, int errorCode) {
         for (Map.Entry<String, IActionFinishCallback> entry : mActionFinishCallbacks.entrySet()) {
@@ -560,10 +550,8 @@ public class PluginPackageManager {
         }
     }
 
-
     /**
      * 获取已安装插件列表
-     *
      */
     public List<PluginLiteInfo> getInstalledApps() {
         if (sPluginInfoProvider != null) {
@@ -573,7 +561,6 @@ public class PluginPackageManager {
 
         return new ArrayList<>(mInstalledPlugins.values());
     }
-
 
     /**
      * 判断一个package是否安装
@@ -587,9 +574,6 @@ public class PluginPackageManager {
 
     /**
      * 获取安装apk的信息
-     *
-     * @param packageName
-     * @return 没有安装反馈null
      */
     public PluginLiteInfo getPackageInfo(String packageName) {
         if (TextUtils.isEmpty(packageName)) {
@@ -621,8 +605,9 @@ public class PluginPackageManager {
     /**
      * 安装一个插件，安装过程采用独立进程异步安装
      * 启动Service进行安装操作，安装完成会有 {@link #ACTION_PACKAGE_INSTALLED} 广播。
-     * @param pluginInfo  插件信息
-     * @param listener    监听器
+     *
+     * @param pluginInfo 插件信息
+     * @param listener   监听器
      */
     public void install(PluginLiteInfo pluginInfo, IInstallCallBack listener) {
         registerInstallReceiver();  //注册广播
@@ -705,9 +690,6 @@ public class PluginPackageManager {
 
     /**
      * 卸载插件，删除文件
-     *
-     * @param packageInfo PluginLiteInfo
-     * @return
      */
     public boolean uninstall(final PluginLiteInfo packageInfo) {
 
@@ -757,9 +739,6 @@ public class PluginPackageManager {
 
     /**
      * 判断能否安装该插件
-     *
-     * @param info
-     * @return
      */
     public boolean canInstallPackage(PluginLiteInfo info) {
         if (sPluginInfoProvider != null) {
@@ -770,9 +749,6 @@ public class PluginPackageManager {
 
     /**
      * 判断能否卸载插件
-     *
-     * @param info
-     * @return
      */
     public boolean canUninstallPackage(PluginLiteInfo info) {
         if (sPluginInfoProvider != null) {
@@ -783,9 +759,6 @@ public class PluginPackageManager {
 
     /**
      * 获取插件的PluginPackageInfo信息
-     *
-     * @param pkgName
-     * @return
      */
     public PluginPackageInfo getPluginPackageInfo(String pkgName) {
         PluginPackageInfo result = null;
@@ -815,9 +788,6 @@ public class PluginPackageManager {
 
     /**
      * 获取插件的依赖列表
-     *
-     * @param pkgName
-     * @return
      */
     List<String> getPluginRefs(String pkgName) {
         List<String> mRefs = Collections.emptyList();
@@ -842,31 +812,8 @@ public class PluginPackageManager {
         return mRefs;
     }
 
-
-    /**
-     * 获取内置存储的files根目录
-     */
-    public static File getExternalFilesRootDir() {
-        if (null != sPluginInfoProvider) {
-            return sPluginInfoProvider.getExternalFilesRootDirDirectly();
-        }
-        return null;
-    }
-
-    /**
-     * 获取内置存储的cache根目录
-     */
-    public static File getExternalCacheRootDir() {
-        if (null != sPluginInfoProvider) {
-            return sPluginInfoProvider.getExternalCacheRootDirDirectly();
-        }
-        return null;
-    }
-
     /**
      * 直接获取已经安装的插件列表(不经过ipc，直接读取sp)
-     *
-     * @return
      */
     List<PluginLiteInfo> getInstalledPackagesDirectly() {
         List<PluginLiteInfo> installPlugins = Collections.emptyList();
@@ -881,9 +828,6 @@ public class PluginPackageManager {
 
     /**
      * 直接判断指定插件是否安装
-     *
-     * @param packageName
-     * @return
      */
     boolean isPackageInstalledDirectly(String packageName) {
         if (TextUtils.isEmpty(packageName)) {
@@ -899,9 +843,6 @@ public class PluginPackageManager {
 
     /**
      * 直接获取插件依赖
-     *
-     * @param packageName
-     * @return
      */
     List<String> getPluginRefsDirectly(String packageName) {
         List<String> mRefPlugins = Collections.emptyList();
@@ -924,9 +865,6 @@ public class PluginPackageManager {
 
     /**
      * 直接获取插件的信息
-     *
-     * @param packageName
-     * @return
      */
     PluginLiteInfo getPackageInfoDirectly(String packageName) {
         PluginLiteInfo liteInfo = null;
@@ -940,16 +878,13 @@ public class PluginPackageManager {
         return liteInfo;
     }
 
-
-    public static void notifyClientPluginException(Context context, String pkgName, String exceptionMsg) {
-        try {
-            Intent intent = new Intent(ACTION_HANDLE_PLUGIN_EXCEPTION);
-            intent.setPackage(context.getPackageName());
-            intent.putExtra(IntentConstant.EXTRA_PKG_NAME, pkgName);
-            intent.putExtra(ErrorType.ERROR_REASON, exceptionMsg);
-            context.sendBroadcast(intent);
-        } catch (Exception e) {
-            // ignore
-        }
+    /**
+     * 包依赖任务队列对象。
+     */
+    private class PackageAction {
+        long timestamp;// 时间
+        IInstallCallBack callBack;// 安装回调
+        PluginLiteInfo pkgInfo;   // 插件基础信息
+        String packageName;// 包名
     }
 }
