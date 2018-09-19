@@ -38,7 +38,7 @@ Neptune现在完全兼容Android P系统，可以在Android P设备上稳定且�
 在App模块的`build.gradle`中compile移入Neptune库
 
 ```Gradle
-    compile 'org.qiyi.video:neptune:2.5.0'
+    implementation 'org.qiyi.video:neptune:2.5.0'
 ```
 
 在`Application#onCreate()`阶段初始化Neptune

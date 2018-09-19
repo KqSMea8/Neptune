@@ -3,12 +3,12 @@
 buildscript {
 
     repositories {
-        jcenter()
-        google()
         maven {
             // TODO 关联jcenter之后，删除
             url 'https://dl.bintray.com/zjupure/neptune'
         }
+        jcenter()
+        google()
     }
     dependencies {
         classpath "com.android.tools.build:gradle:${ANDROID_GRADLE_VERSION}"
@@ -22,12 +22,12 @@ buildscript {
 
 allprojects {
     repositories {
-        jcenter()
-        google()
         maven {
             // TODO 关联jcenter之后，删除
             url 'https://dl.bintray.com/zjupure/neptune'
         }
+        jcenter()
+        google()
         configurations.all {
             //resolutionStrategy.cacheDynamicVersionsFor 4, 'hours'
             resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'

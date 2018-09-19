@@ -40,7 +40,7 @@ Especially, Neptune is greatly compatible with Android P . It can run on Android
 compile Neptune in application module of `build.gradle`.
 
 ```Gradle
-    compile 'org.qiyi.video:neptune:2.5.0'
+    implementation 'org.qiyi.video:neptune:2.5.0'
 ```
 
 Initialize sdk in your `Application#onCreate()`.
