@@ -1,10 +1,10 @@
 
-include ':SdkLibrary'
+//include ':SdkLibrary'
 //include ':neptune-gradle'
 
 include ':HostApp'
 project(':HostApp').projectDir = file('samples/HostApp')
-//
+
 include ':PluginApp'
 project(':PluginApp').projectDir = file('samples/PluginApp')
 

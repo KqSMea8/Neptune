@@ -1,6 +1,7 @@
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
+
 def siteUrl = 'https://github.com/iqiyi/Neptune' // 项目的主页
 def gitUrl = 'https://github.com/iqiyi/Neptune' // Git仓库的url
 def issueUrl = 'https://github.com/iqiyi/Neptune/issues' // 项目的issues
@@ -13,7 +14,7 @@ install {
     repositories.mavenInstaller {
         // This generates POM.xml with proper parameters
         pom.project {
-            name POM_NAME
+            name = POM_NAME
             artifactId = ARTIFACT_ID
             packaging POM_PACKAGING
             // Add your description here
@@ -28,7 +29,7 @@ install {
             }
             developers {
                 developer {
-                    id 'zjupure'
+                    id 'zjupure'    //填写的一些基本信息
                     name 'IQIYI'
                     email 'zjupure@gmail.com'
                 }
@@ -41,6 +42,7 @@ install {
         }
     }
 }
+
 
 def getBintrayUsername() {
     return hasProperty('bintray.user') ? property('bintray.user') : System.getenv('BINTRAY_USERNAME')
@@ -66,4 +68,13 @@ bintray {
         publish = true
         publicDownloadNumbers = true
     }
+}
+
+afterEvaluate {
+    Task upload = project.tasks.getByName("bintrayUpload")
+    Task build = project.tasks.getByName("build")
+    Task install = project.tasks.getByName("install")
+
+    upload.dependsOn(install)
+    upload.dependsOn(build)
 }

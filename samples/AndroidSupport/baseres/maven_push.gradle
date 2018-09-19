@@ -14,7 +14,7 @@ def getRepositoryPassword() {
 }
 
 def isReleaseBuild() {
-    return !(VERSION_NAME.contains('SNAPSHOT'))
+    return !(VERSION.contains('SNAPSHOT'))
 }
 
 def isRemoteRepo() {
@@ -27,9 +27,9 @@ afterEvaluate { project ->
         repositories {
             mavenDeployer {
                 beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-                pom.artifactId = POM_ARTIFACT_ID
-                pom.groupId = POM_GROUP_ID
-                pom.version = VERSION_NAME
+                pom.artifactId = ARTIFACT_ID
+                pom.groupId = GROUP_ID
+                pom.version = VERSION
 
                 repository(url: uri(getRepositoryUrl())) {
                     if (isRemoteRepo()) {

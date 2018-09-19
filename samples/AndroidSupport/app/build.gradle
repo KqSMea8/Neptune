@@ -208,7 +208,7 @@ task JarFresco(type: Jar, dependsOn: ['compileReleaseJavaWithJavac']) {
         if (it.getName().endsWith('.jar')) {
             project.zipTree(it)
         } else if (it.getName().endsWith('.aar')) {
-            int hashCode = Math.abs(aarPath.hashCode())
+
             def aarDir = project.file("${project.buildDir}/aar")
             if (!aarDir.exists()) {
                 aarDir.mkdirs()

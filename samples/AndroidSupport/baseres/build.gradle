@@ -6,6 +6,8 @@ apply plugin: 'com.android.library'
 
 apply from: 'maven_push.gradle'
 
+apply from: 'bintray_upload.gradle'
+
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.2"
@@ -31,6 +33,10 @@ android {
                            'src/main/res_appcompatv7',
                            'src/main/res_supportv4']
         }
+    }
+
+    lintOptions {
+        abortOnError false
     }
 }
 
