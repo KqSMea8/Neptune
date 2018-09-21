@@ -4,8 +4,6 @@ import com.android.build.gradle.tasks.ProcessAndroidResources
 
 apply plugin: 'com.android.library'
 
-apply from: 'maven_push.gradle'
-
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.2"
@@ -32,12 +30,21 @@ android {
                            'src/main/res_supportv4']
         }
     }
+
+    lintOptions {
+        abortOnError false
+    }
 }
 
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
+
+// Upload to Maven
+apply from: 'maven_push.gradle'
+// Upload to Jcenter
+apply from: 'bintray_upload.gradle'
 
 import com.android.builder.model.Version
 
