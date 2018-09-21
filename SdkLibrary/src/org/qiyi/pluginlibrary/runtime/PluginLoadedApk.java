@@ -285,7 +285,7 @@ public class PluginLoadedApk {
         }
         PluginDebugLog.runtimeLog(TAG, "createClassLoader");
         File optDir = getDataDir(mHostContext, mPluginPackageName);
-        if (optDir != null && isOptDirAccessbile(optDir)) {
+        if (optDir != null && isOptDirAccessible(optDir)) {
 
             FileUtils.checkOtaFileValid(optDir, new File(mPluginPath));  // 创建ClassLoader之前check上次生成的oat文件是否损坏
             mPluginClassLoader = new DexClassLoader(mPluginPath, optDir.getAbsolutePath(),
@@ -329,7 +329,7 @@ public class PluginLoadedApk {
         PluginDebugLog.runtimeLog(TAG, "createNewClassLoader");
         File optDir = getDataDir(mHostContext, mPluginPackageName);
         mParent = mPluginPackageInfo.isIndividualMode() ? mHostClassLoader.getParent() : mHostClassLoader;
-        if (optDir != null && isOptDirAccessbile(optDir)) {
+        if (optDir != null && isOptDirAccessible(optDir)) {
             DexClassLoader classLoader = sAllPluginClassLoader.get(mPluginPackageName);
             if (classLoader == null) {
                 FileUtils.checkOtaFileValid(optDir, new File(mPluginPath));  //检测oat文件是否损坏
@@ -365,7 +365,7 @@ public class PluginLoadedApk {
     /**
      * dexopt的目录是否可访问
      */
-    private boolean isOptDirAccessbile(File optDir) {
+    private boolean isOptDirAccessible(File optDir) {
         return optDir.exists() && optDir.canRead() && optDir.canWrite();
     }
 
@@ -498,6 +498,16 @@ public class PluginLoadedApk {
         if (mPluginPackageInfo == null) {
             mPluginPackageInfo = new PluginPackageInfo(mHostContext, new File(mPluginPath));
         }
+
+        tryToCopyNativeLib();
+    }
+
+    /**
+     * 拷贝Native so库到插件libs目录
+     */
+    private void tryToCopyNativeLib() {
+        FileUtils.installNativeLibrary(mHostContext, mPluginPath,
+                mPluginPackageInfo.getPackageInfo(), mPluginPackageInfo.getNativeLibraryDir());
     }
 
     /**

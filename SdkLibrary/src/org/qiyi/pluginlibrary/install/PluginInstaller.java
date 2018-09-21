@@ -253,61 +253,17 @@ public class PluginInstaller {
 
 
     /**
-     * 获取安装的插件的dex目录
-     */
-    private static List<File> getInstalledDexFile(Context context, final String packageName) {
-
-        List<File> dexFiles = new ArrayList<>();
-        File dataDir = new File(PluginInstaller.getPluginappRootPath(context), packageName);
-        FileFilter fileFilter = new FileFilter() {
-            @Override
-            public boolean accept(File pathname) {
-                String name = pathname.getName();
-                return name.contains(packageName) && name.endsWith(DEX_SUFFIX);
-            }
-        };
-
-        File[] files = dataDir.listFiles(fileFilter);
-        if (files != null) {
-            for (File file : files) {
-                dexFiles.add(file);
-            }
-        }
-        File dexDir = PluginInstaller.getPluginInjectRootPath(context);
-        files = dexDir.listFiles(fileFilter);
-        if (files != null) {
-            for (File file : files) {
-                dexFiles.add(file);
-            }
-        }
-
-        return dexFiles;
-    }
-
-
-    /**
      * 删除已经安装插件的apk,dex,so库等文件
      */
     public static void deleteInstallerPackage(
-            Context context, PluginLiteInfo info, String packageName) {
+            Context context, PluginLiteInfo info, final String packageName) {
         PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage:%s", packageName);
-        if (context == null || TextUtils.isEmpty(packageName)) {
-            return;
-        }
 
         File rootDir = PluginInstaller.getPluginappRootPath(context);
-        File dataDir = new File(rootDir, packageName);
-        List<File> dexFiles = getInstalledDexFile(context, packageName);
-        for (File dexPath : dexFiles) {
-            // 删除dex文件
-            if (dexPath.delete()) {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage %s,  dex %s success!", packageName, dexPath.getAbsolutePath());
-            } else {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage %s, dex %s fail!", packageName, dexPath.getAbsolutePath());
-            }
-        }
+        deleteDexFiles(rootDir, packageName);
 
-        File lib = new File(dataDir, "lib");
+        File dataDir = new File(rootDir, packageName);
+        File lib = new File(dataDir, NATIVE_LIB_PATH);
         // 删除lib目录下的so库
         boolean deleted = FileUtils.deleteDirectory(lib);
         PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage lib %s success: %s", packageName, deleted);
@@ -328,10 +284,86 @@ public class PluginInstaller {
                 apk = new File(rootDir, packageName + PluginInstaller.APK_SUFFIX);
             }
         }
+        // 删除历史版本遗留的apk
+        deleteOldApks(rootDir, packageName);
+        // 删除odex和vdex文件
+        deleteOatFiles(apk, packageName);
+    }
 
+
+    /**
+     * 删除已安装插件相关dex文件
+     */
+    private static void deleteDexFiles(File rootDir, final String packageName) {
+
+        List<File> dexFiles = new ArrayList<>();
+        File dataDir = new File(rootDir, packageName);
+        FileFilter fileFilter = new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                String name = pathname.getName();
+                return name.startsWith(packageName) && name.endsWith(DEX_SUFFIX);
+            }
+        };
+
+        File[] files = dataDir.listFiles(fileFilter);
+        if (files != null) {
+            for (File file : files) {
+                dexFiles.add(file);
+            }
+        }
+        File dexDir = new File(rootDir, "dex");
+        files = dexDir.listFiles(fileFilter);
+        if (files != null) {
+            for (File file : files) {
+                dexFiles.add(file);
+            }
+        }
+        // 删除相关dex文件
+        for (File dexPath : dexFiles) {
+            if (dexPath.delete()) {
+                PluginDebugLog.installFormatLog(TAG, "deleteDexFiles %s,  dex %s success!", packageName, dexPath.getAbsolutePath());
+            } else {
+                PluginDebugLog.installFormatLog(TAG, "deleteDexFiles %s, dex %s fail!", packageName, dexPath.getAbsolutePath());
+            }
+        }
+    }
+
+    /**
+     * 删除遗留的低版本的apk
+     */
+    private static void deleteOldApks(File rootDir, final String packageName) {
+        List<File> apkFiles = new ArrayList<>();
+        FileFilter fileFilter = new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                String name = pathname.getName();
+                return name.startsWith(packageName) && name.endsWith(APK_SUFFIX);
+            }
+        };
+        File[] files = rootDir.listFiles(fileFilter);
+        if (files != null) {
+            for (File file : files) {
+                apkFiles.add(file);
+            }
+        }
+        // 删除相关dex文件
+        for (File apkFile : apkFiles) {
+            if (apkFile.delete()) {
+                PluginDebugLog.installFormatLog(TAG, "deleteOldApks %s,  dex %s success!", packageName, apkFile.getAbsolutePath());
+            } else {
+                PluginDebugLog.installFormatLog(TAG, "deleteOldApks %s, dex %s fail!", packageName, apkFile.getAbsolutePath());
+            }
+        }
+    }
+
+    /**
+     * Android O以上删除dexoat优化生成的odex和vdex文件
+     */
+    private static void deleteOatFiles(File apkFile, final String packageName) {
         if (VersionUtils.hasOreo()) {
             //删除prof文件
-            File mProf = new File(apk.getAbsolutePath() + ".prof");
+            File mProf = new File(apkFile.getAbsolutePath() + ".prof");
             PluginDebugLog.installFormatLog(TAG, "prof path:%s", mProf.getAbsolutePath());
             if (mProf.exists() && mProf.delete()) {
                 PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage prof  %s success!", packageName);
@@ -346,26 +378,37 @@ public class PluginInstaller {
                 currentInstructionSet = "arm";
             }
 
-            String pathPrefix = apk.getParent() + "/oat/"
-                    + currentInstructionSet + "/" + packageName;
-
-            String oPath = pathPrefix + ".odex";
-            String vPath = pathPrefix + ".vdex";
-
-            File oPathFile = new File(oPath);
-            File vPathFile = new File(vPath);
-            PluginDebugLog.installFormatLog(TAG, "odex path:%s", oPathFile.getAbsolutePath());
-            PluginDebugLog.installFormatLog(TAG, "vdex path:%s", vPathFile.getAbsolutePath());
-            if (oPathFile.exists() && oPathFile.delete()) {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex  %s success!", packageName);
-            } else {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex  %s fail!", packageName);
+            File oatDir = new File(apkFile.getParent() + "/oat/"
+                    + currentInstructionSet);
+            if (!oatDir.exists()) {
+                return;
             }
 
-            if (vPathFile.exists() && vPathFile.delete()) {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage vdex  %s success!", packageName);
-            } else {
-                PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage vdex  %s fail!", packageName);
+            List<File> toDeteled = new ArrayList<>();
+            FileFilter fileFilter = new FileFilter() {
+                @Override
+                public boolean accept(File pathname) {
+                    String name = pathname.getName();
+                    return name.startsWith(packageName)
+                            && (name.endsWith(".odex") || name.endsWith(".vdex"));
+                }
+            };
+
+            File[] files = oatDir.listFiles(fileFilter);
+            if (files != null) {
+                for (File file : files) {
+                    toDeteled.add(file);
+                }
+            }
+
+            for (File dexPath : toDeteled) {
+                if (dexPath.delete()) {
+                    PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex/vdex: %s  %s success!",
+                            dexPath.getAbsolutePath(), packageName);
+                } else {
+                    PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex/vdex: %s  %s fail!",
+                            dexPath.getAbsolutePath(), packageName);
+                }
             }
         }
     }
@@ -380,17 +423,21 @@ public class PluginInstaller {
         File file = new File(dataDir, "files");
         File cache = new File(dataDir, "cache");
 
-        boolean deleted = FileUtils.deleteDirectory(db);
-        PluginDebugLog.installFormatLog(TAG, "deletePluginData db %s success: %s", packageName, deleted);
+        File extCache = new File(PluginPackageManager.getExternalCacheRootDir(), packageName);
+        File extFiles = new File(PluginPackageManager.getExternalFilesRootDir(), packageName);
 
-        deleted = FileUtils.deleteDirectory(sharedPreference);
-        PluginDebugLog.installFormatLog(TAG, "deletePluginData sp %s success: %s", packageName, deleted);
-
-        deleted = FileUtils.deleteDirectory(file);
-        PluginDebugLog.installFormatLog(TAG, "deletePluginData file %s success: %s", packageName, deleted);
-
-        deleted = FileUtils.deleteDirectory(cache);
-        PluginDebugLog.installFormatLog(TAG, "deletePluginData cache %s success: %s", packageName, deleted);
+        // 需要清理数据的目录列表
+        File[] toDeleted = new File[]{db, sharedPreference, file, cache, dataDir, extCache, extFiles};
+        for (File dstDir : toDeleted) {
+            if (dstDir != null && dstDir.exists()) {
+                boolean deleted = FileUtils.cleanDirectoryContent(dstDir);
+                PluginDebugLog.installFormatLog(TAG, "deletePluginData directory %s for plugin %s, deleted: ",
+                        dstDir.getAbsolutePath(), packageName, deleted);
+            } else {
+                PluginDebugLog.installFormatLog(TAG, "deletePluginData directory %s for plugin %s not exist",
+                        dstDir.getAbsolutePath(), packageName);
+            }
+        }
     }
 
     /**

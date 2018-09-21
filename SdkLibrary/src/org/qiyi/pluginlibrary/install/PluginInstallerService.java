@@ -31,6 +31,7 @@ import android.os.Message;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
@@ -46,6 +47,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import dalvik.system.DexClassLoader;
 
@@ -204,7 +207,7 @@ public class PluginInstallerService extends Service {
 
                 String libDir = PluginInstaller.getPluginappRootPath(this).getAbsolutePath() + File.separator + info.packageName;
                 FileUtils.deleteDirectory(new File(libDir));
-                boolean flag = FileUtils.installNativeLibrary(destFile.getAbsolutePath(), libDir);
+                boolean flag = FileUtils.installNativeLibrary(this, destFile.getAbsolutePath(), libDir);
                 if (flag) {
                     setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
                     return;
@@ -440,7 +443,7 @@ public class PluginInstallerService extends Service {
             return;
         }
 
-        FileUtils.installNativeLibrary(destFile.getAbsolutePath(), libDir.getAbsolutePath());  //拷贝so库
+        tryCopyNativeLib(destFile.getAbsolutePath(), pkgInfo, libDir.getAbsolutePath());
         PluginDebugLog.installFormatLog(TAG,
                 "pluginInstallerService finish install lib,pkgName:%s", packageName);
         // dexopt, 提前优化插件的dex
@@ -451,6 +454,24 @@ public class PluginInstallerService extends Service {
                 "pluginInstallerService finish install dex,pkgName:%s", packageName);
         // dexoat结束之后，再通知插件安装完成
         setInstallSuccess(packageName, srcPathWithScheme, destFile.getAbsolutePath(), info);
+    }
+
+    /**
+     * 拷贝是否so库到lib目录
+     * @param apkPath 插件apk文件
+     * @param pkgInfo 插件packageInfo
+     * @param libDir  插件lib目录
+     */
+    private void tryCopyNativeLib(String apkPath, PackageInfo pkgInfo, String libDir) {
+
+        List<String> preReleaseSoPkgs = new ArrayList<>();
+        preReleaseSoPkgs.add("com.qiyi.live.base");
+
+        if (preReleaseSoPkgs.contains(pkgInfo.packageName)
+            || !Neptune.RELEASE_SO_DELAY) {
+            // livebase基础插件，提前释放so库
+            FileUtils.installNativeLibrary(this, apkPath, pkgInfo, libDir);
+        }
     }
 
     /**

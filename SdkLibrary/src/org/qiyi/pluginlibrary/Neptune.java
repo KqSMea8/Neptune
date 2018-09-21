@@ -46,6 +46,7 @@ public class Neptune {
 
     public static final boolean SEPARATED_CLASSLOADER = true;
     public static final boolean NEW_COMPONENT_PARSER = true;
+    public static final boolean RELEASE_SO_DELAY = true;
 
     @SuppressLint("StaticFieldLeak")
     private static Context sHostContext;
@@ -87,6 +88,9 @@ public class Neptune {
     }
 
     public static NeptuneConfig getConfig() {
+        if (sGlobalConfig == null) {
+            sGlobalConfig = new NeptuneConfig.NeptuneConfigBuilder().build();
+        }
         return sGlobalConfig;
     }
 
@@ -184,6 +188,45 @@ public class Neptune {
         PluginPackageManagerNative.getInstance(mContext).install(info, callBack);
     }
 
+
+    /**
+     * 根据包名删除插件apk，so，dex等数据
+     *
+     * @param context  宿主的Context
+     * @param pkgName  待删除插件的包名
+     */
+    public static void deletePackage(Context context, String pkgName) {
+        deletePackage(context, pkgName, null);
+    }
+
+
+    /**
+     * 根据包名删除插件apk，so，dex等数据
+     *
+     * @param context  宿主的Context
+     * @param pkgName  待删除插件的包名
+     * @param callBack  卸载回调
+     */
+    public static void deletePackage(Context context, String pkgName, IPluginUninstallCallBack callBack) {
+        Context mContext = ensureContext(context);
+        PluginLiteInfo info = PluginPackageManagerNative.getInstance(mContext).getPackageInfo(pkgName);
+        if (info != null) {
+            deletePackage(mContext, info, callBack);
+        }
+    }
+
+    /**
+     * 删除插件apk，dex，so等数据
+     *
+     * @param context 宿主的Context
+     * @param info    待删除插件的信息，包括包名，路径等
+     * @param callBack 卸载回调
+     */
+    public static void deletePackage(Context context, PluginLiteInfo info, IPluginUninstallCallBack callBack) {
+        // uninstall
+        Context mContext = ensureContext(context);
+        PluginPackageManagerNative.getInstance(mContext).deletePackage(info, callBack);
+    }
 
     /**
      * 根据包名卸载一个插件

@@ -241,12 +241,29 @@ public class PluginPackageManagerNative {
     }
 
     /**
+     * 提交一个PluginUninstallAction删除插件apk数据的Action
+     * 只会删除插件apk，dex和so库
+     */
+    public void deletePackage(PluginLiteInfo info, IPluginUninstallCallBack observer) {
+        PluginUninstallAction action = new PluginUninstallAction();
+        action.info = info;
+        action.callbackHost = this;
+        action.deleteData = false;
+        action.observer = observer;
+        if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
+            action.doAction();
+        }
+    }
+
+    /**
      * 提交一个PluginUninstallAction卸载插件的Action
+     * 卸载插件会清除插件所有相关数据，包括缓存的数据
      */
     public void uninstall(PluginLiteInfo info, IPluginUninstallCallBack observer) {
         PluginUninstallAction action = new PluginUninstallAction();
         action.info = info;
         action.callbackHost = this;
+        action.deleteData = true;
         action.observer = observer;
         if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
             action.doAction();
@@ -269,6 +286,20 @@ public class PluginPackageManagerNative {
     }
 
     /**
+     * 通过aidl调用{@link PluginPackageManagerService}进行删除插件apk
+     */
+    private void deletePackageInternal(PluginLiteInfo info) {
+        if (isConnected()) {
+            try {
+                mService.deletePackage(info);
+            } catch (RemoteException e) {
+                // ignore
+            }
+        }
+        onBindService(mContext);
+    }
+
+    /**
      * 通过aidl调用{@link PluginPackageManagerService}进行卸载
      */
     private void uninstallInternal(PluginLiteInfo info) {
@@ -280,7 +311,6 @@ public class PluginPackageManagerNative {
                 // ignore
             }
         }
-
         onBindService(mContext);
     }
 
@@ -675,6 +705,7 @@ public class PluginPackageManagerNative {
 
         public PluginLiteInfo info;
         public PluginPackageManagerNative callbackHost;
+        public boolean deleteData;
         IPluginUninstallCallBack observer;
 
         @Override
@@ -719,7 +750,11 @@ public class PluginPackageManagerNative {
         @Override
         public void doAction() {
             if (callbackHost != null) {
-                callbackHost.uninstallInternal(info);
+                if (deleteData) {
+                    callbackHost.uninstallInternal(info);
+                } else {
+                    callbackHost.deletePackageInternal(info);
+                }
             }
         }
     }
