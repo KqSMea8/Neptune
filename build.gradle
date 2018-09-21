@@ -21,8 +21,7 @@ allprojects {
         jcenter()
         google()
         configurations.all {
-            //resolutionStrategy.cacheDynamicVersionsFor 4, 'hours'
-            resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+            resolutionStrategy.cacheDynamicVersionsFor 4, 'hours'
         }
     }
 }
