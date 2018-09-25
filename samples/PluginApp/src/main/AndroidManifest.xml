@@ -18,5 +18,9 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="com.iqiyi.plugin.sample.DesignActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar">
+        </activity>
+
     </application>
 </manifest>

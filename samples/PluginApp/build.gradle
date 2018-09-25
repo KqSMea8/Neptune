@@ -9,6 +9,8 @@ def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
 apply plugin: 'com.qiyi.neptune.plugin'
 
+//apply plugin: 'thinr'
+
 neptune {
     pluginMode = true
     packageId = 0x30
@@ -29,6 +31,7 @@ android {
         applicationId "com.iqiyi.plugin.sample"
         minSdkVersion 14
         targetSdkVersion TARGET_SDK_VERSION
+        //multiDexEnabled true
         versionCode 2
         versionName "1.2"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -105,6 +108,10 @@ dependencies {
         implementation "com.android.support:recyclerview-v7:${ANDROID_SUPPORT_VERSION}"
         implementation "com.facebook.fresco:fresco:${FRESCO_VERSION}"
         implementation "com.airbnb.android:lottie:${LOTTIE_VERSION}"
+    }
+    implementation("com.android.support:design:${ANDROID_SUPPORT_VERSION}"){
+        exclude group: 'com.android.support'
+        exclude group: 'android.arch'
     }
 }
 
