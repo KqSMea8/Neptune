@@ -25,7 +25,6 @@ import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.os.Process;
 import android.text.TextUtils;
-import android.util.Log;
 
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 
@@ -184,7 +183,7 @@ public final class FileUtils {
                         packageInfo, libDir)) {
                     return true;
                 } else {
-                    PluginDebugLog.installFormatLog(TAG, "can't install native lib of %s as no matched ABI %d",
+                    PluginDebugLog.installFormatLog(TAG, "can't install native lib of %s as no matched ABI %s",
                             apkFilePath, cpuArch);
                 }
             }
@@ -192,7 +191,7 @@ public final class FileUtils {
             /* ignore */
         } finally {
             closeQuietly(zipFile);
-            PluginDebugLog.runtimeFormatLog(TAG, "copyNativeLibrary Done! cost %s ms",
+            PluginDebugLog.runtimeFormatLog(TAG, "installNativeLibrary Done! cost %s ms",
                     (System.currentTimeMillis() - startTime));
         }
 
@@ -433,7 +432,7 @@ public final class FileUtils {
         Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
 
         currentInstructionSet = (String) currentGet.invoke(null);
-        Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
+        PluginDebugLog.runtimeFormatLog(TAG, "getCurrentInstructionSet: %s", currentInstructionSet);
         return currentInstructionSet;
     }
 

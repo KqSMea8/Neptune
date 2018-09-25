@@ -46,7 +46,6 @@ public class Neptune {
 
     public static final boolean SEPARATED_CLASSLOADER = true;
     public static final boolean NEW_COMPONENT_PARSER = true;
-    public static final boolean RELEASE_SO_DELAY = true;
 
     @SuppressLint("StaticFieldLeak")
     private static Context sHostContext;

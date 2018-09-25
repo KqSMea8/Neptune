@@ -31,7 +31,6 @@ import android.os.Message;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
-import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.constant.IntentConstant;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
@@ -47,8 +46,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 import dalvik.system.DexClassLoader;
 
@@ -463,15 +460,7 @@ public class PluginInstallerService extends Service {
      * @param libDir  插件lib目录
      */
     private void tryCopyNativeLib(String apkPath, PackageInfo pkgInfo, String libDir) {
-
-        List<String> preReleaseSoPkgs = new ArrayList<>();
-        preReleaseSoPkgs.add("com.qiyi.live.base");
-
-        if (preReleaseSoPkgs.contains(pkgInfo.packageName)
-            || !Neptune.RELEASE_SO_DELAY) {
-            // livebase基础插件，提前释放so库
-            FileUtils.installNativeLibrary(this, apkPath, pkgInfo, libDir);
-        }
+        FileUtils.installNativeLibrary(this, apkPath, pkgInfo, libDir);
     }
 
     /**

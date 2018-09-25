@@ -498,8 +498,6 @@ public class PluginLoadedApk {
         if (mPluginPackageInfo == null) {
             mPluginPackageInfo = new PluginPackageInfo(mHostContext, new File(mPluginPath));
         }
-
-        tryToCopyNativeLib();
     }
 
     /**
