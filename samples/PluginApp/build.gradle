@@ -9,7 +9,7 @@ def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
 apply plugin: 'com.qiyi.neptune.plugin'
 
-//apply plugin: 'thinr'
+apply plugin: 'thinr'
 
 neptune {
     pluginMode = true

@@ -20,3 +20,13 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -dontwarn android.databinding.**
+
+
+#为了编译后剔除R相关文件，R相关的资源文件不混淆
+-keepclassmembers class **.R$* {
+     public static <fields>;
+}
+-keep class **.R {*;}
+-keep class **.R$* {*;}
+-keep class **.R$*
+-keep class **.R

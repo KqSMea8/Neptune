@@ -63,7 +63,7 @@ class QYPlugin implements Plugin<Project> {
      * 创建安装插件apk到宿主特定目录的任务
      */
     private void createInstallPluginTask(ApplicationVariantImpl variant) {
-        if (pluginExt.pluginMode && pluginExt.hostPackageName != null && pluginExt.hostPackageName.length() > 0) {
+        if (pluginExt.hostPackageName != null && pluginExt.hostPackageName.length() > 0) {
             TaskFactory taskFactory = new TaskFactory(project.getTasks())
             VariantScope scope = variant.getVariantData().getScope()
             InstallPlugin installTask = taskFactory.create(new InstallPlugin.ConfigAction(variant))
