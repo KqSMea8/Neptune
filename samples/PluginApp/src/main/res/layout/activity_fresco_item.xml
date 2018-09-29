@@ -6,14 +6,16 @@
               android:layout_height="wrap_content"
               android:padding="10dp">
 
-    <com.facebook.drawee.view.SimpleDraweeView
+    <org.qiyi.basecore.widget.QiyiDraweeView
         android:id="@+id/image_content"
         android:layout_width="200dp"
-        android:layout_height="120dp"
+        android:layout_height="80dp"
         android:layout_alignParentLeft="true"
         android:layout_marginRight="10dp"
-        android:scaleType="fitCenter"
-        app:roundedCornerRadius="5dp"/>
+        android:background="#e7e7e7"
+        app:actualImageScaleType="fitStart"
+        app:placeholderImage="@drawable/df_paopao"
+        app:placeholderImageScaleType="fitXY"/>
 
     <TextView
         android:id="@+id/image_title"

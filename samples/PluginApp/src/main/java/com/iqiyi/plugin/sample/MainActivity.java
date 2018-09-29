@@ -56,6 +56,9 @@ public class MainActivity extends AppCompatActivity{
                 startActivity(intent);
             }
         });
+
+        TextView ticker = findViewById(R.id.time_ticker);
+        ticker.setText(BuildConfig.BUILD_TIME);
     }
 
 
