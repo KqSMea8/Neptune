@@ -42,9 +42,10 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField "String", "TIME", "\"${getDate()}\""
+            buildConfigField "String", "BUILD_TIME", "\"${getDate()}\""
         }
         release {
+            buildConfigField "String", "BUILD_TIME", "\"${getDate()}\""
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
