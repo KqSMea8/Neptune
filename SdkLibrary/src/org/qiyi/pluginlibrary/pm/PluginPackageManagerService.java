@@ -111,7 +111,7 @@ public class PluginPackageManagerService extends Service {
                 if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
                     return;
                 }
-                mManager.deletePackage(info, null);
+                mManager.clearPackage(info);
             }
 
             @Override

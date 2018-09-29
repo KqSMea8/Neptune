@@ -611,8 +611,8 @@ public class PluginPackageManager {
      */
     void install(PluginLiteInfo pluginInfo, IInstallCallBack listener) {
         registerInstallReceiver();  //注册广播
-        // 安装插件前，先清理部分遗留数据
-        deletePackage(pluginInfo, null);
+        // 安装插件前，先清理apk,dex,so库等数据
+        deletePackage(pluginInfo, null, false);
 
         listenerMap.put(pluginInfo.packageName, listener);
         PluginDebugLog.installLog(TAG, "install plugin: " + pluginInfo);
@@ -624,14 +624,14 @@ public class PluginPackageManager {
     }
 
     /**
-     * 删除安装包。 卸载插件应用程序,目前只有在升级时调用此方法
+     * 删除安装包
      * 只清理插件apk，dex和so库，不删除缓存文件
      *
-     * @param packageInfo  需要删除的package 的 PluginLiteInfo
-     * @param observer  卸载结果回调
+     * @param packageInfo 需要删除的package 的 PluginLiteInfo
      */
-    void deletePackage(PluginLiteInfo packageInfo, IPluginUninstallCallBack observer) {
-        deletePackage(packageInfo, observer, false);
+    void clearPackage(PluginLiteInfo packageInfo) {
+        deletePackage(packageInfo, null, false);
+        onActionFinish(packageInfo.packageName, DELETE_SUCCEEDED);
     }
 
     /**
