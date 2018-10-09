@@ -1,7 +1,6 @@
 package com.qiyi.plugin.dex
 
 import com.qiyi.plugin.utils.Utils
-import org.gradle.internal.impldep.aQute.bnd.osgi.OpCodes
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
