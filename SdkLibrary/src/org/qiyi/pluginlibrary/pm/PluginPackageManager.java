@@ -649,7 +649,7 @@ public class PluginPackageManager {
         }
 
         String packageName = packageInfo.packageName;
-        PluginDebugLog.installFormatLog(TAG, "delete plugin :%s,deleteData:%s,upgrading:%s", packageName
+        PluginDebugLog.installFormatLog(TAG, "delete plugin :%s, deleteData:%s", packageName
                 , String.valueOf(deleteData));
 
         try {
