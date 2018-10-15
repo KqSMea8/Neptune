@@ -17,12 +17,14 @@
  */
 package org.qiyi.pluginlibrary.utils;
 
+import android.annotation.Nullable;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.os.Process;
 import android.text.TextUtils;
-import android.util.Log;
 
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 
@@ -53,26 +55,22 @@ public final class FileUtils {
      * apk 中 lib 目录的前缀标示。比如 lib/x86/libshare_v2.so
      */
     private static final String APK_LIB_DIR_PREFIX = "lib/";
-    /**
-     * lib中so后缀
-     */
+    /* libs目录so后缀 */
     private static final String APK_LIB_SUFFIX = ".so";
     /* redefine those constant here because of bug 13721174 preventing to compile using the
      * constants defined in ZipFile */
     private static final int ENDHDR = 22;
     private static final int ENDSIG = 0x6054b50;
-    /**
-     * Size of reading buffers.
-     */
-    private static final int BUFFER_SIZE = 0x4000;
-    /**
-     * 判断当前手机的指令集
-     */
+    /* Size of read buffer */
+    private static final int BUFFER_SIZE = 8096;
+    /* sp name of plugin version with so*/
+    private static final String SO_INFO_SP = "plugin_so_version";
+
+    /* 当前手机指令集 */
     private static String currentInstructionSet = null;
-    /**
-     * 获取当前进程名
-     */
+    /* 当前进程名 */
     private static String currentProcessName = null;
+
 
     /**
      * utility class private constructor
@@ -153,59 +151,95 @@ public final class FileUtils {
     }
 
     /**
-     * 安装 apk 中的 so 库。
-     *
-     * @param apkFilePath
-     * @param libDir      lib目录。
+     * 安装拷贝apk中的so库
      */
-    public static boolean installNativeLibrary(String apkFilePath, String libDir) {
-        PluginDebugLog.installFormatLog("plugin", "apkFilePath: %s, libDir: %s", apkFilePath, libDir);
-        boolean installResult = false;
+    public static boolean installNativeLibrary(Context context, String apkFilePath, String libDir) {
+        return installNativeLibrary(context, apkFilePath, null, libDir);
+    }
+
+    /**
+     * 拷贝so库到插件libs目录
+     */
+    public static boolean installNativeLibrary(Context context, String apkFilePath, PackageInfo packageInfo, String libDir) {
+        PluginDebugLog.installFormatLog(TAG, "installNativeLibrary apkFilePath: %s, libDir: %s", apkFilePath, libDir);
+        long startTime = System.currentTimeMillis();
         ZipFile zipFile = null;
         try {
             zipFile = new ZipFile(apkFilePath);
-
-            if (installNativeLibrary(zipFile, libDir, Build.CPU_ABI) || installNativeLibrary(zipFile, libDir, Build.CPU_ABI2)) {
-                installResult = true;
+            String[] cpuAbis;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                cpuAbis = Build.SUPPORTED_ABIS;
             } else {
-                PluginDebugLog.installFormatLog("plugin", "can't install native lib of %s as no matched ABI", apkFilePath);
+                cpuAbis = new String[]{Build.CPU_ABI, Build.CPU_ABI2};
             }
 
+            File nativeLibDir = new File(libDir);
+            if (!nativeLibDir.exists()) {
+                nativeLibDir.mkdirs();
+            }
+
+            for (String cpuArch : cpuAbis) {
+                if (findAndCopyNativeLib(context, zipFile, cpuArch,
+                        packageInfo, libDir)) {
+                    return true;
+                } else {
+                    PluginDebugLog.installFormatLog(TAG, "can't install native lib of %s as no matched ABI %s",
+                            apkFilePath, cpuArch);
+                }
+            }
         } catch (IOException e) {
             /* ignore */
         } finally {
             closeQuietly(zipFile);
+            PluginDebugLog.runtimeFormatLog(TAG, "installNativeLibrary Done! cost %s ms",
+                    (System.currentTimeMillis() - startTime));
         }
 
-        return installResult;
+        return false;
     }
 
     /**
-     * 安装拷贝so库
+     * 拷贝so库，需要判断so库是否已经解压过
      */
-    private static boolean installNativeLibrary(ZipFile apk, String libDir, String abi) {
-        PluginDebugLog.installFormatLog(TAG, "start to extract native lib for ABI: %s", abi);
+    private static boolean findAndCopyNativeLib(Context context, ZipFile apk, String cpuArch,
+                                                @Nullable PackageInfo packageInfo, String libDir) {
+        PluginDebugLog.installFormatLog(TAG, "findAndCopyNativeLib start to extract native lib for ABI: %s", cpuArch);
         boolean installResult = false;
         Enumeration<? extends ZipEntry> entries = apk.entries();
         ZipEntry entry;
         while (entries.hasMoreElements()) {
             entry = entries.nextElement();
             String name = entry.getName();
-            if (!name.startsWith(APK_LIB_DIR_PREFIX + abi) || !name.endsWith(APK_LIB_SUFFIX)) {
+            if (!name.startsWith(APK_LIB_DIR_PREFIX + cpuArch)
+                    || !name.endsWith(APK_LIB_SUFFIX)) {
                 continue;
             }
 
-            int lastSlash = name.lastIndexOf("/");
             InputStream entryInputStream = null;
             try {
                 entryInputStream = apk.getInputStream(entry);
-                String soFileName = name.substring(lastSlash);
-                PluginDebugLog.installFormatLog(TAG, "libDir: %s, soFileName: %s", libDir, soFileName);
-                File targetSo = new File(libDir, soFileName);
-                if (targetSo.exists()) {
-                    PluginDebugLog.installFormatLog(TAG, "soFileName: %s already exist", soFileName);
-                } else {
-                    installResult = copyToFile(entryInputStream, targetSo);
+                String libName = name.substring(name.lastIndexOf("/") + 1);
+                PluginDebugLog.installFormatLog(TAG, "libDir: %s, soFileName: %s", libDir, libName);
+                File libFile = new File(libDir, libName);
+
+                if (libFile.exists()) {
+                    PluginDebugLog.installFormatLog(TAG, "soFileName: %s already exist", libName);
+                    if (packageInfo == null) {
+                        continue;
+                    }
+                    String key = packageInfo.packageName + "_" + libName;
+                    int versionCode = getSoVersion(context, key);
+                    if (versionCode == packageInfo.versionCode
+                            && libFile.length() == entry.getSize()) {
+                        PluginDebugLog.installFormatLog(TAG, "soFileName: %s already exist and version match", libName);
+                        continue;
+                    }
+                }
+                // copy zip entry to lib dir
+                installResult = copyToFile(entryInputStream, libFile);
+                if (installResult && packageInfo != null) {
+                    String key = packageInfo.packageName + "_" + libName;
+                    putSoVersion(context, key, packageInfo.versionCode);
                 }
             } catch (IOException e) {
                 // ignore
@@ -218,13 +252,37 @@ public final class FileUtils {
         return installResult;
     }
 
+    private static int getSoVersion(Context context, String key) {
+        SharedPreferences preferences = context.getSharedPreferences(SO_INFO_SP, Context.MODE_PRIVATE);
+        return preferences.getInt(key, 0);
+    }
+
+    private static void putSoVersion(Context context, String key, int version) {
+        SharedPreferences preferences = context.getSharedPreferences(SO_INFO_SP, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(key, version);
+        editor.apply();
+    }
+
     /**
      * Deletes a directory recursively.
      *
      * @param directory directory to delete
-     * @throws IOException in case deletion is unsuccessful
      */
     public static boolean deleteDirectory(File directory) {
+        if (directory == null || !directory.exists()) {
+            return true;
+        }
+
+        boolean deleted = cleanDirectoryContent(directory);
+        // delete directory self
+        return directory.delete() && deleted;
+    }
+
+    /**
+     * Clean the content in the directory
+     */
+    public static boolean cleanDirectoryContent(File directory) {
         if (directory == null || !directory.exists()) {
             return true;
         }
@@ -236,8 +294,7 @@ public final class FileUtils {
         } catch (Exception e) {
             // ignore
         }
-        // delete directory self
-        return directory.delete() && deleted;
+        return deleted;
     }
 
     /**
@@ -375,7 +432,7 @@ public final class FileUtils {
         Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
 
         currentInstructionSet = (String) currentGet.invoke(null);
-        Log.d(TAG, "getCurrentInstructionSet:" + currentInstructionSet);
+        PluginDebugLog.runtimeFormatLog(TAG, "getCurrentInstructionSet: %s", currentInstructionSet);
         return currentInstructionSet;
     }
 
@@ -451,8 +508,7 @@ public final class FileUtils {
         }
     }
 
-    /* Package visible for testing */
-    static CentralDirectory findCentralDirectory(RandomAccessFile raf) throws IOException,
+    private static CentralDirectory findCentralDirectory(RandomAccessFile raf) throws IOException,
             ZipException {
         long scanOffset = raf.length() - ENDHDR;
         if (scanOffset < 0) {
@@ -491,8 +547,7 @@ public final class FileUtils {
         return dir;
     }
 
-    /* Package visible for testing */
-    static long computeCrcOfCentralDir(RandomAccessFile raf, CentralDirectory dir)
+    private static long computeCrcOfCentralDir(RandomAccessFile raf, CentralDirectory dir)
             throws IOException {
         CRC32 crc = new CRC32();
         long stillToRead = dir.size;

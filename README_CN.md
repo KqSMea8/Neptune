@@ -38,7 +38,7 @@ Neptune现在完全兼容Android P系统，可以在Android P设备上稳定且�
 在App模块的`build.gradle`中compile移入Neptune库
 
 ```Gradle
-    compile 'org.qiyi.video:neptune:2.5.0'
+    implementation 'org.qiyi.video:neptune:2.5.0'
 ```
 
 在`Application#onCreate()`阶段初始化Neptune
@@ -83,7 +83,7 @@ neptune {
 
 # Developer Guide
 
-* [API文档见wiki](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/wikis/home)
+* [API文档见wiki](http://gitlab.qiyi.domain/mobile-android/Neptune/wikis/home)
 * [宿主APP的示例工程](samples/HostApp)
 * [插件APP的示例工程](samples/PluginApp)
 * [阅读SDKLibrary的源码](SdkLibrary)
@@ -94,5 +94,5 @@ neptune {
 
 # License
 
-Neptune is [Apache v2.0 Licensed](LICENSE.md).
+Neptune is [Apache v2.0 Licensed](LICENSE).
 

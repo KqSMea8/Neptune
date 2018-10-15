@@ -40,7 +40,7 @@ Especially, Neptune is greatly compatible with Android P . It can run on Android
 compile Neptune in application module of `build.gradle`.
 
 ```Gradle
-    compile 'org.qiyi.video:neptune:2.5.0'
+    implementation 'org.qiyi.video:neptune:2.5.0'
 ```
 
 Initialize sdk in your `Application#onCreate()`.
@@ -85,7 +85,7 @@ neptune {
 
 # Developer Guide
 
-* [API document wiki](http://gitlab.qiyi.domain/mobile-android/baseline-sh/QYPlugin/wikis/home)
+* [API document wiki](http://gitlab.qiyi.domain/mobile-android/Neptune/wikis/home)
 * [Host App Sample Project](samples/HostApp)
 * [Plugin App Sample Project](samples/PluginApp)
 * [Read SDKLibrary source code](SdkLibrary)
@@ -96,5 +96,5 @@ We sincerely appreciate your PR contribution of any kind , including codes, sugg
 
 # License
 
-Neptune is [Apache v2.0 Licensed](LICENSE.md).
+Neptune is [Apache v2.0 Licensed](LICENSE).
 

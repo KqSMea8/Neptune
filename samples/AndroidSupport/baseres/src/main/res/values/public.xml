@@ -1185,7 +1185,7 @@
   <public type="id" name="right" id="0x7f0a0085" />
   <public type="id" name="start" id="0x7f0a0086" />
   <public type="id" name="all" id="0x7f0a0087" />
-  
+
 
   <!--fresco 如果插件使用了fresco,则需要此部分 -->
   <public type="attr" name="fadeDuration" id="0x7f010120"/>
@@ -1246,7 +1246,7 @@
 
 
   <!--ToastUtil 资源-->
-  <public type="layout" name="toast_tips_default" id="0x7f030050" />
-  <public type="drawable" name="default_toast_bg" id="0x7f020070" />
+  <!--<public type="layout" name="toast_tips_default" id="0x7f030050" />-->
+  <!--<public type="drawable" name="default_toast_bg" id="0x7f020070" />-->
   <!--<public type="id" name="message" id="0x7f0a0078" />-->
 </resources>

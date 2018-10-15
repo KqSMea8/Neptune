@@ -3,41 +3,40 @@ apply plugin: 'com.jfrog.bintray'
 
 def siteUrl = 'https://github.com/iqiyi/Neptune' // 项目的主页
 def gitUrl = 'https://github.com/iqiyi/Neptune' // Git仓库的url
+def issueUrl = 'https://github.com/iqiyi/Neptune/issues' // 项目的issues
 
 group = GROUP_ID
-archivesBaseName = ARCHIVE_NAME
+archivesBaseName = ARTIFACT_ID
 version = VERSION
 
 install {
     repositories.mavenInstaller {
         // This generates POM.xml with proper parameters
-        pom {
+        pom.project {
+            name POM_NAME
             artifactId = ARTIFACT_ID
-
-            project {
-                packaging 'aar'
-                // Add your description here
-                name 'A powerful but lightweight plugin framework for Android' //项目描述
+            packaging POM_PACKAGING
+            // Add your description here
+            description POM_DESCRIPTION
+            url siteUrl
+            // Set your license
+            licenses {
+                license {
+                    name 'Apache License 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0'
+                }
+            }
+            developers {
+                developer {
+                    id 'zjupure'
+                    name 'IQIYI'
+                    email 'zjupure@gmail.com'
+                }
+            }
+            scm {
+                connection gitUrl
+                developerConnection gitUrl
                 url siteUrl
-                // Set your license
-                licenses {
-                    license {
-                        name 'Apache License 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0'
-                    }
-                }
-                developers {
-                    developer {
-                        id 'zjupure'    //填写的一些基本信息
-                        name 'IQIYI'
-                        email 'zjupure@gmail.com'
-                    }
-                }
-                scm {
-                    connection gitUrl
-                    developerConnection gitUrl
-                    url siteUrl
-                }
             }
         }
     }
@@ -56,11 +55,15 @@ bintray {
     key = getBintrayApiKey()
     configurations = ['archives']
     pkg {
-        repo = "maven"
+        repo = "neptune"
         name = ARCHIVE_NAME    //发布到JCenter上的项目名字
+        desc = POM_DESCRIPTION
         websiteUrl = siteUrl
+        issueTrackerUrl = issueUrl
         vcsUrl = gitUrl
         licenses = ["Apache-2.0"]
+        override = true
         publish = true
+        publicDownloadNumbers = true
     }
 }

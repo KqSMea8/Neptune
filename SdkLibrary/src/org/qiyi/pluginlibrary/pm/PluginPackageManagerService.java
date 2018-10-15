@@ -107,8 +107,19 @@ public class PluginPackageManagerService extends Service {
             }
 
             @Override
-            public boolean uninstall(PluginLiteInfo info) throws RemoteException {
-                return mManager != null && mManager.uninstall(info);
+            public void deletePackage(PluginLiteInfo info) throws RemoteException {
+                if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
+                    return;
+                }
+                mManager.clearPackage(info);
+            }
+
+            @Override
+            public void uninstall(PluginLiteInfo info) throws RemoteException {
+                if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
+                    return;
+                }
+                mManager.uninstall(info);
             }
 
             @Override

@@ -1,11 +1,13 @@
 package com.iqiyi.plugin.sample;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import com.facebook.common.logging.FLog;
@@ -45,6 +47,18 @@ public class MainActivity extends AppCompatActivity{
         mAdapter = new ImageAdapter(this, mImageUrls);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.setAdapter(mAdapter);
+
+        TextView goDesign = findViewById(R.id.go_support_design);
+        goDesign.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, DesignActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        TextView ticker = findViewById(R.id.time_ticker);
+        ticker.setText(BuildConfig.BUILD_TIME);
     }
 
 

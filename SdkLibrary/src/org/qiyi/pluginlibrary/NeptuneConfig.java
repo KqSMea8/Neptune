@@ -28,6 +28,7 @@ import org.qiyi.pluginlibrary.utils.IRecoveryCallback;
  */
 public final class NeptuneConfig {
     /* 传统的插件框架模式，使用InstrActivityProxy进行代理转发 */
+    @Deprecated
     public static final int LEGACY_MODE = 0;
     /* Hook Instrumentation方案 */
     public static final int INSTRUMENTATION_MODE = 1;

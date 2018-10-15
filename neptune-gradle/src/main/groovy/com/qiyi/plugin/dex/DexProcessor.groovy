@@ -4,6 +4,7 @@ import com.qiyi.plugin.utils.Utils
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
 import java.util.jar.JarEntry
@@ -85,6 +86,8 @@ class DexProcessor {
         ClassReader cr = new ClassReader(is)
         ClassWriter cw = new ClassWriter(cr, 0)
         ClassVisitor cv = new ClassVisitor(Opcodes.ASM4, cw) {
+            private String targetOwner
+
             @Override
             void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
                 //println "class name => ${name}, superName => ${superName}, interfaces => ${interfaces.toString()}"
@@ -102,9 +105,31 @@ class DexProcessor {
                     String target = ReplaceRules.get(superClsName).replace(".", "/")
                     println "replace class ${name}'s super class name from ${superName} to ${target}"
                     superName = target
+                    targetOwner = target
                 }
 
                 super.visit(version, access, name, signature, superName, interfaces)
+            }
+
+            @Override
+            MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+                MethodVisitor orig = super.visitMethod(access, name, desc, signature, exceptions)
+                if (targetOwner == null) {
+                    // We not replace parent Activity
+                    return orig
+                }
+
+                return new MethodVisitor(Opcodes.ASM4, orig) {
+                    @Override
+                    void visitMethodInsn(int opcode, String owner, String methodName, String methodDesc, boolean itf) {
+                        if (opcode == Opcodes.INVOKESPECIAL) {
+                            // Replace super call
+                            owner = targetOwner
+                        }
+
+                        super.visitMethodInsn(opcode, owner, methodName, methodDesc, itf)
+                    }
+                }
             }
         }
         cr.accept(cv, 0)
