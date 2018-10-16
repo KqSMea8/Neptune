@@ -37,7 +37,8 @@ import java.util.List;
 public class PluginPackageManagerService extends Service {
     private static final String TAG = "PluginPackageManagerService";
     // 插件信息管理
-    private PluginPackageManager mManager;
+    @SuppressWarnings("StaticFieldLeak")
+    private static PluginPackageManager mManager;
 
     @Override
     public void onCreate() {

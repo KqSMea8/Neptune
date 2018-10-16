@@ -69,6 +69,7 @@ public class PluginPackageManagerNative {
     private PluginPackageManager mPackageManager;
     private IPluginPackageManager mService = null;
     private ServiceConnection mServiceConnection = null;
+
     private PluginPackageManagerNative() {
         // no-op
     }
@@ -200,7 +201,7 @@ public class PluginPackageManagerNative {
     /**
      * 提交一个PluginInstallAction安装插件任务
      */
-    public void install(PluginLiteInfo info, IInstallCallBack listener) {
+    public void install(@NonNull PluginLiteInfo info, IInstallCallBack listener) {
         PluginInstallAction action = new PluginInstallAction();
         action.listener = listener;
         action.info = info;
@@ -244,7 +245,7 @@ public class PluginPackageManagerNative {
      * 提交一个PluginUninstallAction删除插件apk数据的Action
      * 只会删除插件apk，dex和so库
      */
-    public void deletePackage(PluginLiteInfo info, IPluginUninstallCallBack observer) {
+    public void deletePackage(@NonNull PluginLiteInfo info, IPluginUninstallCallBack observer) {
         PluginUninstallAction action = new PluginUninstallAction();
         action.info = info;
         action.callbackHost = this;
@@ -259,7 +260,7 @@ public class PluginPackageManagerNative {
      * 提交一个PluginUninstallAction卸载插件的Action
      * 卸载插件会清除插件所有相关数据，包括缓存的数据
      */
-    public void uninstall(PluginLiteInfo info, IPluginUninstallCallBack observer) {
+    public void uninstall(@NonNull PluginLiteInfo info, IPluginUninstallCallBack observer) {
         PluginUninstallAction action = new PluginUninstallAction();
         action.info = info;
         action.callbackHost = this;
@@ -562,8 +563,8 @@ public class PluginPackageManagerNative {
         }
 
         @Override
-        public void onActionComplete(String packageName, int errorCode) throws RemoteException {
-            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, errorCode:%d", packageName, errorCode);
+        public void onActionComplete(String packageName, int resultCode) throws RemoteException {
+            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, resultCode: %d", packageName, resultCode);
             if (sActionMap.containsKey(packageName)) {
                 final CopyOnWriteArrayList<Action> actions = sActionMap.get(packageName);
                 if (actions != null && actions.size() > 0) {
@@ -580,18 +581,17 @@ public class PluginPackageManagerNative {
                             PluginDebugLog.installFormatLog(TAG,
                                     "this is PluginUninstallAction  for :%s", packageName);
                             PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
-                            if (uninstallAction.observer != null && uninstallAction.info != null
-                                    && !TextUtils.isEmpty(uninstallAction.info.packageName)) {
+                            if (uninstallAction.observer != null) {
                                 PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", packageName);
-                                uninstallAction.observer.onPluginUninstall(uninstallAction.info.packageName, errorCode);
+                                uninstallAction.observer.onPluginUninstall(packageName, resultCode);
                             }
                         }
-                        // 执行下一个卸载操作，不能同步，防止栈溢出
+                        // 执行下一个Action操作，不能同步，否则容易出现栈溢出
                         executeNextAction(actions, packageName);
 
                         if (actions.isEmpty()) {
                             PluginDebugLog.installFormatLog(TAG,
-                                    "remove empty action list of %s", packageName);
+                                    "onActionComplete remove empty action list of %s", packageName);
                             sActionMap.remove(packageName);
                         }
                     }
@@ -631,7 +631,7 @@ public class PluginPackageManagerNative {
 
                     if (actions.isEmpty()) {
                         PluginDebugLog.installFormatLog(TAG,
-                                "remove empty action list of %s", packageName);
+                                "executeNextAction remove empty action list of %s", packageName);
                         sActionMap.remove(packageName);
                     }
                 }
@@ -655,43 +655,40 @@ public class PluginPackageManagerNative {
 
         @Override
         public String toString() {
-            StringBuilder infoBuilder = new StringBuilder();
-            infoBuilder.append("PluginInstallAction: ");
-            infoBuilder.append(" has IInstallCallBack: ").append(listener != null);
-            if (info != null) {
-                infoBuilder.append(" packageName: ").append(info.packageName);
-                infoBuilder.append(" plugin_ver: ").append(info.pluginVersion);
-                infoBuilder.append(" plugin_gray_version: ").append(info.pluginGrayVersion);
-            }
-            return infoBuilder.toString();
+            StringBuilder builder = new StringBuilder();
+            builder.append("PluginInstallAction: ")
+                   .append(" has IInstallCallBack: ").append(listener != null)
+                   .append(" packageName: ").append(info.packageName)
+                   .append(" plugin_ver: ").append(info.pluginVersion)
+                   .append(" plugin_gray_version: ").append(info.pluginGrayVersion);
+            return builder.toString();
         }
 
         @Override
         public String getPackageName() {
-            return info != null ? info.packageName : null;
+            return info.packageName;
         }
 
         @Override
         public boolean meetCondition() {
             boolean canMeetCondition = false;
             boolean serviceConnected = callbackHost.isConnected();
-            if (serviceConnected && info != null) {
+            if (serviceConnected) {
                 canMeetCondition = callbackHost.canInstallPackage(info);
-            } else if (!serviceConnected) {
+            } else {
                 // set canMeetCondition to true in case of
                 // PluginPackageManagerService
                 // is not connected, so that the action can be added in action list.
                 canMeetCondition = true;
             }
-            if (info != null) {
-                PluginDebugLog.installFormatLog(TAG, "%s 's PluginInstallAction meetCondition:%s",
-                        info.packageName, String.valueOf(canMeetCondition));
-            }
+            PluginDebugLog.installFormatLog(TAG, "%s 's PluginInstallAction meetCondition:%s",
+                    info.packageName, String.valueOf(canMeetCondition));
             return canMeetCondition;
         }
 
         @Override
         public void doAction() {
+            PluginDebugLog.installFormatLog(TAG, "PluginInstallAction for plugin %s is ready to execute", info.packageName);
             if (callbackHost != null) {
                 callbackHost.installInternal(info, listener);
             }
@@ -710,40 +707,36 @@ public class PluginPackageManagerNative {
 
         @Override
         public String getPackageName() {
-            return info != null ? info.packageName : null;
+            return info.packageName;
         }
 
         @Override
         public String toString() {
-            StringBuilder infoBuilder = new StringBuilder();
-            infoBuilder.append("PluginDeleteAction: ");
-            infoBuilder.append(
-                    " has IPackageDeleteObserver: ").append(observer != null);
-            if (info != null) {
-                infoBuilder.append(" packageName: ").append(info.packageName);
-                infoBuilder.append(" plugin_ver: ").append(info.pluginVersion);
-                infoBuilder.append(" plugin_gray_ver: ").append(info.pluginGrayVersion);
-            }
+            StringBuilder builder = new StringBuilder();
+            builder.append("PluginUninstallAction: ")
+                    .append(" has IPackageDeleteObserver: ").append(observer != null)
+                    .append(" deleteData").append(deleteData)
+                    .append(" packageName: ").append(info.packageName)
+                    .append(" plugin_ver: ").append(info.pluginVersion)
+                    .append(" plugin_gray_ver: ").append(info.pluginGrayVersion);
 
-            return infoBuilder.toString();
+            return builder.toString();
         }
 
         @Override
         public boolean meetCondition() {
             boolean canMeetCondition = false;
             boolean serviceConnected = callbackHost.isConnected();
-            if (serviceConnected && info != null) {
+            if (serviceConnected) {
                 canMeetCondition = callbackHost.canUninstallPackage(info);
-            } else if (!serviceConnected) {
+            } else {
                 // set canMeetCondition to true in case of
                 // PluginPackageManagerService
                 // is not connected, so that the action can be added in action list.
                 canMeetCondition = true;
             }
-            if (null != info) {
-                PluginDebugLog.installFormatLog(TAG,
-                        "%s 's PluginDeleteAction canMeetCondition %s", info.packageName, canMeetCondition);
-            }
+            PluginDebugLog.installFormatLog(TAG,
+                    "%s 's PluginDeleteAction canMeetCondition %s", info.packageName, canMeetCondition);
             return canMeetCondition;
         }
 
@@ -775,6 +768,9 @@ public class PluginPackageManagerNative {
             @Override
             public void binderDied() {
                 synchronized (sLock) {
+                    if (mService != null) {
+                        mService.asBinder().unlinkToDeath(this, 0); //注销监听
+                    }
                     mService = null;
                     PluginDebugLog.runtimeLog(TAG, "binderDied called, remote binder is died");
                 }
