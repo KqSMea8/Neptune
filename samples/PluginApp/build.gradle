@@ -9,7 +9,7 @@ def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
 apply plugin: 'com.qiyi.neptune.plugin'
 
-apply plugin: 'thinr'
+//apply plugin: 'thinr'
 
 neptune {
     pluginMode = true
@@ -110,6 +110,7 @@ dependencies {
         implementation "com.facebook.fresco:fresco:${FRESCO_VERSION}"
         implementation "com.airbnb.android:lottie:${LOTTIE_VERSION}"
     }
+    implementation project(':BasicLib')
     implementation("com.android.support:design:${ANDROID_SUPPORT_VERSION}"){
         exclude group: 'com.android.support'
         exclude group: 'android.arch'
