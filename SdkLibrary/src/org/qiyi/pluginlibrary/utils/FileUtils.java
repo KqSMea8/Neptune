@@ -413,7 +413,7 @@ public final class FileUtils {
                 try {
                     elfFile = new ShareElfFile(oatFile);
                 } catch (Throwable tr) {
-                    PluginDebugLog.warningFormatLog("oat file %s is not elf format, try to delete it", oatFile.getAbsolutePath());
+                    PluginDebugLog.runtimeFormatLog("oat file %s is not elf format, try to delete it", oatFile.getAbsolutePath());
                     oatFile.delete();
                     ErrorUtil.throwErrorIfNeed(tr);
                 } finally {

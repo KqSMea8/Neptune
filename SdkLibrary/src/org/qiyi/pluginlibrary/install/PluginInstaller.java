@@ -83,7 +83,6 @@ public class PluginInstaller {
         if (!repoDir.exists()) {
             repoDir.mkdirs();
         }
-        PluginDebugLog.installFormatLog(TAG, "getPluginappRootPath:%s", repoDir);
         return repoDir;
     }
 
@@ -97,7 +96,6 @@ public class PluginInstaller {
         if (!dexDir.exists()) {
             dexDir.mkdirs();
         }
-        PluginDebugLog.installFormatLog(TAG, "getPluginInjectRootPath:%s", dexDir);
         return dexDir;
     }
 
@@ -429,9 +427,6 @@ public class PluginInstaller {
                 boolean deleted = FileUtils.cleanDirectoryContent(dstDir);
                 PluginDebugLog.installFormatLog(TAG, "deletePluginData directory %s for plugin %s, deleted: ",
                         dstDir.getAbsolutePath(), packageName, deleted);
-            } else {
-                PluginDebugLog.installFormatLog(TAG, "deletePluginData directory %s for plugin %s not exist",
-                        dstDir.getAbsolutePath(), packageName);
             }
         }
     }

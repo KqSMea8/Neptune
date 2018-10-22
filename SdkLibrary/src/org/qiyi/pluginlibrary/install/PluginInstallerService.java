@@ -80,7 +80,6 @@ public class PluginInstallerService extends Service {
 
                 if (!mServiceHandler.hasMessages(MSG_ACTION_INSTALL)) {
                     // 没有其他的安装消息了, 30s之后退出Service
-                    PluginDebugLog.installLog(TAG, "sendMessage MSG_ACTION_QUIT");
                     Message quit = mServiceHandler.obtainMessage(MSG_ACTION_QUIT);
                     mServiceHandler.sendMessageDelayed(quit, DELAY_QUIT_TIME);
                 }
@@ -109,7 +108,6 @@ public class PluginInstallerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         if (mServiceHandler.hasMessages(MSG_ACTION_QUIT)) {
-            PluginDebugLog.installLog(TAG, "pluginInstallerService removeMessages MSG_ACTION_QUIT");
             mServiceHandler.removeMessages(MSG_ACTION_QUIT);
         }
         PluginDebugLog.installLog(TAG, "pluginInstallerService onStartCommand MSG_ACTION_INSTALL");
@@ -188,12 +186,12 @@ public class PluginInstallerService extends Service {
                     setInstallSuccess(info.packageName, srcFile, destFile.getAbsolutePath(), info);
                     return;
                 } else {
-                    PluginDebugLog.installLog(TAG, "handleInstall SO, install so lib failed!");
+                    PluginDebugLog.installLog(TAG, "handleInstall so, install so lib failed!");
                     setInstallFail(srcFile, ErrorType.INSTALL_ERROR_SO_UNZIP_FAILED, info);
                     return;
                 }
             } else {
-                PluginDebugLog.installLog(TAG, "handleInstall SO, rename failed!");
+                PluginDebugLog.installLog(TAG, "handleInstall so, rename failed!");
             }
         }
         setInstallFail(srcFile, ErrorType.INSTALL_ERROR_SO_COPY_FAILED, info);
@@ -256,10 +254,6 @@ public class PluginInstallerService extends Service {
 
         File source = new File(apkFilePath);
         if (!source.exists()) {
-            if (info != null && !TextUtils.isEmpty(info.packageName)) {
-                PluginPackageManager.notifyClientPluginException(
-                        this, info.packageName, "download Apk file not exist!");
-            }
             setInstallFail(apkFilePathWithScheme, ErrorType.INSTALL_ERROR_APK_NOT_EXIST, info);
             return;
         }
@@ -500,6 +494,14 @@ public class PluginInstallerService extends Service {
             info.srcApkPath = "";
             info.installStatus = PluginLiteInfo.PLUGIN_UNINSTALLED;
         }
+
+        if (failReason == ErrorType.INSTALL_ERROR_APK_NOT_EXIST) {
+            if (info != null && !TextUtils.isEmpty(info.packageName)) {
+                PluginPackageManager.notifyClientPluginException(
+                        this, info.packageName, "download Apk file not exist!");
+            }
+        }
+
         Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL);
         intent.setPackage(getPackageName());
         intent.putExtra(IntentConstant.EXTRA_PKG_NAME, info != null ? info.packageName : "");

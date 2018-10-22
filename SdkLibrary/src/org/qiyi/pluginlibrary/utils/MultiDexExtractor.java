@@ -114,11 +114,11 @@ class MultiDexExtractor {
             }
             for (File oldFile : files) {
                 if (!oldFile.delete()) {
-                    PluginDebugLog.warningLog(TAG, "Failed to delete old dex file " + oldFile.getPath());
+                    PluginDebugLog.runtimeLog(TAG, "Failed to delete old dex file " + oldFile.getPath());
                 }
             }
             if (!dexDir.delete()) {
-                PluginDebugLog.warningLog(TAG, "Failed to delete secondary dex dir " + dexDir.getPath());
+                PluginDebugLog.runtimeLog(TAG, "Failed to delete secondary dex dir " + dexDir.getPath());
             }
         }
     }
