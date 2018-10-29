@@ -549,7 +549,7 @@ public class PluginLoadedApk {
                                             + libraryInfo.packageName);
                             PluginPackageManager.notifyClientPluginException(mHostContext,
                                     libraryInfo.packageName,
-                                    "Apk file not exist!");
+                                    "Apk file not exist when handle dependencies!");
                             return false;
                         }
                         PluginDebugLog.runtimeLog(TAG,
@@ -615,7 +615,7 @@ public class PluginLoadedApk {
                                             + libraryInfo.packageName);
                             PluginPackageManager.notifyClientPluginException(mHostContext,
                                     libraryInfo.packageName,
-                                    "Apk file not exist!");
+                                    "Apk file not exist when handle dependencies!");
                             return false;
                         }
 

@@ -68,8 +68,16 @@ public class PluginInstaller {
         @Override
         public void onReceive(Context context, Intent intent) {
             String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
-            if (!TextUtils.isEmpty(pkgName)) {
+            if (TextUtils.isEmpty(pkgName)) {
+                return;
+            }
+
+            String action = intent.getAction();
+            if (PluginPackageManager.ACTION_PACKAGE_INSTALLED.equals(action)) {
                 PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
+                sInstallingList.remove(pkgName);
+            } else if (PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
+                PluginDebugLog.installFormatLog(TAG, "install failed and remove pkg:%s", pkgName);
                 sInstallingList.remove(pkgName);
             }
         }

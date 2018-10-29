@@ -21,7 +21,6 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -493,13 +492,6 @@ public class PluginInstallerService extends Service {
         if (info != null) {
             info.srcApkPath = "";
             info.installStatus = PluginLiteInfo.PLUGIN_UNINSTALLED;
-        }
-
-        if (failReason == ErrorType.INSTALL_ERROR_APK_NOT_EXIST) {
-            if (info != null && !TextUtils.isEmpty(info.packageName)) {
-                PluginPackageManager.notifyClientPluginException(
-                        this, info.packageName, "download Apk file not exist!");
-            }
         }
 
         Intent intent = new Intent(PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL);

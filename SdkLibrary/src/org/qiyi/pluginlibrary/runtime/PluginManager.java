@@ -1250,7 +1250,7 @@ public class PluginManager {
                     if (!apkFile.exists()) {
                         PluginDebugLog.runtimeLog(TAG,
                                 "Special case apkFile not exist, notify client! packageName: " + packageName);
-                        PluginPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist!");
+                        PluginPackageManager.notifyClientPluginException(context, packageName, "Apk file not exist when load plugin");
                         return false;
                     }
 
