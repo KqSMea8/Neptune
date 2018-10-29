@@ -94,9 +94,6 @@ public class PluginPackageManagerNative {
                 Iterator<Action> iterator = actions.iterator();
                 while (iterator.hasNext()) {
                     Action action = iterator.next();
-                    if (action == null) {
-                        continue;
-                    }
                     if (action.meetCondition()) {
                         PluginDebugLog.installFormatLog(TAG, "start doAction for pending action %s", action.toString());
                         action.doAction();
@@ -201,9 +198,9 @@ public class PluginPackageManagerNative {
     /**
      * 提交一个PluginInstallAction安装插件任务
      */
-    public void install(@NonNull PluginLiteInfo info, IInstallCallBack listener) {
+    public void install(@NonNull PluginLiteInfo info, IInstallCallBack callBack) {
         PluginInstallAction action = new PluginInstallAction();
-        action.listener = listener;
+        action.observer = callBack;
         action.info = info;
         action.callbackHost = this;
         if (action.meetCondition() && addAction(action) && actionIsReady(action)) {
@@ -381,6 +378,7 @@ public class PluginPackageManagerNative {
                 } catch (Exception e) {
                     // ignore
                 }
+                mServiceConnection = null;
             }
             Intent intent = new Intent(applicationContext, PluginPackageManagerService.class);
             applicationContext.stopService(intent);
@@ -563,12 +561,13 @@ public class PluginPackageManagerNative {
         }
 
         @Override
-        public void onActionComplete(String packageName, int resultCode) throws RemoteException {
-            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, resultCode: %d", packageName, resultCode);
-            if (sActionMap.containsKey(packageName)) {
-                final CopyOnWriteArrayList<Action> actions = sActionMap.get(packageName);
+        public void onActionComplete(PluginLiteInfo info, int resultCode) throws RemoteException {
+            String pkgName = info.packageName;
+            PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, resultCode: %d", pkgName, resultCode);
+            if (sActionMap.containsKey(pkgName)) {
+                final CopyOnWriteArrayList<Action> actions = sActionMap.get(pkgName);
                 if (actions != null && actions.size() > 0) {
-                    PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!", packageName, actions.size());
+                    PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!", pkgName, actions.size());
 
                     synchronized (this) {
                         Action finishedAction = actions.remove(0);
@@ -579,23 +578,61 @@ public class PluginPackageManagerNative {
 
                         if (finishedAction instanceof PluginUninstallAction) {
                             PluginDebugLog.installFormatLog(TAG,
-                                    "this is PluginUninstallAction  for :%s", packageName);
+                                    "this is PluginUninstallAction  for :%s", pkgName);
                             PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
                             if (uninstallAction.observer != null) {
-                                PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", packageName);
-                                uninstallAction.observer.onPluginUninstall(packageName, resultCode);
+                                PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", pkgName);
+                                uninstallAction.observer.onPluginUninstall(pkgName, resultCode);
                             }
+                        } else if (finishedAction instanceof PluginInstallAction) {
+                            PluginDebugLog.installFormatLog(TAG,
+                                    "this is PluginInstallAction  for :%s", pkgName);
+                            PluginInstallAction installAction = (PluginInstallAction) finishedAction;
+                            onPackageInstalled(actions, installAction, info, resultCode);
                         }
                         // 执行下一个Action操作，不能同步，否则容易出现栈溢出
-                        executeNextAction(actions, packageName);
+                        executeNextAction(actions, pkgName);
 
                         if (actions.isEmpty()) {
                             PluginDebugLog.installFormatLog(TAG,
-                                    "onActionComplete remove empty action list of %s", packageName);
-                            sActionMap.remove(packageName);
+                                    "onActionComplete remove empty action list of %s", pkgName);
+                            sActionMap.remove(pkgName);
                         }
                     }
                 }
+            }
+        }
+
+        /**
+         * 队列中相同的PluginInstallAction直接回调结果，不再重复执行安装
+         * 否则会出现apk not found异常
+         */
+        private void onPackageInstalled(CopyOnWriteArrayList<Action> actions, PluginInstallAction finishedAction,
+                                        PluginLiteInfo info, int resultCode) throws RemoteException {
+            Iterator<Action> iterator = actions.iterator();
+            while (iterator.hasNext()) {
+                Action action = iterator.next();
+                if (!(action instanceof PluginInstallAction)) {
+                    continue;
+                }
+                PluginInstallAction installAction = (PluginInstallAction) action;
+                if (!finishedAction.equals(installAction)) {
+                    continue;
+                }
+                // 相同的Action
+                if (installAction.observer != null) {
+                    if (resultCode == PluginPackageManager.INSTALL_SUCCESS) {
+                        // 安装成功
+                        installAction.observer.onPackageInstalled(info);
+                    } else {
+                        // 安装失败
+                        installAction.observer.onPackageInstallFail(info, info.statusCode);
+                    }
+                }
+                PluginDebugLog.installFormatLog(TAG,
+                        "remove same install action of %s, and action:%s "
+                        , info.packageName, action.toString());
+                actions.remove(installAction);
             }
         }
 
@@ -611,10 +648,6 @@ public class PluginPackageManagerNative {
                     Iterator<Action> iterator = actions.iterator();
                     while (iterator.hasNext()) {
                         Action action = iterator.next();
-                        if (action == null) {
-                            continue;
-                        }
-
                         if (action.meetCondition()) {
                             PluginDebugLog.installFormatLog(TAG,
                                     "doAction for %s and action is %s", packageName,
@@ -649,7 +682,7 @@ public class PluginPackageManagerNative {
      */
     private static class PluginInstallAction implements Action {
 
-        public IInstallCallBack listener;
+        public IInstallCallBack observer;
         public PluginLiteInfo info;
         public PluginPackageManagerNative callbackHost;
 
@@ -657,11 +690,22 @@ public class PluginPackageManagerNative {
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append("PluginInstallAction: ")
-                   .append(" has IInstallCallBack: ").append(listener != null)
-                   .append(" packageName: ").append(info.packageName)
-                   .append(" plugin_ver: ").append(info.pluginVersion)
-                   .append(" plugin_gray_version: ").append(info.pluginGrayVersion);
+                    .append(" has IInstallCallBack: ").append(observer != null)
+                    .append(" packageName: ").append(info.packageName)
+                    .append(" plugin_ver: ").append(info.pluginVersion)
+                    .append(" plugin_gray_version: ").append(info.pluginGrayVersion);
             return builder.toString();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+
+            PluginInstallAction action = (PluginInstallAction) obj;
+            return TextUtils.equals(this.info.packageName, action.info.packageName)
+                    && TextUtils.equals(this.info.pluginVersion, action.info.pluginVersion);
         }
 
         @Override
@@ -690,7 +734,7 @@ public class PluginPackageManagerNative {
         public void doAction() {
             PluginDebugLog.installFormatLog(TAG, "PluginInstallAction for plugin %s is ready to execute", info.packageName);
             if (callbackHost != null) {
-                callbackHost.installInternal(info, listener);
+                callbackHost.installInternal(info, observer);
             }
         }
     }

@@ -487,19 +487,20 @@ public class PluginPackageManager {
         mInstalledPlugins.put(pkgInfo.packageName, pkgInfo);
         saveInstallPluginInfos();
 
-        IInstallCallBack callback = listenerMap.get(pkgInfo.packageName);
+        String key = pkgInfo.packageName + "_" + pkgInfo.pluginVersion;
+        IInstallCallBack callback = listenerMap.get(key);
         if (callback != null) {
             try {
                 callback.onPackageInstalled(pkgInfo);
             } catch (RemoteException e) {
                 // ignore
             } finally {
-                listenerMap.remove(pkgInfo.packageName);
+                listenerMap.remove(key);
             }
         }
         // 等待执行的安装action直接回调
         executePackageAction(pkgInfo, true, 0);
-        onActionFinish(pkgInfo.packageName, INSTALL_SUCCESS);
+        onActionFinish(pkgInfo, INSTALL_SUCCESS);
     }
 
     /**
@@ -508,29 +509,31 @@ public class PluginPackageManager {
     private void onPackageInstallFailed(PluginLiteInfo pkgInfo, int failReason) {
         PluginDebugLog.installFormatLog(TAG,
                 "plugin install fail:%s,reason:%d ", pkgInfo.packageName, failReason);
-        IInstallCallBack callBack = listenerMap.get(pkgInfo.packageName);
+        String key = pkgInfo.packageName + "_" + pkgInfo.pluginVersion;
+        pkgInfo.statusCode = failReason;
+        IInstallCallBack callBack = listenerMap.get(key);
         if (callBack != null) {
             try {
                 callBack.onPackageInstallFail(pkgInfo, failReason);
             } catch (RemoteException e) {
                 // ignore
             } finally {
-                listenerMap.remove(pkgInfo.packageName);
+                listenerMap.remove(key);
             }
         }
         // 等待执行的安装action直接回调
         executePackageAction(pkgInfo, false, failReason);
-        onActionFinish(pkgInfo.packageName, INSTALL_FAILED);
+        onActionFinish(pkgInfo, INSTALL_FAILED);
     }
 
     /**
      * Action执行完成，回调给Client端
      */
-    private void onActionFinish(String packageName, int resultCode) {
+    private void onActionFinish(PluginLiteInfo liteInfo, int resultCode) {
         for (Map.Entry<String, IActionFinishCallback> entry : mActionFinishCallbacks.entrySet()) {
             IActionFinishCallback callback = entry.getValue();
             try {
-                callback.onActionComplete(packageName, resultCode);
+                callback.onActionComplete(liteInfo, resultCode);
             } catch (RemoteException e) {
                 // ignore
             }
@@ -601,7 +604,8 @@ public class PluginPackageManager {
         // 安装插件前，先清理apk,dex,so库等数据
         deletePackage(pluginInfo, null, false);
 
-        listenerMap.put(pluginInfo.packageName, listener);
+        String key = pluginInfo.packageName + "_" + pluginInfo.pluginVersion;
+        listenerMap.put(key, listener);
         PluginDebugLog.installLog(TAG, "install plugin: " + pluginInfo);
         try {
             PluginInstaller.install(mContext, pluginInfo);
@@ -618,7 +622,7 @@ public class PluginPackageManager {
      */
     void clearPackage(@NonNull PluginLiteInfo packageInfo) {
         deletePackage(packageInfo, null, false);
-        onActionFinish(packageInfo.packageName, DELETE_SUCCESS);
+        onActionFinish(packageInfo, DELETE_SUCCESS);
     }
 
     /**
@@ -648,7 +652,7 @@ public class PluginPackageManager {
             ErrorUtil.throwErrorIfNeed(e);
         }
 
-        onActionFinish(packageName, uninstallFlag ? UNINSTALL_SUCCESS : UNINSTALL_FAILED);
+        onActionFinish(packageInfo, uninstallFlag ? UNINSTALL_SUCCESS : UNINSTALL_FAILED);
     }
 
     /**
