@@ -89,18 +89,24 @@ public class PluginPackageManagerNative {
         PluginDebugLog.runtimeLog(TAG, "executePendingAction start....");
         for (Map.Entry<String, CopyOnWriteArrayList<Action>> entry : sActionMap.entrySet()) {
             if (entry != null) {
-                CopyOnWriteArrayList<Action> actions = entry.getValue();
-                PluginDebugLog.installFormatLog(TAG, "execute %d pending actions!", actions.size());
-                Iterator<Action> iterator = actions.iterator();
-                while (iterator.hasNext()) {
-                    Action action = iterator.next();
-                    if (action.meetCondition()) {
-                        PluginDebugLog.installFormatLog(TAG, "start doAction for pending action %s", action.toString());
-                        action.doAction();
-                        break;
-                    } else {
-                        PluginDebugLog.installFormatLog(TAG, "remove deprecate pending action from action list for %s", action.toString());
-                        actions.remove(action);  // CopyOnWriteArrayList在遍历过程中不能使用iterator删除元素
+                final CopyOnWriteArrayList<Action> actions = entry.getValue();
+                if (actions == null) {
+                    continue;
+                }
+
+                synchronized (actions) {  // Action列表加锁同步
+                    PluginDebugLog.installFormatLog(TAG, "execute %d pending actions!", actions.size());
+                    Iterator<Action> iterator = actions.iterator();
+                    while (iterator.hasNext()) {
+                        Action action = iterator.next();
+                        if (action.meetCondition()) {
+                            PluginDebugLog.installFormatLog(TAG, "start doAction for pending action %s", action.toString());
+                            action.doAction();
+                            break;
+                        } else {
+                            PluginDebugLog.installFormatLog(TAG, "remove deprecate pending action from action list for %s", action.toString());
+                            actions.remove(action);  // CopyOnWriteArrayList在遍历过程中不能使用iterator删除元素
+                        }
                     }
                 }
             }
@@ -566,10 +572,13 @@ public class PluginPackageManagerNative {
             PluginDebugLog.installFormatLog(TAG, "onActionComplete with %s, resultCode: %d", pkgName, resultCode);
             if (sActionMap.containsKey(pkgName)) {
                 final CopyOnWriteArrayList<Action> actions = sActionMap.get(pkgName);
-                if (actions != null && actions.size() > 0) {
-                    PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!", pkgName, actions.size());
+                if (actions == null) {
+                    return;
+                }
 
-                    synchronized (this) {
+                synchronized (actions) {  // Action列表加锁同步
+                    PluginDebugLog.installFormatLog(TAG, "%s has %d action in list!", pkgName, actions.size());
+                    if (actions.size() > 0) {
                         Action finishedAction = actions.remove(0);
                         if (finishedAction != null) {
                             PluginDebugLog.installFormatLog(TAG,
@@ -590,13 +599,14 @@ public class PluginPackageManagerNative {
                             PluginInstallAction installAction = (PluginInstallAction) finishedAction;
                             onPackageInstalled(actions, installAction, info, resultCode);
                         }
-                        // 执行下一个Action操作，不能同步，否则容易出现栈溢出
-                        executeNextAction(actions, pkgName);
 
                         if (actions.isEmpty()) {
                             PluginDebugLog.installFormatLog(TAG,
                                     "onActionComplete remove empty action list of %s", pkgName);
                             sActionMap.remove(pkgName);
+                        } else {
+                            // 执行下一个Action操作，不能同步，否则容易出现栈溢出
+                            executeNextAction(actions, pkgName);
                         }
                     }
                 }
@@ -644,28 +654,32 @@ public class PluginPackageManagerNative {
                 @Override
                 public void run() {
 
-                    PluginDebugLog.installFormatLog(TAG, "start find can execute action ...");
-                    Iterator<Action> iterator = actions.iterator();
-                    while (iterator.hasNext()) {
-                        Action action = iterator.next();
-                        if (action.meetCondition()) {
-                            PluginDebugLog.installFormatLog(TAG,
-                                    "doAction for %s and action is %s", packageName,
-                                    action.toString());
-                            action.doAction();
-                            break;  //跳出循环
-                        } else {
-                            PluginDebugLog.installFormatLog(TAG,
-                                    "remove deprecate action of %s,and action:%s "
-                                    , packageName, action.toString());
-                            actions.remove(action);
-                        }
-                    }
+                    synchronized (actions) {  // Action列表加锁同步
+                        if (actions.size() > 0) {
+                            PluginDebugLog.installFormatLog(TAG, "start find can execute action ...");
+                            Iterator<Action> iterator = actions.iterator();
+                            while (iterator.hasNext()) {
+                                Action action = iterator.next();
+                                if (action.meetCondition()) {
+                                    PluginDebugLog.installFormatLog(TAG,
+                                            "doAction for %s and action is %s", packageName,
+                                            action.toString());
+                                    action.doAction();
+                                    break;  //跳出循环
+                                } else {
+                                    PluginDebugLog.installFormatLog(TAG,
+                                            "remove deprecate action of %s,and action:%s "
+                                            , packageName, action.toString());
+                                    actions.remove(action);
+                                }
+                            }
 
-                    if (actions.isEmpty()) {
-                        PluginDebugLog.installFormatLog(TAG,
-                                "executeNextAction remove empty action list of %s", packageName);
-                        sActionMap.remove(packageName);
+                            if (actions.isEmpty()) {
+                                PluginDebugLog.installFormatLog(TAG,
+                                        "executeNextAction remove empty action list of %s", packageName);
+                                sActionMap.remove(packageName);
+                            }
+                        }
                     }
                 }
             });
