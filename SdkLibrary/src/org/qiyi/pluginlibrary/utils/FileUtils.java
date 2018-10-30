@@ -413,7 +413,7 @@ public final class FileUtils {
                 try {
                     elfFile = new ShareElfFile(oatFile);
                 } catch (Throwable tr) {
-                    PluginDebugLog.warningFormatLog("oat file %s is not elf format, try to delete it", oatFile.getAbsolutePath());
+                    PluginDebugLog.runtimeFormatLog("oat file %s is not elf format, try to delete it", oatFile.getAbsolutePath());
                     oatFile.delete();
                     ErrorUtil.throwErrorIfNeed(tr);
                 } finally {
@@ -423,17 +423,22 @@ public final class FileUtils {
         }
     }
 
-    public static String getCurrentInstructionSet() throws Exception {
+    public static String getCurrentInstructionSet() {
         if (currentInstructionSet != null) {
             return currentInstructionSet;
         }
 
-        Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
-        Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
+        try {
+            Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
+            Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
 
-        currentInstructionSet = (String) currentGet.invoke(null);
-        PluginDebugLog.runtimeFormatLog(TAG, "getCurrentInstructionSet: %s", currentInstructionSet);
-        return currentInstructionSet;
+            currentInstructionSet = (String) currentGet.invoke(null);
+            PluginDebugLog.runtimeFormatLog(TAG, "getCurrentInstructionSet: %s", currentInstructionSet);
+            return currentInstructionSet;
+        } catch (Exception e) {
+            // ignore
+        }
+        return "arm";  //默认返回arm指令集
     }
 
     public static String getCurrentProcessName(Context context) {

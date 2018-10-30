@@ -68,8 +68,16 @@ public class PluginInstaller {
         @Override
         public void onReceive(Context context, Intent intent) {
             String pkgName = intent.getStringExtra(IntentConstant.EXTRA_PKG_NAME);
-            if (!TextUtils.isEmpty(pkgName)) {
+            if (TextUtils.isEmpty(pkgName)) {
+                return;
+            }
+
+            String action = intent.getAction();
+            if (PluginPackageManager.ACTION_PACKAGE_INSTALLED.equals(action)) {
                 PluginDebugLog.installFormatLog(TAG, "install success and remove pkg:%s", pkgName);
+                sInstallingList.remove(pkgName);
+            } else if (PluginPackageManager.ACTION_PACKAGE_INSTALLFAIL.equals(action)) {
+                PluginDebugLog.installFormatLog(TAG, "install failed and remove pkg:%s", pkgName);
                 sInstallingList.remove(pkgName);
             }
         }
@@ -83,7 +91,6 @@ public class PluginInstaller {
         if (!repoDir.exists()) {
             repoDir.mkdirs();
         }
-        PluginDebugLog.installFormatLog(TAG, "getPluginappRootPath:%s", repoDir);
         return repoDir;
     }
 
@@ -92,12 +99,11 @@ public class PluginInstaller {
      * API >= 26时，该参数已废弃 @see <a href="https://android.googlesource.com/platform/libcore/+/master/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java"</a>
      */
     public static File getPluginInjectRootPath(Context context) {
-        File repoDir = getPluginappRootPath(context);
-        File dexDir = new File(repoDir, "dex");
+        File rootDir = getPluginappRootPath(context);
+        File dexDir = new File(rootDir, "dex");
         if (!dexDir.exists()) {
             dexDir.mkdirs();
         }
-        PluginDebugLog.installFormatLog(TAG, "getPluginInjectRootPath:%s", dexDir);
         return dexDir;
     }
 
@@ -213,7 +219,9 @@ public class PluginInstaller {
             throw new IllegalArgumentException("startInstall plugin lite info packageName is empty");
         }
 
+        // 启动独立进程Service安装插件
         Intent intent = new Intent(PluginInstallerService.ACTION_INSTALL);
+        intent.setPackage(context.getPackageName());
         intent.setClass(context, PluginInstallerService.class);
         intent.putExtra(IntentConstant.EXTRA_SRC_FILE, filePath);
         intent.putExtra(IntentConstant.EXTRA_PLUGIN_INFO, (Parcelable) info);
@@ -347,7 +355,7 @@ public class PluginInstaller {
                 apkFiles.add(file);
             }
         }
-        // 删除相关dex文件
+        // 删除相关apk文件
         for (File apkFile : apkFiles) {
             if (apkFile.delete()) {
                 PluginDebugLog.installFormatLog(TAG, "deleteOldApks %s,  dex %s success!", packageName, apkFile.getAbsolutePath());
@@ -371,20 +379,14 @@ public class PluginInstaller {
                 PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage prof  %s fail!", packageName);
             }
             //删除odex和vdex文件
-            String currentInstructionSet = "";
-            try {
-                currentInstructionSet = FileUtils.getCurrentInstructionSet();
-            } catch (Exception e) {
-                currentInstructionSet = "arm";
-            }
-
+            String currentInstructionSet = FileUtils.getCurrentInstructionSet();
             File oatDir = new File(apkFile.getParent() + "/oat/"
                     + currentInstructionSet);
             if (!oatDir.exists()) {
                 return;
             }
 
-            List<File> toDeteled = new ArrayList<>();
+            List<File> toDeleted = new ArrayList<>();
             FileFilter fileFilter = new FileFilter() {
                 @Override
                 public boolean accept(File pathname) {
@@ -397,11 +399,11 @@ public class PluginInstaller {
             File[] files = oatDir.listFiles(fileFilter);
             if (files != null) {
                 for (File file : files) {
-                    toDeteled.add(file);
+                    toDeleted.add(file);
                 }
             }
 
-            for (File dexPath : toDeteled) {
+            for (File dexPath : toDeleted) {
                 if (dexPath.delete()) {
                     PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage odex/vdex: %s  %s success!",
                             dexPath.getAbsolutePath(), packageName);
@@ -433,9 +435,6 @@ public class PluginInstaller {
                 boolean deleted = FileUtils.cleanDirectoryContent(dstDir);
                 PluginDebugLog.installFormatLog(TAG, "deletePluginData directory %s for plugin %s, deleted: ",
                         dstDir.getAbsolutePath(), packageName, deleted);
-            } else {
-                PluginDebugLog.installFormatLog(TAG, "deletePluginData directory %s for plugin %s not exist",
-                        dstDir.getAbsolutePath(), packageName);
             }
         }
     }
@@ -462,8 +461,8 @@ public class PluginInstaller {
         } else if (filePath.contains(PluginInstaller.APK_SUFFIX)) {
             end = filePath.lastIndexOf(PluginInstaller.APK_SUFFIX);
         }
-        String mapPackagename = filePath.substring(start + 1, end);
-        PluginDebugLog.runtimeFormatLog(TAG, "filePath: %s, pkgName: ", filePath, mapPackagename);
-        return mapPackagename;
+        String mapPkgName = filePath.substring(start + 1, end);
+        PluginDebugLog.runtimeFormatLog(TAG, "filePath: %s, pkgName: ", filePath, mapPkgName);
+        return mapPkgName;
     }
 }

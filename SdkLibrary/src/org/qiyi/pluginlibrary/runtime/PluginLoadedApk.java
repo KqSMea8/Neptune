@@ -356,6 +356,11 @@ public class PluginLoadedApk {
      * 将插件中的类从主工程中删除
      */
     void ejectClassLoader() {
+        if (Neptune.SEPARATED_CLASSLOADER) {
+            PluginDebugLog.runtimeLog(TAG, "separated classloader mode, no need to eject classloader");
+            return;
+        }
+
         if (mPluginClassLoader != null && mPluginPackageInfo.isClassNeedInject()) {
             PluginDebugLog.runtimeLog(TAG, "--- Class eject @ " + mPluginPackageInfo.getPackageName());
             ClassLoaderInjectHelper.eject(mHostContext.getClassLoader(), mPluginClassLoader);
@@ -544,7 +549,7 @@ public class PluginLoadedApk {
                                             + libraryInfo.packageName);
                             PluginPackageManager.notifyClientPluginException(mHostContext,
                                     libraryInfo.packageName,
-                                    "Apk file not exist!");
+                                    "Apk file not exist when handle dependencies!");
                             return false;
                         }
                         PluginDebugLog.runtimeLog(TAG,
@@ -595,7 +600,7 @@ public class PluginLoadedApk {
                     libraryPackageInfo = PluginPackageManagerNative.getInstance(mHostContext)
                             .getPluginPackageInfo(mHostContext, libraryInfo);
                     if (libraryPackageInfo == null) {
-                        PluginDebugLog.warningLog(TAG, "handleNewDependencies get libraryPackageInfo null " + libraryInfo.packageName);
+                        PluginDebugLog.runtimeLog(TAG, "handleNewDependencies get libraryPackageInfo null " + libraryInfo.packageName);
                         return false;
                     }
 
@@ -610,7 +615,7 @@ public class PluginLoadedApk {
                                             + libraryInfo.packageName);
                             PluginPackageManager.notifyClientPluginException(mHostContext,
                                     libraryInfo.packageName,
-                                    "Apk file not exist!");
+                                    "Apk file not exist when handle dependencies!");
                             return false;
                         }
 

@@ -8,6 +8,9 @@ project(':HostApp').projectDir = file('samples/HostApp')
 include ':PluginApp'
 project(':PluginApp').projectDir = file('samples/PluginApp')
 
+include ':BasicLib'
+project(':BasicLib').projectDir = file('samples/BasicLib')
+
 //include ':AndroidSupportSample'
 //project(':AndroidSupportSample').projectDir = file('samples/AndroidSupport/app')
 //include ':AndroidSupportRes'

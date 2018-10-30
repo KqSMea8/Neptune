@@ -20,6 +20,7 @@ package org.qiyi.pluginlibrary.loader;
 import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.utils.MultiDex;
+import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,10 @@ public class PluginClassLoader extends DexClassLoader {
         this.pkgName = packageInfo.getPackageName();
         this.dependencies = new ArrayList<>();
 
-        MultiDex.install(packageInfo, dexPath, this);
+        if (PluginDebugLog.isDebug()) {
+            // debug包支持multidex，release包关掉
+            MultiDex.install(packageInfo, dexPath, this);
+        }
     }
 
     @Override

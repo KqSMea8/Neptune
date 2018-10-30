@@ -4,127 +4,127 @@ import android.content.Context;
 
 import java.util.List;
 
-/**
- * Created by qipu on 2017/1/23.
- */
+
 public interface IPluginDebugHelper {
     /**
      * 保存请求插件列表的url
      *
-     * @param context   Context
-     * @param time      保存时间
-     * @param url       url
+     * @param context Context
+     * @param url     url
      */
-    void savePluginRequestUrl(Context context, final String time, final String url);
+    void savePluginRequestUrl(Context context, String url);
 
     /**
      * 获取请求插件列表的Url
      *
-     * @param context   Context
-     * @return          url
+     * @param context Context
+     * @return url
      */
     List<String> getPluginRequestUrl(Context context);
+
     /**
      * 保存插件列表
      *
-     * @param context   Context
-     * @param time      保存插件列表的时间
-     * @param plugins   插件列表
+     * @param context Context
+     * @param plugins 插件列表
      */
-    void savePluginList(Context context, final String time, final String plugins);
+    void savePluginList(Context context, String plugins);
 
     /**
      * 获取存储的插件列表信息
      *
-     * @param context   Context
-     * @return          返回插件列表
+     * @param context Context
+     * @return 返回插件列表
      */
     List<String> getPluginList(Context context);
 
     /**
      * 获取某个插件的后端吐的信息
      *
-     * @param pluginName        插件包名
+     * @param context Context
+     * @param pluginName 插件包名
      */
-    String getPluginInfo(String pluginName);
+    String getPluginInfo(Context context, String pluginName);
 
     /**
      * 保存插件下载状态（只保存成功和失败）
      *
-     * @param context           Context
-     * @param time              保存信息时的时间
-     * @param downloadState     下载状态
+     * @param context       Context
+     * @param downloadState 下载状态
      */
-    void savePlguinDownloadState(Context context, final String time, final String downloadState);
+    void savePluginDownloadState(Context context, String downloadState);
 
     /**
      * 获取插件下载状态信息
      *
-     * @param context   Context
-     * @return          返回插件下载状态的信息
+     * @param context Context
+     * @return 返回插件下载状态的信息
      */
     List<String> getPluginDownloadState(Context context);
 
     /**
      * 保存插件安装状态（只保存成功和失败）
      *
-     * @param context           Context
-     * @param time              保存信息时的时间
-     * @param installState      安装状态
+     * @param context      Context
+     * @param installState 安装状态
      */
-    void savePluginInstallState(Context context, final String time, final String installState);
+    void savePluginInstallState(Context context, String installState);
 
     /**
      * 获得插件安装的状态信息
      *
-     * @param context   Context
-     * @return          返回插件安装状态信息
+     * @param context Context
+     * @return 返回插件安装状态信息
      */
     List<String> getPluginInstallState(Context context);
 
     /**
      * 保存运行的插件信息
      *
-     * @param context       Context
-     * @param time          保存信息时的时间
-     * @param pluginInfo    插件信息
+     * @param context    Context
+     * @param pluginInfo 插件信息
      */
-    void saveRunningPluginInfo(Context context, final String time, final String pluginInfo);
+    void saveRunningPluginInfo(Context context, String pluginInfo);
 
     /**
      * 获得运行的插件信息
      *
-     * @param context   Context
-     * @return          返回插件运行的信息
+     * @param context Context
+     * @return 返回插件运行的信息
      */
     List<String> getRunningPluginInfo(Context context);
 
     /**
      * 保存插件跳转信息
      *
-     * @param context       Context
-     * @param time          保存信息时的时间
-     * @param intent        跳转信息
+     * @param context Context
+     * @param intent  跳转信息
      */
-    void savePluginActivityAndServiceJump(Context context, final String time, final String intent);
+    void savePluginActivityAndServiceJump(Context context, String intent);
 
     /**
      * 获得插件跳转信息
      *
-     * @param context   Context
-     * @return          返回插件跳转信息
+     * @param context Context
+     * @return 返回插件跳转信息
      */
     List<String> getPluginJumpInfo(Context context);
 
     /**
-     * 获取系统当前时间
+     * 保存插件logBuffer信息
      *
-     * @return  返回{"yyyy年MM月dd日: HH:mm:ss : "}格式的时间
+     * @param context Context
+     * @param logTag log的Tag
+     * @param logMsg 插件调试log信息
      */
-    String getCurrentSystemTime();
+    void savePluginLogBuffer(Context context, String logTag, String logMsg);
 
     /**
-     * 保存部分log信息
+     * 获取插件logBuffer信息
+     *
+     * @param context Context
+     * @param logTag log的TAG
+     * @return 返回插件调试log信息
      */
-    void savePluginLogInfo(Context context, final StringBuffer logInfo);
+    List<String> getPluginLogBuffer(Context context, String logTag);
 }

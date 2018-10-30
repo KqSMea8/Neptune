@@ -70,7 +70,7 @@ public class MultiDex {
         }
 
         if (Build.VERSION.SDK_INT > MAX_SUPPORTED_SDK_VERSION) {
-            PluginDebugLog.warningLog(TAG, "MultiDex is not guaranteed to work in SDK version "
+            PluginDebugLog.runtimeLog(TAG, "MultiDex is not guaranteed to work in SDK version "
                     + Build.VERSION.SDK_INT + ": SDK version higher than "
                     + MAX_SUPPORTED_SDK_VERSION + " should be backed by "
                     + "runtime with built-in multidex capabilty but it's not the "
