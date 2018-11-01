@@ -17,6 +17,7 @@
  */
 package org.qiyi.pluginlibrary.runtime;
 
+import android.annotation.TargetApi;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.app.Service;
@@ -34,6 +35,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 import android.text.TextUtils;
+import android.webkit.WebViewFactory;
 
 import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
@@ -250,6 +252,8 @@ public class PluginLoadedApk {
                         mHostContext.getApplicationInfo().sourceDir);
                 PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
             }
+            // 添加系统Webview资源
+            addWebviewAssetPath(am);
 
             mPluginAssetManager = am;
         } catch (Exception e) {
@@ -270,6 +274,55 @@ public class PluginLoadedApk {
         mPluginTheme = mPluginResource.newTheme();
         mPluginTheme.setTo(mHostContext.getTheme());
         mResourceTool = new ResourcesToolForPlugin(mHostContext);
+    }
+
+    /**
+     * 添加Webview的AssetPath到插件资源池
+     * 只有7.0以上设备使用插件才存在问题
+     */
+    private void addWebviewAssetPath(AssetManager assetManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            String webAsset = getWebViewAssetPath();
+            Class<?>[] paramTypes = new Class[]{String.class};
+            ReflectionUtils.on(assetManager).call("addAssetPath", sMethods, paramTypes,
+                    webAsset);
+            PluginDebugLog.runtimeFormatLog(TAG, "--- Add webview resources %s into plugin @ %s", webAsset,
+                    mPluginPackageInfo.getPackageName());
+        }
+    }
+
+    /**
+     * 获取系统Webview的Asset资源路径
+     */
+    @TargetApi(Build.VERSION_CODES.L)
+    private String getWebViewAssetPath() {
+        // Android L上WebViewFactory才存在getLoadedPackageInfo()方法
+        // see http://androidxref.com/5.0.0_r2/xref/frameworks/base/core/java/android/webkit/WebViewFactory.java
+        try {
+            // 初始化WebviewProvider
+            ReflectionUtils.on("android.webkit.WebViewFactory").call("getProvider");
+            // 获取Webview资源路径
+            PackageInfo pi = WebViewFactory.getLoadedPackageInfo();
+            if (pi != null && pi.applicationInfo != null && !TextUtils.isEmpty(pi.applicationInfo.sourceDir)) {
+                return pi.applicationInfo.sourceDir;
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+
+        try {
+            // com.internal.R.string.config_webViewPackageName 读取Webview浏览器内核包名
+            String webPkgName = ReflectionUtils.on("com.internal.R$string").get("config_webViewPackageName");
+            PackageManager pm = mHostContext.getPackageManager();
+            PackageInfo pi = pm.getPackageInfo(webPkgName, PackageManager.GET_ACTIVITIES);
+            if (pi != null && pi.applicationInfo != null && !TextUtils.isEmpty(pi.applicationInfo.sourceDir)) {
+                return pi.applicationInfo.sourceDir;
+            }
+        } catch (Exception e) {
+            ErrorUtil.throwErrorIfNeed(e);
+        }
+        // 硬编码WebView的路径
+        return "/system/app/WebViewGoogle/WebViewGoogle.apk";
     }
 
     /**

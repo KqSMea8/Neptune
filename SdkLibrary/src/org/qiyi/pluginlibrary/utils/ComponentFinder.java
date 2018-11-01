@@ -412,7 +412,13 @@ public class ComponentFinder {
     private static boolean supportPictureInPicture(ActivityInfo actInfo) {
         boolean supportPip = false;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            supportPip = actInfo.supportsPictureInPicture();
+            try {
+                // supportPip = actInfo.supportsPictureInPicture();
+                // 不能直接调用，否则混淆会有warning，除非添加ignore warning配置
+                supportPip = ReflectionUtils.on(actInfo).call("supportsPictureInPicture").get();
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+            }
         }
         return supportPip;
     }
