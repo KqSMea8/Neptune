@@ -595,7 +595,11 @@ public class PActivityStackSupervisor {
      */
     private String matchTaskName(String affinity) {
 
-        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)) {
+        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER1)) {
+            // container1 坑位
+            return affinity;
+        } else if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER2)) {
+            // container2 坑位
             return affinity;
         } else {
             return mLoadedApk.getPluginPackageName();

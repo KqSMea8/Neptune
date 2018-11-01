@@ -399,32 +399,32 @@ public class PluginPackageManager {
             return;
         }
 
-        ArrayList<PackageAction> executeList = new ArrayList<>();
-        String packageName = packageInfo.packageName;
-        if (!TextUtils.isEmpty(packageName)) {
-            for (PackageAction action : mPackageActions) {
-                if (packageName.equals(action.packageName)) {
-                    executeList.add(action);
+        final ArrayList<PackageAction> executeList = new ArrayList<>();
+        synchronized (this) {
+            String packageName = packageInfo.packageName;
+            if (!TextUtils.isEmpty(packageName)) {
+                for (PackageAction action : mPackageActions) {
+                    if (packageName.equals(action.packageName)) {
+                        executeList.add(action);
+                    }
                 }
             }
-        }
 
-        synchronized (this) {
             for (PackageAction action : executeList) {
                 mPackageActions.remove(action);
             }
-        }
 
-        for (PackageAction action : executeList) {
-            if (action.callBack != null) {
-                try {
-                    if (isSuccess) {
-                        action.callBack.onPackageInstalled(packageInfo);
-                    } else {
-                        action.callBack.onPackageInstallFail(packageInfo, failReason);
+            for (PackageAction action : executeList) {
+                if (action.callBack != null) {
+                    try {
+                        if (isSuccess) {
+                            action.callBack.onPackageInstalled(packageInfo);
+                        } else {
+                            action.callBack.onPackageInstallFail(packageInfo, failReason);
+                        }
+                    } catch (RemoteException e) {
+                        // ignore
                     }
-                } catch (RemoteException e) {
-                    // ignore
                 }
             }
         }
@@ -437,8 +437,7 @@ public class PluginPackageManager {
     private void clearExpiredPkgAction() {
         long currentTime = System.currentTimeMillis();
 
-        ArrayList<PackageAction> deletedList = new ArrayList<PackageAction>();
-
+        final ArrayList<PackageAction> deletedList = new ArrayList<PackageAction>();
         synchronized (this) {
             // 查找需要删除的
             for (PackageAction action : mPackageActions) {
@@ -453,7 +452,6 @@ public class PluginPackageManager {
                     if (action != null && action.callBack != null) {
                         action.callBack.onPackageInstallFail(action.pkgInfo, ErrorType.INSTALL_ERROR_CLIENT_TIME_OUT);
                     }
-
                 } catch (RemoteException e) {
                     // ignore
                 }

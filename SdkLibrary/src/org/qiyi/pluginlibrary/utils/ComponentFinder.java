@@ -26,6 +26,7 @@ import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 
@@ -54,6 +55,8 @@ public class ComponentFinder {
             "org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange";
     public static final String DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.InstrActivityProxySingleTask";
+    public static final String DEFAULT_PICTURE_IN_PICTURE_ACTIVITY_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.InstrActivityProxyPip";
     public static final String DEFAULT_SERVICE_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.ServiceProxy";
     public static final int TRANSLUCENTCOLOR = Color.parseColor("#00000000");
@@ -287,6 +290,7 @@ public class ComponentFinder {
         boolean isHandleConfigChange = false;
         boolean isLandscape = false;
         boolean hasTaskAffinity = false;
+        boolean supportPip = false;
 
         //通过主题判断是否是透明的
         Resources.Theme mTheme = mLoadedApk.getPluginTheme();
@@ -332,11 +336,18 @@ public class ComponentFinder {
         }
 
         if (TextUtils.equals(actInfo.taskAffinity,
-                mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)
+                mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER1)
                 && actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
             PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
                     + actInfo.taskAffinity + " hasTaskAffinity = true");
             hasTaskAffinity = true;
+        }
+
+        if (actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK
+                && supportPictureInPicture(actInfo)){
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                    + actInfo.taskAffinity + " hasTaskAffinity = true" + ", supportPictureInPicture = true");
+            supportPip = true;
         }
 
         if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
@@ -350,7 +361,7 @@ public class ComponentFinder {
             isLandscape = true;
         }
 
-        return matchActivityProxyByFeature(hasTaskAffinity, isTranslucent, isLandscape,
+        return matchActivityProxyByFeature(hasTaskAffinity, supportPip, isTranslucent, isLandscape,
                 isHandleConfigChange, mLoadedApk.getProcessName());
     }
 
@@ -358,6 +369,7 @@ public class ComponentFinder {
      * 根据被代理的Activity的Feature和进程名称选择代理
      *
      * @param hasTaskAffinity 是否独立任务栈
+     * @param supportPip 是否支持Android N画中画功能
      * @param isTranslucent   是否透明
      * @param isLandscape     是否横屏
      * @param isHandleConfig  配置变化是否仅仅执行onConfiguration方法
@@ -366,6 +378,7 @@ public class ComponentFinder {
      */
     private static String matchActivityProxyByFeature(
             boolean hasTaskAffinity,
+            boolean supportPip,
             boolean isTranslucent,
             boolean isLandscape,
             boolean isHandleConfig,
@@ -380,6 +393,8 @@ public class ComponentFinder {
         String proxyActivityName;
         if (hasTaskAffinity) {
             proxyActivityName = ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index;
+        } else if (supportPip) {
+            proxyActivityName = ComponentFinder.DEFAULT_PICTURE_IN_PICTURE_ACTIVITY_PROXY_PREFIX + index;
         } else if (isTranslucent) {
             proxyActivityName = ComponentFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
         } else if (isLandscape) {
@@ -390,9 +405,16 @@ public class ComponentFinder {
             proxyActivityName = ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
         }
 
-        PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index);
+        PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature: %s", proxyActivityName);
         return proxyActivityName;
+    }
+
+    private static boolean supportPictureInPicture(ActivityInfo actInfo) {
+        boolean supportPip = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            supportPip = actInfo.supportsPictureInPicture();
+        }
+        return supportPip;
     }
 
     /**

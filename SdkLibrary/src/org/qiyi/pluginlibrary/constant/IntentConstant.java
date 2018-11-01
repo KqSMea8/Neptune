@@ -70,5 +70,7 @@ public class IntentConstant {
     /* ACTION_SERVICE_CONNECTED Broadcast 中的 service 类型 */
     public static final String EXTRA_SERVICE_CLASS = "service_class";
     /* 支持TaskAffinity的容器坑位 */
-    public static final String TASK_AFFINITY_CONTAINER = ":container1";
+    public static final String TASK_AFFINITY_CONTAINER1 = ":container1";
+    /* 支持TaskAffinity的容器，配置了Pip功能的坑位 */
+    public static final String TASK_AFFINITY_CONTAINER2 = ":container2";
 }

@@ -18,7 +18,7 @@ import com.facebook.drawee.backends.pipeline.Fresco;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
 
     private static final String[] URL_LINKS = {
@@ -48,14 +48,8 @@ public class MainActivity extends AppCompatActivity{
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.setAdapter(mAdapter);
 
-        TextView goDesign = findViewById(R.id.go_support_design);
-        goDesign.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, DesignActivity.class);
-                startActivity(intent);
-            }
-        });
+        findViewById(R.id.go_support_design).setOnClickListener(this);
+        findViewById(R.id.go_webview).setOnClickListener(this);
 
         TextView ticker = findViewById(R.id.time_ticker);
         ticker.setText(BuildConfig.BUILD_TIME);
@@ -63,8 +57,13 @@ public class MainActivity extends AppCompatActivity{
 
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        Log.i(TAG, "MainActivity onResume() called");
+    public void onClick(View v) {
+        if (v.getId() == R.id.go_support_design) {
+            Intent intent = new Intent(this, DesignActivity.class);
+            startActivity(intent);
+        } else if (v.getId() == R.id.go_webview) {
+            Intent intent = new Intent(this, WebviewActivity.class);
+            startActivity(intent);
+        }
     }
 }
