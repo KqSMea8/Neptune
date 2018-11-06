@@ -22,6 +22,7 @@
 
         <activity
             android:name="com.iqiyi.plugin.sample.DesignActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
