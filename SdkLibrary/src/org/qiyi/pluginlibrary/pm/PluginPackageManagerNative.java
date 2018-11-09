@@ -29,6 +29,7 @@ import android.text.TextUtils;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.install.IUninstallCallBack;
 import org.qiyi.pluginlibrary.runtime.NotifyCenter;
 import org.qiyi.pluginlibrary.utils.ContextUtils;
 import org.qiyi.pluginlibrary.utils.FileUtils;
@@ -248,7 +249,7 @@ public class PluginPackageManagerNative {
      * 提交一个PluginUninstallAction删除插件apk数据的Action
      * 只会删除插件apk，dex和so库
      */
-    public void deletePackage(@NonNull PluginLiteInfo info, IPluginUninstallCallBack observer) {
+    public void deletePackage(@NonNull PluginLiteInfo info, IUninstallCallBack observer) {
         PluginUninstallAction action = new PluginUninstallAction();
         action.info = info;
         action.callbackHost = this;
@@ -263,7 +264,7 @@ public class PluginPackageManagerNative {
      * 提交一个PluginUninstallAction卸载插件的Action
      * 卸载插件会清除插件所有相关数据，包括缓存的数据
      */
-    public void uninstall(@NonNull PluginLiteInfo info, IPluginUninstallCallBack observer) {
+    public void uninstall(@NonNull PluginLiteInfo info, IUninstallCallBack observer) {
         PluginUninstallAction action = new PluginUninstallAction();
         action.info = info;
         action.callbackHost = this;
@@ -292,10 +293,10 @@ public class PluginPackageManagerNative {
     /**
      * 通过aidl调用{@link PluginPackageManagerService}进行删除插件apk
      */
-    private void deletePackageInternal(PluginLiteInfo info) {
+    private void deletePackageInternal(PluginLiteInfo info, IUninstallCallBack callback) {
         if (isConnected()) {
             try {
-                mService.deletePackage(info);
+                mService.deletePackage(info, callback);
             } catch (RemoteException e) {
                 // ignore
             }
@@ -306,10 +307,10 @@ public class PluginPackageManagerNative {
     /**
      * 通过aidl调用{@link PluginPackageManagerService}进行卸载
      */
-    private void uninstallInternal(PluginLiteInfo info) {
+    private void uninstallInternal(PluginLiteInfo info, IUninstallCallBack callback) {
         if (isConnected()) {
             try {
-                mService.uninstall(info);
+                mService.uninstall(info, callback);
                 return;
             } catch (RemoteException e) {
                 // ignore
@@ -585,21 +586,6 @@ public class PluginPackageManagerNative {
                                     "get and remove first action:%s ", finishedAction.toString());
                         }
 
-                        if (finishedAction instanceof PluginUninstallAction) {
-                            PluginDebugLog.installFormatLog(TAG,
-                                    "this is PluginUninstallAction  for :%s", pkgName);
-                            PluginUninstallAction uninstallAction = (PluginUninstallAction) finishedAction;
-                            if (uninstallAction.observer != null) {
-                                PluginDebugLog.installFormatLog(TAG, "PluginUninstallAction packageDeleted for %s", pkgName);
-                                uninstallAction.observer.onPluginUninstall(pkgName, resultCode);
-                            }
-                        } else if (finishedAction instanceof PluginInstallAction) {
-                            PluginDebugLog.installFormatLog(TAG,
-                                    "this is PluginInstallAction  for :%s", pkgName);
-                            PluginInstallAction installAction = (PluginInstallAction) finishedAction;
-                            onPackageInstalled(actions, installAction, info, resultCode);
-                        }
-
                         if (actions.isEmpty()) {
                             PluginDebugLog.installFormatLog(TAG,
                                     "onActionComplete remove empty action list of %s", pkgName);
@@ -610,39 +596,6 @@ public class PluginPackageManagerNative {
                         }
                     }
                 }
-            }
-        }
-
-        /**
-         * 队列中相同的PluginInstallAction直接回调结果，不再重复执行安装
-         * 否则会出现apk not found异常
-         */
-        private void onPackageInstalled(CopyOnWriteArrayList<Action> actions, PluginInstallAction finishedAction,
-                                        PluginLiteInfo info, int resultCode) throws RemoteException {
-            Iterator<Action> iterator = actions.iterator();
-            while (iterator.hasNext()) {
-                Action action = iterator.next();
-                if (!(action instanceof PluginInstallAction)) {
-                    continue;
-                }
-                PluginInstallAction installAction = (PluginInstallAction) action;
-                if (!finishedAction.equals(installAction)) {
-                    continue;
-                }
-                // 相同的Action
-                if (installAction.observer != null) {
-                    if (resultCode == PluginPackageManager.INSTALL_SUCCESS) {
-                        // 安装成功
-                        installAction.observer.onPackageInstalled(info);
-                    } else {
-                        // 安装失败
-                        installAction.observer.onPackageInstallFail(info, info.statusCode);
-                    }
-                }
-                PluginDebugLog.installFormatLog(TAG,
-                        "remove same install action of %s, and action:%s "
-                        , info.packageName, action.toString());
-                actions.remove(installAction);
             }
         }
 
@@ -761,7 +714,7 @@ public class PluginPackageManagerNative {
         public PluginLiteInfo info;
         public PluginPackageManagerNative callbackHost;
         public boolean deleteData;
-        IPluginUninstallCallBack observer;
+        IUninstallCallBack observer;
 
         @Override
         public String getPackageName() {
@@ -802,9 +755,9 @@ public class PluginPackageManagerNative {
         public void doAction() {
             if (callbackHost != null) {
                 if (deleteData) {
-                    callbackHost.uninstallInternal(info);
+                    callbackHost.uninstallInternal(info, observer);
                 } else {
-                    callbackHost.deletePackageInternal(info);
+                    callbackHost.deletePackageInternal(info, observer);
                 }
             }
         }
@@ -891,6 +844,6 @@ public class PluginPackageManagerNative {
         ActionType type;// 类型：
         long time;// 时间；
         IInstallCallBack callBack;// 安装回调
-        PluginLiteInfo packageInfo;//包名
+        PluginLiteInfo packageInfo;//插件信息
     }
 }

@@ -9,9 +9,9 @@ interface IActionFinishCallback {
      * @param resultCode
      *            结果码
      */
-    void onActionComplete(in PluginLiteInfo info, int resultCode);
+    oneway void onActionComplete(in PluginLiteInfo info, int resultCode);
     /**
-     * client端对应的进程名
+     * 获取Client端对应的进程名
      */
     String getProcessName();
 }
