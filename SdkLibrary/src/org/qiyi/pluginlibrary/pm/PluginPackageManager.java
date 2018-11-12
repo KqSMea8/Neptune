@@ -22,7 +22,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.os.IBinder;
 import android.os.Parcelable;
 import android.os.Process;
 import android.os.RemoteException;
@@ -105,7 +104,7 @@ public class PluginPackageManager {
             new ConcurrentHashMap<>();
 
     /* 存放正在安装的插件列表 */
-    private static List<String> sInstallingList = Collections.synchronizedList(new LinkedList<String>());
+    private List<String> mInstallingList = Collections.synchronizedList(new LinkedList<String>());
 
     private boolean mInstallerReceiverRegistered = false;
     /**
@@ -363,19 +362,19 @@ public class PluginPackageManager {
     /**
      * 添加到安装中列表
      */
-    private synchronized static void add2InstallList(String packageName) {
-        if (sInstallingList.contains(packageName)) {
+    private synchronized void add2InstallList(String packageName) {
+        if (mInstallingList.contains(packageName)) {
             return;
         }
         PluginDebugLog.installFormatLog(TAG, "add2InstallList with %s", packageName);
-        sInstallingList.add(packageName);
+        mInstallingList.add(packageName);
     }
 
     /**
      * 查看某个app是否正在安装
      */
-    public static synchronized boolean isPackageInstalling(String packageName) {
-        return sInstallingList.contains(packageName);
+    public synchronized boolean isPackageInstalling(String packageName) {
+        return mInstallingList.contains(packageName);
     }
 
     /**
@@ -415,14 +414,10 @@ public class PluginPackageManager {
     }
 
     /**
-     * 执行队列中等待的Action，回调给上层
+     * 执行队列中等待的Action，回调给上层的加载器
      */
     private void executePackageAction(
-            PluginLiteInfo packageInfo, boolean isSuccess, int failReason) {
-        if (packageInfo == null) {
-            return;
-        }
-
+            PluginLiteInfo packageInfo, boolean success, int failReason) {
         final ArrayList<PackageAction> executeList = new ArrayList<>();
         synchronized (this) {
             String packageName = packageInfo.packageName;
@@ -441,7 +436,7 @@ public class PluginPackageManager {
             for (PackageAction action : executeList) {
                 if (action.callBack != null) {
                     try {
-                        if (isSuccess) {
+                        if (success) {
                             action.callBack.onPackageInstalled(packageInfo);
                         } else {
                             action.callBack.onPackageInstallFail(packageInfo, failReason);
@@ -518,7 +513,7 @@ public class PluginPackageManager {
                 listenerMap.remove(key);
             }
         }
-        sInstallingList.remove(pkgInfo.packageName);
+        mInstallingList.remove(pkgInfo.packageName);
         // 等待执行的安装action直接回调
         executePackageAction(pkgInfo, true, 0);
         onActionFinish(pkgInfo, INSTALL_SUCCESS);
@@ -541,7 +536,7 @@ public class PluginPackageManager {
                 listenerMap.remove(key);
             }
         }
-        sInstallingList.remove(pkgInfo.packageName);
+        mInstallingList.remove(pkgInfo.packageName);
         // 等待执行的安装action直接回调
         executePackageAction(pkgInfo, false, failReason);
         onActionFinish(pkgInfo, INSTALL_FAILED);

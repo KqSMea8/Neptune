@@ -118,7 +118,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
         @Override
         public void run() {
             PluginDebugLog.runtimeLog(TAG, "mock ServiceConnected event.");
-            NotifyCenter.notifyServiceConnected(InstrActivityProxy1.this, null);
+            NotifyCenter.notifyServiceConnected(InstrActivityProxy1.this, "");
         }
     };
     private boolean mNeedUpdateConfiguration = true;
@@ -329,8 +329,8 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
             mLaunchPluginReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    Class<?> service = (Class<?>) intent.getSerializableExtra(IntentConstant.EXTRA_SERVICE_CLASS);
-                    PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", pkgName, service);
+                    String serviceCls = intent.getStringExtra(IntentConstant.EXTRA_SERVICE_CLASS);
+                    PluginDebugLog.formatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", pkgName, serviceCls);
                     boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
                     boolean readyLaunch = mRecoveryCallback.beforeLaunch(context, pkgName, activityName);
                     if (ppmsReady && readyLaunch) {

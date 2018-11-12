@@ -64,7 +64,7 @@ public class TransRecoveryActivity1 extends Activity {
         @Override
         public void run() {
             PluginDebugLog.runtimeLog(TAG, "mock ServiceConnected event.");
-            NotifyCenter.notifyServiceConnected(TransRecoveryActivity1.this, null);
+            NotifyCenter.notifyServiceConnected(TransRecoveryActivity1.this, "");
         }
     };
 
@@ -93,7 +93,7 @@ public class TransRecoveryActivity1 extends Activity {
         mLaunchPluginReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(final Context context, Intent intent) {
-                PluginDebugLog.runtimeFormatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", mPluginClassName, intent.getSerializableExtra(IntentConstant.EXTRA_SERVICE_CLASS));
+                PluginDebugLog.runtimeFormatLog(TAG, "LaunchPluginReceiver#onReceive %s %s", mPluginClassName, intent.getStringExtra(IntentConstant.EXTRA_SERVICE_CLASS));
                 boolean ppmsReady = PluginPackageManagerNative.getInstance(context).isConnected();
                 boolean hostReady = mRecoveryCallback.beforeLaunch(context, mPluginPackageName, mPluginClassName);
                 if (ppmsReady && hostReady) {

@@ -61,10 +61,10 @@ public class PluginPackageManagerNative {
     private static ConcurrentHashMap<String, CopyOnWriteArrayList<Action>> sActionMap =
             new ConcurrentHashMap<String, CopyOnWriteArrayList<Action>>();
     /**
-     * 安装包任务队列，目前仅处理插件依赖时使用
+     * 安装包任务队列，目前仅在启动插件时处理插件依赖时使用
      */
-    private static ConcurrentLinkedQueue<ExecutionPackageAction> mPackageActions =
-            new ConcurrentLinkedQueue<ExecutionPackageAction>();
+    private static ConcurrentLinkedQueue<PackageAction> mPackageActions =
+            new ConcurrentLinkedQueue<PackageAction>();
     private boolean mIsInitialized = false;
     private Context mContext;
     private PluginPackageManager mPackageManager;
@@ -118,23 +118,14 @@ public class PluginPackageManagerNative {
      * 执行之前未执行的PackageAction操作
      */
     private static void executePackageAction(Context context) {
-        if (context != null) {
-            PluginDebugLog.runtimeLog(TAG, "executePackageAction start....");
-            Iterator<ExecutionPackageAction> iterator = mPackageActions.iterator();
-            while (iterator.hasNext()) {
-                ExecutionPackageAction action = iterator.next();
-                ActionType type = action.type;
-                PluginDebugLog.runtimeLog(TAG, "executePackageAction iterator, actionType: " + type);
-                switch (type) {
-                    case PACKAGE_ACTION:
-                        PluginPackageManagerNative.getInstance(context).
-                                packageAction(action.packageInfo, action.callBack);
-                        break;
-                    default:
-                        break;
-                }
-                iterator.remove();
-            }
+        PluginDebugLog.runtimeLog(TAG, "executePackageAction start....");
+        Iterator<PackageAction> iterator = mPackageActions.iterator();
+        while (iterator.hasNext()) {
+            PackageAction action = iterator.next();
+            PluginDebugLog.runtimeLog(TAG, "executePackageAction iterator: " + action.toString());
+            PluginPackageManagerNative.getInstance(context).
+                    packageAction(action.packageInfo, action.callBack);
+            iterator.remove();
         }
     }
 
@@ -297,6 +288,7 @@ public class PluginPackageManagerNative {
         if (isConnected()) {
             try {
                 mService.deletePackage(info, callback);
+                return;
             } catch (RemoteException e) {
                 // ignore
             }
@@ -322,27 +314,26 @@ public class PluginPackageManagerNative {
     /**
      * 执行action操作，异步执行，如果service不存在，待连接之后执行。
      */
-    public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callBack) {
+    public void packageAction(PluginLiteInfo packageInfo, IInstallCallBack callback) {
         if (isConnected()) {
             try {
                 PluginDebugLog.runtimeLog(TAG, "packageAction service is connected and not null, call remote service");
-                mService.packageAction(packageInfo, callBack);
+                mService.packageAction(packageInfo, callback);
                 return;
             } catch (RemoteException e) {
                 // ignore
             }
         }
         PluginDebugLog.runtimeLog(TAG, "packageAction service is disconnected, need to rebind");
-        ExecutionPackageAction action = new ExecutionPackageAction();
-        action.type = ActionType.PACKAGE_ACTION;
-        action.time = System.currentTimeMillis();
-        action.packageInfo = packageInfo;
-        action.callBack = callBack;
-        packageActionModified(action);
+        addPackageAction(packageInfo, callback);
         onBindService(mContext);
     }
 
-    private void packageActionModified(ExecutionPackageAction action) {
+    private void addPackageAction(PluginLiteInfo info, IInstallCallBack callback) {
+        PackageAction action = new PackageAction();
+        action.time = System.currentTimeMillis();
+        action.packageInfo = info;
+        action.callBack = callback;
         mPackageActions.add(action);
         clearExpiredPkgAction();
     }
@@ -350,9 +341,9 @@ public class PluginPackageManagerNative {
     private void clearExpiredPkgAction() {
         long currentTime = System.currentTimeMillis();
         synchronized (this) {
-            Iterator<ExecutionPackageAction> iterator = mPackageActions.iterator();
+            Iterator<PackageAction> iterator = mPackageActions.iterator();
             while (iterator.hasNext()) {
-                ExecutionPackageAction action = iterator.next();
+                PackageAction action = iterator.next();
                 if (currentTime - action.time >= 60 * 1000) {// 1分钟
                     PluginDebugLog.runtimeLog(TAG, "packageAction is expired, remove it");
                     if (action.callBack != null) {
@@ -535,15 +526,6 @@ public class PluginPackageManagerNative {
         }
         return target;
     }
-
-    enum ActionType {
-        INSTALL_APK_FILE, // installApkFile
-        INSTALL_BUILD_IN_APPS, // installBuiltinApps
-        DELETE_PACKAGE, // deletePackage
-        PACKAGE_ACTION, // packageAction
-        UNINSTALL_ACTION,// uninstall
-    }
-
 
     private interface Action {
         String getPackageName();
@@ -806,11 +788,11 @@ public class PluginPackageManagerNative {
 
                 PluginDebugLog.runtimeLog(TAG, "onServiceConnected called");
                 if (mService != null) {
-                    NotifyCenter.notifyServiceConnected(mContext, PluginPackageManagerService.class);
                     try {
                         String processName = FileUtils.getCurrentProcessName(mContext);
                         mService.setActionFinishCallback(new ActionFinishCallback(processName));
-                    } catch (RemoteException e) {
+                        NotifyCenter.notifyServiceConnected(mContext, PluginPackageManagerService.class.getName());
+                    } catch (Exception e) {
                         // ignore
                     }
                     // 异步执行在等待中的任务
@@ -839,11 +821,14 @@ public class PluginPackageManagerNative {
     /**
      * 包依赖任务队列对象。
      */
-    private class ExecutionPackageAction {
-
-        ActionType type;// 类型：
-        long time;// 时间；
+    private class PackageAction {
+        long time;                // 时间戳
         IInstallCallBack callBack;// 安装回调
         PluginLiteInfo packageInfo;//插件信息
+
+        @Override
+        public String toString() {
+            return "{time: " + time + ", info: " + packageInfo.packageName;
+        }
     }
 }
