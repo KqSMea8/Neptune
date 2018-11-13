@@ -17,6 +17,7 @@
  */
 package org.qiyi.pluginlibrary.context;
 
+import android.annotation.NonNull;
 import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
@@ -821,5 +822,5 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
     /**
      * 获取插件的PluginLoadedApk
      */
-    protected abstract PluginLoadedApk getPluginLoadedApk();
+    @NonNull protected abstract PluginLoadedApk getPluginLoadedApk();
 }

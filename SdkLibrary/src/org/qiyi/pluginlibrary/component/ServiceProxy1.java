@@ -99,7 +99,7 @@ public class ServiceProxy1 extends Service {
                 targetService = ((Service) mLoadedApk.getPluginClassLoader()
                         .loadClass(targetClassName).newInstance());
                 PluginContextWrapper actWrapper = new PluginContextWrapper(ServiceProxy1.this.getBaseContext(),
-                        targetPackageName, true);
+                        mLoadedApk, true);
                 ReflectionUtils.on(targetService).call("attach", sMethods, null, actWrapper,
                         ReflectionUtils.getFieldValue(this, "mThread"), targetClassName,
                         ReflectionUtils.getFieldValue(this, "mToken"), mLoadedApk.getPluginApplication(),

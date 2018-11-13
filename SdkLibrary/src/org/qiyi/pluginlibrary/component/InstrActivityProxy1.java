@@ -172,7 +172,7 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
         mPluginControl = new PluginActivityControl(InstrActivityProxy1.this, mPluginActivity,
                 mLoadedApk.getPluginApplication(), mLoadedApk.getPluginInstrument());
-        mPluginContextWrapper = new PluginContextWrapper(InstrActivityProxy1.this.getBaseContext(), pluginPkgName);
+        mPluginContextWrapper = new PluginContextWrapper(InstrActivityProxy1.this.getBaseContext(), mLoadedApk);
         // 需要先修改InstrActivity的ActivityInfo，这样后面attach的信息才是正确的
         ActivityInfo actInfo = mLoadedApk.getActivityInfoByClassName(pluginActivityName);
         if (actInfo != null) {

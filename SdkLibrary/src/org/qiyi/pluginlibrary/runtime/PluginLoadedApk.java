@@ -46,7 +46,6 @@ import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
-import org.qiyi.pluginlibrary.exception.ReflectException;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 import org.qiyi.pluginlibrary.loader.PluginClassLoader;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
@@ -188,7 +187,7 @@ public class PluginLoadedApk {
         createPluginResource();
         // 插件Application的Base Context
         this.mPluginAppContext = new PluginContextWrapper(((Application) mHostContext)
-                .getBaseContext(), mPluginPackageName, true);
+                .getBaseContext(), this, true);
         // 注册静态广播
         installStaticReceiver();
     }
