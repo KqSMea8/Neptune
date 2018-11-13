@@ -15,6 +15,7 @@ buildscript {
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
         classpath 'com.iqiyi.build:thinr:1.1.2'
+        classpath 'com.iqiyi.gradle:base:0.5.7'  // sonar
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -33,6 +34,27 @@ allprojects {
         configurations.all {
             resolutionStrategy.cacheDynamicVersionsFor 4, 'hours'
         }
+    }
+}
+
+// 接入Sonarqube
+subprojects {
+    apply plugin: 'com.iqiyi.build.quality'
+
+    quality {
+        // 配置lint的规则xml文件
+        lintConfig file("lint/lint.xml")
+        // 配置lint的xml结果输出
+        lintXmlOutput file("lint/report/lint-results.xml")
+        // 配置lint的html结果输出
+        lintHtmlOutput file("lint/report/${project.name}-lint-results.html")
+
+        // 是否需要接入sonarqube
+        applySonarQube true
+        // 工程的key值 需要唯一并且带有前缀 便于在sonarqube中分清楚不同项目中模块
+        sonarProjectKey "plugin-${project.name}"
+        // 工程名 展示到sonarqube上的模块名称
+        sonarProjectName project.name
     }
 }
 
