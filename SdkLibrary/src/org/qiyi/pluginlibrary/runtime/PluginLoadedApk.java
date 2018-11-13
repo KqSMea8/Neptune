@@ -284,7 +284,7 @@ public class PluginLoadedApk {
      * <href>https://github.com/Qihoo360/RePlugin/blob/615cabf1b9d0e1f3e0d38c1ef1bb5a08dffa0ce5/replugin-sample/plugin/plugin-webview/app/src/main/java/com/qihoo360/replugin/sample/webview/utils/WebViewResourceHelper.java</href>
      */
     private void addWebviewAssetPath(AssetManager assetManager) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.L) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             String webAsset = getWebViewAssetPath();
             if (TextUtils.isEmpty(webAsset)) {
                 PluginDebugLog.runtimeFormatLog(TAG, "--- webview resources not found for plugin @%s", webAsset,
@@ -319,7 +319,7 @@ public class PluginLoadedApk {
     /**
      * 获取系统Webview的Asset资源路径
      */
-    @TargetApi(Build.VERSION_CODES.L)
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private String getWebViewAssetPath() {
         // Android L上WebViewFactory才存在getLoadedPackageInfo()方法
         // see http://androidxref.com/5.0.0_r2/xref/frameworks/base/core/java/android/webkit/WebViewFactory.java
