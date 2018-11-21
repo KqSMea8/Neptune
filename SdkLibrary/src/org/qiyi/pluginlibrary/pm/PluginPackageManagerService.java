@@ -25,6 +25,7 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.install.IActionFinishCallback;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
+import org.qiyi.pluginlibrary.install.IUninstallCallBack;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
 
 import java.util.List;
@@ -108,19 +109,19 @@ public class PluginPackageManagerService extends Service {
             }
 
             @Override
-            public void deletePackage(PluginLiteInfo info) throws RemoteException {
+            public void deletePackage(PluginLiteInfo info, IUninstallCallBack listener) throws RemoteException {
                 if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
                     return;
                 }
-                mManager.clearPackage(info);
+                mManager.clearPackage(info, listener);
             }
 
             @Override
-            public void uninstall(PluginLiteInfo info) throws RemoteException {
+            public void uninstall(PluginLiteInfo info, IUninstallCallBack listener) throws RemoteException {
                 if (mManager == null || info == null || TextUtils.isEmpty(info.packageName)) {
                     return;
                 }
-                mManager.uninstall(info);
+                mManager.uninstall(info, listener);
             }
 
             @Override

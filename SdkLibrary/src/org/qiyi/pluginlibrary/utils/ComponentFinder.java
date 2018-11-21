@@ -26,6 +26,7 @@ import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 
@@ -54,6 +55,8 @@ public class ComponentFinder {
             "org.qiyi.pluginlibrary.component.InstrActivityProxyHandleConfigChange";
     public static final String DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.InstrActivityProxySingleTask";
+    public static final String DEFAULT_PICTURE_IN_PICTURE_ACTIVITY_PROXY_PREFIX =
+            "org.qiyi.pluginlibrary.component.InstrActivityProxyPip";
     public static final String DEFAULT_SERVICE_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.ServiceProxy";
     public static final int TRANSLUCENTCOLOR = Color.parseColor("#00000000");
@@ -123,10 +126,10 @@ public class ComponentFinder {
     /**
      * 在插件中查找可以处理mIntent的Activity组件,找到之后为其分配合适的Proxy
      *
-     * @param mPluginPackageName  插件包名
-     * @param mIntent  跳转Activity的Intent
-     * @param requestCode 请求码
-     * @param context 宿主的Context
+     * @param mPluginPackageName 插件包名
+     * @param mIntent            跳转Activity的Intent
+     * @param requestCode        请求码
+     * @param context            宿主的Context
      * @return 处理后的Intent
      */
     public static Intent switchToActivityProxy(String mPluginPackageName,
@@ -280,13 +283,14 @@ public class ComponentFinder {
      *
      * @param mLoadedApk 插件的实例
      * @param actInfo    插件Activity对应的ActivityInfo
-     * @return  返回代理Activity的类名
+     * @return 返回代理Activity的类名
      */
     public static String findActivityProxy(PluginLoadedApk mLoadedApk, ActivityInfo actInfo) {
         boolean isTranslucent = false;
         boolean isHandleConfigChange = false;
         boolean isLandscape = false;
         boolean hasTaskAffinity = false;
+        boolean supportPip = false;
 
         //通过主题判断是否是透明的
         Resources.Theme mTheme = mLoadedApk.getPluginTheme();
@@ -331,12 +335,20 @@ public class ComponentFinder {
             }
         }
 
-        if (TextUtils.equals(actInfo.taskAffinity,
-                mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)
-                && actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
-            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
-                    + actInfo.taskAffinity + " hasTaskAffinity = true");
-            hasTaskAffinity = true;
+        if (actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
+            String pkgName = mLoadedApk.getPluginPackageName();
+            if (TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER1)
+                    || TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER2)) {
+                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                        + actInfo.taskAffinity + " hasTaskAffinity = true");
+                hasTaskAffinity = true;
+            }
+
+            if (supportPictureInPicture(actInfo)) {
+                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                        + actInfo.taskAffinity + " hasTaskAffinity = true" + ", supportPictureInPicture = true");
+                supportPip = true;
+            }
         }
 
         if (actInfo.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
@@ -350,13 +362,14 @@ public class ComponentFinder {
             isLandscape = true;
         }
 
-        return matchActivityProxyByFeature(hasTaskAffinity, isTranslucent, isLandscape,
+        return matchActivityProxyByFeature(supportPip, hasTaskAffinity, isTranslucent, isLandscape,
                 isHandleConfigChange, mLoadedApk.getProcessName());
     }
 
     /**
      * 根据被代理的Activity的Feature和进程名称选择代理
      *
+     * @param supportPip      是否支持Android N画中画功能
      * @param hasTaskAffinity 是否独立任务栈
      * @param isTranslucent   是否透明
      * @param isLandscape     是否横屏
@@ -365,6 +378,7 @@ public class ComponentFinder {
      * @return 代理Activity的名称
      */
     private static String matchActivityProxyByFeature(
+            boolean supportPip,
             boolean hasTaskAffinity,
             boolean isTranslucent,
             boolean isLandscape,
@@ -378,7 +392,9 @@ public class ComponentFinder {
         }
 
         String proxyActivityName;
-        if (hasTaskAffinity) {
+        if (supportPip) {
+            proxyActivityName = ComponentFinder.DEFAULT_PICTURE_IN_PICTURE_ACTIVITY_PROXY_PREFIX + index;
+        } else if (hasTaskAffinity) {
             proxyActivityName = ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index;
         } else if (isTranslucent) {
             proxyActivityName = ComponentFinder.DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX + index;
@@ -390,9 +406,22 @@ public class ComponentFinder {
             proxyActivityName = ComponentFinder.DEFAULT_ACTIVITY_PROXY_PREFIX + index;
         }
 
-        PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature:%s",
-                ComponentFinder.DEFAULT_TASK_AFFINITY_ACTIVITY_PROXY_PREFIX + index);
+        PluginDebugLog.runtimeFormatLog(TAG, "matchActivityProxyByFeature: %s", proxyActivityName);
         return proxyActivityName;
+    }
+
+    private static boolean supportPictureInPicture(ActivityInfo actInfo) {
+        boolean supportPip = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                // supportPip = actInfo.supportsPictureInPicture();
+                // 不能直接调用，否则混淆会有warning，除非添加ignore warning配置
+                supportPip = ReflectionUtils.on(actInfo).call("supportsPictureInPicture").get();
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+            }
+        }
+        return supportPip;
     }
 
     /**

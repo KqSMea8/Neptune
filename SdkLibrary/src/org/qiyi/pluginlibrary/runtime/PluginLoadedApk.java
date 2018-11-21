@@ -17,6 +17,7 @@
  */
 package org.qiyi.pluginlibrary.runtime;
 
+import android.annotation.TargetApi;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.app.Service;
@@ -33,7 +34,9 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
+import android.provider.Settings;
 import android.text.TextUtils;
+import android.webkit.WebViewFactory;
 
 import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.component.stackmgr.PActivityStackSupervisor;
@@ -184,7 +187,7 @@ public class PluginLoadedApk {
         createPluginResource();
         // 插件Application的Base Context
         this.mPluginAppContext = new PluginContextWrapper(((Application) mHostContext)
-                .getBaseContext(), mPluginPackageName, true);
+                .getBaseContext(), this, true);
         // 注册静态广播
         installStaticReceiver();
     }
@@ -250,6 +253,8 @@ public class PluginLoadedApk {
                         mHostContext.getApplicationInfo().sourceDir);
                 PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
             }
+            // 添加系统Webview资源, Android L+
+            addWebviewAssetPath(am);
 
             mPluginAssetManager = am;
         } catch (Exception e) {
@@ -270,6 +275,100 @@ public class PluginLoadedApk {
         mPluginTheme = mPluginResource.newTheme();
         mPluginTheme.setTo(mHostContext.getTheme());
         mResourceTool = new ResourcesToolForPlugin(mHostContext);
+    }
+
+    /**
+     * 添加Webview的AssetPath到插件资源池
+     * 只有5.0以上设备使用, select下拉，长按复制才会有问题
+     *
+     * <href>https://github.com/Qihoo360/RePlugin/blob/615cabf1b9d0e1f3e0d38c1ef1bb5a08dffa0ce5/replugin-sample/plugin/plugin-webview/app/src/main/java/com/qihoo360/replugin/sample/webview/utils/WebViewResourceHelper.java</href>
+     */
+    private void addWebviewAssetPath(AssetManager assetManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            String webAsset = getWebViewAssetPath();
+            if (TextUtils.isEmpty(webAsset)) {
+                PluginDebugLog.runtimeFormatLog(TAG, "--- webview resources not found for plugin @%s", webAsset,
+                        mPluginPackageInfo.getPackageName());
+                return;
+            }
+
+            Class<?>[] paramTypes = new Class[]{String.class};
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                try {
+                    // 7.0以上添加webview为SharedLibrary, 否则会存在packageID冲突
+                    ReflectionUtils.on(assetManager).call("addAssetPathAsSharedLibrary", sMethods,
+                            paramTypes, webAsset);
+                    PluginDebugLog.runtimeFormatLog(TAG, "--- Add webview resources %s into plugin @%s for above nougat", webAsset,
+                            mPluginPackageInfo.getPackageName());
+                    return;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            // 7.0以下系统
+            try {
+                ReflectionUtils.on(assetManager).call("addAssetPath", sMethods, paramTypes, webAsset);
+                PluginDebugLog.runtimeFormatLog(TAG, "--- Add webview resources %s into plugin @%s for below nougat", webAsset,
+                        mPluginPackageInfo.getPackageName());
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+            }
+        }
+    }
+
+    /**
+     * 获取系统Webview的Asset资源路径
+     */
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private String getWebViewAssetPath() {
+        // Android L上WebViewFactory才存在getLoadedPackageInfo()方法
+        // see http://androidxref.com/5.0.0_r2/xref/frameworks/base/core/java/android/webkit/WebViewFactory.java
+        try {
+            // 初始化WebviewProvider
+            ReflectionUtils.on("android.webkit.WebViewFactory").call("getProvider");
+            // 获取Webview资源路径
+            PackageInfo pi = WebViewFactory.getLoadedPackageInfo();
+            if (pi != null && pi.applicationInfo != null && !TextUtils.isEmpty(pi.applicationInfo.sourceDir)) {
+                return pi.applicationInfo.sourceDir;
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+
+        String webPkgName = "";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            // 通过webview_provider读取
+            webPkgName = Settings.Global.getString(mHostContext.getContentResolver(), "webview_provider");
+        } else {
+            try {
+                // 5.0~6.0存在该方法
+                webPkgName = ReflectionUtils.on("android.webkit.WebViewFactory").call("getWebViewPackageName").get();
+            } catch (Throwable tr) {
+                ErrorUtil.throwErrorIfNeed(tr);
+            }
+            if (TextUtils.isEmpty(webPkgName)) {
+                int resId = mHostResource.getIdentifier("config_webViewPackageName", "string", "android");
+                if (resId > 0) {
+                    webPkgName = mHostResource.getString(resId);
+                }
+            }
+        }
+
+        if (TextUtils.isEmpty(webPkgName)) {
+            // hard code the webview pkgName
+            webPkgName = "com.google.android.webview";
+        }
+
+        try {
+            PackageManager pm = mHostContext.getPackageManager();
+            PackageInfo pi = pm.getPackageInfo(webPkgName, PackageManager.GET_SHARED_LIBRARY_FILES);
+            if (pi != null && pi.applicationInfo != null && !TextUtils.isEmpty(pi.applicationInfo.sourceDir)) {
+                return pi.applicationInfo.sourceDir;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     /**

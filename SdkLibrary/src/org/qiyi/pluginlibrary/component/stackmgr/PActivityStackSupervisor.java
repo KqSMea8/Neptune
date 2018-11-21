@@ -24,6 +24,7 @@ import android.text.TextUtils;
 
 import org.qiyi.pluginlibrary.component.InstrActivityProxy1;
 import org.qiyi.pluginlibrary.constant.IntentConstant;
+import org.qiyi.pluginlibrary.runtime.IntentRequest;
 import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 import org.qiyi.pluginlibrary.utils.ComponentFinder;
@@ -48,9 +49,9 @@ public class PActivityStackSupervisor {
     private static final String TAG = "PActivityStackSupervisor";
 
     // 等在加载的intent请求
-    private static ConcurrentMap<String, LinkedBlockingQueue<Intent>> sIntentCacheMap = new ConcurrentHashMap<String, LinkedBlockingQueue<Intent>>();
+    private static ConcurrentMap<String, LinkedBlockingQueue<IntentRequest>> sIntentCacheMap = new ConcurrentHashMap<>();
     // 正在加载中的intent请求
-    private static ConcurrentMap<String, List<Intent>> sIntentLoadingMap = new ConcurrentHashMap<String, List<Intent>>();
+    private static ConcurrentMap<String, List<IntentRequest>> sIntentLoadingMap = new ConcurrentHashMap<>();
 
     // 当前进程所有插件的全局栈
     private static ConcurrentHashMap<String, PActivityStack> sAllActivityStacks = new ConcurrentHashMap<>();
@@ -73,7 +74,7 @@ public class PActivityStackSupervisor {
         mActivityStacks.put(pkgName, mFocusedStack);
     }
 
-    public static void addCachedIntent(String pkgName, LinkedBlockingQueue<Intent> cachedIntents) {
+    public static void addCachedIntent(String pkgName, LinkedBlockingQueue<IntentRequest> cachedIntents) {
         if (TextUtils.isEmpty(pkgName) || null == cachedIntents) {
             return;
         }
@@ -83,7 +84,7 @@ public class PActivityStackSupervisor {
     /**
      * 获取对应插件缓存还未执行加载的Intent
      */
-    public static LinkedBlockingQueue<Intent> getCachedIntent(String pkgName) {
+    public static LinkedBlockingQueue<IntentRequest> getCachedIntent(String pkgName) {
         if (TextUtils.isEmpty(pkgName)) {
             return null;
         }
@@ -116,13 +117,13 @@ public class PActivityStackSupervisor {
         return sIntentCacheMap.containsKey(packageName);
     }
 
-    public static void addLoadingIntent(String pkgName, Intent intent) {
+    public static void addLoadingIntent(String pkgName, IntentRequest intent) {
         if (null == intent || TextUtils.isEmpty(pkgName)) {
             return;
         }
-        List<Intent> intents = sIntentLoadingMap.get(pkgName);
+        List<IntentRequest> intents = sIntentLoadingMap.get(pkgName);
         if (null == intents) {
-            intents = Collections.synchronizedList(new ArrayList<Intent>());
+            intents = Collections.synchronizedList(new ArrayList<IntentRequest>());
             sIntentLoadingMap.put(pkgName, intents);
         }
         PluginDebugLog.runtimeLog(TAG, "addLoadingIntent pkgName: " + pkgName + " intent: " + intent);
@@ -140,10 +141,11 @@ public class PActivityStackSupervisor {
         if (null == intent || TextUtils.isEmpty(pkgName)) {
             return;
         }
-        List<Intent> intents = sIntentLoadingMap.get(pkgName);
+        List<IntentRequest> intents = sIntentLoadingMap.get(pkgName);
         Intent toBeRemoved = null;
         if (null != intents) {
-            for (Intent temp : intents) {
+            for (IntentRequest request : intents) {
+                Intent temp = request.getIntent();
                 if (TextUtils.equals(temp.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY),
                         intent.getStringExtra(IntentConstant.EXTRA_TARGET_CLASS_KEY))) {
                     toBeRemoved = temp;
@@ -465,13 +467,13 @@ public class PActivityStackSupervisor {
                 mLoadedApk.quitApp(false);
             } else {
                 // 堆栈里没有找到，遍历还未启动cache中的activity记录
-                LinkedBlockingQueue<Intent> records = sIntentCacheMap
+                LinkedBlockingQueue<IntentRequest> records = sIntentCacheMap
                         .get(mLoadedApk.getPluginPackageName());
                 if (null != records) {
-                    Iterator<Intent> recordIterator = records.iterator();
+                    Iterator<IntentRequest> recordIterator = records.iterator();
                     String notLaunchTargetClassName = null;
                     while (recordIterator.hasNext()) {
-                        Intent record = recordIterator.next();
+                        Intent record = recordIterator.next().getIntent();
                         if (null != record) {
                             if (null != record.getComponent()) {
                                 notLaunchTargetClassName = record.getComponent().getClassName();
@@ -488,12 +490,12 @@ public class PActivityStackSupervisor {
                     }
                 }
                 // 遍历启动过程中的activity记录
-                List<Intent> loadingIntents = sIntentLoadingMap.get(mLoadedApk.getPluginPackageName());
+                List<IntentRequest> loadingIntents = sIntentLoadingMap.get(mLoadedApk.getPluginPackageName());
                 if (null != loadingIntents) {
-                    Iterator<Intent> loadingRecordIterator = loadingIntents.iterator();
+                    Iterator<IntentRequest> loadingRecordIterator = loadingIntents.iterator();
                     String notLaunchTargetClassName = null;
                     while (loadingRecordIterator.hasNext()) {
-                        Intent record = loadingRecordIterator.next();
+                        Intent record = loadingRecordIterator.next().getIntent();
                         if (null != record) {
                             notLaunchTargetClassName = IntentUtils.getTargetClass(record);
                             if (TextUtils.equals(notLaunchTargetClassName, targetActivity)) {
@@ -595,7 +597,11 @@ public class PActivityStackSupervisor {
      */
     private String matchTaskName(String affinity) {
 
-        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER)) {
+        if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER1)) {
+            // container1 坑位
+            return affinity;
+        } else if (TextUtils.equals(affinity, mLoadedApk.getPluginPackageName() + IntentConstant.TASK_AFFINITY_CONTAINER2)) {
+            // container2 坑位
             return affinity;
         } else {
             return mLoadedApk.getPluginPackageName();

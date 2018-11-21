@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.iqiyi.plugin.sample">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.iqiyi.plugin.sample">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -9,7 +10,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        tools:ignore="GoogleAppIndexingWarning">
 
         <activity android:name="com.iqiyi.plugin.sample.MainActivity">
             <intent-filter>
@@ -18,9 +20,17 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.iqiyi.plugin.sample.DesignActivity"
-            android:theme="@style/Theme.AppCompat.NoActionBar">
+        <activity
+            android:name="com.iqiyi.plugin.sample.DesignActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:taskAffinity=":container2">
         </activity>
 
+        <activity
+            android:name="com.iqiyi.plugin.sample.WebviewActivity">
+        </activity>
     </application>
 </manifest>

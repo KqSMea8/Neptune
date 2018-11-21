@@ -9,7 +9,7 @@ def isPluginBuild = Boolean.parseBoolean(PLUGIN_APK_COMPILE)
 
 apply plugin: 'com.qiyi.neptune.plugin'
 
-//apply plugin: 'thinr'
+apply plugin: 'thinr'
 
 neptune {
     pluginMode = true
@@ -101,6 +101,8 @@ dependencies {
     if (isPluginBuild) {
         compileOnly files("hostlibs/android_support_27.1.1.jar")
         compileOnly files("hostlibs/fresco_1.9.0.jar")
+        //compileOnly "com.qiyi.video.allclasses:basecore_lib:latest.release"
+        //compileOnly "com.qiyi.video.allclasses:support_lib:latest.release"
         implementation "com.qiyi.video.allclasses:commonres_lib:9.9.5"    // commonres_lib
     } else {
         implementation "com.android.support:appcompat-v7:${ANDROID_SUPPORT_VERSION}"

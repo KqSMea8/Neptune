@@ -26,6 +26,7 @@ import android.os.Build;
 import android.os.Process;
 import android.text.TextUtils;
 
+import org.qiyi.pluginlibrary.install.DexOptimizer;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
 
 import java.io.BufferedInputStream;
@@ -47,6 +48,8 @@ import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
+
+import dalvik.system.DexClassLoader;
 
 
 public final class FileUtils {
@@ -263,6 +266,50 @@ public final class FileUtils {
         editor.putInt(key, version);
         editor.apply();
     }
+
+    /**
+     * 初始化 dex，因为第一次loaddex，如果放hostapp 进程，
+     * 有可能会导致hang住(参考类的说明)。
+     * 所以在安装阶段独立进程中执行。
+     *
+     * @param apkFile  插件apk文件
+     * @param packageName 插件包名
+     */
+    public static void installDex(final File apkFile,
+                                   String packageName,
+                                   String pkgDirPath) {
+
+        final File pkgDir = new File(pkgDirPath, packageName);
+        DexOptimizer.optimize(apkFile, pkgDir, VersionUtils.hasNougat(), new DexOptimizer.ResultCallback() {
+            @Override
+            public void onStart(File dexFile, File optimizedDir) {
+                if (dexFile != null) {
+                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onStart: dexFile:%s", dexFile.getAbsolutePath());
+                }
+
+            }
+
+            @Override
+            public void onSuccess(File dexFile, File optimizedDir, File optimizedFile) {
+                if (dexFile != null) {
+                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onSuccess: dexFile:%s", dexFile.getAbsolutePath());
+                }
+
+            }
+
+            @Override
+            public void onFailed(File dexFile, File optimizedDir, Throwable thr) {
+                try {
+                    new DexClassLoader(apkFile.getAbsolutePath(), pkgDir.getAbsolutePath(), null, getClass().getClassLoader());
+                    PluginDebugLog.installFormatLog(TAG, "DexOptimizer onFail:%s", thr.getMessage());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+    }
+
 
     /**
      * Deletes a directory recursively.

@@ -28,7 +28,7 @@ import android.content.pm.PackageInfo;
 import org.qiyi.pluginlibrary.component.wraper.NeptuneInstrument;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.install.IInstallCallBack;
-import org.qiyi.pluginlibrary.pm.IPluginUninstallCallBack;
+import org.qiyi.pluginlibrary.install.IUninstallCallBack;
 import org.qiyi.pluginlibrary.pm.PluginLiteInfo;
 import org.qiyi.pluginlibrary.pm.PluginPackageManagerNative;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
@@ -206,7 +206,7 @@ public class Neptune {
      * @param pkgName  待删除插件的包名
      * @param callBack  卸载回调
      */
-    public static void deletePackage(Context context, String pkgName, IPluginUninstallCallBack callBack) {
+    public static void deletePackage(Context context, String pkgName, IUninstallCallBack callBack) {
         Context mContext = ensureContext(context);
         PluginLiteInfo info = PluginPackageManagerNative.getInstance(mContext).getPackageInfo(pkgName);
         if (info != null) {
@@ -221,7 +221,7 @@ public class Neptune {
      * @param info    待删除插件的信息，包括包名，路径等
      * @param callBack 卸载回调
      */
-    public static void deletePackage(Context context, PluginLiteInfo info, IPluginUninstallCallBack callBack) {
+    public static void deletePackage(Context context, PluginLiteInfo info, IUninstallCallBack callBack) {
         // uninstall
         Context mContext = ensureContext(context);
         PluginPackageManagerNative.getInstance(mContext).deletePackage(info, callBack);
@@ -245,7 +245,7 @@ public class Neptune {
      * @param pkgName  待卸载插件的包名
      * @param callBack  卸载回调
      */
-    public static void uninstall(Context context, String pkgName, IPluginUninstallCallBack callBack) {
+    public static void uninstall(Context context, String pkgName, IUninstallCallBack callBack) {
         Context mContext = ensureContext(context);
         PluginLiteInfo info = PluginPackageManagerNative.getInstance(mContext).getPackageInfo(pkgName);
         if (info != null) {
@@ -260,7 +260,7 @@ public class Neptune {
      * @param info    待卸载插件的信息，包括包名，路径等
      * @param callBack 卸载回调
      */
-    public static void uninstall(Context context, PluginLiteInfo info, IPluginUninstallCallBack callBack) {
+    public static void uninstall(Context context, PluginLiteInfo info, IUninstallCallBack callBack) {
         // uninstall
         Context mContext = ensureContext(context);
         PluginPackageManagerNative.getInstance(mContext).uninstall(info, callBack);

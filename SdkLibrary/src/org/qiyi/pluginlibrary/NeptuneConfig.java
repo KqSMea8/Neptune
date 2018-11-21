@@ -39,6 +39,8 @@ public final class NeptuneConfig {
 
     private IPluginInfoProvider mPluginInfoProvider;
     private IRecoveryCallback mRecoveryCallback;
+    /* 是否使用独立进程安装插件 */
+    private boolean mInstallerProcess;
     /* Debug调试日志是否打开 */
     private boolean mIsDebug;
 
@@ -47,6 +49,7 @@ public final class NeptuneConfig {
         this.mPluginInfoProvider = builder.pluginInfoProvider;
         this.mRecoveryCallback = builder.recoveryCallback;
         this.mIsDebug = builder.isDebug;
+        this.mInstallerProcess = builder.installerProcess;
     }
 
 
@@ -62,6 +65,10 @@ public final class NeptuneConfig {
         return mRecoveryCallback;
     }
 
+    public boolean withInstallerProcess() {
+        return mInstallerProcess;
+    }
+
     public boolean isDebug() {
         return mIsDebug;
     }
@@ -70,6 +77,7 @@ public final class NeptuneConfig {
         int sdkMode = 0;
         IPluginInfoProvider pluginInfoProvider;
         IRecoveryCallback recoveryCallback;
+        boolean installerProcess;
         boolean isDebug;
 
         public NeptuneConfigBuilder configSdkMode(int sdkMode) {
@@ -89,6 +97,11 @@ public final class NeptuneConfig {
 
         public NeptuneConfigBuilder enableDebug(boolean isDebuggable) {
             this.isDebug = isDebuggable;
+            return this;
+        }
+
+        public NeptuneConfigBuilder installerProcess(boolean process) {
+            this.installerProcess = process;
             return this;
         }
 

@@ -115,7 +115,7 @@ public class NeptuneInstrument extends PluginInstrument {
                             ReflectionUtils activityRef = ReflectionUtils.on(activity);
                             activityRef.setNoException("mResources", loadedApk.getPluginResource());
                             activityRef.setNoException("mApplication", loadedApk.getPluginApplication());
-                            Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), packageName);
+                            Context pluginContext = new PluginContextWrapper(activity.getBaseContext(), loadedApk);
                             ReflectionUtils.on(activity, ContextWrapper.class).set("mBase", pluginContext);
                             // 5.0以下ContextThemeWrapper内会保存一个mBase，也需要反射替换掉
                             ReflectionUtils.on(activity, ContextThemeWrapper.class).setNoException("mBase", pluginContext);
