@@ -79,7 +79,7 @@ public class Neptune {
         // 调用getInstance()方法会初始化bindService
         PluginPackageManagerNative.getInstance(sHostContext).setPackageInfoManager(sGlobalConfig.getPluginInfoProvider());
         // 注册卸载监听广播
-        PluginManager.registerUninstallReceiver(sHostContext);
+        //PluginManager.registerUninstallReceiver(sHostContext);
     }
 
     public static Context getHostContext() {
