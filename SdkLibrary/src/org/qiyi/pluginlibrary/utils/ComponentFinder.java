@@ -334,19 +334,18 @@ public class ComponentFinder {
             }
         }
 
+        if (supportPictureInPicture(actInfo)) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                    + actInfo.taskAffinity + " hasTaskAffinity = true" + ", supportPictureInPicture = true");
+            supportPip = true;
+        }
+
         if (actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
             String pkgName = mLoadedApk.getPluginPackageName();
-            if (TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER1)
-                    || TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER2)) {
+            if (TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER1)) {
                 PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
                         + actInfo.taskAffinity + " hasTaskAffinity = true");
                 hasTaskAffinity = true;
-            }
-
-            if (supportPictureInPicture(actInfo)) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
-                        + actInfo.taskAffinity + " hasTaskAffinity = true" + ", supportPictureInPicture = true");
-                supportPip = true;
             }
         }
 

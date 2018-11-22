@@ -108,14 +108,14 @@
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:launchMode="singleTask"
+            android:launchMode="standard"
             android:taskAffinity=":container2"/>
         <activity
             android:name="org.qiyi.pluginlibrary.component.InstrActivityProxyPip1"
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:launchMode="singleTask"
+            android:launchMode="standard"
             android:process=":plugin1"
             android:taskAffinity=":container2"/>
         <activity
@@ -123,7 +123,7 @@
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
-            android:launchMode="singleTask"
+            android:launchMode="standard"
             android:process=":plugin2"
             android:taskAffinity=":container2"/>
 
