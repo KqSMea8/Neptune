@@ -67,6 +67,10 @@ public class PluginPackageInfo implements Parcelable {
      */
     private static final String META_KEY_MERGE_RES = "pluginapp_res_merge";
     /**
+     * 配置是否插入Webview的资源到插件资源池
+     */
+    private static final String META_KEY_ADD_WEBVIEW_RES = "pluginapp_add_webview_res";
+    /**
      * 配置插件是否运行在独立空间，完全不依赖宿主的类和资源
      */
     private static final String META_KEY_INDIVIDUAL = "pluginapp_individual";
@@ -82,8 +86,10 @@ public class PluginPackageInfo implements Parcelable {
     private String processName;
     // 是否需要把插件class注入进入父classloader，已废弃
     private boolean mIsClassInject = false;
-    // 是否需要把宿主的Resource合并进插件的Resource
+    // 是否需要把宿主的Resource合并进插件的Resources
     private boolean mIsMergeResource = false;
+    // 是否需要插入Webview的资源到插件的Resources
+    private boolean mAddWebviewResource = false;
     // 是否运行在独立空间，插件完全不依赖基线的类和资源
     private boolean mIsIndividualMode = false;
     private boolean mUsePluginAppInfo = false;
@@ -158,6 +164,7 @@ public class PluginPackageInfo implements Parcelable {
             if (metaData != null) {
                 mIsClassInject = metaData.getBoolean(META_KEY_CLASS_INJECT);
                 mIsMergeResource = metaData.getBoolean(META_KEY_MERGE_RES);
+                mAddWebviewResource = metaData.getBoolean(META_KEY_ADD_WEBVIEW_RES);
                 mIsIndividualMode = metaData.getBoolean(META_KEY_INDIVIDUAL);
                 String applicationMetaData = metaData.getString(META_KEY_PLUGIN_APPLICATION_SPECIAL);
                 if (!TextUtils.isEmpty(applicationMetaData)) {
@@ -216,6 +223,7 @@ public class PluginPackageInfo implements Parcelable {
         nativeLibraryDir = in.readString();
         mIsClassInject = in.readByte() != 0;
         mIsMergeResource = in.readByte() != 0;
+        mAddWebviewResource = in.readByte() != 0;
         mIsIndividualMode = in.readByte() != 0;
         mUsePluginAppInfo = in.readByte() != 0;
         mUsePluginCodePath = in.readByte() != 0;
@@ -460,6 +468,11 @@ public class PluginPackageInfo implements Parcelable {
         return mIsMergeResource;
     }
 
+    public boolean isNeedAddWebviewResource() {
+        // 钱包插件暂时写死配置，保证线上逻辑正常
+        return mAddWebviewResource || TextUtils.equals("com.qiyi.plugin.wallet", packageName);
+    }
+
     public boolean isIndividualMode() {
         return mIsIndividualMode;
     }
@@ -584,6 +597,7 @@ public class PluginPackageInfo implements Parcelable {
         parcel.writeString(nativeLibraryDir);
         parcel.writeByte((byte) (mIsClassInject ? 1 : 0));
         parcel.writeByte((byte) (mIsMergeResource ? 1 : 0));
+        parcel.writeByte((byte) (mAddWebviewResource ? 1: 0));
         parcel.writeByte((byte) (mIsIndividualMode ? 1 : 0));
         parcel.writeByte((byte) (mUsePluginAppInfo ? 1 : 0));
         parcel.writeByte((byte) (mUsePluginCodePath ? 1 : 0));

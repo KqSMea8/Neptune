@@ -254,7 +254,9 @@ public class PluginLoadedApk {
                 PluginDebugLog.runtimeLog(TAG, "--- Resource merging into plugin @ " + mPluginPackageInfo.getPackageName());
             }
             // 添加系统Webview资源, Android L+
-            addWebviewAssetPath(am);
+            if (mPluginPackageInfo.isNeedAddWebviewResource()) {
+                addWebviewAssetPath(am);
+            }
 
             mPluginAssetManager = am;
         } catch (Exception e) {
