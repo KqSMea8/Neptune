@@ -1000,9 +1000,6 @@ public class PluginManager {
             if (mLoadedApk == null || mLoadedApk.getPluginApplication() == null) {
                 return;
             }
-            if (mLoadedApk.hasPluginInit()) {
-                mLoadedApk.getPluginApplication().onTerminate();
-            }
             mLoadedApk.ejectClassLoader();
         }
     }
