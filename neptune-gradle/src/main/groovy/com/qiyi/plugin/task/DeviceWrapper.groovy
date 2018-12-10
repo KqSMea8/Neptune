@@ -169,7 +169,7 @@ class DeviceWrapper {
     void deleteDexFiles(String apkName) {
         List<String> toDeleted = new ArrayList<>()
         // 删除原有的dex文件
-        String rootDir = "/data/data${hostPackage}/app_pluginapp"
+        String rootDir = "/data/data/${hostPackage}/app_pluginapp"
         String dexName = apkName.replace('.apk', '.dex')
 
         String targetDex = "${rootDir}/${pluginPackage}/${dexName}"
