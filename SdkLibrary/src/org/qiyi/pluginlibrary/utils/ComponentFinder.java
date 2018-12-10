@@ -45,6 +45,7 @@ import java.util.List;
  * 并设置组件代理,支持显式和隐式查找
  */
 public class ComponentFinder {
+    private static final String TAG = "ComponentFinder";
     public static final String DEFAULT_ACTIVITY_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.InstrActivityProxy";
     public static final String DEFAULT_TRANSLUCENT_ACTIVITY_PROXY_PREFIX =
@@ -59,8 +60,6 @@ public class ComponentFinder {
             "org.qiyi.pluginlibrary.component.InstrActivityProxyPip";
     public static final String DEFAULT_SERVICE_PROXY_PREFIX =
             "org.qiyi.pluginlibrary.component.ServiceProxy";
-    public static final int TRANSLUCENTCOLOR = Color.parseColor("#00000000");
-    private static final String TAG = "ComponentFinder";
 
     /**
      * 在插件中查找可以处理mIntent的Service组件,找到之后为其分配合适的Proxy
@@ -305,8 +304,8 @@ public class ComponentFinder {
             mTheme.resolveAttribute(android.R.attr.windowBackground, tv, true);
             if (tv.type >= TypedValue.TYPE_FIRST_COLOR_INT && tv.type <= TypedValue.TYPE_LAST_COLOR_INT) {
                 PluginDebugLog.runtimeFormatLog(TAG, "windowBackground is color and is translucent:%s",
-                        (tv.data == TRANSLUCENTCOLOR));
-                isTranslucent = attr_0 && (tv.data == TRANSLUCENTCOLOR);
+                        (tv.data == Color.TRANSPARENT));
+                isTranslucent = attr_0 && (tv.data == Color.TRANSPARENT);
             } else {
                 PluginDebugLog.runtimeFormatLog(TAG, "windowBackground is drawable!");
                 isTranslucent = false;
@@ -335,19 +334,18 @@ public class ComponentFinder {
             }
         }
 
+        if (supportPictureInPicture(actInfo)) {
+            PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
+                    + actInfo.taskAffinity + " hasTaskAffinity = true" + ", supportPictureInPicture = true");
+            supportPip = true;
+        }
+
         if (actInfo.launchMode == ActivityInfo.LAUNCH_SINGLE_TASK) {
             String pkgName = mLoadedApk.getPluginPackageName();
-            if (TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER1)
-                    || TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER2)) {
+            if (TextUtils.equals(actInfo.taskAffinity, pkgName + IntentConstant.TASK_AFFINITY_CONTAINER1)) {
                 PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
                         + actInfo.taskAffinity + " hasTaskAffinity = true");
                 hasTaskAffinity = true;
-            }
-
-            if (supportPictureInPicture(actInfo)) {
-                PluginDebugLog.runtimeLog(TAG, "findActivityProxy activity taskAffinity: "
-                        + actInfo.taskAffinity + " hasTaskAffinity = true" + ", supportPictureInPicture = true");
-                supportPip = true;
             }
         }
 
@@ -435,5 +433,32 @@ public class ComponentFinder {
                 DEFAULT_SERVICE_PROXY_PREFIX + ProcessManager.getProcessIndex(processName);
         PluginDebugLog.runtimeFormatLog(TAG, "matchServiceProxyByFeature:%s", proxyServiceName);
         return proxyServiceName;
+    }
+
+    /**
+     * 根据代理Service名称修复插件运行进程名称
+     * @param serviceName 代理service名称
+     * @return 运行的进程名
+     */
+    public static String fixProcessNameByService(Context context, String serviceName) {
+        if (serviceName.startsWith(DEFAULT_SERVICE_PROXY_PREFIX)) {
+            char index = serviceName.charAt(serviceName.length() - 1);
+            String processName = context.getPackageName();
+            switch (index) {
+                case '0':
+                    break;
+                case '1':
+                    processName = processName + ProcessManager.PROXY_PROCESS1;
+                    break;
+                case '2':
+                    processName = processName + ProcessManager.PROXY_PROCESS2;
+                    break;
+                case '3':
+                    processName = processName + ProcessManager.PROXY_DOWNLOADER;
+                    break;
+            }
+            return processName;
+        }
+        throw new IllegalArgumentException("unknown serviceName: " + serviceName);
     }
 }

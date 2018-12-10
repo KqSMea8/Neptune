@@ -456,9 +456,11 @@ public class PluginManager {
             Intent transIntent = new Intent();
             transIntent.setAction(IntentConstant.ACTION_START_PLUGIN);
             transIntent.putExtra(IntentConstant.EXTRA_START_INTENT_KEY, mIntent);
-            transIntent.putExtra(IntentConstant.EXTRA_TARGET_PROCESS, targetProcessName);
             try {
                 String proxyServiceName = ComponentFinder.matchServiceProxyByFeature(targetProcessName);
+                String fixedProcess = ComponentFinder.fixProcessNameByService(mHostContext, proxyServiceName);
+                transIntent.putExtra(IntentConstant.EXTRA_TARGET_PROCESS, fixedProcess);
+
                 transIntent.setClass(mHostContext, Class.forName(proxyServiceName));
                 mHostContext.startService(transIntent);
             } catch (ClassNotFoundException e) {
