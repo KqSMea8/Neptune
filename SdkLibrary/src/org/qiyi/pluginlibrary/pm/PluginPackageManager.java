@@ -858,7 +858,10 @@ public class PluginPackageManager {
      */
     PluginLiteInfo getPackageInfoDirectly(String packageName) {
         PluginLiteInfo liteInfo = null;
-        if (!TextUtils.isEmpty(packageName) && sPluginInfoProvider != null) {
+        if (TextUtils.isEmpty(packageName)) {
+            return liteInfo;
+        }
+        if (sPluginInfoProvider != null) {
             liteInfo = sPluginInfoProvider.getPackageInfoDirectly(packageName);
         } else {
             PluginDebugLog.runtimeLog(TAG, "[warning] sPluginInfoProvider is null");
