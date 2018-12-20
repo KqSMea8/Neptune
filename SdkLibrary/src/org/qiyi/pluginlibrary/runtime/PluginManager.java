@@ -1316,4 +1316,14 @@ public class PluginManager {
             }
         }
     }
+
+    /**
+     * 查看插件是否创建了 ClassLoader
+     *
+     * @param packageName 包名
+     * @return true or false
+     */
+    public static boolean isPluginClassLoaderLoaded(String packageName) {
+        return PluginLoadedApk.isPluginClassLoaderLoaded(packageName);
+    }
 }
