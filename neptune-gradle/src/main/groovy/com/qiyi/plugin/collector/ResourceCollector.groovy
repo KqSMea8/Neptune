@@ -316,14 +316,12 @@ class ResourceCollector {
             def entryId = 0
             typeId = lastType++
             // 对 attr 排个序，liveshow 的编译环境，id 顺序不是按照 name 排序的，导致 R.styleable.xxx 数组内容错乱，读取 attribute 时可能丢失
-            if (it.resType == "attr") {
-                pluginResources.get(it.resType).sort(new Comparator<ResourceEntry>() {
-                    @Override
-                    int compare(ResourceEntry r0, ResourceEntry r1) {
-                        return r0.resourceId - r1.resourceId
-                    }
-                })
-            }
+            pluginResources.get(it.resType).sort(new Comparator<ResourceEntry>() {
+                @Override
+                int compare(ResourceEntry r0, ResourceEntry r1) {
+                    return r0.resourceId - r1.resourceId
+                }
+            })
             pluginResources.get(it.resType).each {
                 it.setNewResourceId(pluginExt.packageId, typeId, entryId++)
             }

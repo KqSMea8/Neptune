@@ -369,8 +369,8 @@ public class PActivityStackSupervisor {
                 activity = mFocusedStack.getTop();
             }
             boolean hasSameActivity = false;
-            String proxyClsName = ComponentFinder.findActivityProxy(mLoadedApk, info);
-            if (activity != null) {
+            if (activity != null && !ContextUtils.isFinished(activity)) {
+                String proxyClsName = ComponentFinder.findActivityProxy(mLoadedApk, info);
                 // 栈内有实例, 可能是ProxyActivity，也可能是插件真实的Activity
                 if (TextUtils.equals(proxyClsName, activity.getClass().getName())
                         || TextUtils.equals(targetActivity, activity.getClass().getName())) {
@@ -408,8 +408,9 @@ public class PActivityStackSupervisor {
             Activity found = null;
             // 遍历已经起过的activity
             for (Activity activity : targetStack.getActivities()) {
-                String proxyClsName = ComponentFinder.findActivityProxy(mLoadedApk, info);
-                if (activity != null) {
+                if (activity != null && !ContextUtils.isFinished(activity)) {
+                    // 堆栈里的Activity还没有销毁
+                    String proxyClsName = ComponentFinder.findActivityProxy(mLoadedApk, info);
                     if (TextUtils.equals(proxyClsName, activity.getClass().getName())
                             || TextUtils.equals(targetActivity, activity.getClass().getName())) {
                         String key = getActivityStackKey(activity);

@@ -17,7 +17,6 @@
  */
 package org.qiyi.pluginlibrary.loader;
 
-import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.pm.PluginPackageInfo;
 import org.qiyi.pluginlibrary.utils.MultiDex;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
@@ -65,7 +64,20 @@ public class PluginClassLoader extends DexClassLoader {
             }
         }
         // If still not found, find in this class loader
-        return super.findClass(name);
+        try {
+            return super.findClass(name);
+        } catch (ClassNotFoundException e) {
+            if (dependencies.isEmpty()) {
+                throw e;
+            } else {
+                StringBuilder sb = new StringBuilder("tried ClassLoaders ");
+                for (DexClassLoader dependency : dependencies) {
+                    sb.append(dependency.toString());
+                    sb.append(";");
+                }
+                throw new ClassNotFoundException(sb.toString(), e);
+            }
+        }
     }
 
     /**

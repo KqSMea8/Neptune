@@ -991,4 +991,17 @@ public class PluginLoadedApk {
     void changeLaunchingIntentStatus(boolean isLaunchingIntent) {
         this.isLaunchingIntent = isLaunchingIntent;
     }
+
+    /**
+     * 查看插件是否创建了 ClassLoader
+     *
+     * @param packageName 包名
+     * @return true or false
+     */
+    static boolean isPluginClassLoaderLoaded(String packageName) {
+        if (packageName != null) {
+            return sAllPluginClassLoader.containsKey(packageName);
+        }
+        return false;
+    }
 }

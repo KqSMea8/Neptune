@@ -32,5 +32,9 @@
         <activity
             android:name="com.iqiyi.plugin.sample.WebviewActivity">
         </activity>
+
+        <meta-data
+            android:name="pluginapp_add_webview_res"
+            android:value="true" />
     </application>
 </manifest>
