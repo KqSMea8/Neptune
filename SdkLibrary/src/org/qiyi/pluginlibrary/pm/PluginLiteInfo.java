@@ -64,6 +64,8 @@ public class PluginLiteInfo implements Parcelable {
     public String plugin_refs;
     /* 插件安装错误码，0代表成功 */
     public int statusCode;
+    /* 安装前先 delete package */
+    public boolean deletePackageBeforeInstall = true;
 
     public static final Creator<PluginLiteInfo> CREATOR = new Creator<PluginLiteInfo>() {
         @Override

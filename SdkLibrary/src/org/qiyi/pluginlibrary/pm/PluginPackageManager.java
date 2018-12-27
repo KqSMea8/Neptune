@@ -618,7 +618,10 @@ public class PluginPackageManager {
     void install(PluginLiteInfo pluginInfo, final IInstallCallBack callback) {
         registerInstallReceiver();  //注册广播
         // 安装插件前，先清理apk,dex,so库等数据
-        deletePackage(pluginInfo, null, false);
+        // 插件运行与插件更新可能并发执行，导致插件出现 ClassNotFoundException, 尝试更新时不清除旧插件，下次启动时再清除
+        if (pluginInfo.deletePackageBeforeInstall) {
+            deletePackage(pluginInfo, null, false);
+        }
 
         String key = pluginInfo.packageName + "_" + pluginInfo.pluginVersion;
         listenerMap.put(key, callback);
