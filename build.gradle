@@ -6,7 +6,7 @@ buildscript {
         jcenter()
         google()
         maven {
-            url = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
+            url = "http://jfrog.cloud.qiyi.domain/iqiyi-maven-vertical/"
         }
     }
     dependencies {
@@ -14,8 +14,8 @@ buildscript {
         classpath "com.iqiyi.tools.build:neptune-gradle:${NEPTUNE_GRADLE_VERSION}"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
-        classpath 'com.iqiyi.build:thinr:1.1.2'
-        classpath 'com.iqiyi.gradle:base:0.5.7'  // sonar
+        //classpath 'com.iqiyi.build:thinr:1.1.2'
+        //classpath 'com.iqiyi.gradle:base:0.5.7'  // sonar
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -38,28 +38,28 @@ allprojects {
 }
 
 // 接入Sonarqube
-subprojects {
-    apply plugin: 'com.iqiyi.build.quality'
-
-    quality {
-        // 配置lint的规则xml文件
-        lintConfig file("lint/lint.xml")
-        // 配置lint的xml结果输出
-        lintXmlOutput file("lint/report/lint-results.xml")
-        // 配置lint的html结果输出
-        lintHtmlOutput file("lint/report/${project.name}-lint-results.html")
-
-        // 是否需要接入sonarqube
-        applySonarQube true
-        // 工程的key值 需要唯一并且带有前缀 便于在sonarqube中分清楚不同项目中模块
-        sonarProjectKey "plugin-${project.name}"
-        // 工程名 展示到sonarqube上的模块名称
-        sonarProjectName project.name
-    }
-}
+//subprojects {
+//    apply plugin: 'com.iqiyi.build.quality'
+//
+//    quality {
+//        // 配置lint的规则xml文件
+//        lintConfig file("lint/lint.xml")
+//        // 配置lint的xml结果输出
+//        lintXmlOutput file("lint/report/lint-results.xml")
+//        // 配置lint的html结果输出
+//        lintHtmlOutput file("lint/report/${project.name}-lint-results.html")
+//
+//        // 是否需要接入sonarqube
+//        applySonarQube true
+//        // 工程的key值 需要唯一并且带有前缀 便于在sonarqube中分清楚不同项目中模块
+//        sonarProjectKey "plugin-${project.name}"
+//        // 工程名 展示到sonarqube上的模块名称
+//        sonarProjectName project.name
+//    }
+//}
 
 ext {
     COMPILE_SDK_VERSION = 28
-    BUILD_TOOLS_VERSION = "28.0.2"
+    BUILD_TOOLS_VERSION = "28.0.3"
     TARGET_SDK_VERSION = 28
 }

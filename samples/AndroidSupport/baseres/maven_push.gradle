@@ -2,15 +2,15 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 def getRepositoryUrl() {
-    return hasProperty('NEXUS_REPO') ? NEXUS_REPO : "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
+    return hasProperty('NEXUS_REPO') ? NEXUS_REPO : "http://jfrog.cloud.qiyi.domain/iqiyi-maven-vertical/"
 }
 
 def getRepositoryUsername() {
-    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : "mbdvertical"
+    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : "iqiyi-maven-vertical"
 }
 
 def getRepositoryPassword() {
-    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : "mbdvertical"
+    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : "r8Gq9yQqdhhU"
 }
 
 def isReleaseBuild() {
@@ -33,8 +33,7 @@ afterEvaluate { project ->
 
                 repository(url: uri(getRepositoryUrl())) {
                     if (isRemoteRepo()) {
-                        //authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
-                        authentication(userName: "mbdvertical", password: "mbdvertical")
+                        authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
                     }
                 }
 
