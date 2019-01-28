@@ -1,7 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-
     repositories {
         jcenter()
         google()
@@ -35,6 +34,12 @@ allprojects {
             resolutionStrategy.cacheDynamicVersionsFor 4, 'hours'
         }
     }
+
+//    gradle.projectsEvaluated {
+//        tasks.withType(JavaCompile) {
+//            options.compilerArgs.add('-Xbootclasspath/p:SdkLibrary/libs/android-27.jar')
+//        }
+//    }
 }
 
 // 接入Sonarqube

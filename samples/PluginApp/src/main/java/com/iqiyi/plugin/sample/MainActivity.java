@@ -1,6 +1,9 @@
 package com.iqiyi.plugin.sample;
 
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -53,8 +56,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         TextView ticker = findViewById(R.id.time_ticker);
         ticker.setText(BuildConfig.BUILD_TIME);
+
+        getIdFromDataProvider();
     }
 
+
+    private void getIdFromDataProvider() {
+        ContentResolver cr = getContentResolver();
+        Uri uri = Uri.parse("content://com.iqiyi.plugin.sample.dataprovider/id");
+        Cursor cursor = cr.query(uri, null, null, null, null);
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                String id = cursor.getString(cursor.getColumnIndex("deviceId"));
+                Log.i(TAG, "getIdFromDataProvider: " + id);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
 
     @Override
     public void onClick(View v) {

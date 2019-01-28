@@ -262,10 +262,6 @@ public class ContextUtils {
         return PluginInstaller.getPluginappRootPath(context) + File.separator + pkg + File.separator + "databases";
     }
 
-    @Deprecated
-    public static PackageInfo getPluginPluginInfo(Context context) {
-        return getPluginPackageInfo(context);
-    }
 
     /**
      * 获取插件的PackageInfo信息

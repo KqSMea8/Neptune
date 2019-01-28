@@ -23,6 +23,8 @@ import android.app.Instrumentation;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks2;
+import android.content.ContentProvider;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.IntentFilter;
@@ -30,9 +32,11 @@ import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -44,6 +48,7 @@ import org.qiyi.pluginlibrary.component.stackmgr.PServiceSupervisor;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginServiceWrapper;
 import org.qiyi.pluginlibrary.component.wraper.PluginInstrument;
 import org.qiyi.pluginlibrary.component.wraper.ResourcesProxy;
+import org.qiyi.pluginlibrary.provider.PluginContentResolver;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
 import org.qiyi.pluginlibrary.error.ErrorType;
 import org.qiyi.pluginlibrary.install.PluginInstaller;
@@ -63,6 +68,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +125,10 @@ public class PluginLoadedApk {
     private PluginContextWrapper mPluginAppContext;
     /* 自定义Instrumentation，对Activity跳转进行拦截 */
     private PluginInstrument mPluginInstrument;
+    /* 插件的ContentProvider对象，key是authority */
+    private Map<String, ContentProvider> mProviderMaps = new HashMap<>();
+    /* 插件的PluginContentResolver */
+    private PluginContentResolver mPluginContentResolver;
 
     /**
      * 动态通过资源名称获取资源id的工具类
@@ -196,16 +206,14 @@ public class PluginLoadedApk {
      * 动态注册插件中的静态Receiver
      */
     private void installStaticReceiver() {
-        if (mPluginPackageInfo == null || mHostContext == null) {
-            return;
-        }
+
         Map<String, PluginPackageInfo.ReceiverIntentInfo> mReceiverIntentInfos =
                 mPluginPackageInfo.getReceiverIntentInfos();
         if (mReceiverIntentInfos != null) {
-            Set<Map.Entry<String, PluginPackageInfo.ReceiverIntentInfo>> mEntrys =
+            Set<Map.Entry<String, PluginPackageInfo.ReceiverIntentInfo>> mEntries =
                     mReceiverIntentInfos.entrySet();
             Context mGlobalContext = mHostContext.getApplicationContext();
-            for (Map.Entry<String, PluginPackageInfo.ReceiverIntentInfo> mEntry : mEntrys) {
+            for (Map.Entry<String, PluginPackageInfo.ReceiverIntentInfo> mEntry : mEntries) {
                 PluginPackageInfo.ReceiverIntentInfo mReceiverInfo = mEntry.getValue();
                 if (mReceiverInfo != null) {
                     try {
@@ -480,7 +488,7 @@ public class PluginLoadedApk {
      *
      * @return true：创建Application成功，false:创建失败
      */
-    boolean makeApplication() {
+    synchronized boolean makeApplication() {
         if (!isPluginInit || mPluginApplication == null) {
             String className = mPluginPackageInfo.getApplicationClassName();
             if (TextUtils.isEmpty(className)) {
@@ -521,7 +529,9 @@ public class PluginLoadedApk {
                 ErrorUtil.throwErrorIfNeed(e);
                 PluginDebugLog.runtimeLog(TAG, "register ComponentCallbacks for plugin failed, pkgName=" + mPluginPackageName);
             }
-
+            // 安装插件Provider
+            installContentProviders();
+            // 执行Application#onCreate()方法
             try {
                 mPluginApplication.onCreate();
             } catch (Throwable t) {
@@ -543,6 +553,45 @@ public class PluginLoadedApk {
         return true;
     }
 
+    /**
+     * 安装插件的Provider
+     */
+    private void installContentProviders() {
+
+        mPluginContentResolver = new PluginContentResolver(mHostContext);
+        Map<String, PluginPackageInfo.ProviderIntentInfo> mProviderIntentInfos =
+                mPluginPackageInfo.getProviderIntentInfos();
+        if (mProviderIntentInfos != null) {
+            Set<Map.Entry<String, PluginPackageInfo.ProviderIntentInfo>> mEntries =
+                    mProviderIntentInfos.entrySet();
+            for (Map.Entry<String, PluginPackageInfo.ProviderIntentInfo> mEntry : mEntries) {
+                PluginPackageInfo.ProviderIntentInfo mProviderInfo = mEntry.getValue();
+                if (mProviderInfo != null) {
+                    try {
+                        ContentProvider provider = ContentProvider.class.cast(mPluginClassLoader.
+                                loadClass(mProviderInfo.mInfo.name).newInstance());
+                        if (provider != null) {
+                            // 调用attachInfo方法
+                            provider.attachInfo(mPluginAppContext, mProviderInfo.mInfo);
+                            mProviderMaps.put(mProviderInfo.mInfo.authority, provider);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 在插件中查找可以处理这个Uri的Provider
+     */
+    public ContentProvider getContentProvider(Uri uri) {
+        if (uri == null || TextUtils.isEmpty(uri.getAuthority())) {
+            return null;
+        }
+        return mProviderMaps.get(uri.getAuthority());
+    }
 
     /**
      * 反射获取ActivityThread中的Instrumentation对象
@@ -790,7 +839,19 @@ public class PluginLoadedApk {
             return mPluginPackageInfo.getActivityInfo(activityClsName);
         }
         return null;
+    }
 
+    /**
+     * 通过authority获取ProviderInfo
+     *
+     * @param authority  需要获取ProviderInfo的authority名称
+     * @return 返回对应的ProviderInfo，如果没有找到则返回null
+     */
+    public ProviderInfo getProviderInfoByAuthority(String authority) {
+        if (mPluginPackageInfo != null) {
+            return mPluginPackageInfo.resolveProvider(authority);
+        }
+        return null;
     }
 
     public void quitApp(boolean force) {
@@ -901,6 +962,13 @@ public class PluginLoadedApk {
      */
     public DexClassLoader getPluginClassLoader() {
         return mPluginClassLoader;
+    }
+
+    /**
+     * 获取插件的ContentResolver
+     */
+    public ContentResolver getPluginContentResolver() {
+        return mPluginContentResolver;
     }
 
     /**

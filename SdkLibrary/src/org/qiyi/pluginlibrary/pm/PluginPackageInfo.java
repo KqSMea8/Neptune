@@ -28,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
@@ -299,6 +300,10 @@ public class PluginPackageInfo implements Parcelable {
         return mReceiverIntentInfos;
     }
 
+    public Map<String, ProviderIntentInfo> getProviderIntentInfos() {
+        return mProviderIntentInfos;
+    }
+
     public ActivityInfo findActivityByClassName(String activityClsName) {
         if (packageInfo == null || packageInfo.activities == null) {
             return null;
@@ -451,6 +456,22 @@ public class PluginPackageInfo implements Parcelable {
         return null;
     }
 
+    /**
+     * 查找能够处理这个authority的Provider
+     */
+    public ProviderInfo resolveProvider(String authority) {
+        if (TextUtils.isEmpty(authority)) {
+            return null;
+        }
+        if (mProviderIntentInfos != null) {
+            for (ProviderIntentInfo info : mProviderIntentInfos.values()) {
+                if (info != null && TextUtils.equals(authority, info.mInfo.authority)) {
+                    return info.mInfo;
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * 白名单列表插件，允许注入插件ClassLoader到宿主ClassLoader
