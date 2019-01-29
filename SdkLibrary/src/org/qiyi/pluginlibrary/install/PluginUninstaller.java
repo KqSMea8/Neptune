@@ -42,6 +42,14 @@ public class PluginUninstaller extends PluginInstaller {
      */
     public static void deleteInstallerPackage(
             Context context, PluginLiteInfo info) {
+        deleteInstallerPackage(context, info, true);
+    }
+
+    /**
+     * 删除已经安装插件的apk,dex,so库等文件
+     */
+    public static void deleteInstallerPackage(
+            Context context, PluginLiteInfo info, boolean deleteAllVersion) {
         String packageName = info.packageName;
         PluginDebugLog.installFormatLog(TAG, "deleteInstallerPackage:%s", packageName);
 
@@ -71,9 +79,11 @@ public class PluginUninstaller extends PluginInstaller {
             }
         }
         // 删除历史版本遗留的apk
-        deleteOldApks(rootDir, packageName);
+        if (deleteAllVersion) {
+            deleteOldApks(rootDir, packageName);
+        }
         // 删除odex和vdex文件
-        deleteOatFiles(apk, packageName);
+        deleteOatFiles(apk, packageName, info.pluginVersion, deleteAllVersion);
     }
 
 
@@ -146,7 +156,7 @@ public class PluginUninstaller extends PluginInstaller {
     /**
      * Android O以上删除dexoat优化生成的odex和vdex文件
      */
-    private static void deleteOatFiles(File apkFile, final String packageName) {
+    private static void deleteOatFiles(File apkFile, final String packageName, final String version, final boolean deleteAllVersion) {
         if (VersionUtils.hasOreo()) {
             //删除prof文件
             File mProf = new File(apkFile.getAbsolutePath() + ".prof");
@@ -169,7 +179,7 @@ public class PluginUninstaller extends PluginInstaller {
                 @Override
                 public boolean accept(File pathname) {
                     String name = pathname.getName();
-                    return name.startsWith(packageName)
+                    return name.startsWith(deleteAllVersion ? packageName : packageName + "." + version)
                             && (name.endsWith(".odex") || name.endsWith(".vdex"));
                 }
             };

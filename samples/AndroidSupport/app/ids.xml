@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<item type="id" name="tag_transition_group" />
 	<item type="id" name="center" />
 	<item type="id" name="center_horizontal" />
 	<item type="id" name="center_vertical" />
