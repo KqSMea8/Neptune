@@ -95,7 +95,11 @@ public abstract class CustomContextWrapper extends ContextWrapper implements Int
 
     @Override
     public ContentResolver getContentResolver() {
-        return getPluginLoadedApk().getPluginContentResolver();
+        ContentResolver cr = getPluginLoadedApk().getPluginContentResolver();
+        if (cr == null) {
+            cr = super.getContentResolver();
+        }
+        return cr;
     }
 
     @Override

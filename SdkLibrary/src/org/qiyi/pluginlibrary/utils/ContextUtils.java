@@ -262,7 +262,6 @@ public class ContextUtils {
         return PluginInstaller.getPluginappRootPath(context) + File.separator + pkg + File.separator + "databases";
     }
 
-
     /**
      * 获取插件的PackageInfo信息
      */

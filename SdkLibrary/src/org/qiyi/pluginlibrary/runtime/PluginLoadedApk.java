@@ -968,7 +968,16 @@ public class PluginLoadedApk {
      * 获取插件的ContentResolver
      */
     public ContentResolver getPluginContentResolver() {
-        return mPluginContentResolver;
+        if (Neptune.getConfig().isSupportProvider()) {
+            // 全局开关打开时直接返回插件自定义的ContentResolver
+            return mPluginContentResolver;
+        }
+
+        if (mPluginPackageInfo != null
+            && mPluginPackageInfo.isSupportProvider()) {
+            return mPluginContentResolver;
+        }
+        return null;
     }
 
     /**
