@@ -99,6 +99,7 @@ public class PluginLiteInfo implements Parcelable {
             enableRecovery = jObj.optBoolean("enableRecovery");
             plugin_refs = jObj.optString("plugin_refs");
             statusCode = jObj.optInt("statusCode");
+            deletePackageBeforeInstall = jObj.optBoolean("deletePackageBeforeInstall");
         } catch (JSONException e) {
             // ignore
         }
@@ -118,6 +119,7 @@ public class PluginLiteInfo implements Parcelable {
         enableRecovery = in.readInt() == 1;
         plugin_refs = in.readString();
         statusCode = in.readInt();
+        deletePackageBeforeInstall = in.readInt() == 1;
     }
 
     @Override
@@ -140,6 +142,7 @@ public class PluginLiteInfo implements Parcelable {
         parcel.writeInt(enableRecovery ? 1 : 0);
         parcel.writeString(plugin_refs);
         parcel.writeInt(statusCode);
+        parcel.writeInt(deletePackageBeforeInstall ? 1 : 0);
     }
 
 
@@ -159,6 +162,7 @@ public class PluginLiteInfo implements Parcelable {
             jObj.put("enableRecovery", enableRecovery);
             jObj.put("plugin_refs", plugin_refs);
             jObj.put("statusCode", statusCode);
+            jObj.put("deletePackageBeforeInstall", deletePackageBeforeInstall);
         } catch (JSONException e) {
             // ignore
         }
@@ -172,6 +176,6 @@ public class PluginLiteInfo implements Parcelable {
                 + ", version=" + pluginVersion + ", grayVersion=" + pluginGrayVersion
                 + ", srcApkPkgName=" + srcApkPkgName + ", srcApkVersion=" + srcApkVersion
                 + ", enableRecovery=" + enableRecovery + ", plugin_refs=[" + plugin_refs + "]"
-                + ", statusCode=" + statusCode;
+                + ", statusCode=" + statusCode + ", deletePackageBeforeInstall=" + deletePackageBeforeInstall;
     }
 }
