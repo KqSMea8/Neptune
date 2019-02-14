@@ -56,8 +56,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         TextView ticker = findViewById(R.id.time_ticker);
         ticker.setText(BuildConfig.BUILD_TIME);
-
-        getIdFromDataProvider();
     }
 
 

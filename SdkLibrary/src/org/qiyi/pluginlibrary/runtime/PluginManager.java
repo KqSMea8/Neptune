@@ -656,7 +656,7 @@ public class PluginManager {
      * @param mIntent      需要启动组件的Intent
      * @param mConnection  bindService时需要的ServiceConnection,如果不是bindService的方式启动组件，传入Null
      */
-    private static void doRealLaunch(Context mHostContext,
+    private static boolean doRealLaunch(Context mHostContext,
                                      PluginLoadedApk mLoadedApk,
                                      Intent mIntent,
                                      ServiceConnection mConnection) {
@@ -683,7 +683,7 @@ public class PluginManager {
                 PluginDebugLog.runtimeLog(TAG, "doRealLaunch loadClass failed for targetClassName: "
                         + targetClassName);
                 executeNext(mHostContext, mLoadedApk);
-                return;
+                return false;
             }
         }
 
@@ -701,7 +701,7 @@ public class PluginManager {
             }
             // 表示后台加载Application，不需要启动组件
             executeNext(mHostContext, mLoadedApk);
-            return;
+            return false;
         }
 
         mLoadedApk.changeLaunchingIntentStatus(true);
@@ -743,9 +743,14 @@ public class PluginManager {
                 mHostContext.startActivity(mIntent);
             }
         }
+        if (sPluginStatusListener != null) {
+            sPluginStatusListener.onLaunchSuccess(pkgName, mIntent);
+        }
+
         // 执行下一个Intent
         PluginDebugLog.runtimeFormatLog(TAG, "doRealLaunch process intent %s end, ready to executeNext intent", mIntent.toString());
         executeNext(mHostContext, mLoadedApk);
+        return true;
     }
 
     /**
