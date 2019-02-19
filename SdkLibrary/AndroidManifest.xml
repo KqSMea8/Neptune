@@ -156,6 +156,7 @@
             android:name="org.qiyi.pluginlibrary.component.ContentProviderProxy1"
             android:authorities="${applicationId}.neptune.provider1"
             android:exported="false"
+            android:grantUriPermissions="true"
             android:process=":plugin1"/>
     </application>
 
