@@ -17,7 +17,7 @@ public class RunUtil {
     private static Handler sHandler;
 
     public static void runOnUiThread(Runnable runnable) {
-
+        runOnUiThread(runnable, false);
     }
 
     public static void runOnUiThread(Runnable runnable, boolean waitUtilDown) {

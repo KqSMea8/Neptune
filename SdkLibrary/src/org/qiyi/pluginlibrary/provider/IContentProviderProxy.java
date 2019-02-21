@@ -1,6 +1,5 @@
 package org.qiyi.pluginlibrary.provider;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.IContentProvider;
 import android.content.pm.ProviderInfo;
