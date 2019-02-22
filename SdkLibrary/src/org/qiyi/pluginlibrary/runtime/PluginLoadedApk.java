@@ -553,10 +553,20 @@ public class PluginLoadedApk {
         return true;
     }
 
+    private boolean isSupportProvider() {
+        // 全局开关打开或插件自身配置打开
+        return Neptune.getConfig().isSupportProvider() ||
+                (mPluginPackageInfo != null && mPluginPackageInfo.isSupportProvider());
+    }
+
     /**
      * 安装插件的Provider
      */
     private void installContentProviders() {
+        if (!isSupportProvider()) {
+            PluginDebugLog.runtimeLog(TAG, "Not support provider for plugin " + mPluginPackageName);
+            return;
+        }
 
         mPluginContentResolver = new PluginContentResolver(mHostContext);
         Map<String, PluginPackageInfo.ProviderIntentInfo> mProviderIntentInfos =
@@ -968,13 +978,7 @@ public class PluginLoadedApk {
      * 获取插件的ContentResolver
      */
     public ContentResolver getPluginContentResolver() {
-        if (Neptune.getConfig().isSupportProvider()) {
-            // 全局开关打开时直接返回插件自定义的ContentResolver
-            return mPluginContentResolver;
-        }
-
-        if (mPluginPackageInfo != null
-            && mPluginPackageInfo.isSupportProvider()) {
+        if (isSupportProvider()) {
             return mPluginContentResolver;
         }
         return null;
