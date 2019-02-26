@@ -55,6 +55,11 @@ class DeviceWrapper {
         return pluginExt.versionName
     }
 
+    private boolean shouldLaunchPlugin() {
+        QYPluginExtension pluginExt = project.extensions.findByType(QYPluginExtension.class)
+        return pluginExt.launchPlugin
+    }
+
     public void installPackage(File apkFile, boolean reinstall)
             throws InstallException {
 
@@ -62,7 +67,9 @@ class DeviceWrapper {
         String apkPath = apkFile.getAbsolutePath()
         try {
             // 检测宿主App是否安装到设备上
-            checkHostAppInstalled(hostPackage)
+            checkHostAppInstalled()
+            // 推送插件相关文件到sdcard上
+            preInstallPlugin(apkFile)
             // 推送插件APK到设备上
             String remoteFilePath = device.syncPackageToDevice(apkPath)
             // 安装插件到宿主APP目录
@@ -71,7 +78,8 @@ class DeviceWrapper {
             device.removeRemotePackage(remoteFilePath)
             // 杀进程，重启客户端
             restartHostApp()
-
+            // 通过schema跳转插件
+            enterPlugin()
         } catch (IOException e) {
             throw new InstallException(e)
         } catch (AdbCommandRejectedException e) {
@@ -88,15 +96,61 @@ class DeviceWrapper {
      * @param device
      * @throws InstallException
      */
-    void checkHostAppInstalled(String pkgName) throws InstallException {
+    void checkHostAppInstalled() throws InstallException {
         try {
             ListPackageReceiver receiver = new ListPackageReceiver()
             String cmd = "pm list packages"
             device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
 
-            if (!receiver.isPackageInstalled(pkgName)) {
-                throw new InstallException("host package " + pkgName + " not installed in device")
+            if (!receiver.isPackageInstalled(hostPackage)) {
+                throw new InstallException("host package " + hostPackage + " not installed in device")
             }
+        } catch (TimeoutException e) {
+            throw new InstallException(e)
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e)
+        } catch (ShellCommandUnresponsiveException e) {
+            throw new InstallException(e)
+        } catch (IOException e) {
+            throw new InstallException(e)
+        }
+    }
+
+    /**
+     * 推送插件apk和log文件到存储卡, 开启存储卡权限
+     */
+    void preInstallPlugin(File apkFile) {
+        try {
+            grantStoragePermission()
+            String remotePath = "/sdcard/${pluginPackage}.apk"
+            device.pushFile(apkFile.absolutePath, remotePath)
+
+            File logFile = new File(apkFile.getParent(), "${pluginPackage}.log")
+            logFile.createNewFile()
+            logFile.withPrintWriter { pw ->
+                pw.write("${pluginPackage}")
+            }
+            String remoteLogPath = "/sdcard/${pluginPackage}.log"
+            device.pushFile(logFile.absolutePath, remoteLogPath)
+        } catch (TimeoutException e) {
+            throw new InstallException(e)
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e)
+        } catch (ShellCommandUnresponsiveException e) {
+            throw new InstallException(e)
+        } catch (IOException e) {
+            throw new InstallException(e)
+        }
+    }
+
+    /**
+     * 给宿主APP授予存储卡权限
+     */
+    void grantStoragePermission() {
+        try {
+            NullOutputReceiver receiver = new NullOutputReceiver()
+            String cmd = "pm grant ${hostPackage} android.permission.WRITE_EXTERNAL_STORAGE"
+            device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
         } catch (TimeoutException e) {
             throw new InstallException(e)
         } catch (AdbCommandRejectedException e) {
@@ -243,7 +297,7 @@ class DeviceWrapper {
             if ("com.qiyi.video" == hostPackage || "tv.pps.mobile" == hostPackage) {
                 cmd = "am start -n ${hostPackage}/${hostPackage}.WelcomeActivity"
             } else {
-                cmd = "am start -n -a android.intent.action.MAIN -c android.intent.category.LAUNCHER ${hostPackage}"
+                cmd = "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER ${hostPackage}"
             }
             device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
         } catch (TimeoutException e) {
@@ -257,6 +311,35 @@ class DeviceWrapper {
         }
     }
 
+    void enterPlugin() {
+        if (!shouldLaunchPlugin()) {
+            return
+        }
+
+        try {
+            // 休眠5s等待主APP启动进入首页
+            Thread.sleep(5000)
+            // 通过schema跳转拉起插件首页
+            String suffix = pluginPackage.replace(".", "_")
+            String deeplink = "iqiyi://mobile/register_business/${suffix}"
+            if ("com.qiyi.video" == hostPackage || "tv.pps.mobile" == hostPackage) {
+                println "ready to launch plugin ......"
+                NullOutputReceiver receiver = new NullOutputReceiver()
+                String cmd = "am start -a android.intent.action.VIEW -d ${deeplink} ${hostPackage}"
+                device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            } else {
+                println "No support enter plugin for ${hostPackage}"
+            }
+        } catch (TimeoutException e) {
+            throw new InstallException(e)
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e)
+        } catch (ShellCommandUnresponsiveException e) {
+            throw new InstallException(e)
+        } catch (IOException e) {
+            throw new InstallException(e)
+        }
+    }
 
     AndroidVersion getAndroidVersion() {
         device.getProperties()

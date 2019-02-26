@@ -33,6 +33,10 @@
             android:name="com.iqiyi.plugin.sample.WebviewActivity">
         </activity>
 
+        <provider
+            android:authorities="com.iqiyi.plugin.sample.dataprovider"
+            android:name="com.iqiyi.plugin.sample.DataProvider" />
+
         <meta-data
             android:name="pluginapp_add_webview_res"
             android:value="true" />

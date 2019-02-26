@@ -36,9 +36,9 @@ import java.util.UUID;
  * 每个待恢复的 icicle 与 savedInstanceState 都会创建一个 id 保存在与之对应的 activity intent 里面进行传递。
  * 恢复的时候取出 id 即可找到对应的 icicle 与 savedInstanceState
  */
-class PluginActivityRecoveryHelper {
-    private static final String KEY_RECOVERY_ICICLE = "org.qiyi.PluginActivityRecoveryHelper.icicle";
-    private static final String KEY_RECOVERY_SAVED_INSTANCE_STATE = "org.qiyi.PluginActivityRecoveryHelper.savedInstanceState";
+class ActivityRecoveryHelper {
+    private static final String KEY_RECOVERY_ICICLE = "org.qiyi.ActivityRecoveryHelper.icicle";
+    private static final String KEY_RECOVERY_SAVED_INSTANCE_STATE = "org.qiyi.ActivityRecoveryHelper.savedInstanceState";
 
     private ArrayMap<String, Bundle> mPendingIcicleMap = new ArrayMap<>();
     private ArrayMap<String, Bundle> mPendingSavedInstanceStateMap = new ArrayMap<>();

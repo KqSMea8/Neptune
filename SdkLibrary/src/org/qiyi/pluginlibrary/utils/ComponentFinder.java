@@ -22,10 +22,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -39,6 +41,7 @@ import org.qiyi.pluginlibrary.runtime.PluginLoadedApk;
 import org.qiyi.pluginlibrary.runtime.PluginManager;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 在{@link PluginLoadedApk}代表的插件中查找能够处理{@link Intent}的组件
@@ -194,21 +197,19 @@ public class ComponentFinder {
                     targetActivity = info.resolveActivity(mIntent);
                 }
             } else {
-                if (null != context) {
-                    List<PluginLiteInfo> packageList =
-                            PluginPackageManagerNative.getInstance(context).getInstalledApps();
-                    if (packageList != null) {
-                        for (PluginLiteInfo pkgInfo : packageList) {
-                            if (pkgInfo != null) {
-                                PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
-                                        .getPluginPackageInfo(context, pkgInfo);
-                                if (null != target) {
-                                    targetActivity = target.resolveActivity(mIntent);
-                                    if (targetActivity != null) {
-                                        PluginDebugLog.runtimeFormatLog(TAG,
-                                                "switchToActivityProxy find targetActivity in plugin %s!", pkgInfo.packageName);
-                                        break;
-                                    }
+                List<PluginLiteInfo> packageList =
+                        PluginPackageManagerNative.getInstance(context).getInstalledApps();
+                if (packageList != null) {
+                    for (PluginLiteInfo pkgInfo : packageList) {
+                        if (pkgInfo != null) {
+                            PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
+                                    .getPluginPackageInfo(context, pkgInfo);
+                            if (null != target) {
+                                targetActivity = target.resolveActivity(mIntent);
+                                if (targetActivity != null) {
+                                    PluginDebugLog.runtimeFormatLog(TAG,
+                                            "switchToActivityProxy find targetActivity in plugin %s!", pkgInfo.packageName);
+                                    break;
                                 }
                             }
                         }
@@ -231,6 +232,62 @@ public class ComponentFinder {
         }
         return mIntent;
 
+    }
+
+    /**
+     * 查找能够响应这个Uri的插件
+     *
+     * @param context  宿主的上下文
+     * @param uri  provider的Uri地址
+     * @return  能够响应的插件包名
+     */
+    public static String resolvePkgName(Context context, Uri uri) {
+        if (uri == null || uri.getAuthority() == null) {
+            return null;
+        }
+
+        ProviderInfo provider = resolveProviderInfo(context, uri.getAuthority());
+        if (provider != null) {
+            return provider.packageName;
+        }
+        return "";
+    }
+
+    /**
+     * 查找能够响应这个authority的插件ProviderInfo
+     * @param context 宿主的上下文
+     * @param authority
+     * @return  返回能够响应的ProviderInfo
+     */
+    public static ProviderInfo resolveProviderInfo(Context context, String authority) {
+        // 首先去内存中查找
+        for (Map.Entry<String, PluginLoadedApk> entry : PluginManager.getAllPluginLoadedApk().entrySet()) {
+            PluginLoadedApk loadedApk = entry.getValue();
+            ProviderInfo provider = loadedApk.getProviderInfoByAuthority(authority);
+            if (provider != null) {
+                return provider;
+            }
+        }
+        // 没有找到，则重新查找一遍所有已安装的插件PackageInfo
+        List<PluginLiteInfo> packageList =
+                PluginPackageManagerNative.getInstance(context).getInstalledApps();
+        if (packageList != null) {
+            for (PluginLiteInfo pkgInfo : packageList) {
+                if (pkgInfo != null) {
+                    PluginPackageInfo target = PluginPackageManagerNative.getInstance(context)
+                            .getPluginPackageInfo(context, pkgInfo);
+                    if (target != null) {
+                        ProviderInfo provider = target.resolveProvider(authority);
+                        if (provider != null) {
+                            PluginDebugLog.runtimeFormatLog(TAG, "resolvePkgName find plugin %s can handle authority %s",
+                                    pkgInfo.packageName, authority);
+                            return provider;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**

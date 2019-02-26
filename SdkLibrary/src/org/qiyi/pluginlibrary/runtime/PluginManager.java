@@ -64,6 +64,7 @@ import org.qiyi.pluginlibrary.utils.ErrorUtil;
 import org.qiyi.pluginlibrary.utils.FileUtils;
 import org.qiyi.pluginlibrary.utils.IntentUtils;
 import org.qiyi.pluginlibrary.utils.PluginDebugLog;
+import org.qiyi.pluginlibrary.utils.RunUtil;
 import org.qiyi.pluginlibrary.utils.ViewPluginHelper;
 
 import java.io.File;
@@ -95,9 +96,9 @@ public class PluginManager {
     private static ConcurrentHashMap<String, PluginLoadedApk> sPluginsMap =
             new ConcurrentHashMap<>();
     /* 异步加载插件线程池 */
-    private static Executor mExecutor = Executors.newCachedThreadPool();
+    private static Executor sExecutor = Executors.newCachedThreadPool();
     /* 插件加载线程和主线程通信 */
-    private static Handler mHandler = new Handler(Looper.getMainLooper());
+    private static Handler sHandler = new Handler(Looper.getMainLooper());
     /* 插件状态投递 */
     private static IDeliverInterface mDeliver;
     /* 插件状态监听器 */
@@ -321,7 +322,6 @@ public class PluginManager {
         PluginLoadedApk loadedApk = getPluginLoadedApkByPkgName(packageName);
         // 1. 插件已经在内存，直接加载成功
         if (loadedApk != null) {
-            loadedApk.makeApplication();
             try {
                 Class<?> pluginClass = loadedApk.getPluginClassLoader().loadClass(className);
                 listener.onSuccess(pluginClass, packageName);
@@ -606,12 +606,6 @@ public class PluginManager {
             return false;
         }
 
-        if (!mLoadedApk.makeApplication()) {
-            PActivityStackSupervisor.clearLoadingIntent(packageName);
-            PluginDebugLog.runtimeFormatLog(TAG, "readyToStartSpecifyPlugin makeApplication failed:%s", packageName);
-            return false;
-        }
-
         LinkedBlockingQueue<IntentRequest> cacheIntents =
                 PActivityStackSupervisor.getCachedIntent(packageName);
         if (cacheIntents == null) {
@@ -662,7 +656,7 @@ public class PluginManager {
      * @param mIntent      需要启动组件的Intent
      * @param mConnection  bindService时需要的ServiceConnection,如果不是bindService的方式启动组件，传入Null
      */
-    private static void doRealLaunch(Context mHostContext,
+    private static boolean doRealLaunch(Context mHostContext,
                                      PluginLoadedApk mLoadedApk,
                                      Intent mIntent,
                                      ServiceConnection mConnection) {
@@ -689,7 +683,7 @@ public class PluginManager {
                 PluginDebugLog.runtimeLog(TAG, "doRealLaunch loadClass failed for targetClassName: "
                         + targetClassName);
                 executeNext(mHostContext, mLoadedApk);
-                return;
+                return false;
             }
         }
 
@@ -707,7 +701,7 @@ public class PluginManager {
             }
             // 表示后台加载Application，不需要启动组件
             executeNext(mHostContext, mLoadedApk);
-            return;
+            return false;
         }
 
         mLoadedApk.changeLaunchingIntentStatus(true);
@@ -749,9 +743,14 @@ public class PluginManager {
                 mHostContext.startActivity(mIntent);
             }
         }
+        if (sPluginStatusListener != null) {
+            sPluginStatusListener.onLaunchSuccess(pkgName, mIntent);
+        }
+
         // 执行下一个Intent
         PluginDebugLog.runtimeFormatLog(TAG, "doRealLaunch process intent %s end, ready to executeNext intent", mIntent.toString());
         executeNext(mHostContext, mLoadedApk);
+        return true;
     }
 
     /**
@@ -762,7 +761,7 @@ public class PluginManager {
      */
     private static void executeNext(final Context mContext,
                                     final PluginLoadedApk mLoadedApk) {
-        Message msg = Message.obtain(mHandler, new Runnable() {
+        Message msg = Message.obtain(sHandler, new Runnable() {
 
             @Override
             public void run() {
@@ -780,7 +779,7 @@ public class PluginManager {
                 mLoadedApk.changeLaunchingIntentStatus(false);
             }
         });
-        mHandler.sendMessage(msg);
+        sHandler.sendMessage(msg);
     }
 
     /**
@@ -843,7 +842,7 @@ public class PluginManager {
                                         final ServiceConnection mServiceConnection,
                                         final Intent mIntent,
                                         final String mProcessName) {
-        loadPluginAsync(mHostContext.getApplicationContext(), packageInfo.packageName,
+        loadPluginAsync(mHostContext, packageInfo.packageName,
                 new IPluginLoadListener() {
 
                     @Override
@@ -874,14 +873,39 @@ public class PluginManager {
     /**
      * 异步加载插件
      *
-     * @param mContext     主进程的Context
-     * @param mPackageName 需要加载的插件包名
-     * @param mListener    加载结果回调
+     * @param context     主进程的Context
+     * @param packageName 需要加载的插件包名
+     * @param listener    加载结果回调
+     * @param processName 进程名称
      */
-    private static void loadPluginAsync(final Context mContext, String mPackageName,
-                                        final IPluginLoadListener mListener, String mProcessName) {
-        mExecutor.execute(new LoadPluginTask(mContext, mPackageName, mListener, mProcessName));
+    private static void loadPluginAsync(Context context, String packageName,
+                                        IPluginLoadListener listener, String processName) {
+        sExecutor.execute(new LoadPluginTask(context, packageName, listener, processName));
     }
+
+    /**
+     * 同步加载插件
+     *
+     * @param context     主进程的Context
+     * @param packageName 需要加载的插件包名
+     * @param processName 进程名称
+     */
+    public static void loadPluginSync(final Context context, String packageName,
+                                      String processName) {
+        LoadPluginTask task = new LoadPluginTask(context, packageName, new IPluginLoadListener() {
+            @Override
+            public void onLoadSuccess(String packageName) {
+                PluginDebugLog.runtimeFormatLog(TAG, "loadPluginSync success for plugin %s", packageName);
+            }
+
+            @Override
+            public void onLoadFailed(String packageName) {
+                PluginDebugLog.runtimeFormatLog(TAG, "loadPluginSync failed for plugin %s", packageName);
+            }
+        }, processName);
+        task.run();
+    }
+
 
     /**
      * 从mIntent里面解析插件包名
@@ -1208,13 +1232,14 @@ public class PluginManager {
         private String mPackageName;
         private Context mHostContext;
         private String mProcessName;
+        private PluginLoadedApk mLoadedApk;
         private PluginLoadedApkHandler mHandler;
 
         LoadPluginTask(Context mHostContext,
                        String mPackageName,
                        IPluginLoadListener mListener,
                        String mProcessName) {
-            this.mHostContext = mHostContext;
+            this.mHostContext = mHostContext.getApplicationContext();
             this.mPackageName = mPackageName;
             this.mProcessName = mProcessName;
             this.mHandler = new PluginLoadedApkHandler(mListener, mPackageName, Looper.getMainLooper());
@@ -1224,14 +1249,17 @@ public class PluginManager {
         public void run() {
             boolean loaded = false;
             try {
-                PluginLiteInfo packageInfo =
-                        PluginPackageManagerNative.getInstance(mHostContext).getPackageInfo(mPackageName);
+                PluginLiteInfo packageInfo = PluginPackageManagerNative.getInstance(mHostContext)
+                        .getPackageInfo(mPackageName);
                 if (packageInfo != null) {
-                    PluginDebugLog.runtimeLog("plugin",
+                    PluginDebugLog.runtimeLog(TAG,
                             "doInBackground:" + mPackageName);
                     loaded = createPluginLoadedApkInstance(mHostContext, packageInfo, mProcessName);
+                    if (loaded && mLoadedApk != null) {
+                        invokeApplication();
+                    }
                 } else {
-                    PluginDebugLog.runtimeLog("plugin", "packageInfo is null before initProxyEnvironment");
+                    PluginDebugLog.runtimeLog(TAG, "packageInfo is null before initProxyEnvironment");
                 }
             } catch (Exception e) {
                 ErrorUtil.throwErrorIfNeed(e);
@@ -1244,22 +1272,39 @@ public class PluginManager {
             mHandler.sendEmptyMessage(what);
         }
 
+        /**
+         * 初始化插件的Application对象
+         */
+        private void invokeApplication() throws Exception {
+            final Exception[] temp = new Exception[1];
+            RunUtil.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (mLoadedApk != null
+                            && mLoadedApk.makeApplication()) {
+                        PluginDebugLog.runtimeFormatLog(TAG, "plugin %s makeApplication success", mPackageName);
+                    } else {
+                        temp[0] = new RuntimeException("init Application failed");
+                    }
+                }
+            }, true);
+            if (temp[0] != null) {
+                throw temp[0];
+            }
+        }
 
         /**
-         * 创建{@link PluginLoadedApk}
+         * 创建插件的{@link PluginLoadedApk}实例
          */
         private boolean createPluginLoadedApkInstance(Context context,
                                                       PluginLiteInfo packageInfo,
                                                       String mProcessName) {
             String packageName = packageInfo.packageName;
             if (!TextUtils.isEmpty(packageName)) {
-                boolean loaded = isPluginLoaded(packageName);
-                PluginDebugLog.runtimeLog(TAG, "sPluginsMap.containsKey(" + packageName + "):"
-                        + loaded);
-                if (loaded) {
+                mLoadedApk = getPluginLoadedApkByPkgName(packageName);
+                if (mLoadedApk != null) {
                     return true;
                 }
-                PluginLoadedApk mLoadedApk = null;
                 PluginPackageManager.updateSrcApkPath(context, packageInfo);
                 if (!TextUtils.isEmpty(packageInfo.srcApkPath)) {
                     File apkFile = new File(packageInfo.srcApkPath);
@@ -1277,7 +1322,6 @@ public class PluginManager {
                 }
             }
             PluginDebugLog.runtimeLog(TAG, "plugin loaded failed! packageName: " + packageName);
-
             return false;
         }
     }
@@ -1292,9 +1336,9 @@ public class PluginManager {
         IPluginLoadListener mListener;
         String mPackageName;
 
-        public PluginLoadedApkHandler(IPluginLoadListener listenner, String pakName, Looper looper) {
+        public PluginLoadedApkHandler(IPluginLoadListener listener, String pakName, Looper looper) {
             super(looper);
-            this.mListener = listenner;
+            this.mListener = listener;
             this.mPackageName = pakName;
         }
 

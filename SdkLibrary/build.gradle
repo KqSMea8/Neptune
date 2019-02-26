@@ -76,7 +76,7 @@ preBuild.doLast {
         e.printStackTrace()
     }
 }
-// 依赖本地的android-26.jar
+// 依赖本地的android-27.jar
 gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
         options.compilerArgs.add('-Xbootclasspath/p:libs/android-27.jar')

@@ -67,16 +67,16 @@ public class PluginClassLoader extends DexClassLoader {
         try {
             return super.findClass(name);
         } catch (ClassNotFoundException e) {
+            StringBuilder sb = new StringBuilder("tried ClassLoaders ");
             if (dependencies.isEmpty()) {
-                throw e;
+                sb.append("none;");
             } else {
-                StringBuilder sb = new StringBuilder("tried ClassLoaders ");
                 for (DexClassLoader dependency : dependencies) {
                     sb.append(dependency.toString());
                     sb.append(";");
                 }
-                throw new ClassNotFoundException(sb.toString(), e);
             }
+            throw new ClassNotFoundException(sb.toString(), e);
         }
     }
 

@@ -25,6 +25,10 @@ public class IntentConstant {
     public static final String EXTRA_TARGET_PACKAGE_KEY = "target_package";
     /* 代理插件组件类名的key */
     public static final String EXTRA_TARGET_CLASS_KEY = "target_class";
+    /* 代理插件Provider目标uri的key */
+    public static final String EXTRA_TARGET_URI_KEY = "target_uri";
+    /* 代理插件Provider的包装坑位uri的key */
+    public static final String EXTRA_WRAPPER_URI_KEY = "wrapper_uri";
     /* 主动加载插件的广播, 只加载插件的Application */
     public static final String EXTRA_VALUE_LOADTARGET_STUB = "target_stub";
     /* 插件运行的目标进程 */

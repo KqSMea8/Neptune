@@ -49,7 +49,7 @@ import org.qiyi.pluginlibrary.utils.ReflectionUtils;
 public class NeptuneInstrument extends PluginInstrument {
 
     private static final String TAG = "NeptuneInstrument";
-    private PluginActivityRecoveryHelper mRecoveryHelper = new PluginActivityRecoveryHelper();
+    private ActivityRecoveryHelper mRecoveryHelper = new ActivityRecoveryHelper();
 
     public NeptuneInstrument(Instrumentation hostInstr) {
         super(hostInstr);
