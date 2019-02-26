@@ -109,7 +109,12 @@ class TaskHookerManager {
 
         manifestProcessorTask.doLast {
             File manifest
-            if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
+            if (pluginExt.agpVersion >= VersionNumber.parse("3.3")) {
+                // AGP 3.3.0, changed
+                File outputDir = manifestProcessorTask.manifestOutputDirectory.get().asFile
+                println outputDir
+                manifest = new File(outputDir, "AndroidManifest.xml")
+            } else if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
                 // AGP 3.0.0, changed
                 println manifestProcessorTask.manifestOutputDirectory
                 manifest = new File(manifestProcessorTask.manifestOutputDirectory, "AndroidManifest.xml")
@@ -444,24 +449,29 @@ class TaskHookerManager {
         }
     }
 
-
     private boolean isAapt2Enable(ProcessAndroidResources processResTask) {
-        if (processResTask) {
+        if (pluginExt.agpVersion >= VersionNumber.parse("3.3")) {
+            // AGP 3.3.0开始只支持aapt2
+            return true
+        } else if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
+            // Add in AGP 3.0.0
             try {
-                // Add in AGP-3.0.0
-                return processResTask.isAapt2Enabled()
+                return processResTask != null && processResTask.isAapt2Enabled()
             } catch (Throwable t) {
+                // default value is true
                 t.printStackTrace()
+                return true
+            }
+        } else {
+            try {
+                // AGP 2.x
+                return AndroidGradleOptions.isAapt2Enabled(project)
+            } catch (Throwable t) {
+                // default value is false
+                t.printStackTrace()
+                return false
             }
         }
-
-        try {
-            // AGP 2.x
-            return AndroidGradleOptions.isAapt2Enabled(project)
-        } catch (Throwable t) {
-            t.printStackTrace()
-        }
-        return false
     }
 
     private File getAapt2File(MergeResources task) {

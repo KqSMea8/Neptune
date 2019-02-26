@@ -18,7 +18,9 @@ class TaskUtil {
         QYPluginExtension extension = project.extensions.findByType(QYPluginExtension.class)
 
         MergeResources mergeResTask
-        if (extension.agpVersion >= VersionNumber.parse("3.2")) {
+        if (extension.agpVersion >= VersionNumber.parse("3.3")) {
+            mergeResTask = appVariant.mergeResourcesProvider.get()
+        } else if (extension.agpVersion >= VersionNumber.parse("3.2")) {
             mergeResTask = appVariant.mergeResources
         } else if (extension.agpVersion >= VersionNumber.parse("3.0")) {
             mergeResTask = appVariant.getVariantData().mergeResourcesTask
@@ -35,9 +37,15 @@ class TaskUtil {
         def scope = appVariant.getVariantData().getScope()
         QYPluginExtension extension = project.extensions.findByType(QYPluginExtension.class)
 
-        String processResTaskName = extension.agpVersion >= VersionNumber.parse("3.0") ?
-                scope.getProcessResourcesTask().name : scope.getGenerateRClassTask().name
-        ProcessAndroidResources processResTask = project.tasks.getByName(processResTaskName) as ProcessAndroidResources
+        ProcessAndroidResources processResTask
+        if (extension.agpVersion >= VersionNumber.parse("3.3")) {
+            processResTask = appVariant.getVariantData().taskContainer.processAndroidResTask.get()
+        } else {
+            String processResTaskName = extension.agpVersion >= VersionNumber.parse("3.0") ?
+                    scope.getProcessResourcesTask().name : scope.getGenerateRClassTask().name
+            processResTask = project.tasks.getByName(processResTaskName) as ProcessAndroidResources
+        }
+
         return processResTask
     }
 
@@ -47,7 +55,9 @@ class TaskUtil {
         QYPluginExtension extension = project.extensions.findByType(QYPluginExtension.class)
 
         ManifestProcessorTask manifestTask
-        if (extension.agpVersion >= VersionNumber.parse("3.2")) {
+        if (extension.agpVersion >= VersionNumber.parse("3.3")) {
+            manifestTask = appVariant.getVariantData().getTaskContainer().processManifestTask.get()
+        } else if (extension.agpVersion >= VersionNumber.parse("3.2")) {
             manifestTask = appVariant.getVariantData().getTaskContainer().processManifestTask
         } else if (extension.agpVersion >= VersionNumber.parse("3.1")) {
             // AGP 3.1 返回的是ManifestProcessTask
@@ -84,6 +94,17 @@ class TaskUtil {
             manifestTask = project.tasks.getByName(manifestTaskName) as ManifestProcessorTask
         }
         return manifestTask
+    }
+
+    public static Task getAssembleTask(Project project, ApplicationVariantImpl appVariant) {
+        QYPluginExtension extension = project.extensions.findByType(QYPluginExtension.class)
+        Task assemble
+        if (extension.agpVersion >= VersionNumber.parse("3.3")) {
+            assemble = appVariant.assembleProvider.get()
+        } else {
+            assemble = appVariant.assemble
+        }
+        return assemble
     }
 
     public static Task getDexTask(Project project, ApplicationVariantImpl appVariant) {
