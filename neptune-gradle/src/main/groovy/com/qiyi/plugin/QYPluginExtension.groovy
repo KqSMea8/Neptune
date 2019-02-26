@@ -28,6 +28,6 @@ class QYPluginExtension {
     String hostDependencies
     /** Modify class before dex */
     boolean dexModify = false
-    /** launch Plugin when */
+    /** launch Plugin after install plugin to host app */
     boolean launchPlugin = true
 }

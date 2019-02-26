@@ -2,8 +2,8 @@
 
 buildscript {
     repositories {
-        jcenter()
         google()
+        jcenter()
         maven {
             url = "http://jfrog.cloud.qiyi.domain/iqiyi-maven-vertical/"
         }
@@ -22,8 +22,8 @@ buildscript {
 
 allprojects {
     repositories {
-        jcenter()
         google()
+        jcenter()
         maven {
             url = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
         }
