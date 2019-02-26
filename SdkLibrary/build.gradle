@@ -12,7 +12,7 @@ apply plugin: 'com.android.library'
 dependencies {
     compileOnly files('libs/android-27.jar')
     // TODO upgrade to version 27.1.1
-    compileOnly files('libs/android_support_26.1.0.jar')
+    compileOnly files('libs/android_support_27.1.1.jar')
 }
 
 
