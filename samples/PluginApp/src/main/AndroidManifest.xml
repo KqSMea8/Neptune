@@ -2,6 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.iqiyi.plugin.sample">
 
+    <uses-sdk tools:overrideLibrary="pl.droidsonroids.gif" />
+
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application

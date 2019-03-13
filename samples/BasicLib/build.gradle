@@ -23,4 +23,5 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.16'
 }
