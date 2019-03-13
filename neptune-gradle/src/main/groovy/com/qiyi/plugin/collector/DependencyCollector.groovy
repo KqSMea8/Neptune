@@ -63,7 +63,7 @@ class DependencyCollector {
         Set<AndroidDependency> androidDependencies = [] as Set<AndroidDependency>
         def scope = apkVariant.getVariantData().getScope() as VariantScope
         Set<ResolvedArtifactResult> allArtifacts = getAllArtifacts(scope,
-                AndroidArtifacts.ConsumedConfigType.COMPILE_CLASSPATH)
+                AndroidArtifacts.ConsumedConfigType.RUNTIME_CLASSPATH)
         allArtifacts.each {
             if (it instanceof AarResolvedArtifactResult) {
                 AarResolvedArtifactResult aarArtifact = (AarResolvedArtifactResult)it
@@ -77,8 +77,10 @@ class DependencyCollector {
 
     /**
      * Android Gradle Plugin 3.0.0+
+     * 该方法无法获取到Library模块implementation间接依赖的aar组件
      * @return
      */
+    @Deprecated
     public Set<AndroidLibrary> getAndroidLibraries() {
         println "DependencyCollector getAndroidLibraries() ........"
 
@@ -125,7 +127,6 @@ class DependencyCollector {
 //            // NoSuchMethodError
 //            dependencies = graph.createDependencies(variantData.scope, false, ModelBuilder.computeBuildMapping(project.gradle), consumer)
 //        }
-
         return dependencies.libraries
     }
 
@@ -214,7 +215,7 @@ class DependencyCollector {
      * @param consumedConfigType
      * @return
      */
-    public static Set<ResolvedArtifactResult> getAllArtifacts(VariantScope variantScope,
+    public Set<ResolvedArtifactResult> getAllArtifacts(VariantScope variantScope,
                         AndroidArtifacts.ConsumedConfigType consumedConfigType) {
         // we need to figure out the following:
         // - Is it an external dependency or a sub-project?
@@ -237,6 +238,17 @@ class DependencyCollector {
                         consumedConfigType,
                         AndroidArtifacts.ArtifactScope.ALL,
                         AndroidArtifacts.ArtifactType.MANIFEST)
+
+        ArtifactCollection nonNamespacedManifestList = null
+        if (pluginExt.agpVersion >= VersionNumber.parse("3.2")) {
+            // AGP 3.2.0+添加该部分实现
+            nonNamespacedManifestList =
+                    computeArtifactList(
+                            variantScope,
+                            consumedConfigType,
+                            AndroidArtifacts.ArtifactScope.ALL,
+                            AndroidArtifacts.ArtifactType.NON_NAMESPACED_MANIFEST)
+        }
 
         // We still need to understand wrapped jars and aars. The former is difficult (TBD), but
         // the latter can be done by querying for EXPLODED_AAR. If a sub-project is in this list,
@@ -279,7 +291,12 @@ class DependencyCollector {
         }
 
         // build a list of android dependencies based on them publishing a MANIFEST element
-        final Set<ResolvedArtifactResult> manifestArtifacts = manifestList.getArtifacts()
+        final Set<ResolvedArtifactResult> manifestArtifacts = new HashSet<>()
+        manifestArtifacts.addAll(manifestList.getArtifacts())
+        if (nonNamespacedManifestList != null) {
+            manifestArtifacts.addAll(nonNamespacedManifestList.getArtifacts())
+        }
+
         final Set<ComponentIdentifier> manifestIds =
                 Sets.newHashSetWithExpectedSize(manifestArtifacts.size())
         for (ResolvedArtifactResult result : manifestArtifacts) {

@@ -13,6 +13,7 @@ import com.qiyi.plugin.collector.dependence.AarDependenceInfo
 import com.qiyi.plugin.collector.dependence.DependenceInfo
 import com.qiyi.plugin.collector.res.ResourceEntry
 import com.qiyi.plugin.collector.res.StyleableEntry
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.util.VersionNumber
 
@@ -121,10 +122,7 @@ class ResourceCollector {
             }
         }
 
-        if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
-            // 3.0.0+
-            prepareAndroidLibrary()
-        } else if (pluginExt.agpVersion >= VersionNumber.parse("2.3")) {
+        if (pluginExt.agpVersion >= VersionNumber.parse("2.3")) {
             // 2.3.3
             prepareAndroidDependency()
         } else {
@@ -143,8 +141,9 @@ class ResourceCollector {
         Set<AndroidLibrary> androidLibraries
         if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
             // AGP 3.0.0, gather the dependencies with AndroidLibrary
-            DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
-            androidLibraries = dependencyCollector.androidLibraries
+            throw new GradleException("Not support for agp version ${pluginExt.agpVersion}")
+//            DependencyCollector dependencyCollector = new DependencyCollector(project, apkVariant)
+//            androidLibraries = dependencyCollector.androidLibraries
         } else {
             androidLibraries = processResTask.libraries
         }
@@ -178,7 +177,7 @@ class ResourceCollector {
     }
 
     /**
-     * 处理Android Gradle Plugin 2.x的依赖关系
+     * 处理Android Gradle Plugin 2.3.3+, 3.0.0+的依赖关系
      */
     private void prepareAndroidDependency() {
         println "prepareAndroidDependency() ..............."
@@ -193,7 +192,7 @@ class ResourceCollector {
         }
 
         androidDependencies.each {
-            println "${it.extractedFolder}, ${it.symbolFile}, ${it.jarFile}, ${it.artifactFile}"
+            println "${it.extractedFolder}, ${it.symbolFile}, ${it.jarFile}"
 
             def mavenCoordinates = it.coordinates as MavenCoordinates
             if (hostDependencies.contains("${mavenCoordinates.groupId}:${mavenCoordinates.artifactId}")) {
