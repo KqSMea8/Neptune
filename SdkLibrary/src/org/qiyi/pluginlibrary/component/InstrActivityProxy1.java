@@ -42,6 +42,7 @@ import android.graphics.Canvas;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.RequiresApi;
 import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -649,13 +650,43 @@ public class InstrActivityProxy1 extends Activity implements InterfaceToGetHost 
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 onKeyDown....keyCode=" + keyCode);
         if (getController() != null) {
-            return getController().callOnKeyDown(keyCode, event);
+            try {
+                return getController().callOnKeyDown(keyCode, event);
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+            }
         }
 
         return super.onKeyDown(keyCode, event);
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig) {
+        PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 onPictureInPictureModeChanged....");
+        if (getController() != null) {
+            try {
+                getController().callOnPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
+        PluginDebugLog.runtimeLog(TAG, "InstrActivityProxy1 onPictureInPictureModeChanged....");
+        if (getController() != null) {
+            try {
+                getController().callOnPictureInPictureModeChanged(isInPictureInPictureMode);
+            } catch (Exception e) {
+                ErrorUtil.throwErrorIfNeed(e);
+            }
+        }
+    }
 
     @Override
     public void startActivityForResult(Intent intent, int requestCode) {

@@ -149,7 +149,10 @@ class DeviceWrapper {
     void grantStoragePermission() {
         try {
             NullOutputReceiver receiver = new NullOutputReceiver()
-            String cmd = "pm grant ${hostPackage} android.permission.WRITE_EXTERNAL_STORAGE"
+            // Android 8.0以上设备读写权限使用命令行需要单独授权
+            String cmd = "pm grant ${hostPackage} android.permission.READ_EXTERNAL_STORAGE"
+            device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            cmd = "pm grant ${hostPackage} android.permission.WRITE_EXTERNAL_STORAGE"
             device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
         } catch (TimeoutException e) {
             throw new InstallException(e)
