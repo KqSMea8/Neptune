@@ -35,6 +35,10 @@ android {
         versionCode 2
         versionName "1.2"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilter 'armeabi'
+        }
     }
     dexOptions {
         //preDexLibraries false
