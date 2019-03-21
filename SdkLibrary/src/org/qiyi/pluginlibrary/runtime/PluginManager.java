@@ -732,10 +732,14 @@ public class PluginManager {
             if (mHostContext instanceof Activity) {
                 mHostContext.startActivity(mIntent);
             } else if (lastActivity != null) {
-                // Clear the Intent.FLAG_ACTIVITY_NEW_TASK
-                int flag = mIntent.getFlags();
-                flag = flag ^ Intent.FLAG_ACTIVITY_NEW_TASK;
-                mIntent.setFlags(flag);
+                ActivityInfo lastInfo = mLoadedApk.getActivityInfoByClassName(lastActivity.getClass().getName());
+                ActivityInfo currentInfo = mLoadedApk.getActivityInfoByClassName(targetClassName);
+                if (lastInfo != null && currentInfo != null && TextUtils.equals(lastInfo.taskAffinity, currentInfo.taskAffinity)) {
+                    // Clear the Intent.FLAG_ACTIVITY_NEW_TASK
+                    int flag = mIntent.getFlags();
+                    flag = flag ^ Intent.FLAG_ACTIVITY_NEW_TASK;
+                    mIntent.setFlags(flag);
+                }
                 lastActivity.startActivity(mIntent);
             } else {
                 // Add the Intent.FLAG_ACTIVITY_NEW_TASK
