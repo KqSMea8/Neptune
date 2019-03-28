@@ -1,5 +1,6 @@
 package com.qiyi.plugin.task
 
+import com.android.build.gradle.internal.api.ApplicationVariantImpl
 import com.android.ddmlib.AdbCommandRejectedException
 import com.android.ddmlib.CollectingOutputReceiver
 import com.android.ddmlib.IDevice
@@ -12,6 +13,7 @@ import com.android.ddmlib.TimeoutException
 import com.android.sdklib.AndroidVersion
 import com.qiyi.plugin.QYPluginExtension
 import org.gradle.api.Project
+import org.gradle.util.VersionNumber
 
 import java.util.concurrent.TimeUnit
 
@@ -34,30 +36,34 @@ class DeviceWrapper {
 
     private IDevice device
     private Project project
+    private ApplicationVariantImpl variant
+    private QYPluginExtension pluginExt
 
-    DeviceWrapper(IDevice device, Project project) {
+    DeviceWrapper(IDevice device, Project project, ApplicationVariantImpl variant) {
         this.device = device
         this.project = project
+        this.variant = variant
+        this.pluginExt = project.extensions.findByType(QYPluginExtension.class)
     }
 
     private String getHostPackage() {
-        QYPluginExtension pluginExt = project.extensions.findByType(QYPluginExtension.class)
         return pluginExt.hostPackageName
     }
 
     private String getPluginPackage() {
-        QYPluginExtension pluginExt = project.extensions.findByType(QYPluginExtension.class)
         return pluginExt.packageName
     }
 
     private String getPluginVersion() {
-        QYPluginExtension pluginExt = project.extensions.findByType(QYPluginExtension.class)
         return pluginExt.versionName
     }
 
     private boolean shouldLaunchPlugin() {
-        QYPluginExtension pluginExt = project.extensions.findByType(QYPluginExtension.class)
         return pluginExt.launchPlugin
+    }
+
+    private String getHostAbi() {
+        return pluginExt.hostAbi
     }
 
     public void installPackage(File apkFile, boolean reinstall)
@@ -206,8 +212,10 @@ class DeviceWrapper {
             // 覆盖原有的apk
             String targetFile = "/data/data/${hostPackage}/app_pluginapp/${apkName}"
             String cmd = "run-as ${hostPackage} cp ${remoteFilePath} ${targetFile}"
-            println "copy file into host app directory cmd: " + cmd
+            println "copy plugin apk into host app directory cmd: " + cmd
             device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            // 安装native so库
+            installNativeLibrary()
             // 删除dex相关文件
             deleteDexFiles(apkName)
             // 执行dex2oat优化
@@ -220,6 +228,111 @@ class DeviceWrapper {
             throw new InstallException(e)
         } catch (IOException e) {
             throw new InstallException(e)
+        }
+    }
+
+    void installNativeLibrary() {
+        // 删除设备上的lib目录
+        deleteSoFiles()
+        // 安装编译完成的so文件
+        File jniLibs = getJniLibsDirectory()
+
+        if (jniLibs.exists()) {
+            File[] soFiles = jniLibs.listFiles(new FileFilter() {
+                @Override
+                boolean accept(File pathname) {
+                    return pathname.isFile() && pathname.name.endsWith(".so")
+                }
+            })
+            if (soFiles == null || soFiles.length <= 0) {
+                println "this plugin apk do not have native library"
+                return
+            }
+
+            soFiles.each { File soLib ->
+                installNativeLibrary(soLib)
+            }
+        } else {
+            println "${jniLibs.absolutePath} not exist"
+        }
+    }
+
+    void installNativeLibrary(File soLib) {
+        try {
+            // 推送到设备上
+            String remotePath = "/data/local/tmp/lib/${soLib.name}"
+            device.pushFile(soLib.absolutePath, remotePath)
+            // 拷贝到宿主目录
+            NullOutputReceiver receiver = new NullOutputReceiver()
+            String targetPath = "/data/data/${hostPackage}/app_pluginapp/${pluginPackage}/lib/${soLib.name}"
+            String cmd = "run-as ${hostPackage} cp ${remotePath} ${targetPath}"
+            println "copy plugin native library to host app directory cmd: " + cmd
+            device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+        } catch (TimeoutException e) {
+            throw new InstallException(e)
+        } catch (AdbCommandRejectedException e) {
+            throw new InstallException(e)
+        } catch (ShellCommandUnresponsiveException e) {
+            throw new InstallException(e)
+        } catch (IOException e) {
+            throw new InstallException(e)
+        }
+    }
+
+
+    File getJniLibsDirectory() {
+        String path
+        String prefix = "intermediates/transforms/mergeJniLibs/${variant.buildType.name}"
+        if (pluginExt.agpVersion >= VersionNumber.parse("3.0")) {
+            // AGP 3.0.0+
+            path = "${prefix}/0/lib/${hostAbi}"
+        } else {
+            // AGP 2.3
+            path = "${prefix}/folders/2000/1f/main/lib/${hostAbi}"
+        }
+
+        File jniLibs = new File(project.buildDir, path)
+
+        println "project jniLibs directory is ${jniLibs.absolutePath}"
+        return jniLibs
+    }
+
+
+    void deleteSoFiles() {
+        try {
+            CollectingOutputReceiver receiver = new CollectingOutputReceiver()
+
+            String cmd = "run-as ${hostPackage} ls app_pluginapp/${pluginPackage}/lib"
+            println "ls native libraries in plugin cmd: " + cmd
+            device.executeShellCommand(cmd, receiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+
+            String result = receiver.getOutput().trim()
+
+            if (result.contains("Package \'${hostPackage}\' is not debuggable")) {
+                throw new InstallException("Host App is not debuggable, please install debuggable apk")
+            } else if (result.contains("Permission denied")) {
+                throw new InstallException("No permission into Host App /data/data/${hostPackage} directory")
+            }
+
+            NullOutputReceiver nullReceiver = new NullOutputReceiver()
+            String[] splits = result.split("\\s+")
+            for (String ss : splits) {
+                if (ss != null && ss.length() > 0) {
+                    String path = "/data/data/${hostPackage}/app_pluginapp/${pluginPackage}/lib/${ss}"
+                    cmd = "run-as ${hostPackage} rm ${path}"
+                    println "delete native libraries related files in plugin cmd: " + cmd
+                    device.executeShellCommand(cmd, nullReceiver, INSTALL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+                }
+            }
+
+        } catch (TimeoutException e) {
+            e.printStackTrace()
+        } catch (AdbCommandRejectedException e) {
+            e.printStackTrace()
+        } catch (ShellCommandUnresponsiveException e) {
+            e.printStackTrace()
+        } catch (IOException e) {
+            e.printStackTrace()
         }
     }
 

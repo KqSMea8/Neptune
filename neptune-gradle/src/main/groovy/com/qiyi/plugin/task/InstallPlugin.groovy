@@ -25,11 +25,17 @@ import java.lang.reflect.Method
 
 
 class InstallPlugin extends InstallVariantTask {
+    ApplicationVariantImpl variant
 
     Collection<BaseVariantOutput> variantOutputs
 
     public Collection<BaseVariantOutput> getVariantOutputs() {
         return variantOutputs
+    }
+
+    public void setVariant(ApplicationVariantImpl variant) {
+        this.variant = variant
+        this.variantOutputs = variant.getOutputs()
     }
 
     public void setVariantOutputs(Collection<BaseVariantOutput> variantOutputs) {
@@ -66,7 +72,7 @@ class InstallPlugin extends InstallVariantTask {
         for (final DeviceConnector device : devices) {
             // start install apk
             IDevice iDevice = getIDevice(device)
-            DeviceWrapper wrapper = new DeviceWrapper(iDevice, project)
+            DeviceWrapper wrapper = new DeviceWrapper(iDevice, project, variant)
             wrapper.installPackage(apkFile, true)
             successfulInstallCount++
         }
@@ -121,6 +127,7 @@ class InstallPlugin extends InstallVariantTask {
             super.configure(task)
             println "class name: " + variant.getOutputs().getClass().getName()
 
+            task.setVariant(variant)
             task.setVariantOutputs(variant.getOutputs())
             action.configure(task)
         }
@@ -161,6 +168,7 @@ class InstallPlugin extends InstallVariantTask {
         void execute(InstallPlugin task) {
             println "class name: " + variant.getOutputs().getClass().getName()
 
+            task.setVariant(variant)
             task.setVariantOutputs(variant.getOutputs())
             //action.execute(task)
             Method method = action.getClass().getDeclaredMethod("execute", InstallVariantTask.class)

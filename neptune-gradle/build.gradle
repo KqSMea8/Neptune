@@ -20,11 +20,17 @@ tasks.withType(GroovyCompile) {
 
 repositories {
     maven {
+        url = 'http://jfrog.cloud.qiyi.domain/maven-google/'
+    }
+    maven {
+        url = 'http://jfrog.cloud.qiyi.domain/jcenter/'
+    }
+    jcenter()
+    mavenCentral()
+    mavenLocal()
+    maven {
         url "https://maven.google.com"
     }
-    mavenLocal()
-    mavenCentral()
-    jcenter()
 }
 
 
