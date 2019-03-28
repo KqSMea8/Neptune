@@ -2,11 +2,14 @@
 
 buildscript {
     repositories {
-        google()
-        jcenter()
         maven {
-            url = "http://jfrog.cloud.qiyi.domain/iqiyi-maven-vertical/"
+            url = 'http://jfrog.cloud.qiyi.domain/maven-google/'
         }
+        maven {
+            url = 'http://jfrog.cloud.qiyi.domain/iqiyi-maven-vertical/'
+        }
+        jcenter()
+        google()
     }
     dependencies {
         classpath "com.android.tools.build:gradle:${ANDROID_GRADLE_VERSION}"
@@ -22,14 +25,14 @@ buildscript {
 
 allprojects {
     repositories {
-        google()
+        maven {
+            url = 'http://jfrog.cloud.qiyi.domain/maven-google/'
+        }
+        maven {
+            url = 'http://jfrog.cloud.qiyi.domain/iqiyi-maven-vertical/'
+        }
         jcenter()
-        maven {
-            url = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-vertical/"
-        }
-        maven {
-            url = "http://maven.mbd.qiyi.domain/nexus/content/repositories/mbd-android/"
-        }
+        google()
         configurations.all {
             resolutionStrategy.cacheDynamicVersionsFor 4, 'hours'
         }
