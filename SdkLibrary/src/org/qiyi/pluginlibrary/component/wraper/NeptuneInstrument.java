@@ -28,7 +28,7 @@ import android.view.ContextThemeWrapper;
 
 import org.qiyi.pluginlibrary.Neptune;
 import org.qiyi.pluginlibrary.NeptuneConfig;
-import org.qiyi.pluginlibrary.component.TransRecoveryActivity0;
+import org.qiyi.pluginlibrary.component.TransRecoveryActivity1;
 import org.qiyi.pluginlibrary.component.base.IPluginBase;
 import org.qiyi.pluginlibrary.component.stackmgr.PluginActivityControl;
 import org.qiyi.pluginlibrary.context.PluginContextWrapper;
@@ -88,7 +88,7 @@ public class NeptuneInstrument extends PluginInstrument {
 
     @Override
     public void callActivityOnCreate(Activity activity, Bundle icicle) {
-        boolean isRecovery = activity instanceof TransRecoveryActivity0;
+        boolean isRecovery = activity instanceof TransRecoveryActivity1;
         if (isRecovery) {
             mRecoveryHelper.saveIcicle(activity, icicle);
             mHostInstr.callActivityOnCreate(activity, null);
@@ -179,7 +179,7 @@ public class NeptuneInstrument extends PluginInstrument {
 
     @Override
     public void callActivityOnRestoreInstanceState(Activity activity, Bundle savedInstanceState) {
-        if (activity instanceof TransRecoveryActivity0) {
+        if (activity instanceof TransRecoveryActivity1) {
             mRecoveryHelper.saveSavedInstanceState(activity, savedInstanceState);
             return;
         }
