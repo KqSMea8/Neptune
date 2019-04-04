@@ -69,7 +69,7 @@ class TaskUtil {
             }
         } else if (extension.agpVersion >= VersionNumber.parse("3.0")) {
             // AGP 3.0.1 返回的是AndroidTask类型, AndroidTask类在3.1中被删除了，这里使用反射创建
-            Object task = appVariant.getVariantData().getScope().manifestProcessorTask
+            Object task = scope.manifestProcessorTask
             try {
                 Class<?> clazz = Class.forName("com.android.build.gradle.internal.scope.AndroidTask")
                 if (clazz.isInstance(task)) {
