@@ -16,7 +16,6 @@ neptune {
     packageId = 0x30
     hostPackageName = "com.qiyi.video"
     hostDependencies = "com.qiyi.video.allclasses:commonres_lib"
-    dexModify = false
 }
 
 def getDate() {
